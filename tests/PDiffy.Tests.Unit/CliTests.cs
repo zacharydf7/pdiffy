@@ -137,6 +137,20 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void Run_ShouldKeepEachFilesExtension_WhenAcceptingTextAndJsonSnapshots()
+    {
+        Write("Braille.received.txt", "braille");
+        Write("Job.received.json", "{}");
+        Write("Job.diff.html", "report");
+
+        Commands.Run(["accept", _folder], _output, _error);
+
+        Assert.Equal("braille", File.ReadAllText(Path.Combine(_folder, "Braille.verified.txt")));
+        Assert.Equal("{}", File.ReadAllText(Path.Combine(_folder, "Job.verified.json")));
+        Assert.False(File.Exists(Path.Combine(_folder, "Job.diff.html")));
+    }
+
+    [Fact]
     public void Run_ShouldRefuseAndReturnTwo_WhenAcceptingAFileThatIsNotReceived()
     {
         var notReceived = Write("notes.txt", "text");

@@ -15,7 +15,10 @@ public enum ChangeKind
     /// <summary>One key's value changed, such as alt, scope or color.</summary>
     AttributeChanged,
 
-    /// <summary>The quoted text changed. The detail shows the words removed [-like this-] and added {+like this+}.</summary>
+    /// <summary>
+    /// The text changed. The detail shows the words removed [-like this-] and added {+like this+}, or both lines in quotes
+    /// when only spaces changed.
+    /// </summary>
     TextChanged,
 
     /// <summary>Anything else about the line changed, such as its pages.</summary>
@@ -24,14 +27,16 @@ public enum ChangeKind
 
 /// <summary>
 /// One difference between two snapshots. <see cref="Path"/> locates it, such as
-/// "structure > Document > Table > TR[2] > TD[1]"; <see cref="Detail"/> says what changed. <see cref="Section"/> is null
-/// for the snapshot's first lines (format version and options) and for blank lines.
+/// "structure > Document > Table > TR[2] > TD[1]", or "line 12" in text without PDiffy's sections; <see cref="Detail"/>
+/// says what changed. <see cref="Section"/> is null for the snapshot's first lines (format version and options), for blank
+/// lines, and for every change in text without sections.
 /// </summary>
 public sealed record SnapshotChange(ChangeKind Kind, Section? Section, string Path, int? Page, string Detail);
 
 /// <summary>
-/// The differences between two snapshots, matched element by element, so an edited paragraph is one change instead of a
-/// removed line and an added one, and an element that moved is reported as moved.
+/// The differences between two snapshots. PDF snapshots are matched element by element, so an edited paragraph is one
+/// change instead of a removed line and an added one, and an element that moved is reported as moved. Other text, such
+/// as JSON, is compared line by line.
 /// </summary>
 public sealed class SnapshotDiff
 {
@@ -49,11 +54,29 @@ public sealed class SnapshotDiff
 
     public bool IsEmpty => Changes.Count == 0;
 
-    /// <summary>Compares two snapshot texts, such as a verified file and a received one.</summary>
+    /// <summary>
+    /// Compares two snapshot texts, such as a verified file and a received one. PDF snapshots are matched element by
+    /// element; any other text, such as JSON, line by line.
+    /// </summary>
     public static SnapshotDiff Compare(string before, string after)
     {
         before = before.Replace("\r\n", "\n");
         after = after.Replace("\r\n", "\n");
+        var changes = SnapshotTree.IsSectioned(before) && SnapshotTree.IsSectioned(after)
+            ? CompareSections(before, after)
+            : TextDiff.Compare(before, after);
+
+        // The texts can still differ in what no line shows: blank lines, or a missing newline at the end.
+        if (changes.Count == 0 && before != after)
+        {
+            changes.Add(new SnapshotChange(ChangeKind.Changed, null, "whitespace", null, "Blank lines or line endings differ."));
+        }
+
+        return new SnapshotDiff(before, after, changes);
+    }
+
+    private static List<SnapshotChange> CompareSections(string before, string after)
+    {
         var changes = new List<SnapshotChange>();
         var beforeHeader = before.Split('\n').Where(line => line.StartsWith('#')).ToList();
         var afterHeader = after.Split('\n').Where(line => line.StartsWith('#')).ToList();
@@ -73,13 +96,7 @@ public sealed class SnapshotDiff
                 afterSections.GetValueOrDefault(name) ?? []));
         }
 
-        // The texts can still differ in what no line shows: blank lines, or a missing newline at the end.
-        if (changes.Count == 0 && before != after)
-        {
-            changes.Add(new SnapshotChange(ChangeKind.Changed, null, "whitespace", null, "Blank lines or line endings differ."));
-        }
-
-        return new SnapshotDiff(before, after, changes);
+        return changes;
     }
 
     private static Section? SectionNamed(string name) =>

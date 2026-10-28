@@ -4,6 +4,7 @@ public class SnapshotDiffTests
 {
     // Normalized because Git can check this file out with CRLF line endings.
     private static readonly string Before = """
+        # pdfua-snapshot v1
         structure
           Document lang=en-US
             H1 p1 "Drug Interaction Table"
@@ -70,7 +71,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldCompareEachOccurrence_WhenAKeyRepeats()
     {
-        var before = "structure\n  Link p1 annot=Link uri=\"https://a\" annot=Link uri=\"https://b\" \"here\"\n";
+        var before = SnapshotText.Header + "structure\n  Link p1 annot=Link uri=\"https://a\" annot=Link uri=\"https://b\" \"here\"\n";
         var after = before.Replace("https://b", "https://c");
 
         var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
@@ -81,8 +82,8 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldStillReportALine_WhenOnlyTheOrderOfItsKeysChanges()
     {
-        var before = "layout\n  p1 path tagged fill=gray:0 stroke=gray:1\n";
-        var after = "layout\n  p1 path tagged stroke=gray:1 fill=gray:0\n";
+        var before = SnapshotText.Header + "layout\n  p1 path tagged fill=gray:0 stroke=gray:1\n";
+        var after = SnapshotText.Header + "layout\n  p1 path tagged stroke=gray:1 fill=gray:0\n";
 
         var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
 
@@ -92,7 +93,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldReportTheFirstLines_WhenOnlyTheOptionsChange()
     {
-        var after = "# ignored fields: positions\n" + Before;
+        var after = Before.Replace(SnapshotText.Header, SnapshotText.Header + "# ignored fields: positions\n");
 
         var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
 
@@ -138,7 +139,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldNameBookmarksByTitle_WhenABookmarkChanges()
     {
-        var before = "bookmarks\n  \"Warnings\" -> p3\n    \"Food\"\n";
+        var before = SnapshotText.Header + "bookmarks\n  \"Warnings\" -> p3\n    \"Food\"\n";
         var after = before.Replace("\"Food\"", "\"Food\" -> p4");
 
         var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
@@ -151,7 +152,7 @@ public class SnapshotDiffTests
     [InlineData("Figure p1", "Figure p1 \"Logo\"", "\"{+Logo+}\"")]
     public void Compare_ShouldShowReadableText_WhenTextHasQuotesOrStartsEmpty(string before, string after, string detail)
     {
-        var change = Assert.Single(SnapshotDiff.Compare($"structure\n  {before}\n", $"structure\n  {after}\n").Changes);
+        var change = Assert.Single(SnapshotDiff.Compare($"{SnapshotText.Header}structure\n  {before}\n", $"{SnapshotText.Header}structure\n  {after}\n").Changes);
 
         Assert.Equal((ChangeKind.TextChanged, detail), (change.Kind, change.Detail));
     }
@@ -162,8 +163,8 @@ public class SnapshotDiffTests
     {
         var lines = Enumerable.Range(1, 3000)
             .Select(i => $"  p{i / 100 + 1} text tagged font=Arial size=12 color=gray:0 \"Line {i}\"").ToList();
-        var before = "layout\n" + string.Join("\n", lines) + "\n";
-        var after = "layout\n" + string.Join("\n", lines.Where((_, i) => i != 100 && i != 2900)) + "\n";
+        var before = SnapshotText.Header + "layout\n" + string.Join("\n", lines) + "\n";
+        var after = SnapshotText.Header + "layout\n" + string.Join("\n", lines.Where((_, i) => i != 100 && i != 2900)) + "\n";
 
         var changes = SnapshotDiff.Compare(before, after).Changes;
 
@@ -183,6 +184,27 @@ public class SnapshotDiffTests
             + "~ attribute structure > Document > Table > TR[1] > TH2 (p2)\n    scope: Column -> (missing)\n"
             + "... and 1 more";
         Assert.Equal(expected, text);
+    }
+
+    [Fact]
+    public void Compare_ShouldReportEachChangedLineByNumber_WhenTheTextIsNotASnapshot()
+    {
+        var changes = SnapshotDiff.Compare("{\n  \"a\": 1,\n  \"b\": 2,\n  \"c\": 3\n}\n", "{\n  \"a\": 1,\n  \"c\": 4\n}\n").Changes;
+
+        SnapshotChange[] expected =
+        [
+            new(ChangeKind.TextChanged, null, "line 3", null, "[-\"b\": 2,-] {+\"c\": 4+}"),
+            new(ChangeKind.Removed, null, "line 4", null, "  \"c\": 3"),
+        ];
+        Assert.Equal(expected, changes);
+    }
+
+    [Fact]
+    public void Compare_ShouldShowBothLinesInQuotes_WhenAPlainLineChangesOnlyInSpaces()
+    {
+        var change = Assert.Single(SnapshotDiff.Compare("a\n", " a\n").Changes);
+
+        Assert.Equal((ChangeKind.TextChanged, "- \"a\"\n+ \" a\""), (change.Kind, change.Detail));
     }
 
     [Fact]

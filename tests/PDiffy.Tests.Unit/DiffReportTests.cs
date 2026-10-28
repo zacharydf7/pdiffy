@@ -6,7 +6,7 @@ public class DiffReportTests
 {
     private static readonly string Before = string.Join("\n",
     [
-        "pages", "  p1 letter rotate=0", "  p2 letter rotate=0", "  p3 letter rotate=0",
+        "# pdfua-snapshot v1", "pages", "  p1 letter rotate=0", "  p2 letter rotate=0", "  p3 letter rotate=0",
         "structure", .. Enumerable.Range(1, 20).Select(i => $"  P p{i / 10 + 1} \"Line {i}\""), "  P p3 \"Take with food\"", "",
     ]);
 
@@ -46,14 +46,24 @@ public class DiffReportTests
     [Fact]
     public void ToHtml_ShouldGiveEveryLinkedPageAnAnchor_WhenTheTwoViewsDisagreeAboutWhatMoved()
     {
-        var before = "structure\n  Document\n    Sect p1\n      P p1 \"a\"\n      P p1 \"b\"\n    Sect p2\n      P p2 \"c\"\n";
-        var after = "structure\n  Document\n    Sect p2\n      P p2 \"c\"\n    Sect p1\n      P p1 \"a\"\n      P p1 \"b\"\n";
+        var before = SnapshotText.Header + "structure\n  Document\n    Sect p1\n      P p1 \"a\"\n      P p1 \"b\"\n    Sect p2\n      P p2 \"c\"\n";
+        var after = SnapshotText.Header + "structure\n  Document\n    Sect p2\n      P p2 \"c\"\n    Sect p1\n      P p1 \"a\"\n      P p1 \"b\"\n";
 
         var html = SnapshotDiff.Compare(before, after).ToHtml();
 
         var links = Regex.Matches(html, "href=\"#(p\\d+)\"").Select(match => match.Groups[1].Value).Distinct().ToList();
         Assert.NotEmpty(links);
         Assert.All(links, page => Assert.Contains($"id=\"{page}\"", html));
+    }
+
+    [Fact]
+    public void ToHtml_ShouldShowTheWholeTextAsOneSection_WhenTheTextIsNotASnapshot()
+    {
+        var html = SnapshotDiff.Compare("structure\nTake with food\n", "structure\nTake after food\n").ToHtml();
+
+        Assert.Single(html.Split("<details class=\"section\"").Skip(1));
+        Assert.Contains("<summary>text</summary>", html);
+        Assert.Contains("<td class=\"added\">Take <mark>after </mark>food</td>", html);
     }
 
     [Fact]

@@ -22,11 +22,12 @@ internal static class DiffReport
         WriteChangeList(html, changes);
         WritePageIndex(html, changes);
 
-        var beforeSections = Sections(before);
-        var afterSections = Sections(after);
+        var plain = !SnapshotTree.IsSectioned(before) || !SnapshotTree.IsSectioned(after);
+        var beforeSections = Sections(before, plain);
+        var afterSections = Sections(after, plain);
         var sections = beforeSections.Keys.Union(afterSections.Keys)
             .Select(name => (Name: name, Rows: Rows(beforeSections.GetValueOrDefault(name) ?? [],
-                afterSections.GetValueOrDefault(name) ?? [])))
+                afterSections.GetValueOrDefault(name) ?? [], plain)))
             .ToList();
         var anchors = Anchors(sections.SelectMany(section => section.Rows).ToList(), changes);
         foreach (var (name, rows) in sections)
@@ -133,7 +134,7 @@ internal static class DiffReport
 
     // Lines align by the longest common run of lines. Between those, a removed and an added line share a row when the
     // change list would call them one edited line.
-    private static List<Row> Rows(List<string> before, List<string> after)
+    private static List<Row> Rows(List<string> before, List<string> after, bool plain)
     {
         var rows = new List<Row>();
         var removed = new List<string>();
@@ -144,7 +145,8 @@ internal static class DiffReport
             else if (step.Kind == '+') added.Add(step.Line);
             else
             {
-                PairGap(rows, removed, added);
+                if (plain) PairInOrder(rows, removed, added);
+                else PairGap(rows, removed, added);
 
                 removed.Clear();
                 added.Clear();
@@ -178,6 +180,15 @@ internal static class DiffReport
         rows.AddRange(added.Skip(next).Select(line => new Row('+', null, line)));
     }
 
+    // Plain text has no keys to match lines by, so they pair up in order, as in the change list.
+    private static void PairInOrder(List<Row> rows, List<string> removed, List<string> added)
+    {
+        var paired = Math.Min(removed.Count, added.Count);
+        for (var i = 0; i < paired; i++) rows.Add(new Row('~', removed[i], added[i]));
+        rows.AddRange(removed.Skip(paired).Select(line => new Row('-', line, null)));
+        rows.AddRange(added.Skip(paired).Select(line => new Row('+', null, line)));
+    }
+
     // Marks the words that differ between two lines.
     private static (string Left, string Right) Highlight(string before, string after)
     {
@@ -193,9 +204,10 @@ internal static class DiffReport
         return (left.ToString().TrimEnd(), right.ToString().TrimEnd());
     }
 
-    // Each section's lines in order, nesting kept as indentation.
-    private static Dictionary<string, List<string>> Sections(string snapshot) =>
-        SnapshotTree.Parse(snapshot).ToDictionary(section => section.Key, section => Flatten(section.Value).ToList());
+    // Each section's lines in order, nesting kept as indentation. Plain text is one section.
+    private static Dictionary<string, List<string>> Sections(string snapshot, bool plain) => plain
+        ? new() { ["text"] = [.. snapshot.Split('\n')] }
+        : SnapshotTree.Parse(snapshot).ToDictionary(section => section.Key, section => Flatten(section.Value).ToList());
 
     private static IEnumerable<string> Flatten(IEnumerable<SnapshotLine> lines) =>
         lines.SelectMany(line => Flatten(line.Children).Prepend(line.Text));

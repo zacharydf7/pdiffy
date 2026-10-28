@@ -1,8 +1,15 @@
+using System.Text.RegularExpressions;
+
 namespace PDiffy.Diffing;
 
 /// <summary>Splits a snapshot into its sections, each a tree of lines built from the two-space indentation.</summary>
 internal static class SnapshotTree
 {
+    private static readonly Regex FormatLine = new(@"^# [a-z]+-snapshot v\d+(\n|$)");
+
+    // PDiffy's own formats start with a line such as "# pdfua-snapshot v1"; anything else is plain text.
+    public static bool IsSectioned(string text) => FormatLine.IsMatch(text);
+
     public static Dictionary<string, List<SnapshotLine>> Parse(string snapshot)
     {
         var sections = new Dictionary<string, List<SnapshotLine>>();

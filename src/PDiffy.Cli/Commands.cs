@@ -64,27 +64,31 @@ public static class Commands
     }
 
     // Each received snapshot replaces its verified one, and its report goes, as when a test runs in accept mode. Several
-    // targets are allowed because shells expand a pattern like *.received.pdfua.txt into many.
+    // targets are allowed because shells expand a pattern like *.received.* into many. Each file keeps its extension:
+    // Letter.received.json becomes Letter.verified.json.
     private static int Accept(string[] args, TextWriter output, TextWriter error)
     {
         var search = args.Contains("--all") ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
         var targets = args.Where(arg => arg != "--all").DefaultIfEmpty(".");
-        var pattern = $"*{PdfSnapshot.ReceivedSuffix}";
+        var pattern = $"*{SnapshotFiles.ReceivedPart}*";
         var received = targets
             .SelectMany(target => File.Exists(target) ? [target] : Directory.GetFiles(target, pattern, search))
             .Select(Path.GetFullPath).Distinct().ToList();
-        if (received.FirstOrDefault(file => !file.EndsWith(PdfSnapshot.ReceivedSuffix)) is { } wrong)
+        if (received.FirstOrDefault(file => !Path.GetFileName(file).Contains(SnapshotFiles.ReceivedPart)) is { } wrong)
         {
-            error.WriteLine($"pdiffy: {wrong} isn't a received snapshot (*{PdfSnapshot.ReceivedSuffix}).");
+            error.WriteLine($"pdiffy: {wrong} isn't a received snapshot ({pattern}).");
             return UsageError;
         }
 
         foreach (var file in received)
         {
-            var name = file[..^PdfSnapshot.ReceivedSuffix.Length];
-            File.Move(file, name + PdfSnapshot.VerifiedSuffix, overwrite: true);
+            var fileName = Path.GetFileName(file);
+            var at = fileName.LastIndexOf(SnapshotFiles.ReceivedPart, StringComparison.Ordinal);
+            var name = Path.Combine(Path.GetDirectoryName(file)!, fileName[..at]);
+            var verified = name + SnapshotFiles.VerifiedPart + fileName[(at + SnapshotFiles.ReceivedPart.Length)..];
+            File.Move(file, verified, overwrite: true);
             File.Delete(name + SnapshotFiles.ReportSuffix);
-            output.WriteLine($"accepted {name}{PdfSnapshot.VerifiedSuffix}");
+            output.WriteLine($"accepted {verified}");
         }
 
         if (received.Count == 0) output.WriteLine("No received snapshots to accept.");

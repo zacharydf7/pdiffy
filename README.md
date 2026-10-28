@@ -14,6 +14,8 @@ Byte-for-byte PDF snapshots fail for reasons that don't matter and explain nothi
 
 PDiffy records the content and leaves out the encoding. One snapshot covers Windows and Linux, and a failing test shows which element changed, on which page.
 
+The same files and workflow also work for text and JSON output, so a test project can keep every kind of snapshot in one place (see [Snapshot text and JSON](#snapshot-text-and-json)).
+
 ## Getting started
 
 PDiffy targets .NET 10. Add it to your test project from NuGet:
@@ -55,7 +57,7 @@ public async Task DrugGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
     using Stream pdf = await ReportGenerator.CreateDrugGuideAsync();
 
     // Compare it with DrugGuideTests.DrugGuide_ShouldMatchApprovedSnapshot_WhenGenerated.verified.pdfua.txt,
-    // named after this test file and method. A difference throws PdfSnapshotException saying what changed.
+    // named after this test file and method. A difference throws SnapshotException saying what changed.
     await PdfSnapshot.VerifyAsync(pdf);
 }
 ```
@@ -87,15 +89,54 @@ To accept a change, review the received file, then copy it over the verified one
 Snapshot files sit next to the test file by default. To keep them all in one folder, set it once, for example in a module initializer. Set it too if your build maps source paths (deterministic builds, common on CI), because the test file's path then doesn't exist on disk:
 
 ```csharp
-// Every snapshot goes to and is read from this folder.
-PdfSnapshot.Directory = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Snapshots");
+// Every snapshot, of any kind, goes to and is read from this folder.
+Snapshot.Directory = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Snapshots");
 ```
+
+A test whose snapshots belong somewhere else passes the folder: `await PdfSnapshot.VerifyAsync(pdf, directory: otherFolder)`.
 
 Pass a name when one test makes several snapshots, as a theory does: `await PdfSnapshot.VerifyAsync(pdf, $"Invoice.{customer}")`.
 
-Snapshots use LF line endings. If Git converts line endings on checkout, add `*.pdfua.txt text eol=lf` to `.gitattributes`; PDiffy also compares a CRLF verified file as LF. Add `*.received.pdfua.txt` and `*.diff.html` to `.gitignore` and to your build server's artifacts, so a failed CI run keeps what it received and the report.
+Snapshots use LF line endings. If Git converts line endings on checkout, add `*.verified.txt text eol=lf` and `*.verified.json text eol=lf` (plus a line for any custom extension, such as `*.verified.brf`) to `.gitattributes`; PDiffy also compares a CRLF verified file as LF. Add `*.received.*` and `*.diff.html` to `.gitignore` and to your build server's artifacts, so a failed CI run keeps what it received and the report.
 
 The report is one HTML file with nothing to download, so it opens straight from a build artifact. It lists every change (filterable by kind), links to each page, and shows each section with the verified snapshot on the left and the received one on the right, edited lines side by side with the changed words highlighted. `diff.ToHtml()` gives the same page for any `SnapshotDiff`.
+
+### Snapshot text and JSON
+
+`Snapshot.VerifyAsync` and `Snapshot.VerifyJsonAsync` check other output the same way, with the same received and verified files, accept mode and report.
+
+```csharp
+[Fact]
+public async Task Braille_ShouldMatchApprovedSnapshot_WhenGenerated()
+{
+    string braille = await BrailleGenerator.CreateAsync();
+
+    // Compared exactly, spaces included; only CRLF line endings are read as LF. Saved as {name}.verified.txt.
+    await Snapshot.VerifyAsync(braille);
+}
+
+[Fact]
+public async Task Job_ShouldMatchApprovedSnapshot_WhenSubmitted()
+{
+    string json = await client.GetStringAsync("/jobs/latest");
+
+    // Indented with two spaces, keys kept in the order written, GUIDs and dates replaced by Guid_1 and Date_1.
+    // Saved as {name}.verified.json.
+    await Snapshot.VerifyJsonAsync(json);
+}
+```
+
+A text failure lists each changed line by number, with the changed words marked:
+
+```
+2 change(s): 1 removed, 1 text
+~ text line 3
+    [-"b": 2,-] {+"c": 4+}
+- removed line 4
+      "c": 3
+```
+
+Text options scrub the whole text: `o => o.ScrubText(new Regex(@"Order \d+"), "Order N").ScrubDates()`. JSON scrubs GUIDs and dates unless told not to: `o => o.KeepDates()`. Pass `extension: "brf"` to name text files something other than `.txt`. A verified file that starts with a UTF-8 byte-order mark matches as if it didn't, so files approved by other tools carry over.
 
 ### Leave out sections a test doesn't care about
 
@@ -327,7 +368,8 @@ pdiffy statement-v1.pdf statement-v2.pdf --html report.html
 pdiffy snapshot statement.pdf
 pdiffy snapshot statement.pdf statement.pdfua.txt
 
-# Accept every received snapshot in a folder after reviewing them: each replaces its verified file, and its report goes.
+# Accept every received snapshot (PDF, text or JSON) in a folder after reviewing them: each replaces its verified file,
+# keeping its extension, and its report goes.
 pdiffy accept tests/Snapshots
 pdiffy accept --all    # the current folder and every folder under it
 ```
