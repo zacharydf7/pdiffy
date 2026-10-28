@@ -33,17 +33,40 @@ internal sealed class Scrubbing(IReadOnlyList<Scrubber> scrubbers)
 {
     private readonly Dictionary<string, Dictionary<string, string>> _tokens = [];
 
-    public string Scrub(string text)
+    /// <summary>
+    /// Scrubs text and moves positions in it to where they land in the scrubbed text, so offsets still point at the same
+    /// place when a scrubbed value changes length. A position inside a replaced value moves to the start of its token.
+    /// </summary>
+    public string Scrub(string text, int[] positions)
     {
         foreach (var scrubber in scrubbers)
         {
-            text = scrubber.Numbered
-                ? scrubber.Pattern.Replace(text, match => Token(scrubber.Replacement, match.Value))
-                : scrubber.Pattern.Replace(text, scrubber.Replacement);
+            var replacements = new List<(int Start, int Length, int NewLength)>();
+            text = scrubber.Pattern.Replace(text, match =>
+            {
+                var replacement = scrubber.Numbered ? Token(scrubber.Replacement, match.Value) : match.Result(scrubber.Replacement);
+                replacements.Add((match.Index, match.Length, replacement.Length));
+                return replacement;
+            });
+            for (var i = 0; i < positions.Length; i++) positions[i] = Moved(positions[i], replacements);
         }
 
         return text;
     }
+
+    private static int Moved(int position, List<(int Start, int Length, int NewLength)> replacements)
+    {
+        var shift = 0;
+        foreach (var (start, length, newLength) in replacements)
+        {
+            if (position >= start + length) shift += newLength - length;
+            else if (position > start) return start + shift;
+        }
+
+        return position + shift;
+    }
+
+    public string Scrub(string text) => Scrub(text, []);
 
     // The same value always gets the same token: the first date in the snapshot is Date_1 wherever it appears.
     private string Token(string name, string value)

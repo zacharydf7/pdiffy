@@ -12,36 +12,42 @@ internal sealed class DocxSnapshotWriter
     private const string Missing = "(missing)";
 
     private readonly StringBuilder _snapshot;
-    private readonly DocxDocument _document;
+    private readonly DocxSnapshotOptions _options;
+    private readonly Scrubbing _scrubbing;
     private readonly Dictionary<string, ParagraphFormat> _styleLayouts;
 
-    private DocxSnapshotWriter(DocxDocument document, StringBuilder snapshot)
+    private DocxSnapshotWriter(DocxDocument document, StringBuilder snapshot, DocxSnapshotOptions options, Scrubbing scrubbing)
     {
-        (_document, _snapshot) = (document, snapshot);
+        (_snapshot, _options, _scrubbing) = (snapshot, options, scrubbing);
         _styleLayouts = document.Styles.Where(style => style.Type == "paragraph").ToDictionary(style => style.Id, style => style.Paragraph);
     }
 
-    public static string Write(DocxDocument document) => new DocxSnapshotWriter(document, new StringBuilder()).Build(document);
+    public static string Write(DocxDocument document, DocxSnapshotOptions options) =>
+        new DocxSnapshotWriter(document, new StringBuilder(), options, new Scrubbing(options.Scrubbers)).Build(document);
 
     private string Build(DocxDocument document)
     {
         Line(0, FormatHeader);
-        Line(0, "document");
-        WriteDocument(document.Document);
-        Line(0, "sections");
-        WriteSections(document.PageSetups);
-        Line(0, "styles");
-        WriteStyles(document.Styles, 1);
-        Line(0, "numbering");
-        WriteLists(document.Lists, 1);
-        Line(0, "body");
-        if (document.Body.Count == 0) Line(1, None);
-        WriteBlocks(document.Body, 1);
-        Line(0, "headers");
-        WriteHeadersAndFooters(document.Headers);
-        Line(0, "footers");
-        WriteHeadersAndFooters(document.Footers);
+        if (_options.IgnoredSections.Any()) Line(0, $"# ignored sections: {string.Join(", ", _options.IgnoredSections.Select(SnapshotWriter.Name))}");
+        WriteSection(DocxSection.Document, () => WriteDocument(document.Document));
+        WriteSection(DocxSection.Sections, () => WriteSections(document.PageSetups));
+        WriteSection(DocxSection.Styles, () => WriteStyles(document.Styles, 1));
+        WriteSection(DocxSection.Numbering, () => WriteLists(document.Lists, 1));
+        WriteSection(DocxSection.Body, () =>
+        {
+            if (document.Body.Count == 0) Line(1, None);
+            WriteBlocks(document.Body, 1);
+        });
+        WriteSection(DocxSection.Headers, () => WriteHeadersAndFooters(document.Headers));
+        WriteSection(DocxSection.Footers, () => WriteHeadersAndFooters(document.Footers));
         return _snapshot.ToString();
+    }
+
+    private void WriteSection(DocxSection section, Action write)
+    {
+        Line(0, SnapshotWriter.Name(section));
+        if (_options.Ignores(section)) Line(1, "(ignored)");
+        else write();
     }
 
     private void WriteDocument(DocxInfo info)
@@ -154,11 +160,13 @@ internal sealed class DocxSnapshotWriter
         Line(depth, line.ToString());
         if (inserted.Document is not { } document) return;
 
-        var writer = new DocxSnapshotWriter(document, _snapshot);
+        var writer = new DocxSnapshotWriter(document, _snapshot, _options, _scrubbing);
         writer.Line(depth + 1, "styles");
-        writer.WriteStyles(document.Styles, depth + 2);
+        if (_options.Ignores(DocxSection.Styles)) writer.Line(depth + 2, "(ignored)");
+        else writer.WriteStyles(document.Styles, depth + 2);
         writer.Line(depth + 1, "numbering");
-        writer.WriteLists(document.Lists, depth + 2);
+        if (_options.Ignores(DocxSection.Numbering)) writer.Line(depth + 2, "(ignored)");
+        else writer.WriteLists(document.Lists, depth + 2);
         writer.Line(depth + 1, "body");
         if (document.Body.Count == 0) writer.Line(depth + 2, None);
         writer.WriteBlocks(document.Body, depth + 2);
@@ -173,7 +181,10 @@ internal sealed class DocxSnapshotWriter
         Key(line, "label", Quote(paragraph.List?.Label));
         var styleLayout = paragraph.Style is null ? null : _styleLayouts.GetValueOrDefault(paragraph.Style);
         WriteLayout(line, paragraph.Layout, styleLayout ?? new ParagraphFormat());
-        if (paragraph.Text.Length > 0) line.Append(' ').Append(Quote(paragraph.Text));
+        // The text is scrubbed once, with the positions of what sits in it, so those still point into the printed text.
+        var positions = paragraph.Inlines.Select(inline => inline.Position).ToArray();
+        var text = _scrubbing.Scrub(paragraph.Text, positions);
+        if (text.Length > 0) line.Append(' ').Append(Escaped(text));
         Line(depth, line.ToString());
 
         foreach (var span in paragraph.Spans.Where(span => span.Format != paragraph.Run))
@@ -183,12 +194,12 @@ internal sealed class DocxSnapshotWriter
             Line(depth + 1, spanLine.ToString());
         }
 
-        foreach (var inline in paragraph.Inlines) Line(depth + 1, InlineLine(inline));
+        for (var i = 0; i < positions.Length; i++) Line(depth + 1, InlineLine(paragraph.Inlines[i], positions[i]));
         if (paragraph.EndsSection is int section) Line(depth + 1, $"ends-section s{section}");
     }
 
     // An image always says whether it has alt text, since a missing description is what an accessibility check looks for.
-    private static string InlineLine(DocxInline inline)
+    private string InlineLine(DocxInline inline, int position)
     {
         var line = new StringBuilder();
         switch (inline)
@@ -197,7 +208,7 @@ internal sealed class DocxSnapshotWriter
                 line.Append($"break {pageBreak.Kind}");
                 break;
             case DocxLink link:
-                line.Append($"link {Quote(link.Text)} -> {link.Target ?? Missing}");
+                line.Append($"link {Quote(link.Text)} -> {(link.Target is null ? Missing : _scrubbing.Scrub(link.Target))}");
                 break;
             case DocxField field:
                 line.Append($"field {Quote(field.Code)}");
@@ -222,7 +233,7 @@ internal sealed class DocxSnapshotWriter
                 break;
         }
 
-        return line.Append($" at={inline.Position}").ToString();
+        return line.Append($" at={position}").ToString();
     }
 
     private void WriteTable(DocxTable table, int depth)
@@ -246,7 +257,7 @@ internal sealed class DocxSnapshotWriter
         }
     }
 
-    private static void WriteRun(StringBuilder line, RunFormat format, RunFormat baseFormat)
+    private void WriteRun(StringBuilder line, RunFormat format, RunFormat baseFormat)
     {
         Changed(line, "char-style", format.Style, baseFormat.Style, Missing);
         if (format.Font != baseFormat.Font) Key(line, "font", Quote(format.Font) ?? Missing);
@@ -301,11 +312,12 @@ internal sealed class DocxSnapshotWriter
 
     private static string? Length(double? points) => points is double value ? Points(value) : null;
 
-    // Text is exact: backslashes and quotes are escaped, tabs and line breaks print as \t and \n, and invisible characters
-    // as \uXXXX, so none can hide in a snapshot. Control characters are escaped by Line.
-    private static string? Quote(string? text)
+    // Text is exact apart from what the options scrub: backslashes and quotes are escaped, tabs and line breaks print as
+    // \t and \n, and invisible characters as \uXXXX, so none can hide in a snapshot. Control characters are escaped by Line.
+    private string? Quote(string? text) => text is null ? null : Escaped(_scrubbing.Scrub(text));
+
+    private static string Escaped(string text)
     {
-        if (text is null) return null;
         var quoted = new StringBuilder("\"");
         foreach (var c in text)
         {

@@ -12,8 +12,8 @@ public static class Commands
 
     public const string Usage = """
         Usage:
-          pdiffy <before> <after> [--html <report.html>]   Compare two PDFs or two snapshot files
-          pdiffy snapshot <file.pdf> [<out.pdfua.txt>]      Print or save a PDF's snapshot
+          pdiffy <before> <after> [--html <report.html>]   Compare two PDFs, two DOCX files or two snapshot files
+          pdiffy snapshot <file.pdf|file.docx> [<out>]      Print or save a PDF's or DOCX's snapshot
           pdiffy accept [<files or folders>] [--all]        Accept received snapshots as verified
 
         compare exits with 0 when nothing changed and 1 when something did.
@@ -26,8 +26,8 @@ public static class Commands
         {
             return args switch
             {
-                ["snapshot", var pdf] => Snapshot(pdf, null, output),
-                ["snapshot", var pdf, var file] => Snapshot(pdf, file, output),
+                ["snapshot", var document] => Snapshot(document, null, output),
+                ["snapshot", var document, var file] => Snapshot(document, file, output),
                 ["accept", .. var rest] => Accept(rest, output, error),
                 [var before, var after] => Compare(before, after, null, output),
                 [var before, var after, "--html", var report] => Compare(before, after, report, output),
@@ -55,9 +55,9 @@ public static class Commands
         return diff.IsEmpty ? Same : Different;
     }
 
-    private static int Snapshot(string pdf, string? file, TextWriter output)
+    private static int Snapshot(string document, string? file, TextWriter output)
     {
-        var snapshot = PdfUaDocument.Load(pdf).ToSnapshot();
+        var snapshot = IsDocx(document) ? DocxDocument.Load(document).ToSnapshot() : PdfUaDocument.Load(document).ToSnapshot();
         if (file is null) output.Write(snapshot);
         else File.WriteAllText(file, snapshot);
         return Same;
@@ -95,9 +95,13 @@ public static class Commands
         return Same;
     }
 
-    // A PDF is read and snapshotted; anything else is taken to be a snapshot already.
+    // A PDF or a DOCX is read and snapshotted; anything else is taken to be a snapshot already.
     private static string SnapshotOf(string path) =>
-        IsPdf(path) ? PdfUaDocument.Load(path).ToSnapshot() : File.ReadAllText(path);
+        IsPdf(path) ? PdfUaDocument.Load(path).ToSnapshot()
+        : IsDocx(path) ? DocxDocument.Load(path).ToSnapshot()
+        : File.ReadAllText(path);
+
+    private static bool IsDocx(string path) => Path.GetExtension(path).Equals(".docx", StringComparison.OrdinalIgnoreCase);
 
     // PDF readers accept the %PDF- header anywhere in the first 1024 bytes, after a byte-order mark or other junk.
     private static bool IsPdf(string path)

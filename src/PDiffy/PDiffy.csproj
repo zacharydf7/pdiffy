@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Snapshot tests for PDFs that compare what a document says, not how its bytes are encoded: tag structure, text, alt text, reading order, tables, links, fonts, forms and layout, written as plain text that reads like a change to the document when a test fails.</Description>
+    <Description>Snapshot tests for PDFs and Word documents that compare what a document says, not how its bytes are encoded: tag structure, text, alt text, reading order, tables, links, fonts, forms, styles and layout, written as plain text that reads like a change to the document when a test fails. Text and JSON snapshots use the same workflow.</Description>
     <!-- Ships the doc comments for IntelliSense. Comments describe only what needs explaining, so a member or parameter
          without one doesn't fail the build. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

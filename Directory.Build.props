@@ -16,7 +16,7 @@
       <PackageLicenseExpression>MIT</PackageLicenseExpression>
       <PackageProjectUrl>https://github.com/zacharydf7/pdiffy</PackageProjectUrl>
       <RepositoryUrl>https://github.com/zacharydf7/pdiffy</RepositoryUrl>
-      <PackageTags>pdf;pdf-ua;accessibility;snapshot-testing;approval-tests;testing</PackageTags>
+      <PackageTags>pdf;pdf-ua;docx;word;accessibility;snapshot-testing;approval-tests;testing</PackageTags>
       <PackageReadmeFile>README.md</PackageReadmeFile>
       <IncludeSymbols>true</IncludeSymbols>
       <SymbolPackageFormat>snupkg</SymbolPackageFormat>

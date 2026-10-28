@@ -37,10 +37,17 @@ public sealed record DocxDocument
     }
 
     /// <summary>The canonical snapshot text: one paragraph, table cell or style per line, LF endings.</summary>
-    public string ToSnapshot() => DocxSnapshotWriter.Write(this);
+    /// <param name="configure">What to leave out or scrub, e.g. <c>o => o.Ignore(DocxSection.Styles).ScrubDates()</c>.</param>
+    public string ToSnapshot(Action<DocxSnapshotOptions>? configure = null)
+    {
+        var options = new DocxSnapshotOptions();
+        configure?.Invoke(options);
+        return DocxSnapshotWriter.Write(this, options);
+    }
 
     /// <summary>The differences between this document's snapshot and another's, element by element.</summary>
-    public SnapshotDiff CompareTo(DocxDocument other) => SnapshotDiff.Compare(ToSnapshot(), other.ToSnapshot());
+    public SnapshotDiff CompareTo(DocxDocument other, Action<DocxSnapshotOptions>? configure = null) =>
+        SnapshotDiff.Compare(ToSnapshot(configure), other.ToSnapshot(configure));
 
     /// <summary>Every paragraph of the body in reading order, including those inside tables and inserted documents.</summary>
     public IEnumerable<DocxParagraph> Paragraphs() => Paragraphs(Body);
@@ -256,7 +263,7 @@ public abstract record DocxInline(int Position);
 
 /// <summary>
 /// A field: its code, such as "PAGE" or "TOC \o \"1-3\"", and its result, the text Word last showed for it. The result
-/// is also part of the paragraph's text.
+/// is also part of the paragraph's text, unless the field sits in another field's code, whose code it becomes part of.
 /// </summary>
 public sealed record DocxField(string Code, string Result, int Position) : DocxInline(Position);
 

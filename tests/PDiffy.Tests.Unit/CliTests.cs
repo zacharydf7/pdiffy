@@ -180,6 +180,35 @@ public sealed class CliTests : IDisposable
         return path;
     }
 
+    [Fact]
+    public void Run_ShouldCompareTheDocumentsAndReturnOne_WhenTwoDocxFilesDiffer()
+    {
+        var before = WriteDocx("before.docx", "Take with food");
+        var after = WriteDocx("after.docx", "Take after food");
+
+        var exitCode = Commands.Run([before, after], _output, _error);
+
+        Assert.Equal(Commands.Different, exitCode);
+        Assert.Contains("\"Take [-with-] {+after+} food\"", _output.ToString());
+    }
+
+    [Fact]
+    public void Run_ShouldPrintTheDocxsSnapshot_WhenGivenADocx()
+    {
+        var docx = WriteDocx("letter.docx", "Hello");
+
+        Commands.Run(["snapshot", docx], _output, _error);
+
+        Assert.Equal(DocxDocument.Load(docx).ToSnapshot(), _output.ToString());
+    }
+
+    private string WriteDocx(string name, string text)
+    {
+        var path = Path.Combine(_folder, name);
+        File.WriteAllBytes(path, new Docx.TestDocx { Body = $"<w:p><w:r><w:t>{text}</w:t></w:r></w:p>" }.Build().ToArray());
+        return path;
+    }
+
     private string WritePdf(string name, string text)
     {
         var pdf = new TestPdf();

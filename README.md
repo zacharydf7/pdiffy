@@ -14,7 +14,7 @@ Byte-for-byte PDF snapshots fail for reasons that don't matter and explain nothi
 
 PDiffy records the content and leaves out the encoding. One snapshot covers Windows and Linux, and a failing test shows which element changed, on which page.
 
-The same files and workflow also work for text and JSON output, so a test project can keep every kind of snapshot in one place (see [Snapshot text and JSON](#snapshot-text-and-json)).
+The same files and workflow also work for Word documents (see [Snapshot Word documents](#snapshot-word-documents)) and for text and JSON output (see [Snapshot text and JSON](#snapshot-text-and-json)), so a test project can keep every kind of snapshot in one place.
 
 ## Getting started
 
@@ -137,6 +137,64 @@ A text failure lists each changed line by number, with the changed words marked:
 ```
 
 Text options scrub the whole text: `o => o.ScrubText(new Regex(@"Order \d+"), "Order N").ScrubDates()`. JSON scrubs strings (values or keys) that are a GUID or an ISO 8601 timestamp (`"2026-10-28T09:15:00Z"`), but leaves dates written for people, such as a letter's "November 14, 2020", and anything inside longer text, because that is content. Turn either off with `o => o.KeepGuids()` or `o => o.KeepDates()`; to scrub ids or dates inside text too, add `o => o.ScrubGuids()` or `o => o.ScrubDates()`. Pass `extension: "brf"` to name text files something other than `.txt`. A verified file that starts with a UTF-8 byte-order mark matches as if it didn't, so files approved by other tools carry over.
+
+### Snapshot Word documents
+
+`DocxSnapshot.VerifyAsync` does the same for DOCX files, with snapshots in `.verified.docx.txt` files. It reads the file directly, with no Word or Open XML SDK needed.
+
+```csharp
+[Fact]
+public async Task Letter_ShouldMatchApprovedSnapshot_WhenGenerated()
+{
+    using Stream docx = await LetterGenerator.CreateAsync();
+
+    await DocxSnapshot.VerifyAsync(docx);
+}
+```
+
+A DOCX snapshot reads like the document: one line per paragraph with its runs merged, and only what differs from its style listed.
+
+```
+# docx-snapshot v1
+document
+  title="Cheese list" lang=en-US compat=15 track-changes=no protection=none even-odd-headers=no created=<present> modified=<present>
+sections
+  s1 letter margins=72,72,72,72 header=36 footer=36 columns=1 break=nextPage headers=default
+styles
+  ListParagraph paragraph "List Paragraph" font="Arial" size=12 indent-left=36
+  TableGrid table "Table Grid"
+numbering
+  list 1 definition=3
+    level 0 format=upperLetter text="%1." start=1 indent=36 hanging=18
+body
+  P style=ListParagraph list=1:0 label="A." "Cheese has a long history"
+    span "long" bold
+  Table style=TableGrid widths=144,216
+    Row header
+      Cell
+        P "Drug"
+      Cell
+        P "Interacts with"
+  P "Visit example.com"
+    link "example.com" -> https://example.com at=6
+  P
+    image inline size=120x40 alt=(missing) type=png hash=3f9c0a1b2d4e5f60 at=0
+headers
+  s1 default
+    P "Page 3"
+      field "PAGE" result="3" at=5
+footers
+  (none)
+```
+
+The snapshot records the document settings, each section's page setup, the styles in use with their properties resolved through the styles they're based on, list labels as Word numbers them, paragraph layout and text formatting, tables (grid, header rows, merged cells, shading), images and charts with their alt text and a hash of the image, links, bookmarks, symbols, fields with their results, headers and footers, and inserted documents. Relationship ids, editing-session ids and the zip's layout are left out, so regenerating the same document gives the same snapshot.
+
+`DocxDocument.Load` gives the same content as properties, and `CompareTo` compares two documents. Options leave out sections or scrub text: `o => o.Ignore(DocxSection.Styles).ScrubDates()`.
+
+```csharp
+DocxDocument letter = DocxDocument.Load("letter.docx");
+Assert.All(letter.Images(), image => Assert.NotNull(image.AltText));
+```
 
 ### Leave out sections a test doesn't care about
 
@@ -358,13 +416,14 @@ dotnet tool install --global PDiffy.Cli
 ```
 
 ```
-# Compare two PDFs (or two snapshot files): prints what changed, exits with 0 when nothing did and 1 when something did.
+# Compare two PDFs, two DOCX files or two snapshot files: prints what changed, exits with 0 when nothing did and 1 when
+# something did.
 pdiffy statement-v1.pdf statement-v2.pdf
 
 # The same, also writing the side-by-side HTML report.
 pdiffy statement-v1.pdf statement-v2.pdf --html report.html
 
-# Print a PDF's snapshot, or save it to a file.
+# Print a PDF's or DOCX's snapshot, or save it to a file.
 pdiffy snapshot statement.pdf
 pdiffy snapshot statement.pdf statement.pdfua.txt
 
