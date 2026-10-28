@@ -106,6 +106,20 @@ public class LayoutTests
     }
 
     [Fact]
+    public void Load_ShouldStartANewRun_WhenTextOnALineIsSplitAcrossMarkedContent()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("BT /F1 12 Tf 72 400 Td /P << /MCID 0 >> BDC (Account Number: ) Tj EMC "
+            + "/P << /MCID 1 >> BDC (12345) Tj EMC ET");
+        pdf.Structure(new TestElement("P", 0, 1));
+
+        var document = pdf.Load();
+
+        Assert.Equal("Account Number: 12345", Assert.Single(document.Structure).Text);
+        Assert.Equal(["Account Number:", "12345"], document.TextRuns.Select(run => run.Text));
+    }
+
+    [Fact]
     public void Load_ShouldStartANewRun_WhenTextWrapsToTheNextLine()
     {
         var pdf = new TestPdf();
