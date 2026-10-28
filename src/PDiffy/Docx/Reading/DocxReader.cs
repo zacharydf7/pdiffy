@@ -47,6 +47,8 @@ internal sealed class DocxReader
         var sections = main.Descendants(W + "sectPr").Where(sectPr => sectPr.Parent?.Name != W + "sectPrChange").ToList();
         var headers = reader.HeadersAndFooters(sections, "headerReference");
         var footers = reader.HeadersAndFooters(sections, "footerReference");
+        var notes = reader.Notes("/footnotes", "footnote").Concat(reader.Notes("/endnotes", "endnote"))
+            .Concat(reader.Notes("/comments", "comment")).ToList();
         var core = package.Xml(package.Related("", "/core-properties"))?.Root;
         return new DocxDocument
         {
@@ -57,7 +59,19 @@ internal sealed class DocxReader
             Body = body,
             Headers = headers,
             Footers = footers,
+            Notes = notes,
         };
+    }
+
+    // Footnotes, endnotes and comments, each read like the body. The separator lines Word keeps as notes are left out.
+    private List<DocxNote> Notes(string relationship, string kind)
+    {
+        var part = _package.Related(_part, relationship);
+        if (_package.Xml(part)?.Root is not { } root) return [];
+        var reader = new DocxReader(_styles, _numbering, _package, part!, _usedStyles, _depth);
+        return root.Elements(W + kind).Where(note => Attr(note, "type") is null or "normal")
+            .Select(note => new DocxNote(kind, Integer(note, "id") ?? 0, NonEmpty(Attr(note, "author")), reader.Blocks(note).ToList()))
+            .ToList();
     }
 
     // Each section names its own headers and footers by kind; a part that can't be found is recorded as missing.
@@ -136,6 +150,7 @@ internal sealed class DocxReader
             if (element.Name == W + "p") yield return Paragraph(element);
             else if (element.Name == W + "tbl") yield return Table(element);
             else if (element.Name == W + "altChunk") yield return Inserted(element);
+            else if (element.Name == W + "sdt") yield return Control(element);
             else if (IsWrapper(element))
             {
                 foreach (var block in Blocks(element)) yield return block;
@@ -164,6 +179,14 @@ internal sealed class DocxReader
         var merge = properties?.Element(W + "vMerge") is { } vMerge ? Attr(vMerge, "val") ?? "continue" : null;
         var shading = NonEmpty(Attr(properties?.Element(W + "shd"), "fill")) is { } fill and not "auto" ? fill.ToUpperInvariant() : null;
         return new DocxCell(Blocks(cell).ToList(), Integer(properties?.Element(W + "gridSpan"), "val") ?? 1, merge, shading);
+    }
+
+    // A content control around paragraphs or tables keeps them, with the control's kind, tag and title.
+    private DocxControl Control(XElement control)
+    {
+        var (kind, name, title) = FormReader.Describe(control.Element(W + "sdtPr"));
+        var inner = control.Element(W + "sdtContent");
+        return new DocxControl(kind) { Name = name, Title = title, Blocks = inner is null ? [] : Blocks(inner).ToList() };
     }
 
     // An inserted DOCX (w:altChunk) is read in place as a document of its own, and the parts of it that can't be read

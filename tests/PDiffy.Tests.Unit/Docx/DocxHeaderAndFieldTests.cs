@@ -32,6 +32,8 @@ public class DocxHeaderAndFieldTests
                 P "Cover"
             footers
               (none)
+            notes
+              (none)
 
             """.ReplaceLineEndings("\n"), snapshot);
     }
@@ -159,7 +161,7 @@ public class DocxHeaderAndFieldTests
                 """,
         }.WithPart("first", "footer", "first.xml", Footer("One")).WithPart("second", "footer", "second.xml", Footer("Two"));
 
-        Assert.EndsWith("footers\n  s1 default\n    P \"One\"\n  s2 default\n    P \"Two\"\n", docx.Load().ToSnapshot());
+        Assert.EndsWith("footers\n  s1 default\n    P \"One\"\n  s2 default\n    P \"Two\"\nnotes\n  (none)\n", docx.Load().ToSnapshot());
     }
 
     [Fact]

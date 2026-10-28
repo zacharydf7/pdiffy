@@ -23,6 +23,9 @@ public enum DocxSection
     Headers,
 
     Footers,
+
+    /// <summary>Footnotes, endnotes and comments.</summary>
+    Notes,
 }
 
 /// <summary>

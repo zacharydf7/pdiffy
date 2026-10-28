@@ -9,8 +9,8 @@ internal static class DocxXml
     public static readonly XNamespace W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
     public static readonly XNamespace R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 
-    // Elements that only wrap content: content controls, custom XML, smart tags and tracked insertions.
-    private static readonly HashSet<string> Wrappers = ["sdt", "sdtContent", "customXml", "smartTag", "ins", "moveTo"];
+    // Elements that only wrap content: content controls, custom XML and smart tags.
+    private static readonly HashSet<string> Wrappers = ["sdt", "sdtContent", "customXml", "smartTag"];
 
     public static string? Attr(XElement? element, string name) => (string?)element?.Attribute(W + name);
 

@@ -185,15 +185,18 @@ headers
       field "PAGE" result="3" at=5
 footers
   (none)
+notes
+  (none)
 ```
 
-The snapshot records the document settings, each section's page setup, the styles in use with their properties resolved through the styles they're based on, list labels as Word numbers them, paragraph layout and text formatting, tables (grid, header rows, merged cells, shading), images and charts with their alt text and a hash of the image, links, bookmarks, symbols, fields with their results, headers and footers, and inserted documents. Relationship ids, editing-session ids and the zip's layout are left out, so regenerating the same document gives the same snapshot.
+The snapshot records the document settings, each section's page setup, the styles in use with their properties resolved through the styles they're based on, list labels as Word numbers them, paragraph layout and text formatting, tables (grid, header rows, merged cells, shading), images and charts with their alt text and a hash of the image, links, bookmarks, symbols, fields with their results, form controls, tracked changes, headers and footers, footnotes, endnotes and comments, and inserted documents. Relationship ids, editing-session ids and the zip's layout are left out, so regenerating the same document gives the same snapshot.
 
 `DocxDocument.Load` gives the same content as properties, and `CompareTo` compares two documents. Options leave out sections or scrub text: `o => o.Ignore(DocxSection.Styles).ScrubDates()`.
 
 ```csharp
 DocxDocument letter = DocxDocument.Load("letter.docx");
 Assert.All(letter.Images(), image => Assert.NotNull(image.AltText));
+Assert.Empty(letter.Revisions());
 ```
 
 ### Leave out sections a test doesn't care about

@@ -8,7 +8,8 @@ namespace PDiffy.Docx.Reading;
 
 /// <summary>
 /// Reads what's inside a paragraph: its text with runs merged, the parts where its look changes, and what sits in the
-/// text (images, links, bookmarks, symbols, fields and page or column breaks), each at its position.
+/// text (images, links, bookmarks, symbols, fields, form controls, note and comment references, tracked changes and page
+/// or column breaks), each at its position.
 /// </summary>
 internal sealed partial class InlineReader(StyleResolver styles, DocxPackage package, string part, HashSet<string> usedStyles)
 {
@@ -22,8 +23,29 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
 
         // A field can run on into the next paragraphs, as a table of contents does; it's recorded with what it has here.
         while (content.Fields.TryPop(out var field)) EndField(field, content);
+        ParagraphChanges(paragraph.Element(W + "pPr"), content);
         return content;
     }
+
+    // Changes to the paragraph itself: its mark inserted, deleted or moved (pressing Enter, or joining two paragraphs,
+    // with tracking on), recorded at its end, and its formatting changed.
+    private static void ParagraphChanges(XElement? pPr, ParagraphContent content)
+    {
+        foreach (var mark in pPr?.Element(W + "rPr")?.Elements() ?? [])
+        {
+            if (MarkKinds.TryGetValue(mark.Name.LocalName, out var kind) && mark.Name.Namespace == W)
+            {
+                content.Inlines.Add(new DocxRevision(kind, "", Attr(mark, "author"), content.Text.Length));
+            }
+        }
+
+        if (pPr?.Element(W + "pPrChange") is { } change) content.Inlines.Add(new DocxRevision("paragraph-format", "", Attr(change, "author"), 0));
+    }
+
+    private static readonly Dictionary<string, string> MarkKinds = new()
+    {
+        ["ins"] = "paragraph-insert", ["del"] = "paragraph-delete", ["moveTo"] = "paragraph-move-to", ["moveFrom"] = "paragraph-move-from",
+    };
 
     // A run inside the paragraph's properties (w:pPr) isn't allowed there, and Word may drop or move it; every such run
     // is recorded, with its w:t text, apart from the paragraph's text, so the misplaced run shows.
@@ -35,7 +57,6 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         }
     }
 
-    // Deleted text (tracked deletions, moves away) isn't part of the paragraph, so w:del and w:moveFrom are skipped.
     private void ReadContent(XElement container, ParagraphContent content)
     {
         foreach (var element in container.Elements().Where(element => element.Name.Namespace == W))
@@ -43,6 +64,9 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
             if (element.Name.LocalName == "r") ReadRun(element, content);
             else if (element.Name.LocalName == "hyperlink") ReadLink(element, content);
             else if (element.Name.LocalName == "fldSimple") ReadSimpleField(element, content);
+            else if (element.Name.LocalName is "ins" or "moveTo") ReadInsertion(element, content);
+            else if (element.Name.LocalName is "del" or "moveFrom") ReadDeletion(element, content);
+            else if (element.Name.LocalName == "sdt") ReadControl(element, content);
             else if (element.Name.LocalName == "bookmarkStart" && Attr(element, "name") is { } name and not "_GoBack")
             {
                 content.Inlines.Add(new DocxBookmark(name, content.Text.Length));
@@ -62,6 +86,33 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         content.Inlines.Insert(index, new DocxLink(content.Text.ToString(start, content.Text.Length - start), target, start));
     }
 
+    // Inserted text is part of the paragraph and is also recorded as a tracked change, with who made it.
+    private void ReadInsertion(XElement insertion, ParagraphContent content)
+    {
+        var (start, index) = (content.Text.Length, content.Inlines.Count);
+        ReadContent(insertion, content);
+        var kind = insertion.Name.LocalName == "ins" ? "insert" : "move-to";
+        var text = content.Text.ToString(start, content.Text.Length - start);
+        content.Inlines.Insert(index, new DocxRevision(kind, text, Attr(insertion, "author"), start));
+    }
+
+    // Deleted text (tracked deletions and moves away) isn't part of the paragraph; it's recorded where it was.
+    private static void ReadDeletion(XElement deletion, ParagraphContent content)
+    {
+        var text = string.Concat(deletion.Descendants().Where(item => item.Name == W + "delText" || item.Name == W + "t").Select(item => item.Value));
+        var kind = deletion.Name.LocalName == "del" ? "delete" : "move-from";
+        content.Inlines.Add(new DocxRevision(kind, text, Attr(deletion, "author"), content.Text.Length));
+    }
+
+    // A content control in a paragraph: its kind, tag and title, and the text it shows as its value.
+    private void ReadControl(XElement control, ParagraphContent content)
+    {
+        var (start, index) = (content.Text.Length, content.Inlines.Count);
+        if (control.Element(W + "sdtContent") is { } inner) ReadContent(inner, content);
+        var value = content.Text.ToString(start, content.Text.Length - start);
+        content.Inlines.Insert(index, FormReader.Control(control.Element(W + "sdtPr"), value, start));
+    }
+
     // A simple field is one element: its code and its result, the text of the runs inside it.
     private void ReadSimpleField(XElement field, ParagraphContent content)
     {
@@ -78,7 +129,7 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         switch (Attr(character, "fldCharType"))
         {
             case "begin":
-                content.Fields.Push(new OpenField(position, content.Inlines.Count));
+                content.Fields.Push(new OpenField(position, content.Inlines.Count, character.Element(W + "ffData")));
                 break;
             case "separate" when content.Fields.TryPeek(out var field):
                 field.InResult = true;
@@ -89,9 +140,11 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         }
     }
 
-    // A field nested in another's code, such as PAGE in { IF { PAGE } = 1 ... }, gives that code its result.
+    // A field nested in another's code, such as PAGE in { IF { PAGE } = 1 ... }, gives that code its result. A legacy
+    // form field (FORMTEXT, FORMCHECKBOX, FORMDROPDOWN) is also recorded as a form control, from its w:ffData.
     private static void EndField(OpenField field, ParagraphContent content)
     {
+        if (field.FormData is { } data) content.Inlines.Insert(field.Index, FormReader.LegacyField(data, field.Result.ToString(), field.Position));
         content.Inlines.Insert(field.Index, new DocxField(FieldCode(field.Code.ToString()), field.Result.ToString(), field.Position));
         if (content.Fields.TryPeek(out var outer) && !outer.InResult) outer.Code.Append(field.Result);
     }
@@ -104,6 +157,7 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         var characterStyle = Attr(rPr?.Element(W + "rStyle"), "val");
         if (characterStyle is not null) usedStyles.Add(characterStyle);
         var format = styles.Run(content.ParagraphRun, characterStyle, rPr);
+        var (start, index) = (content.Text.Length, content.Inlines.Count);
 
         var text = new StringBuilder();
 
@@ -160,6 +214,12 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
                 case "instrText" when content.Fields.TryPeek(out var field):
                     field.Code.Append(item.Value);
                     break;
+                case "footnoteReference" or "endnoteReference" when Integer(item, "id") is int id:
+                    content.Inlines.Add(new DocxNoteReference(item.Name.LocalName == "footnoteReference" ? "footnote" : "endnote", id, position));
+                    break;
+                case "commentReference" when Integer(item, "id") is int id:
+                    content.Inlines.Add(new DocxCommentReference(id, position));
+                    break;
                 case "drawing" when _drawings.Drawing(item, position) is { } image:
                     content.Inlines.Add(image);
                     break;
@@ -168,6 +228,9 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
                     break;
             }
         }
+
+        // A run whose formatting changed with tracking on is a tracked change of its text.
+        if (rPr?.Element(W + "rPrChange") is { } change) content.Inlines.Insert(index, new DocxRevision("format", text.ToString(), Attr(change, "author"), start));
 
         if (text.Length == 0) return;
         content.Text.Append(text);
@@ -180,11 +243,15 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
     private static partial Regex Whitespace();
 }
 
-/// <summary>A complex field that has begun and not yet ended: where it starts, its code and result so far.</summary>
-internal sealed class OpenField(int position, int index)
+/// <summary>
+/// A complex field that has begun and not yet ended: where it starts, its code and result so far, and the settings of a
+/// legacy form field (w:ffData) when it is one.
+/// </summary>
+internal sealed class OpenField(int position, int index, XElement? formData)
 {
     public int Position { get; } = position;
     public int Index { get; } = index;
+    public XElement? FormData { get; } = formData;
     public StringBuilder Code { get; } = new();
     public StringBuilder Result { get; } = new();
     public bool InResult { get; set; }

@@ -16,7 +16,7 @@ public sealed record DocxDocument
     /// <summary>The lists the document uses, each with the levels it uses.</summary>
     public IReadOnlyList<DocxList> Lists { get; init; } = [];
 
-    /// <summary>Paragraphs, tables and inserted documents in reading order.</summary>
+    /// <summary>Paragraphs, tables, content controls and inserted documents in reading order.</summary>
     public IReadOnlyList<DocxBlock> Body { get; init; } = [];
 
     /// <summary>Each section's headers, by kind.</summary>
@@ -24,6 +24,9 @@ public sealed record DocxDocument
 
     /// <summary>Each section's footers, by kind.</summary>
     public IReadOnlyList<DocxHeaderFooter> Footers { get; init; } = [];
+
+    /// <summary>Footnotes, endnotes and comments, with what each says.</summary>
+    public IReadOnlyList<DocxNote> Notes { get; init; } = [];
 
     /// <summary>Reads the DOCX in a stream. The stream is left open.</summary>
     /// <remarks>A part that can't be read is listed in <see cref="DocxInfo.UnreadableParts"/>; a file that can't be opened throws.</remarks>
@@ -49,15 +52,38 @@ public sealed record DocxDocument
     public SnapshotDiff CompareTo(DocxDocument other, Action<DocxSnapshotOptions>? configure = null) =>
         SnapshotDiff.Compare(ToSnapshot(configure), other.ToSnapshot(configure));
 
-    /// <summary>Every paragraph of the body in reading order, including those inside tables and inserted documents.</summary>
+    /// <summary>
+    /// Every paragraph of the body in reading order, including those inside tables, content controls and inserted documents.
+    /// </summary>
     public IEnumerable<DocxParagraph> Paragraphs() => Paragraphs(Body);
 
     /// <summary>
-    /// Every image and other graphic (chart, diagram, shape) in the body, headers and footers, such as for checking alt text.
+    /// Every image and other graphic (chart, diagram, shape) in the body, headers, footers and notes, such as for checking
+    /// alt text.
     /// </summary>
-    public IEnumerable<DocxImage> Images() =>
-        Paragraphs(Body.Concat(Headers.Concat(Footers).SelectMany(item => item.Blocks ?? [])))
-            .SelectMany(paragraph => paragraph.Inlines.OfType<DocxImage>());
+    public IEnumerable<DocxImage> Images() => AllParagraphs().SelectMany(paragraph => paragraph.Inlines.OfType<DocxImage>());
+
+    /// <summary>
+    /// Every tracked insertion, deletion, move and formatting change of text and paragraphs in the body, headers, footers
+    /// and notes, including inserted documents, such as for checking that none shipped. Changes to table rows and
+    /// sections aren't recorded.
+    /// </summary>
+    public IEnumerable<DocxRevision> Revisions() => AllParagraphs().SelectMany(paragraph => paragraph.Inlines.OfType<DocxRevision>());
+
+    // Inserted documents' notes count as this document's, since Word brings them in with the inserted text.
+    private IEnumerable<DocxParagraph> AllParagraphs()
+    {
+        var blocks = Body.Concat(Headers.Concat(Footers).SelectMany(item => item.Blocks ?? [])).Concat(Notes.SelectMany(note => note.Blocks));
+        return Paragraphs(blocks.Concat(InsertedDocuments(Body).SelectMany(document => document.Notes.SelectMany(note => note.Blocks))));
+    }
+
+    private static IEnumerable<DocxDocument> InsertedDocuments(IEnumerable<DocxBlock> blocks) => blocks.SelectMany(block => block switch
+    {
+        DocxInserted { Document: { } document } => InsertedDocuments(document.Body).Prepend(document),
+        DocxTable table => InsertedDocuments(table.Rows.SelectMany(row => row.Cells).SelectMany(cell => cell.Blocks)),
+        DocxControl control => InsertedDocuments(control.Blocks),
+        _ => [],
+    });
 
     private static IEnumerable<DocxParagraph> Paragraphs(IEnumerable<DocxBlock> blocks)
     {
@@ -68,6 +94,7 @@ public sealed record DocxDocument
             {
                 DocxTable table => table.Rows.SelectMany(row => row.Cells).SelectMany(cell => cell.Blocks),
                 DocxInserted inserted => inserted.Document?.Body ?? [],
+                DocxControl control => control.Blocks,
                 _ => [],
             };
             foreach (var nested in Paragraphs(nestedBlocks)) yield return nested;
@@ -277,6 +304,37 @@ public sealed record DocxField(string Code, string Result, int Position) : DocxI
 /// </summary>
 public sealed record DocxStrayText(string Text, int Position) : DocxInline(Position);
 
+/// <summary>
+/// A tracked change and who made it: "insert", "delete", "move-to" or "move-from" with the text it covers; "format" for a
+/// run whose formatting changed, with its text; or "paragraph-insert", "paragraph-delete", "paragraph-move-to",
+/// "paragraph-move-from" or "paragraph-format" for the paragraph itself, with no text.
+/// </summary>
+public sealed record DocxRevision(string Kind, string Text, string? Author, int Position) : DocxInline(Position);
+
+/// <summary>Where a footnote or endnote is referenced. <see cref="DocxDocument.Notes"/> has what the note says.</summary>
+public sealed record DocxNoteReference(string Kind, int Id, int Position) : DocxInline(Position);
+
+/// <summary>Where a comment is attached. <see cref="DocxDocument.Notes"/> has what the comment says.</summary>
+public sealed record DocxCommentReference(int Id, int Position) : DocxInline(Position);
+
+/// <summary>
+/// A form control in the text: a content control (Kind "text", "rich-text", "dropdown", "combobox", "date", "checkbox"
+/// and so on) or a legacy form field (Kind "legacy-text", "legacy-checkbox" or "legacy-dropdown"). Name is a content
+/// control's tag or a legacy field's name; a check box's Value is "yes" or "no".
+/// </summary>
+public sealed record DocxForm(string Kind, int Position) : DocxInline(Position)
+{
+    public string? Name { get; init; }
+
+    /// <summary>A content control's title, which Word shows on it.</summary>
+    public string? Title { get; init; }
+
+    public string? Value { get; init; }
+
+    /// <summary>The choices of a drop-down or combo box.</summary>
+    public IReadOnlyList<string> Items { get; init; } = [];
+}
+
 /// <summary>A page or column break.</summary>
 public sealed record DocxBreak(string Kind, int Position) : DocxInline(Position);
 
@@ -314,6 +372,19 @@ public sealed record DocxImage(int Position) : DocxInline(Position)
 
     public string? Type { get; init; }
     public string? Hash { get; init; }
+}
+
+/// <summary>A footnote, endnote or comment: its kind, id, a comment's author and what it says.</summary>
+public sealed record DocxNote(string Kind, int Id, string? Author, IReadOnlyList<DocxBlock> Blocks);
+
+/// <summary>A content control around paragraphs or tables, such as a repeating section or a rich-text box.</summary>
+public sealed record DocxControl(string Kind) : DocxBlock
+{
+    /// <summary>The control's tag.</summary>
+    public string? Name { get; init; }
+
+    public string? Title { get; init; }
+    public IReadOnlyList<DocxBlock> Blocks { get; init; } = [];
 }
 
 /// <summary>A section's header or footer of one kind: "default", "first" or "even". Blocks is null when its part can't be found.</summary>

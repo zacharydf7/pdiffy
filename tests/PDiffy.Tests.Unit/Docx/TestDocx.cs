@@ -40,8 +40,11 @@ internal sealed class TestDocx
     public TestDocx WithImage(string id, string fileName, byte[] bytes) => WithPart(id, "image", $"media/{fileName}", bytes);
 
     /// <summary>Adds a header part a section can name with r:id="{id}"; the content goes inside w:hdr.</summary>
-    public TestDocx WithHeader(string id, string content) =>
-        WithPart(id, "header", $"{id}.xml", Encoding.UTF8.GetBytes($"<w:hdr {Namespaces}>{content}</w:hdr>"));
+    public TestDocx WithHeader(string id, string content) => WithXmlPart(id, "header", "hdr", content);
+
+    /// <summary>Adds an XML part related as {relationshipType}, with the content inside a w:{root} element.</summary>
+    public TestDocx WithXmlPart(string id, string relationshipType, string root, string content) =>
+        WithPart(id, relationshipType, $"{id}.xml", Encoding.UTF8.GetBytes($"<w:{root} {Namespaces}>{content}</w:{root}>"));
 
     /// <summary>
     /// Adds any part related to the document as {relationshipType}, at word/{path}. Null bytes add only the

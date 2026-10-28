@@ -40,6 +40,7 @@ internal sealed class DocxSnapshotWriter
         });
         WriteSection(DocxSection.Headers, () => WriteHeadersAndFooters(document.Headers));
         WriteSection(DocxSection.Footers, () => WriteHeadersAndFooters(document.Footers));
+        WriteSection(DocxSection.Notes, () => WriteNotes(document.Notes, 1));
         return _snapshot.ToString();
     }
 
@@ -137,7 +138,29 @@ internal sealed class DocxSnapshotWriter
             if (block is DocxParagraph paragraph) WriteParagraph(paragraph, depth);
             else if (block is DocxTable table) WriteTable(table, depth);
             else if (block is DocxInserted inserted) WriteInserted(inserted, depth);
+            else if (block is DocxControl control) WriteControl(control, depth);
         }
+    }
+
+    private void WriteNotes(IReadOnlyList<DocxNote> notes, int depth)
+    {
+        if (notes.Count == 0) Line(depth, None);
+        foreach (var note in notes)
+        {
+            var line = new StringBuilder($"{note.Kind} {note.Id}");
+            Key(line, "author", Quote(note.Author));
+            Line(depth, line.ToString());
+            WriteBlocks(note.Blocks, depth + 1);
+        }
+    }
+
+    private void WriteControl(DocxControl control, int depth)
+    {
+        var line = new StringBuilder($"Control {control.Kind}");
+        Key(line, "name", Quote(control.Name));
+        Key(line, "title", Quote(control.Title));
+        Line(depth, line.ToString());
+        WriteBlocks(control.Blocks, depth + 1);
     }
 
     private void WriteHeadersAndFooters(IReadOnlyList<DocxHeaderFooter> items)
@@ -170,6 +193,9 @@ internal sealed class DocxSnapshotWriter
         writer.Line(depth + 1, "body");
         if (document.Body.Count == 0) writer.Line(depth + 2, None);
         writer.WriteBlocks(document.Body, depth + 2);
+        writer.Line(depth + 1, "notes");
+        if (_options.Ignores(DocxSection.Notes)) writer.Line(depth + 2, "(ignored)");
+        else writer.WriteNotes(document.Notes, depth + 2);
     }
 
     // A paragraph lists how its layout differs from its style's, as a span lists how its look differs from the paragraph's.
@@ -213,6 +239,23 @@ internal sealed class DocxSnapshotWriter
             case DocxField field:
                 line.Append($"field {Quote(field.Code)}");
                 Key(line, "result", Quote(field.Result));
+                break;
+            case DocxRevision revision:
+                line.Append($"{revision.Kind} {Quote(revision.Text)}");
+                Key(line, "author", Quote(revision.Author));
+                break;
+            case DocxNoteReference note:
+                line.Append($"note {note.Kind} {note.Id}");
+                break;
+            case DocxCommentReference comment:
+                line.Append($"comment {comment.Id}");
+                break;
+            case DocxForm form:
+                line.Append($"form {form.Kind}");
+                Key(line, "name", Quote(form.Name));
+                Key(line, "title", Quote(form.Title));
+                Key(line, "value", Quote(form.Value));
+                Key(line, "items", form.Items.Count > 0 ? string.Join(",", form.Items.Select(Quote)) : null);
                 break;
             case DocxStrayText stray:
                 line.Append($"stray-text {Quote(stray.Text)}");

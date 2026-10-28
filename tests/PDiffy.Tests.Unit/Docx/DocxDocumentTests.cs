@@ -40,6 +40,8 @@ public class DocxDocumentTests
               (none)
             footers
               (none)
+            notes
+              (none)
 
             """;
         Assert.Equal(expected.ReplaceLineEndings("\n"), snapshot);
