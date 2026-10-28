@@ -43,8 +43,11 @@ public static class Snapshot
 
     /// <summary>
     /// Compares JSON with the verified file after writing it the same way every time: two-space indentation, keys in the
-    /// order written. GUIDs and dates are scrubbed unless <see cref="TextSnapshotOptions.KeepGuids"/> or
-    /// <see cref="TextSnapshotOptions.KeepDates"/> says otherwise. Invalid JSON throws <see cref="SnapshotException"/>.
+    /// order written. Strings (values or keys) that are a GUID or an ISO 8601 timestamp, such as an id or a creation time,
+    /// are scrubbed unless <see cref="TextSnapshotOptions.KeepGuids"/> or <see cref="TextSnapshotOptions.KeepDates"/> says
+    /// otherwise; dates written for people, and anything inside longer text, stay unless
+    /// <see cref="TextSnapshotOptions.ScrubGuids"/> or <see cref="TextSnapshotOptions.ScrubDates"/> asks for them too.
+    /// Invalid JSON throws <see cref="SnapshotException"/>.
     /// </summary>
     /// <param name="json">The JSON to check.</param>
     /// <param name="name">The snapshot's file name without extension. Defaults to the test file and method.</param>
@@ -55,7 +58,7 @@ public static class Snapshot
     public static Task VerifyJsonAsync(string json, string? name = null, Action<TextSnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "", [CallerMemberName] string testName = "")
     {
-        var options = new TextSnapshotOptions().ScrubGuids().ScrubDates();
+        var options = new TextSnapshotOptions().ScrubJsonValues();
         configure?.Invoke(options);
         var files = SnapshotWorkflow.Files(name, "json", directory, testFile, testName);
         return SnapshotWorkflow.VerifyAsync(Scrub(Indent(json, files.Name), options), files, "JSON");

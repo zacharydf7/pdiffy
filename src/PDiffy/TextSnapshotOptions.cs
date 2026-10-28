@@ -34,17 +34,24 @@ public sealed class TextSnapshotOptions
         return this;
     }
 
-    /// <summary>Leaves dates as they are. JSON snapshots scrub them unless told to keep them.</summary>
+    /// <summary>Leaves dates as they are. JSON snapshots scrub strings that are a timestamp unless told to keep them.</summary>
     public TextSnapshotOptions KeepDates()
     {
-        _scrubbers.RemoveAll(scrubber => scrubber == Scrubber.Dates);
+        _scrubbers.RemoveAll(scrubber => scrubber == Scrubber.Dates || scrubber == Scrubber.JsonDates);
         return this;
     }
 
-    /// <summary>Leaves GUIDs as they are. JSON snapshots scrub them unless told to keep them.</summary>
+    /// <summary>Leaves GUIDs as they are. JSON snapshots scrub strings that are a GUID unless told to keep them.</summary>
     public TextSnapshotOptions KeepGuids()
     {
-        _scrubbers.RemoveAll(scrubber => scrubber == Scrubber.Guids);
+        _scrubbers.RemoveAll(scrubber => scrubber == Scrubber.Guids || scrubber == Scrubber.JsonGuids);
+        return this;
+    }
+
+    internal TextSnapshotOptions ScrubJsonValues()
+    {
+        _scrubbers.Add(Scrubber.JsonGuids);
+        _scrubbers.Add(Scrubber.JsonDates);
         return this;
     }
 

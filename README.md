@@ -120,7 +120,7 @@ public async Task Job_ShouldMatchApprovedSnapshot_WhenSubmitted()
 {
     string json = await client.GetStringAsync("/jobs/latest");
 
-    // Indented with two spaces, keys kept in the order written, GUIDs and dates replaced by Guid_1 and Date_1.
+    // Indented with two spaces, keys kept in the order written, id and timestamp values replaced by Guid_1 and Date_1.
     // Saved as {name}.verified.json.
     await Snapshot.VerifyJsonAsync(json);
 }
@@ -136,7 +136,7 @@ A text failure lists each changed line by number, with the changed words marked:
       "c": 3
 ```
 
-Text options scrub the whole text: `o => o.ScrubText(new Regex(@"Order \d+"), "Order N").ScrubDates()`. JSON scrubs GUIDs and dates unless told not to: `o => o.KeepDates()`. Pass `extension: "brf"` to name text files something other than `.txt`. A verified file that starts with a UTF-8 byte-order mark matches as if it didn't, so files approved by other tools carry over.
+Text options scrub the whole text: `o => o.ScrubText(new Regex(@"Order \d+"), "Order N").ScrubDates()`. JSON scrubs strings (values or keys) that are a GUID or an ISO 8601 timestamp (`"2026-10-28T09:15:00Z"`), but leaves dates written for people, such as a letter's "November 14, 2020", and anything inside longer text, because that is content. Turn either off with `o => o.KeepGuids()` or `o => o.KeepDates()`; to scrub ids or dates inside text too, add `o => o.ScrubGuids()` or `o => o.ScrubDates()`. Pass `extension: "brf"` to name text files something other than `.txt`. A verified file that starts with a UTF-8 byte-order mark matches as if it didn't, so files approved by other tools carry over.
 
 ### Leave out sections a test doesn't care about
 

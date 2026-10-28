@@ -17,6 +17,15 @@ internal sealed record Scrubber(Regex Pattern, string Replacement, bool Numbered
     public static readonly Scrubber Guids = new(
         new Regex(@"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", RegexOptions.IgnoreCase),
         "Guid", Numbered: true);
+
+    // JSON strings (values or keys) that are a timestamp or a GUID and nothing more, such as "2026-10-28T09:15:00Z".
+    // Serializers write timestamps in ISO 8601, so a date written for people, such as a letter's "November 14, 2020",
+    // is content and stays, alone or inside longer text. An escaped quote (\") is inside a string, not its start.
+    public static readonly Scrubber JsonDates = new(WholeString(@"\d{4}-\d{2}-\d{2}" + Time), "Date", Numbered: true);
+
+    public static readonly Scrubber JsonGuids = new(WholeString(Guids.Pattern.ToString()), "Guid", Numbered: true);
+
+    private static Regex WholeString(string pattern) => new($"(?<=(?<!\\\\)\")({pattern})(?=\")", RegexOptions.IgnoreCase);
 }
 
 /// <summary>Applies scrubbers to text, keeping numbered tokens consistent across every call on one instance.</summary>

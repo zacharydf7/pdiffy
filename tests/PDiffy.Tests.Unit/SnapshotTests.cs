@@ -110,6 +110,37 @@ public sealed class SnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public async Task VerifyJsonAsync_ShouldKeepADate_WhenItIsWrittenForPeopleOrPartOfLongerText()
+    {
+        var json = """{"Date":"January 12, 2022","Text":"Sent 2020-11-14 to 0f8fad5b-d9cb-469f-a165-70867728950e"}""";
+
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyJsonAsync(json, "Letter"));
+
+        var expected = "{\n  \"Date\": \"January 12, 2022\",\n  \"Text\": \"Sent 2020-11-14 to 0f8fad5b-d9cb-469f-a165-70867728950e\"\n}\n";
+        Assert.Equal(expected, File.ReadAllText(Path.Combine(Folder, "Letter.received.json")));
+    }
+
+    [Fact]
+    public async Task VerifyJsonAsync_ShouldKeepADate_WhenItFollowsAQuoteMarkInsideText()
+    {
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyJsonAsync("""{"Text":"He wrote \"2020-11-14"}""", "Letter"));
+
+        Assert.Contains("2020-11-14", File.ReadAllText(Path.Combine(Folder, "Letter.received.json")));
+    }
+
+    [Fact]
+    public async Task VerifyJsonAsync_ShouldScrubDatesAndGuidsInsideText_WhenToldToScrubThem()
+    {
+        var guid = "0f8fad5b-d9cb-469f-a165-70867728950e";
+        var json = $$"""{"Created":"2020-11-14","Text":"Sent 2020-11-14 to {{guid}}"}""";
+
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyJsonAsync(json, "Letter", o => o.ScrubDates().ScrubGuids()));
+
+        var expected = "{\n  \"Created\": \"Date_1\",\n  \"Text\": \"Sent Date_1 to Guid_1\"\n}\n";
+        Assert.Equal(expected, File.ReadAllText(Path.Combine(Folder, "Letter.received.json")));
+    }
+
+    [Fact]
     public async Task VerifyJsonAsync_ShouldLeaveGuidsAndDates_WhenToldToKeepThem()
     {
         var json = """{"Id":"0f8fad5b-d9cb-469f-a165-70867728950e","Created":"2026-10-28"}""";
