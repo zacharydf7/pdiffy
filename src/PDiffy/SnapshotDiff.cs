@@ -87,11 +87,13 @@ public sealed class SnapshotDiff
             changes.Add(new SnapshotChange(ChangeKind.Changed, null, "header", null, string.Join("\n", detail)));
         }
 
+        // Section names a PDF snapshot's sections; other formats, such as DOCX, have sections of their own.
+        var pdf = before.StartsWith(SnapshotWriter.FormatHeader, StringComparison.Ordinal);
         var beforeSections = SnapshotTree.Parse(before);
         var afterSections = SnapshotTree.Parse(after);
         foreach (var name in beforeSections.Keys.Union(afterSections.Keys))
         {
-            var matcher = new TreeMatcher(name, SectionNamed(name));
+            var matcher = new TreeMatcher(name, pdf ? SectionNamed(name) : null);
             changes.AddRange(matcher.Compare(beforeSections.GetValueOrDefault(name) ?? [],
                 afterSections.GetValueOrDefault(name) ?? []));
         }
