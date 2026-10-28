@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Snapshot tests for PDFs that compare what a document says, not how its bytes are encoded: tag structure, text, alt text, reading order, tables, links, fonts, forms and layout, written as plain text that reads like a change to the document when a test fails.</Description>
+    <!-- Ships the doc comments for IntelliSense. Comments describe only what needs explaining, so a member or parameter
+         without one doesn't fail the build. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PdfPig" Version="0.1.16" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PDiffy.Tests.Unit" />
+    <InternalsVisibleTo Include="PDiffy.Cli" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,7 @@
+* text=auto
+
+# Snapshot files: LF everywhere so Windows and Linux compare equal
+*.verified.* text eol=lf
+*.received.* text eol=lf
+
+*.pdf binary

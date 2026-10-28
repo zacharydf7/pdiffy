@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>pdiffy</ToolCommandName>
+    <Description>The pdiffy command: compare two PDFs or snapshot files, print a PDF's snapshot, and accept received snapshots from PDiffy tests.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PDiffy\PDiffy.csproj" />
+  </ItemGroup>
+
+</Project>
