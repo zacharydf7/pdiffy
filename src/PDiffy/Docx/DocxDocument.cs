@@ -39,6 +39,9 @@ public sealed record DocxDocument
     /// <summary>Every paragraph in reading order, including those inside tables.</summary>
     public IEnumerable<DocxParagraph> Paragraphs() => Paragraphs(Body);
 
+    /// <summary>Every image and other graphic (chart, diagram, shape) in reading order, such as for checking alt text.</summary>
+    public IEnumerable<DocxImage> Images() => Paragraphs().SelectMany(paragraph => paragraph.Inlines.OfType<DocxImage>());
+
     private static IEnumerable<DocxParagraph> Paragraphs(IEnumerable<DocxBlock> blocks)
     {
         foreach (var block in blocks)
@@ -207,8 +210,8 @@ public sealed record DocxParagraph : DocxBlock
     /// <summary>The text cut where its look changes, each part with its full formatting.</summary>
     public IReadOnlyList<DocxSpan> Spans { get; init; } = [];
 
-    /// <summary>Page and column breaks, each with its position in <see cref="Text"/>.</summary>
-    public IReadOnlyList<DocxBreak> Breaks { get; init; } = [];
+    /// <summary>What sits in the text, in reading order: images, links, bookmarks, symbols and page or column breaks.</summary>
+    public IReadOnlyList<DocxInline> Inlines { get; init; } = [];
 
     /// <summary>The section this paragraph ends, numbered from 1, or null.</summary>
     public int? EndsSection { get; init; }
@@ -236,14 +239,63 @@ public sealed record DocxListLevel(int Level, string? Format, string? Text, int?
 /// <summary>Part of a paragraph's text and how it looks.</summary>
 public sealed record DocxSpan(string Text, RunFormat Format);
 
-/// <summary>A page or column break, at a position in its paragraph's text.</summary>
-public sealed record DocxBreak(string Kind, int Position);
+/// <summary>Something in a paragraph's text. <see cref="Position"/> is where, counted in characters of its text.</summary>
+public abstract record DocxInline(int Position);
+
+/// <summary>A page or column break.</summary>
+public sealed record DocxBreak(string Kind, int Position) : DocxInline(Position);
+
+/// <summary>A link: the text it covers and where it goes, a URL or "#bookmark" for a place in the document.</summary>
+public sealed record DocxLink(string Text, string? Target, int Position) : DocxInline(Position);
+
+/// <summary>A named place in the document that links and cross-references can point to.</summary>
+public sealed record DocxBookmark(string Name, int Position) : DocxInline(Position);
+
+/// <summary>A character from a symbol font, such as Wingdings: the font and the character's code in hex.</summary>
+public sealed record DocxSymbol(string? Font, string Code, int Position) : DocxInline(Position);
+
+/// <summary>
+/// An image or other graphic. Width and height are in points. For a picture, <see cref="Hash"/> is the first 16 hex
+/// digits of the image's SHA-256, which catches a swapped image, and <see cref="Type"/> its file type, such as "png".
+/// </summary>
+public sealed record DocxImage(int Position) : DocxInline(Position)
+{
+    /// <summary>"image" for a picture; otherwise what the graphic is, such as "chart", "diagram" or "shape".</summary>
+    public string Kind { get; init; } = "image";
+
+    /// <summary>Whether text flows around the image rather than the image sitting in the line.</summary>
+    public bool Floating { get; init; }
+
+    public double Width { get; init; }
+    public double Height { get; init; }
+
+    /// <summary>The description a screen reader reads, or null when the image has none.</summary>
+    public string? AltText { get; init; }
+
+    public string? Title { get; init; }
+
+    /// <summary>Whether the image is marked as decoration, which a screen reader skips.</summary>
+    public bool Decorative { get; init; }
+
+    public string? Type { get; init; }
+    public string? Hash { get; init; }
+}
 
 public sealed record DocxTable : DocxBlock
 {
+    public string? Style { get; init; }
+
+    /// <summary>The width of each column of the table's grid, in points.</summary>
+    public IReadOnlyList<double> Widths { get; init; } = [];
+
     public IReadOnlyList<DocxRow> Rows { get; init; } = [];
 }
 
-public sealed record DocxRow(IReadOnlyList<DocxCell> Cells);
+/// <summary>A table row. A header row repeats at the top of each page the table runs onto.</summary>
+public sealed record DocxRow(IReadOnlyList<DocxCell> Cells, bool IsHeader = false);
 
-public sealed record DocxCell(IReadOnlyList<DocxBlock> Blocks);
+/// <summary>
+/// A table cell. <see cref="Span"/> is how many grid columns it covers; <see cref="Merge"/> is "restart" for the top of
+/// cells merged down a column and "continue" for those below it; <see cref="Shading"/> is its fill color in hex.
+/// </summary>
+public sealed record DocxCell(IReadOnlyList<DocxBlock> Blocks, int Span = 1, string? Merge = null, string? Shading = null);

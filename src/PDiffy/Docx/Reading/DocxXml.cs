@@ -7,6 +7,10 @@ namespace PDiffy.Docx.Reading;
 internal static class DocxXml
 {
     public static readonly XNamespace W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+    public static readonly XNamespace R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
+    // Elements that only wrap content: content controls, custom XML, smart tags, tracked insertions and simple fields.
+    private static readonly HashSet<string> Wrappers = ["sdt", "sdtContent", "customXml", "smartTag", "ins", "moveTo", "fldSimple"];
 
     public static string? Attr(XElement? element, string name) => (string?)element?.Attribute(W + name);
 
@@ -22,6 +26,8 @@ internal static class DocxXml
         int.TryParse(Attr(element, attribute), CultureInfo.InvariantCulture, out var value) ? value : null;
 
     public static string? NonEmpty(string? value) => string.IsNullOrEmpty(value) ? null : value;
+
+    public static bool IsWrapper(XElement element) => element.Name.Namespace == W && Wrappers.Contains(element.Name.LocalName);
 
     public static string Points(double value) => Math.Round(value, 1).ToString("0.#", CultureInfo.InvariantCulture);
 }

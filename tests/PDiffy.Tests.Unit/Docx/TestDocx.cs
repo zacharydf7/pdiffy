@@ -33,13 +33,32 @@ internal sealed class TestDocx
     /// <summary>Replaces a part's whole content, for writing broken files.</summary>
     public Dictionary<string, string> RawParts { get; } = [];
 
+    private readonly Dictionary<string, byte[]> _media = [];
+    private readonly StringBuilder _relationships = new();
+
+    /// <summary>Adds an image file the body can show with r:embed="{id}".</summary>
+    public TestDocx WithImage(string id, string fileName, byte[] bytes)
+    {
+        _media[$"word/media/{fileName}"] = bytes;
+        _relationships.Append(Relationship("image", $"media/{fileName}").Replace("Id=\"rimage\"", $"Id=\"{id}\""));
+        return this;
+    }
+
+    /// <summary>Adds a link address the body can use with r:id="{id}".</summary>
+    public TestDocx WithLink(string id, string url)
+    {
+        _relationships.Append($"<Relationship Id=\"{id}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
+            + $"hyperlink\" Target=\"{url}\" TargetMode=\"External\"/>");
+        return this;
+    }
+
     public MemoryStream Build()
     {
         var parts = new Dictionary<string, string>
         {
             ["word/document.xml"] = $"<w:document {Namespaces}><w:body>{Body}</w:body></w:document>",
         };
-        var relationships = new StringBuilder();
+        var relationships = new StringBuilder(_relationships.ToString());
         if (Styles is not null)
         {
             parts["word/styles.xml"] = $"<w:styles {Namespaces}>{Styles}</w:styles>";
@@ -88,6 +107,12 @@ internal sealed class TestDocx
             {
                 using var writer = new StreamWriter(zip.CreateEntry(name).Open(), new UTF8Encoding(false));
                 writer.Write(content);
+            }
+
+            foreach (var (name, bytes) in _media)
+            {
+                using var entry = zip.CreateEntry(name).Open();
+                entry.Write(bytes);
             }
         }
 

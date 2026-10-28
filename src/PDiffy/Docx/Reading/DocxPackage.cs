@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -13,6 +14,7 @@ internal sealed class DocxPackage : IDisposable
     private static readonly XNamespace Relationships = "http://schemas.openxmlformats.org/package/2006/relationships";
 
     private readonly ZipArchive _zip;
+    private readonly Dictionary<string, List<XElement>> _relationships = [];
 
     public DocxPackage(Stream stream)
     {
@@ -23,6 +25,14 @@ internal sealed class DocxPackage : IDisposable
     public string MainPart { get; }
 
     public List<string> Unreadable { get; } = [];
+
+    /// <summary>The first 16 hex digits of a part's SHA-256, such as an image's, or null when there's no such part.</summary>
+    public string? Hash(string? part)
+    {
+        if (part is null || _zip.GetEntry(part) is not { } entry) return null;
+        using var stream = entry.Open();
+        return Convert.ToHexStringLower(SHA256.HashData(stream))[..16];
+    }
 
     public XDocument? Xml(string? part)
     {
@@ -43,15 +53,31 @@ internal sealed class DocxPackage : IDisposable
     /// The part related to <paramref name="part"/> whose relationship type ends with the given name, such as
     /// "/styles", as a part name like "word/styles.xml".
     /// </summary>
-    public string? Related(string part, string typeEnding)
+    public string? Related(string part, string typeEnding) => Target(part,
+        RelationshipsOf(part).FirstOrDefault(rel => ((string?)rel.Attribute("Type"))?.EndsWith(typeEnding, StringComparison.Ordinal) == true));
+
+    /// <summary>
+    /// Where a relationship of a part points, by its id (r:id, r:embed): a part name for something in the file, or the
+    /// address as written for something outside it, such as a link's URL.
+    /// </summary>
+    public string? Target(string part, string id) =>
+        Target(part, RelationshipsOf(part).FirstOrDefault(rel => (string?)rel.Attribute("Id") == id));
+
+    private string? Target(string part, XElement? relationship)
     {
+        if ((string?)relationship?.Attribute("Target") is not { } target) return null;
+        if ((string?)relationship.Attribute("TargetMode") == "External") return target;
+        return Resolve(part.Contains('/') ? part[..part.LastIndexOf('/')] : "", target);
+    }
+
+    // Read once per part: a document with many images or links looks each one up.
+    private List<XElement> RelationshipsOf(string part)
+    {
+        if (_relationships.TryGetValue(part, out var cached)) return cached;
         var folder = part.Contains('/') ? part[..part.LastIndexOf('/')] : "";
         var name = part[(part.LastIndexOf('/') + 1)..];
         var relationships = Xml(folder.Length == 0 ? $"_rels/{name}.rels" : $"{folder}/_rels/{name}.rels")?.Root;
-        var target = relationships?.Elements(Relationships + "Relationship")
-            .Where(rel => ((string?)rel.Attribute("Type"))?.EndsWith(typeEnding, StringComparison.Ordinal) == true)
-            .Select(rel => (string?)rel.Attribute("Target")).FirstOrDefault();
-        return target is null ? null : Resolve(folder, target);
+        return _relationships[part] = relationships?.Elements(Relationships + "Relationship").ToList() ?? [];
     }
 
     public void Dispose() => _zip.Dispose();

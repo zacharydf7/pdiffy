@@ -144,19 +144,60 @@ internal sealed class DocxSnapshotWriter
             Line(depth + 1, spanLine.ToString());
         }
 
-        foreach (var pageBreak in paragraph.Breaks) Line(depth + 1, $"break {pageBreak.Kind} at={pageBreak.Position}");
+        foreach (var inline in paragraph.Inlines) Line(depth + 1, InlineLine(inline));
         if (paragraph.EndsSection is int section) Line(depth + 1, $"ends-section s{section}");
+    }
+
+    // An image always says whether it has alt text, since a missing description is what an accessibility check looks for.
+    private static string InlineLine(DocxInline inline)
+    {
+        var line = new StringBuilder();
+        switch (inline)
+        {
+            case DocxBreak pageBreak:
+                line.Append($"break {pageBreak.Kind}");
+                break;
+            case DocxLink link:
+                line.Append($"link {Quote(link.Text)} -> {link.Target ?? Missing}");
+                break;
+            case DocxBookmark bookmark:
+                line.Append($"bookmark {Quote(bookmark.Name)}");
+                break;
+            case DocxSymbol symbol:
+                line.Append("symbol");
+                Key(line, "font", Quote(symbol.Font) ?? Missing);
+                Key(line, "code", symbol.Code);
+                break;
+            case DocxImage image:
+                line.Append(image.Kind).Append(image.Floating ? " floating" : " inline");
+                Key(line, "size", $"{Points(image.Width)}x{Points(image.Height)}");
+                Key(line, "alt", Quote(image.AltText) ?? Missing);
+                Key(line, "title", Quote(image.Title));
+                if (image.Decorative) line.Append(" decorative");
+                Key(line, "type", image.Type);
+                if (image.Kind == "image") Key(line, "hash", image.Hash ?? Missing);
+                break;
+        }
+
+        return line.Append($" at={inline.Position}").ToString();
     }
 
     private void WriteTable(DocxTable table, int depth)
     {
-        Line(depth, "Table");
+        var line = new StringBuilder("Table");
+        Key(line, "style", table.Style);
+        Key(line, "widths", table.Widths.Count > 0 ? string.Join(",", table.Widths.Select(Points)) : null);
+        Line(depth, line.ToString());
         foreach (var row in table.Rows)
         {
-            Line(depth + 1, "Row");
+            Line(depth + 1, row.IsHeader ? "Row header" : "Row");
             foreach (var cell in row.Cells)
             {
-                Line(depth + 2, "Cell");
+                var cellLine = new StringBuilder("Cell");
+                if (cell.Span != 1) Key(cellLine, "span", cell.Span.ToString());
+                Key(cellLine, "merge", cell.Merge);
+                Key(cellLine, "shading", cell.Shading);
+                Line(depth + 2, cellLine.ToString());
                 WriteBlocks(cell.Blocks, depth + 3);
             }
         }

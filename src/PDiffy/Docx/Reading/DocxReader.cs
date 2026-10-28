@@ -1,4 +1,3 @@
-using System.Text;
 using System.Xml.Linq;
 using static PDiffy.Docx.Reading.DocxXml;
 
@@ -10,18 +9,17 @@ internal sealed class DocxReader
     private static readonly XNamespace Dc = "http://purl.org/dc/elements/1.1/";
     private static readonly XNamespace DcTerms = "http://purl.org/dc/terms/";
 
-    // Elements that only wrap content: content controls, custom XML, smart tags, tracked insertions, fields and links.
-    private static readonly HashSet<string> Wrappers = ["sdt", "sdtContent", "customXml", "smartTag", "ins", "moveTo", "fldSimple", "hyperlink"];
-
     private readonly StyleResolver _styles;
     private readonly NumberingResolver _numbering;
+    private readonly InlineReader _inlines;
     private readonly HashSet<string> _usedStyles = [];
     private int _sections;
 
-    private DocxReader(StyleResolver styles, NumberingResolver numbering)
+    private DocxReader(StyleResolver styles, NumberingResolver numbering, DocxPackage package, string part)
     {
         _styles = styles;
         _numbering = numbering;
+        _inlines = new InlineReader(styles, package, part, _usedStyles);
     }
 
     public static DocxDocument Read(Stream stream)
@@ -33,7 +31,8 @@ internal sealed class DocxReader
         var styles = new StyleResolver(package.Xml(package.Related(package.MainPart, "/styles")),
             package.Xml(package.Related(package.MainPart, "/theme")));
 
-        var reader = new DocxReader(styles, new NumberingResolver(package.Xml(package.Related(package.MainPart, "/numbering"))));
+        var numbering = new NumberingResolver(package.Xml(package.Related(package.MainPart, "/numbering")));
+        var reader = new DocxReader(styles, numbering, package, package.MainPart);
         var body = reader.Blocks(main).ToList();
         var core = package.Xml(package.Related("", "/core-properties"))?.Root;
         return new DocxDocument
@@ -114,9 +113,25 @@ internal sealed class DocxReader
 
     private DocxTable Table(XElement table)
     {
-        var rows = Unwrapped(table, "tr").Select(row => new DocxRow(Unwrapped(row, "tc")
-            .Select(cell => new DocxCell(Blocks(cell).ToList())).ToList()));
-        return new DocxTable { Rows = rows.ToList() };
+        var style = Attr(table.Element(W + "tblPr")?.Element(W + "tblStyle"), "val");
+        if (style is not null) _usedStyles.Add(style);
+        var rows = Unwrapped(table, "tr").Select(row => new DocxRow(Unwrapped(row, "tc").Select(Cell).ToList(),
+            IsOn(row.Element(W + "trPr")?.Element(W + "tblHeader"))));
+        return new DocxTable
+        {
+            Style = style,
+            Widths = table.Element(W + "tblGrid")?.Elements(W + "gridCol").Select(column => Twips(column, "w") ?? 0).ToList() ?? [],
+            Rows = rows.ToList(),
+        };
+    }
+
+    // A vMerge with no val continues the merge above it.
+    private DocxCell Cell(XElement cell)
+    {
+        var properties = cell.Element(W + "tcPr");
+        var merge = properties?.Element(W + "vMerge") is { } vMerge ? Attr(vMerge, "val") ?? "continue" : null;
+        var shading = NonEmpty(Attr(properties?.Element(W + "shd"), "fill")) is { } fill and not "auto" ? fill.ToUpperInvariant() : null;
+        return new DocxCell(Blocks(cell).ToList(), Integer(properties?.Element(W + "gridSpan"), "val") ?? 1, merge, shading);
     }
 
     // Children with a name, looking through content controls and custom XML around them.
@@ -139,20 +154,7 @@ internal sealed class DocxReader
         if (style is not null) _usedStyles.Add(style);
         var paragraphRun = _styles.ParagraphRun(style);
 
-        var spans = new List<DocxSpan>();
-        var breaks = new List<DocxBreak>();
-        var text = new StringBuilder();
-        foreach (var run in Runs(paragraph))
-        {
-            var characterStyle = Attr(run.Element(W + "rPr")?.Element(W + "rStyle"), "val");
-            if (characterStyle is not null) _usedStyles.Add(characterStyle);
-            var format = _styles.Run(paragraphRun, characterStyle, run.Element(W + "rPr"));
-            var runText = RunText(run, text.Length, breaks);
-            if (runText.Length == 0) continue;
-            text.Append(runText);
-            if (spans.Count > 0 && spans[^1].Format == format) spans[^1] = spans[^1] with { Text = spans[^1].Text + runText };
-            else spans.Add(new DocxSpan(runText, format));
-        }
+        var content = _inlines.Read(paragraph, paragraphRun);
 
         return new DocxParagraph
         {
@@ -160,9 +162,9 @@ internal sealed class DocxReader
             List = ListItem(pPr?.Element(W + "numPr"), style),
             Layout = _styles.Layout(style, pPr),
             Run = paragraphRun,
-            Text = text.ToString(),
-            Spans = spans,
-            Breaks = breaks,
+            Text = content.Text.ToString(),
+            Spans = content.Spans,
+            Inlines = content.Inlines,
             EndsSection = pPr?.Element(W + "sectPr") is null ? null : ++_sections,
         };
     }
@@ -177,52 +179,4 @@ internal sealed class DocxReader
         return new DocxListItem(list.Value, level, _numbering.Next(list.Value, level));
     }
 
-    // The runs of a paragraph in reading order. Deleted text (tracked deletions, moves away) isn't part of it.
-    private static IEnumerable<XElement> Runs(XElement container)
-    {
-        foreach (var element in container.Elements())
-        {
-            if (element.Name == W + "r") yield return element;
-            else if (IsWrapper(element))
-            {
-                foreach (var run in Runs(element)) yield return run;
-            }
-        }
-    }
-
-    private static string RunText(XElement run, int offset, List<DocxBreak> breaks)
-    {
-        var text = new StringBuilder();
-        foreach (var part in run.Elements())
-        {
-            switch (part.Name.LocalName)
-            {
-                case "t":
-                    text.Append(part.Value);
-                    break;
-                case "tab":
-                    text.Append('\t');
-                    break;
-                case "cr":
-                    text.Append('\n');
-                    break;
-                case "noBreakHyphen":
-                    text.Append('\u2011');
-                    break;
-                case "softHyphen":
-                    text.Append('\u00AD');
-                    break;
-                case "br" when Attr(part, "type") is "page" or "column":
-                    breaks.Add(new DocxBreak(Attr(part, "type")!, offset + text.Length));
-                    break;
-                case "br":
-                    text.Append('\n');
-                    break;
-            }
-        }
-
-        return text.ToString();
-    }
-
-    private static bool IsWrapper(XElement element) => element.Name.Namespace == W && Wrappers.Contains(element.Name.LocalName);
 }
