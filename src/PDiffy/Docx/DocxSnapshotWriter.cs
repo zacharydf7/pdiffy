@@ -28,6 +28,8 @@ internal sealed class DocxSnapshotWriter
         WriteSections(document.PageSetups);
         Line(0, "styles");
         WriteStyles(document.Styles);
+        Line(0, "numbering");
+        WriteLists(document.Lists);
         Line(0, "body");
         if (document.Body.Count == 0) Line(1, None);
         WriteBlocks(document.Body, 1);
@@ -89,6 +91,31 @@ internal sealed class DocxSnapshotWriter
         }
     }
 
+    private void WriteLists(IReadOnlyList<DocxList> lists)
+    {
+        if (lists.Count == 0) Line(1, None);
+        foreach (var list in lists)
+        {
+            Line(1, $"list {list.Id} definition={list.Definition}");
+            foreach (var level in list.Levels)
+            {
+                if (level.Format is null)
+                {
+                    Line(2, $"level {level.Level} {Missing}");
+                    continue;
+                }
+
+                var line = new StringBuilder($"level {level.Level} format={level.Format}");
+                Key(line, "text", Quote(level.Text));
+                Key(line, "start", level.Start?.ToString());
+                Key(line, "indent", Length(level.Indent));
+                Key(line, "hanging", Length(level.Hanging));
+                Key(line, "font", Quote(level.Font));
+                Line(2, line.ToString());
+            }
+        }
+    }
+
     private void WriteBlocks(IReadOnlyList<DocxBlock> blocks, int depth)
     {
         foreach (var block in blocks)
@@ -103,6 +130,8 @@ internal sealed class DocxSnapshotWriter
     {
         var line = new StringBuilder("P");
         Key(line, "style", paragraph.Style);
+        Key(line, "list", paragraph.List is { } item ? $"{item.List}:{item.Level}" : null);
+        Key(line, "label", Quote(paragraph.List?.Label));
         var styleLayout = paragraph.Style is null ? null : _styleLayouts.GetValueOrDefault(paragraph.Style);
         WriteLayout(line, paragraph.Layout, styleLayout ?? new ParagraphFormat());
         if (paragraph.Text.Length > 0) line.Append(' ').Append(Quote(paragraph.Text));
@@ -211,10 +240,11 @@ internal sealed class DocxSnapshotWriter
     }
 
     // Spaces and marks a reader can't see: no-break and narrow spaces, the soft hyphen, zero-width characters, the
-    // byte-order mark, and the replacement character that stands in for text lost on the way.
+    // byte-order mark, the replacement character that stands in for text lost on the way, and private-use characters,
+    // such as Symbol font bullets, which show only in the font they were made for.
     private static bool IsInvisible(char c) =>
         c is '\u00A0' or '\u00AD' or '\u2007' or '\u202F' or '\uFEFF' or '\uFFFD'
-        || c is >= '\u200B' and <= '\u200F' || c is >= '\u2060' and <= '\u2064';
+        || c is >= '\u200B' and <= '\u200F' || c is >= '\u2060' and <= '\u2064' || c is >= '\uE000' and <= '\uF8FF';
 
     private static string Escape(char c) => $"\\u{(int)c:x4}";
 

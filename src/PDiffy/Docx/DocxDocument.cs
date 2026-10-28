@@ -13,6 +13,9 @@ public sealed record DocxDocument
     /// <summary>The styles the document uses, with their properties resolved through the styles they're based on.</summary>
     public IReadOnlyList<DocxStyle> Styles { get; init; } = [];
 
+    /// <summary>The lists the document uses, each with the levels it uses.</summary>
+    public IReadOnlyList<DocxList> Lists { get; init; } = [];
+
     /// <summary>Paragraphs and tables in reading order.</summary>
     public IReadOnlyList<DocxBlock> Body { get; init; } = [];
 
@@ -189,6 +192,9 @@ public sealed record DocxParagraph : DocxBlock
     /// <summary>The paragraph style's id: the one named, or the document's default paragraph style.</summary>
     public string? Style { get; init; }
 
+    /// <summary>The list item this paragraph is, or null when it isn't one.</summary>
+    public DocxListItem? List { get; init; }
+
     /// <summary>How the paragraph is laid out: its style's layout with the paragraph's own formatting on top.</summary>
     public ParagraphFormat Layout { get; init; } = new();
 
@@ -207,6 +213,25 @@ public sealed record DocxParagraph : DocxBlock
     /// <summary>The section this paragraph ends, numbered from 1, or null.</summary>
     public int? EndsSection { get; init; }
 }
+
+/// <summary>
+/// A paragraph's place in a list: the list's id (w:numId), its level from 0, and the label Word shows, such as "A." or
+/// "1.2", counted from the items before it. The label is null when the list or its level isn't defined.
+/// </summary>
+public sealed record DocxListItem(int List, int Level, string? Label);
+
+/// <summary>
+/// A list the document uses: its id, the definition it numbers from (w:abstractNumId, or the definition of the list style
+/// it links to) and the levels used.
+/// </summary>
+public sealed record DocxList(int Id, string Definition, IReadOnlyList<DocxListLevel> Levels);
+
+/// <summary>
+/// How one level of a list is numbered: its format (such as "decimal", "upperLetter" or "bullet"), its label pattern
+/// (such as "%1." or a bullet character), the number it starts at, its indents in points and its bullet font. Format,
+/// Text and Start are null when the list's definition has no such level.
+/// </summary>
+public sealed record DocxListLevel(int Level, string? Format, string? Text, int? Start, double? Indent, double? Hanging, string? Font);
 
 /// <summary>Part of a paragraph's text and how it looks.</summary>
 public sealed record DocxSpan(string Text, RunFormat Format);

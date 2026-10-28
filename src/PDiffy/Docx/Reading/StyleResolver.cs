@@ -90,6 +90,19 @@ internal sealed class StyleResolver
         return ApplyRun(format, direct);
     }
 
+    /// <summary>The list and level a paragraph style puts its paragraphs in, set by the nearest style in its chain.</summary>
+    public (int List, int Level)? Numbering(string? styleId)
+    {
+        (int List, int Level)? numbering = null;
+        foreach (var numPr in Chain(styleId).Select(style => style.Element(W + "pPr")?.Element(W + "numPr")).OfType<XElement>())
+        {
+            if (Integer(numPr.Element(W + "numId"), "val") is int list) numbering = list == 0 ? null : (list, numbering?.Level ?? 0);
+            if (numbering is { } current && Integer(numPr.Element(W + "ilvl"), "val") is int level) numbering = (current.List, level);
+        }
+
+        return numbering;
+    }
+
     /// <summary>A paragraph's layout: document defaults, its style from the root of the chain down, then its own pPr.</summary>
     public ParagraphFormat Layout(string? styleId, XElement? pPr) =>
         ApplyParagraph(Chain(styleId).Aggregate(ApplyParagraph(new ParagraphFormat(), _defaultParagraph),

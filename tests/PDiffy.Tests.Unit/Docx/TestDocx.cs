@@ -18,6 +18,9 @@ internal sealed class TestDocx
     /// <summary>What goes inside w:styles, such as w:docDefaults and w:style elements. Null leaves the part out.</summary>
     public string? Styles { get; init; }
 
+    /// <summary>What goes inside w:numbering, such as w:abstractNum and w:num elements. Null leaves the part out.</summary>
+    public string? Numbering { get; init; }
+
     /// <summary>What goes inside w:settings. Null leaves the part out.</summary>
     public string? Settings { get; init; }
 
@@ -41,6 +44,12 @@ internal sealed class TestDocx
         {
             parts["word/styles.xml"] = $"<w:styles {Namespaces}>{Styles}</w:styles>";
             relationships.Append(Relationship("styles", "styles.xml"));
+        }
+
+        if (Numbering is not null)
+        {
+            parts["word/numbering.xml"] = $"<w:numbering {Namespaces}>{Numbering}</w:numbering>";
+            relationships.Append(Relationship("numbering", "numbering.xml"));
         }
 
         if (Settings is not null)

@@ -31,6 +31,8 @@ public class DocxDocumentTests
               s1 letter margins=72,72,72,72 header=36 footer=36 columns=1 break=nextPage
             styles
               Normal paragraph "Normal" default font="Arial" size=12
+            numbering
+              (none)
             body
               P style=Normal "Cheese has history"
                 span "has" bold

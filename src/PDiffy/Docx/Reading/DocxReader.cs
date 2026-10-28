@@ -14,10 +14,15 @@ internal sealed class DocxReader
     private static readonly HashSet<string> Wrappers = ["sdt", "sdtContent", "customXml", "smartTag", "ins", "moveTo", "fldSimple", "hyperlink"];
 
     private readonly StyleResolver _styles;
+    private readonly NumberingResolver _numbering;
     private readonly HashSet<string> _usedStyles = [];
     private int _sections;
 
-    private DocxReader(StyleResolver styles) => _styles = styles;
+    private DocxReader(StyleResolver styles, NumberingResolver numbering)
+    {
+        _styles = styles;
+        _numbering = numbering;
+    }
 
     public static DocxDocument Read(Stream stream)
     {
@@ -28,7 +33,7 @@ internal sealed class DocxReader
         var styles = new StyleResolver(package.Xml(package.Related(package.MainPart, "/styles")),
             package.Xml(package.Related(package.MainPart, "/theme")));
 
-        var reader = new DocxReader(styles);
+        var reader = new DocxReader(styles, new NumberingResolver(package.Xml(package.Related(package.MainPart, "/numbering"))));
         var body = reader.Blocks(main).ToList();
         var core = package.Xml(package.Related("", "/core-properties"))?.Root;
         return new DocxDocument
@@ -39,6 +44,7 @@ internal sealed class DocxReader
             PageSetups = main.Descendants(W + "sectPr").Where(sectPr => sectPr.Parent?.Name != W + "sectPrChange")
                 .Select(PageSetupOf).ToList(),
             Styles = reader._usedStyles.Order(StringComparer.Ordinal).Select(styles.Describe).OfType<DocxStyle>().ToList(),
+            Lists = reader._numbering.UsedLists(),
             Body = body,
         };
     }
@@ -151,6 +157,7 @@ internal sealed class DocxReader
         return new DocxParagraph
         {
             Style = style,
+            List = ListItem(pPr?.Element(W + "numPr"), style),
             Layout = _styles.Layout(style, pPr),
             Run = paragraphRun,
             Text = text.ToString(),
@@ -158,6 +165,16 @@ internal sealed class DocxReader
             Breaks = breaks,
             EndsSection = pPr?.Element(W + "sectPr") is null ? null : ++_sections,
         };
+    }
+
+    // A paragraph's own numPr wins over its style's; numId 0 takes the paragraph out of its style's list.
+    private DocxListItem? ListItem(XElement? numPr, string? style)
+    {
+        var fromStyle = _styles.Numbering(style);
+        var list = Integer(numPr?.Element(W + "numId"), "val") ?? fromStyle?.List;
+        if (list is null or 0) return null;
+        var level = Integer(numPr?.Element(W + "ilvl"), "val") ?? fromStyle?.Level ?? 0;
+        return new DocxListItem(list.Value, level, _numbering.Next(list.Value, level));
     }
 
     // The runs of a paragraph in reading order. Deleted text (tracked deletions, moves away) isn't part of it.
