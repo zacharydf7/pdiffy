@@ -184,6 +184,22 @@ public class DocxDocumentTests
     }
 
     [Fact]
+    public void ToSnapshot_ShouldRecordTextApartFromTheParagraph_WhenARunSitsInsideTheParagraphsProperties()
+    {
+        var docx = new TestDocx { Body = """<w:p><w:pPr><w:jc w:val="right"/><w:r><w:t>1</w:t></w:r></w:pPr><w:r><w:t>Body</w:t></w:r></w:p>""" };
+
+        Assert.Contains("  P align=right \"Body\"\n    stray-text \"1\" at=0\n", docx.Load().ToSnapshot());
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldStillShowTheMisplacedRun_WhenItHasNoText()
+    {
+        var docx = new TestDocx { Body = """<w:p><w:pPr><w:r><w:tab/></w:r></w:pPr></w:p>""" };
+
+        Assert.Contains("  P\n    stray-text \"\" at=0\n", docx.Load().ToSnapshot());
+    }
+
+    [Fact]
     public void Load_ShouldReadStyles_WhenTheyAreNestedInsideAnotherStylesElement()
     {
         var docx = new TestDocx { Styles = "<w:styles>" + NormalStyle + "</w:styles>", Body = "<w:p/>" };

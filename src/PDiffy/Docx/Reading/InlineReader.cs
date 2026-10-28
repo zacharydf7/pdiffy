@@ -17,11 +17,22 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
     public ParagraphContent Read(XElement paragraph, RunFormat paragraphRun)
     {
         var content = new ParagraphContent(paragraphRun);
+        StrayText(paragraph, content);
         ReadContent(paragraph, content);
 
         // A field can run on into the next paragraphs, as a table of contents does; it's recorded with what it has here.
         while (content.Fields.TryPop(out var field)) EndField(field, content);
         return content;
+    }
+
+    // A run inside the paragraph's properties (w:pPr) isn't allowed there, and Word may drop or move it; every such run
+    // is recorded, with its w:t text, apart from the paragraph's text, so the misplaced run shows.
+    private static void StrayText(XElement paragraph, ParagraphContent content)
+    {
+        foreach (var run in paragraph.Element(W + "pPr")?.Elements(W + "r") ?? [])
+        {
+            content.Inlines.Add(new DocxStrayText(string.Concat(run.Elements(W + "t").Select(t => t.Value)), 0));
+        }
     }
 
     // Deleted text (tracked deletions, moves away) isn't part of the paragraph, so w:del and w:moveFrom are skipped.

@@ -214,6 +214,9 @@ internal sealed class DocxSnapshotWriter
                 line.Append($"field {Quote(field.Code)}");
                 Key(line, "result", Quote(field.Result));
                 break;
+            case DocxStrayText stray:
+                line.Append($"stray-text {Quote(stray.Text)}");
+                break;
             case DocxBookmark bookmark:
                 line.Append($"bookmark {Quote(bookmark.Name)}");
                 break;

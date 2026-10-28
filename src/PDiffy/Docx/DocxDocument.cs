@@ -229,7 +229,10 @@ public sealed record DocxParagraph : DocxBlock
     /// <summary>The text cut where its look changes, each part with its full formatting.</summary>
     public IReadOnlyList<DocxSpan> Spans { get; init; } = [];
 
-    /// <summary>What sits in the text, in reading order: images, links, bookmarks, symbols and page or column breaks.</summary>
+    /// <summary>
+    /// What sits in the text, in reading order: images, links, bookmarks, symbols, fields, page or column breaks, and
+    /// stray text from runs in the paragraph's properties.
+    /// </summary>
     public IReadOnlyList<DocxInline> Inlines { get; init; } = [];
 
     /// <summary>The section this paragraph ends, numbered from 1, or null.</summary>
@@ -266,6 +269,13 @@ public abstract record DocxInline(int Position);
 /// is also part of the paragraph's text, unless the field sits in another field's code, whose code it becomes part of.
 /// </summary>
 public sealed record DocxField(string Code, string Result, int Position) : DocxInline(Position);
+
+/// <summary>
+/// The w:t text of a run where WordprocessingML doesn't allow one: inside the paragraph's properties (w:pPr). Word may
+/// drop or move it, so it isn't part of the paragraph's text, but it's recorded so the text isn't lost and the problem
+/// shows. Its <see cref="DocxInline.Position"/> is always 0, before the paragraph's text.
+/// </summary>
+public sealed record DocxStrayText(string Text, int Position) : DocxInline(Position);
 
 /// <summary>A page or column break.</summary>
 public sealed record DocxBreak(string Kind, int Position) : DocxInline(Position);
