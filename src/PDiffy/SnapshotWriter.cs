@@ -11,7 +11,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
     private const string Missing = "(missing)";
 
     private readonly StringBuilder _snapshot = new();
-    private readonly Dictionary<string, Dictionary<string, string>> _tokens = [];
+    private readonly Scrubbing _scrubbing = new(options.Scrubbers);
 
     public static string Write(PdfUaDocument document, SnapshotOptions options)
     {
@@ -280,27 +280,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
     private string Quote(string? s)
     {
         if (s is null) return Missing;
-        return "\"" + Scrub(s).Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
-    }
-
-    private string Scrub(string text)
-    {
-        foreach (var scrubber in options.Scrubbers)
-        {
-            text = scrubber.Numbered
-                ? scrubber.Pattern.Replace(text, match => Token(scrubber.Replacement, match.Value))
-                : scrubber.Pattern.Replace(text, scrubber.Replacement);
-        }
-
-        return text;
-    }
-
-    // The same value always gets the same token: the first date in the snapshot is Date_1 wherever it appears.
-    private string Token(string name, string value)
-    {
-        if (!_tokens.TryGetValue(name, out var seen)) _tokens[name] = seen = [];
-        if (!seen.TryGetValue(value, out var token)) seen[value] = token = $"{name}_{seen.Count + 1}";
-        return token;
+        return "\"" + _scrubbing.Scrub(s).Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
     }
 
     // The producer and creator change with every upgrade, so only their presence prints unless the test asks for them.

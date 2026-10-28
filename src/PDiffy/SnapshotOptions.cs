@@ -8,17 +8,6 @@ namespace PDiffy;
 /// </summary>
 public sealed class SnapshotOptions
 {
-    private const string Month = @"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?";
-    private const string Time = @"([ T]\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?( ?[AaPp][Mm])?(Z|[+-]\d{2}:?\d{2})?)?";
-
-    // 2026-10-27, 10/27/2026, October 27, 2026 and 27 Oct 2026, each with an optional time; and PDF dates (D:20261027...).
-    private static readonly Regex DatePattern = new(
-        @"\b(\d{4}-\d{2}-\d{2}" + Time + @"|\d{1,2}/\d{1,2}/\d{2,4}" + Time + "|" + Month + @" \d{1,2},? \d{4}" + Time
-        + @"|\d{1,2} " + Month + @" \d{4}" + Time + @"|D:\d{8,14}(Z|[+-]\d{2}'?\d{2}'?)?)(?!\d)", RegexOptions.IgnoreCase);
-
-    private static readonly Regex GuidPattern =
-        new(@"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", RegexOptions.IgnoreCase);
-
     private readonly HashSet<Section> _ignoredSections = [];
     private readonly HashSet<Field> _ignoredFields = [];
     private readonly List<Scrubber> _scrubbers = [];
@@ -55,14 +44,14 @@ public sealed class SnapshotOptions
     /// </summary>
     public SnapshotOptions ScrubDates()
     {
-        _scrubbers.Add(new Scrubber(DatePattern, "Date", Numbered: true));
+        _scrubbers.Add(Scrubber.Dates);
         return this;
     }
 
     /// <summary>Replaces GUIDs in quoted text with Guid_1, Guid_2 and so on. The same text always gets the same token.</summary>
     public SnapshotOptions ScrubGuids()
     {
-        _scrubbers.Add(new Scrubber(GuidPattern, "Guid", Numbered: true));
+        _scrubbers.Add(Scrubber.Guids);
         return this;
     }
 
@@ -102,6 +91,3 @@ public sealed class SnapshotOptions
 
     internal IEnumerable<Field> IgnoredFields => _ignoredFields.Order();
 }
-
-/// <summary>A pattern and its replacement. A numbered scrubber uses the replacement as a token name: Date_1, Date_2.</summary>
-internal sealed record Scrubber(Regex Pattern, string Replacement, bool Numbered);

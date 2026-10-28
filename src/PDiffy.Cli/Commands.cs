@@ -83,7 +83,7 @@ public static class Commands
         {
             var name = file[..^PdfSnapshot.ReceivedSuffix.Length];
             File.Move(file, name + PdfSnapshot.VerifiedSuffix, overwrite: true);
-            File.Delete(name + PdfSnapshot.ReportSuffix);
+            File.Delete(name + SnapshotFiles.ReportSuffix);
             output.WriteLine($"accepted {name}{PdfSnapshot.VerifiedSuffix}");
         }
 

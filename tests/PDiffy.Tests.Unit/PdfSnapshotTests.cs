@@ -61,6 +61,7 @@ public sealed class PdfSnapshotTests : IDisposable
 
         var error = await Assert.ThrowsAsync<PdfSnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Goodbye"), "Letter"));
 
+        Assert.StartsWith("The PDF's snapshot differs from the verified one.", error.Message);
         Assert.Contains("~ text structure > P (p1)\n    \"[-Hello-] {+Goodbye+}\"", error.Message);
         Assert.Contains($"received: {Path.Combine(_folder, "Letter.received.pdfua.txt")}", error.Message);
         Assert.Equal(Snapshot("Goodbye"), File.ReadAllText(Path.Combine(_folder, "Letter.received.pdfua.txt")));
