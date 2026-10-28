@@ -24,11 +24,12 @@ internal sealed partial class DrawingReader(DocxPackage package, string part)
         if ((drawing.Element(Wp + "inline") ?? drawing.Element(Wp + "anchor")) is not { } frame) return null;
         var extent = frame.Element(Wp + "extent");
         var properties = frame.Element(Wp + "docPr");
-        var embed = (string?)frame.Descendants(A + "blip").FirstOrDefault()?.Attribute(R + "embed");
+        var blip = frame.Descendants(A + "blip").FirstOrDefault();
+        var embed = (string?)blip?.Attribute(R + "embed");
         var imagePart = embed is null ? null : package.Target(part, embed);
         return new DocxImage(position)
         {
-            Kind = embed is null ? GraphicKind(frame) : "image",
+            Kind = blip is null ? GraphicKind(frame) : "image",
             Floating = frame.Name.LocalName == "anchor",
             Width = Emus(extent, "cx"),
             Height = Emus(extent, "cy"),
@@ -50,6 +51,7 @@ internal sealed partial class DrawingReader(DocxPackage package, string part)
         var style = (string?)shape.Attribute("style") ?? "";
         return new DocxImage(position)
         {
+            Kind = data is null ? "shape" : "image",
             Floating = style.Contains("position:absolute", StringComparison.Ordinal),
             Width = StylePoints(style, "width"),
             Height = StylePoints(style, "height"),

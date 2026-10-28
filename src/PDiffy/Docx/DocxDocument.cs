@@ -16,8 +16,14 @@ public sealed record DocxDocument
     /// <summary>The lists the document uses, each with the levels it uses.</summary>
     public IReadOnlyList<DocxList> Lists { get; init; } = [];
 
-    /// <summary>Paragraphs and tables in reading order.</summary>
+    /// <summary>Paragraphs, tables and inserted documents in reading order.</summary>
     public IReadOnlyList<DocxBlock> Body { get; init; } = [];
+
+    /// <summary>Each section's headers, by kind.</summary>
+    public IReadOnlyList<DocxHeaderFooter> Headers { get; init; } = [];
+
+    /// <summary>Each section's footers, by kind.</summary>
+    public IReadOnlyList<DocxHeaderFooter> Footers { get; init; } = [];
 
     /// <summary>Reads the DOCX in a stream. The stream is left open.</summary>
     /// <remarks>A part that can't be read is listed in <see cref="DocxInfo.UnreadableParts"/>; a file that can't be opened throws.</remarks>
@@ -36,22 +42,28 @@ public sealed record DocxDocument
     /// <summary>The differences between this document's snapshot and another's, element by element.</summary>
     public SnapshotDiff CompareTo(DocxDocument other) => SnapshotDiff.Compare(ToSnapshot(), other.ToSnapshot());
 
-    /// <summary>Every paragraph in reading order, including those inside tables.</summary>
+    /// <summary>Every paragraph of the body in reading order, including those inside tables and inserted documents.</summary>
     public IEnumerable<DocxParagraph> Paragraphs() => Paragraphs(Body);
 
-    /// <summary>Every image and other graphic (chart, diagram, shape) in reading order, such as for checking alt text.</summary>
-    public IEnumerable<DocxImage> Images() => Paragraphs().SelectMany(paragraph => paragraph.Inlines.OfType<DocxImage>());
+    /// <summary>
+    /// Every image and other graphic (chart, diagram, shape) in the body, headers and footers, such as for checking alt text.
+    /// </summary>
+    public IEnumerable<DocxImage> Images() =>
+        Paragraphs(Body.Concat(Headers.Concat(Footers).SelectMany(item => item.Blocks ?? [])))
+            .SelectMany(paragraph => paragraph.Inlines.OfType<DocxImage>());
 
     private static IEnumerable<DocxParagraph> Paragraphs(IEnumerable<DocxBlock> blocks)
     {
         foreach (var block in blocks)
         {
             if (block is DocxParagraph paragraph) yield return paragraph;
-            if (block is not DocxTable table) continue;
-            foreach (var cell in table.Rows.SelectMany(row => row.Cells))
+            var nestedBlocks = block switch
             {
-                foreach (var nested in Paragraphs(cell.Blocks)) yield return nested;
-            }
+                DocxTable table => table.Rows.SelectMany(row => row.Cells).SelectMany(cell => cell.Blocks),
+                DocxInserted inserted => inserted.Document?.Body ?? [],
+                _ => [],
+            };
+            foreach (var nested in Paragraphs(nestedBlocks)) yield return nested;
         }
     }
 }
@@ -242,6 +254,12 @@ public sealed record DocxSpan(string Text, RunFormat Format);
 /// <summary>Something in a paragraph's text. <see cref="Position"/> is where, counted in characters of its text.</summary>
 public abstract record DocxInline(int Position);
 
+/// <summary>
+/// A field: its code, such as "PAGE" or "TOC \o \"1-3\"", and its result, the text Word last showed for it. The result
+/// is also part of the paragraph's text.
+/// </summary>
+public sealed record DocxField(string Code, string Result, int Position) : DocxInline(Position);
+
 /// <summary>A page or column break.</summary>
 public sealed record DocxBreak(string Kind, int Position) : DocxInline(Position);
 
@@ -278,6 +296,24 @@ public sealed record DocxImage(int Position) : DocxInline(Position)
     public bool Decorative { get; init; }
 
     public string? Type { get; init; }
+    public string? Hash { get; init; }
+}
+
+/// <summary>A section's header or footer of one kind: "default", "first" or "even". Blocks is null when its part can't be found.</summary>
+public sealed record DocxHeaderFooter(int Section, string Kind, IReadOnlyList<DocxBlock>? Blocks);
+
+/// <summary>
+/// A document inserted into this one (w:altChunk). A DOCX is read in place into <see cref="Document"/>, with its own
+/// styles and lists; other formats, such as HTML or RTF, and a DOCX that can't be opened (<see cref="Unreadable"/>) are
+/// recorded by <see cref="Hash"/>, which is null when the inserted file is missing.
+/// </summary>
+public sealed record DocxInserted : DocxBlock
+{
+    /// <summary>The inserted file's type, such as "docx", "html" or "rtf", or null when it can't be told.</summary>
+    public string? Kind { get; init; }
+
+    public DocxDocument? Document { get; init; }
+    public bool Unreadable { get; init; }
     public string? Hash { get; init; }
 }
 

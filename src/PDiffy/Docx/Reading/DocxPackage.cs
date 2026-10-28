@@ -34,6 +34,16 @@ internal sealed class DocxPackage : IDisposable
         return Convert.ToHexStringLower(SHA256.HashData(stream))[..16];
     }
 
+    /// <summary>A part's bytes in a stream of their own, such as a DOCX inserted into this one, or null when there's no such part.</summary>
+    public MemoryStream? Open(string? part)
+    {
+        if (part is null || _zip.GetEntry(part) is not { } entry) return null;
+        var copy = new MemoryStream();
+        using (var stream = entry.Open()) stream.CopyTo(copy);
+        copy.Position = 0;
+        return copy;
+    }
+
     public XDocument? Xml(string? part)
     {
         if (part is null || _zip.GetEntry(part) is not { } entry) return null;

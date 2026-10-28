@@ -36,6 +36,10 @@ public class DocxDocumentTests
             body
               P style=Normal "Cheese has history"
                 span "has" bold
+            headers
+              (none)
+            footers
+              (none)
 
             """;
         Assert.Equal(expected.ReplaceLineEndings("\n"), snapshot);

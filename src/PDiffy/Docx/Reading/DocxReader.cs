@@ -9,20 +9,28 @@ internal sealed class DocxReader
     private static readonly XNamespace Dc = "http://purl.org/dc/elements/1.1/";
     private static readonly XNamespace DcTerms = "http://purl.org/dc/terms/";
 
+    // Documents inserted into inserted documents are read this many levels deep; deeper ones are recorded by hash.
+    private const int MaxInsertedDepth = 5;
+
     private readonly StyleResolver _styles;
     private readonly NumberingResolver _numbering;
+    private readonly DocxPackage _package;
+    private readonly string _part;
+    private readonly HashSet<string> _usedStyles;
+    private readonly int _depth;
     private readonly InlineReader _inlines;
-    private readonly HashSet<string> _usedStyles = [];
     private int _sections;
 
-    private DocxReader(StyleResolver styles, NumberingResolver numbering, DocxPackage package, string part)
+    private DocxReader(StyleResolver styles, NumberingResolver numbering, DocxPackage package, string part, HashSet<string> usedStyles,
+        int depth)
     {
-        _styles = styles;
-        _numbering = numbering;
-        _inlines = new InlineReader(styles, package, part, _usedStyles);
+        (_styles, _numbering, _package, _part, _usedStyles, _depth) = (styles, numbering, package, part, usedStyles, depth);
+        _inlines = new InlineReader(styles, package, part, usedStyles);
     }
 
-    public static DocxDocument Read(Stream stream)
+    public static DocxDocument Read(Stream stream) => Read(stream, 0);
+
+    private static DocxDocument Read(Stream stream, int depth)
     {
         using var package = new DocxPackage(stream);
         var main = package.Xml(package.MainPart)?.Root?.Element(W + "body")
@@ -32,20 +40,43 @@ internal sealed class DocxReader
             package.Xml(package.Related(package.MainPart, "/theme")));
 
         var numbering = new NumberingResolver(package.Xml(package.Related(package.MainPart, "/numbering")));
-        var reader = new DocxReader(styles, numbering, package, package.MainPart);
+        var reader = new DocxReader(styles, numbering, package, package.MainPart, [], depth);
         var body = reader.Blocks(main).ToList();
+
+        // A tracked change to a section keeps the old settings in its own sectPr, which isn't a section.
+        var sections = main.Descendants(W + "sectPr").Where(sectPr => sectPr.Parent?.Name != W + "sectPrChange").ToList();
+        var headers = reader.HeadersAndFooters(sections, "headerReference");
+        var footers = reader.HeadersAndFooters(sections, "footerReference");
         var core = package.Xml(package.Related("", "/core-properties"))?.Root;
         return new DocxDocument
         {
             Document = Info(core, settings, styles, package.Unreadable),
-
-            // A tracked change to a section keeps the old settings in its own sectPr, which isn't a section.
-            PageSetups = main.Descendants(W + "sectPr").Where(sectPr => sectPr.Parent?.Name != W + "sectPrChange")
-                .Select(PageSetupOf).ToList(),
+            PageSetups = sections.Select(PageSetupOf).ToList(),
             Styles = reader._usedStyles.Order(StringComparer.Ordinal).Select(styles.Describe).OfType<DocxStyle>().ToList(),
             Lists = reader._numbering.UsedLists(),
             Body = body,
+            Headers = headers,
+            Footers = footers,
         };
+    }
+
+    // Each section names its own headers and footers by kind; a part that can't be found is recorded as missing.
+    private List<DocxHeaderFooter> HeadersAndFooters(List<XElement> sections, string reference)
+    {
+        var found = new List<DocxHeaderFooter>();
+        for (var i = 0; i < sections.Count; i++)
+        {
+            foreach (var item in sections[i].Elements(W + reference).OrderBy(item => Attr(item, "type") ?? "default", StringComparer.Ordinal))
+            {
+                var target = (string?)item.Attribute(R + "id") is { } id ? _package.Target(_part, id) : null;
+                var root = _package.Xml(target)?.Root;
+                var blocks = root is null ? null
+                    : new DocxReader(_styles, _numbering, _package, target!, _usedStyles, _depth).Blocks(root).ToList();
+                found.Add(new DocxHeaderFooter(i + 1, Attr(item, "type") ?? "default", blocks));
+            }
+        }
+
+        return found;
     }
 
     private static DocxInfo Info(XElement? core, XElement? settings, StyleResolver styles, List<string> unreadable)
@@ -104,6 +135,7 @@ internal sealed class DocxReader
         {
             if (element.Name == W + "p") yield return Paragraph(element);
             else if (element.Name == W + "tbl") yield return Table(element);
+            else if (element.Name == W + "altChunk") yield return Inserted(element);
             else if (IsWrapper(element))
             {
                 foreach (var block in Blocks(element)) yield return block;
@@ -132,6 +164,33 @@ internal sealed class DocxReader
         var merge = properties?.Element(W + "vMerge") is { } vMerge ? Attr(vMerge, "val") ?? "continue" : null;
         var shading = NonEmpty(Attr(properties?.Element(W + "shd"), "fill")) is { } fill and not "auto" ? fill.ToUpperInvariant() : null;
         return new DocxCell(Blocks(cell).ToList(), Integer(properties?.Element(W + "gridSpan"), "val") ?? 1, merge, shading);
+    }
+
+    // An inserted DOCX (w:altChunk) is read in place as a document of its own, and the parts of it that can't be read
+    // are listed with this document's, as "{inserted part}!{its part}". Other formats, such as HTML or RTF, and a DOCX
+    // that can't be opened are recorded by their hash.
+    private DocxInserted Inserted(XElement chunk)
+    {
+        var part = (string?)chunk.Attribute(R + "id") is { } id ? _package.Target(_part, id) : null;
+        var kind = part is null ? null : NonEmpty(Path.GetExtension(part).TrimStart('.').ToLowerInvariant());
+        if (kind == "docx" && _depth < MaxInsertedDepth && _package.Open(part) is { } stream)
+        {
+            using (stream)
+            {
+                try
+                {
+                    var inserted = Read(stream, _depth + 1);
+                    _package.Unreadable.AddRange(inserted.Document.UnreadableParts.Select(unreadable => $"{part}!{unreadable}"));
+                    return new DocxInserted { Kind = kind, Document = inserted };
+                }
+                catch (InvalidDataException)
+                {
+                    return new DocxInserted { Kind = kind, Unreadable = true, Hash = _package.Hash(part) };
+                }
+            }
+        }
+
+        return new DocxInserted { Kind = kind, Hash = _package.Hash(part) };
     }
 
     // Children with a name, looking through content controls and custom XML around them.

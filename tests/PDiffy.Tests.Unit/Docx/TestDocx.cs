@@ -33,14 +33,24 @@ internal sealed class TestDocx
     /// <summary>Replaces a part's whole content, for writing broken files.</summary>
     public Dictionary<string, string> RawParts { get; } = [];
 
-    private readonly Dictionary<string, byte[]> _media = [];
+    private readonly Dictionary<string, byte[]> _files = [];
     private readonly StringBuilder _relationships = new();
 
     /// <summary>Adds an image file the body can show with r:embed="{id}".</summary>
-    public TestDocx WithImage(string id, string fileName, byte[] bytes)
+    public TestDocx WithImage(string id, string fileName, byte[] bytes) => WithPart(id, "image", $"media/{fileName}", bytes);
+
+    /// <summary>Adds a header part a section can name with r:id="{id}"; the content goes inside w:hdr.</summary>
+    public TestDocx WithHeader(string id, string content) =>
+        WithPart(id, "header", $"{id}.xml", Encoding.UTF8.GetBytes($"<w:hdr {Namespaces}>{content}</w:hdr>"));
+
+    /// <summary>
+    /// Adds any part related to the document as {relationshipType}, at word/{path}. Null bytes add only the
+    /// relationship, for a file whose part is missing.
+    /// </summary>
+    public TestDocx WithPart(string id, string relationshipType, string path, byte[]? bytes)
     {
-        _media[$"word/media/{fileName}"] = bytes;
-        _relationships.Append(Relationship("image", $"media/{fileName}").Replace("Id=\"rimage\"", $"Id=\"{id}\""));
+        if (bytes is not null) _files[$"word/{path}"] = bytes;
+        _relationships.Append(Relationship(relationshipType, path).Replace($"Id=\"r{relationshipType}\"", $"Id=\"{id}\""));
         return this;
     }
 
@@ -109,7 +119,7 @@ internal sealed class TestDocx
                 writer.Write(content);
             }
 
-            foreach (var (name, bytes) in _media)
+            foreach (var (name, bytes) in _files)
             {
                 using var entry = zip.CreateEntry(name).Open();
                 entry.Write(bytes);

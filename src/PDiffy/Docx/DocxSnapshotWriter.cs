@@ -11,13 +11,17 @@ internal sealed class DocxSnapshotWriter
     private const string None = "(none)";
     private const string Missing = "(missing)";
 
-    private readonly StringBuilder _snapshot = new();
+    private readonly StringBuilder _snapshot;
+    private readonly DocxDocument _document;
     private readonly Dictionary<string, ParagraphFormat> _styleLayouts;
 
-    private DocxSnapshotWriter(DocxDocument document) =>
+    private DocxSnapshotWriter(DocxDocument document, StringBuilder snapshot)
+    {
+        (_document, _snapshot) = (document, snapshot);
         _styleLayouts = document.Styles.Where(style => style.Type == "paragraph").ToDictionary(style => style.Id, style => style.Paragraph);
+    }
 
-    public static string Write(DocxDocument document) => new DocxSnapshotWriter(document).Build(document);
+    public static string Write(DocxDocument document) => new DocxSnapshotWriter(document, new StringBuilder()).Build(document);
 
     private string Build(DocxDocument document)
     {
@@ -27,12 +31,16 @@ internal sealed class DocxSnapshotWriter
         Line(0, "sections");
         WriteSections(document.PageSetups);
         Line(0, "styles");
-        WriteStyles(document.Styles);
+        WriteStyles(document.Styles, 1);
         Line(0, "numbering");
-        WriteLists(document.Lists);
+        WriteLists(document.Lists, 1);
         Line(0, "body");
         if (document.Body.Count == 0) Line(1, None);
         WriteBlocks(document.Body, 1);
+        Line(0, "headers");
+        WriteHeadersAndFooters(document.Headers);
+        Line(0, "footers");
+        WriteHeadersAndFooters(document.Footers);
         return _snapshot.ToString();
     }
 
@@ -76,9 +84,9 @@ internal sealed class DocxSnapshotWriter
         }
     }
 
-    private void WriteStyles(IReadOnlyList<DocxStyle> styles)
+    private void WriteStyles(IReadOnlyList<DocxStyle> styles, int depth)
     {
-        if (styles.Count == 0) Line(1, None);
+        if (styles.Count == 0) Line(depth, None);
         foreach (var style in styles)
         {
             var line = new StringBuilder($"{style.Id} {style.Type}");
@@ -87,21 +95,21 @@ internal sealed class DocxSnapshotWriter
             Key(line, "based-on", style.BasedOn);
             WriteRun(line, style.Run, new RunFormat());
             WriteLayout(line, style.Paragraph, new ParagraphFormat());
-            Line(1, line.ToString());
+            Line(depth, line.ToString());
         }
     }
 
-    private void WriteLists(IReadOnlyList<DocxList> lists)
+    private void WriteLists(IReadOnlyList<DocxList> lists, int depth)
     {
-        if (lists.Count == 0) Line(1, None);
+        if (lists.Count == 0) Line(depth, None);
         foreach (var list in lists)
         {
-            Line(1, $"list {list.Id} definition={list.Definition}");
+            Line(depth, $"list {list.Id} definition={list.Definition}");
             foreach (var level in list.Levels)
             {
                 if (level.Format is null)
                 {
-                    Line(2, $"level {level.Level} {Missing}");
+                    Line(depth + 1, $"level {level.Level} {Missing}");
                     continue;
                 }
 
@@ -111,7 +119,7 @@ internal sealed class DocxSnapshotWriter
                 Key(line, "indent", Length(level.Indent));
                 Key(line, "hanging", Length(level.Hanging));
                 Key(line, "font", Quote(level.Font));
-                Line(2, line.ToString());
+                Line(depth + 1, line.ToString());
             }
         }
     }
@@ -122,7 +130,38 @@ internal sealed class DocxSnapshotWriter
         {
             if (block is DocxParagraph paragraph) WriteParagraph(paragraph, depth);
             else if (block is DocxTable table) WriteTable(table, depth);
+            else if (block is DocxInserted inserted) WriteInserted(inserted, depth);
         }
+    }
+
+    private void WriteHeadersAndFooters(IReadOnlyList<DocxHeaderFooter> items)
+    {
+        if (items.Count == 0) Line(1, None);
+        foreach (var item in items)
+        {
+            Line(1, $"s{item.Section} {item.Kind}{(item.Blocks is null ? $" {Missing}" : "")}");
+            WriteBlocks(item.Blocks ?? [], 2);
+        }
+    }
+
+    // An inserted DOCX is read with its own styles and lists, so its body is written against them, under its own styles
+    // and numbering; anything else is written by hash.
+    private void WriteInserted(DocxInserted inserted, int depth)
+    {
+        var line = new StringBuilder($"Inserted {inserted.Kind ?? "(unknown)"}");
+        if (inserted.Unreadable) line.Append(" unreadable");
+        if (inserted.Document is null) Key(line, "hash", inserted.Hash ?? Missing);
+        Line(depth, line.ToString());
+        if (inserted.Document is not { } document) return;
+
+        var writer = new DocxSnapshotWriter(document, _snapshot);
+        writer.Line(depth + 1, "styles");
+        writer.WriteStyles(document.Styles, depth + 2);
+        writer.Line(depth + 1, "numbering");
+        writer.WriteLists(document.Lists, depth + 2);
+        writer.Line(depth + 1, "body");
+        if (document.Body.Count == 0) writer.Line(depth + 2, None);
+        writer.WriteBlocks(document.Body, depth + 2);
     }
 
     // A paragraph lists how its layout differs from its style's, as a span lists how its look differs from the paragraph's.
@@ -159,6 +198,10 @@ internal sealed class DocxSnapshotWriter
                 break;
             case DocxLink link:
                 line.Append($"link {Quote(link.Text)} -> {link.Target ?? Missing}");
+                break;
+            case DocxField field:
+                line.Append($"field {Quote(field.Code)}");
+                Key(line, "result", Quote(field.Result));
                 break;
             case DocxBookmark bookmark:
                 line.Append($"bookmark {Quote(bookmark.Name)}");
