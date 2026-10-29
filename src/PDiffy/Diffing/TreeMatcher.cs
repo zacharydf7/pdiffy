@@ -5,7 +5,7 @@ namespace PDiffy.Diffing;
 /// <summary>
 /// Compares one section of two snapshots. Siblings that didn't change at all are matched first. Between them, a removed
 /// and an added line with the same key and mostly the same words are treated as one edited line. Whatever is left is
-/// removed or added, unless the same subtree turns up on the other side, which makes it a move.
+/// removed or added, unless it turns up elsewhere on the other side, unchanged or edited, which makes it a move.
 /// </summary>
 internal sealed class TreeMatcher(string name, Section? section)
 {
@@ -75,7 +75,8 @@ internal sealed class TreeMatcher(string name, Section? section)
 
     private void CompareLines(SnapshotLine old, SnapshotLine edited, string path)
     {
-        if (old.Text == edited.Text) return;
+        // A line moved to another depth differs only in its indent.
+        if (old.Text.TrimStart() == edited.Text.TrimStart()) return;
 
         var page = edited.Page ?? old.Page;
         var found = _entries.Count;
@@ -107,21 +108,36 @@ internal sealed class TreeMatcher(string name, Section? section)
     private void Add(ChangeKind kind, string path, int? page, string detail) =>
         _entries.Add(new Entry(Change: new SnapshotChange(kind, section, path, page, detail)));
 
-    // A removed subtree that reappears, unchanged, somewhere else on the other side was moved, not removed and added.
+    // A removed subtree found elsewhere, as is or edited, was moved; leftover children of a move are checked too.
     private void FindMoves()
     {
-        foreach (var removed in _entries.Where(entry => entry.Removed is not null).ToList())
+        var pending = new Queue<Entry>(_entries.Where(entry => entry.Removed is not null));
+        while (pending.TryDequeue(out var removed))
         {
-            var index = _entries.FindIndex(entry => entry.Added?.Signature == removed.Removed!.Signature);
-            if (index < 0) continue;
+            var old = removed.Removed!;
+            var candidates = _entries.Where(entry => entry.Added is not null).ToList();
+            var match = Nearest(old, candidates.Where(entry => entry.Added!.Signature == old.Signature))
+                ?? Nearest(old, candidates.Where(entry => IsEditedCopy(old, entry.Added!)));
+            if (match is null) continue;
 
-            var added = _entries[index];
-            var detail = $"reading position {_beforePositions[removed.Removed!]} -> {_afterPositions[added.Added!]}";
-            var moved = new SnapshotChange(ChangeKind.Moved, section, added.Path!, added.Added!.Page, detail);
-            _entries[index] = new Entry(Change: moved);
+            // The edits to a moved line go right after its move, not at the end of the list.
+            var (line, path, start) = (match.Added!, match.Path!, _entries.Count);
+            CompareLines(old, line, path);
+            CompareChildren(old.Children, line.Children, path);
+            var edits = _entries.GetRange(start, _entries.Count - start);
+            _entries.RemoveRange(start, edits.Count);
+            var detail = $"reading position {_beforePositions[old]} -> {_afterPositions[line]}";
+            var index = _entries.IndexOf(match);
+            _entries[index] = new Entry(Change: new SnapshotChange(ChangeKind.Moved, section, path, line.Page, detail));
+            _entries.InsertRange(index + 1, edits);
             _entries.Remove(removed);
+            foreach (var child in edits.Where(entry => entry.Removed is not null)) pending.Enqueue(child);
         }
     }
+
+    // When the same line was added in several places, the one closest to where it was removed is its move.
+    private Entry? Nearest(SnapshotLine old, IEnumerable<Entry> candidates) =>
+        candidates.MinBy(entry => Math.Abs(_afterPositions[entry.Added!] - _beforePositions[old]));
 
     private SnapshotChange ToChange(Entry entry) => entry.Change
         ?? (entry.Removed is { } removed
@@ -136,25 +152,38 @@ internal sealed class TreeMatcher(string name, Section? section)
         return $"{parentPath} > {label}";
     }
 
-    // The same key, and either the same text (a bookmark that gained a page) or mostly the same words.
+    // Same key, and the same text (a bookmark that gained a page), mostly the same words, or a changed one-word value.
     internal static bool IsSameLine(SnapshotLine old, SnapshotLine line) =>
-        line.Key == old.Key
-        && (old.QuotedText is not null && line.QuotedText == old.QuotedText || Similarity(old, line) >= SameLineSimilarity);
+        line.Key == old.Key && (old.QuotedText is not null && line.QuotedText == old.QuotedText
+            || Similarity(old, line) >= SameLineSimilarity || IsValueChange(old, line));
 
-    // The share of words, attributes and text words two lines have in common.
-    private static double Similarity(SnapshotLine first, SnapshotLine second)
+    // Only text words count when both lines have text, so type, page and style alone never make two lines the same.
+    private static double Similarity(SnapshotLine first, SnapshotLine second) =>
+        first.TextWords.Count > 0 && second.TextWords.Count > 0
+            ? Overlap(first.TextWords, second.TextWords)
+            : Overlap(first.AllWords, second.AllWords);
+
+    // A one-word value, such as a number in a table cell, replaced on a line that is otherwise the same.
+    private static bool IsValueChange(SnapshotLine old, SnapshotLine line) =>
+        old.TextWords.Count == 1 && line.TextWords.Count == 1 && old.Words.SequenceEqual(line.Words)
+        && old.Attributes.SequenceEqual(line.Attributes);
+
+    // An edited copy elsewhere: when both subtrees have text, their words decide, so unrelated rows never pair.
+    private static bool IsEditedCopy(SnapshotLine old, SnapshotLine line)
     {
-        var firstTokens = Tokens(first);
-        var secondTokens = Tokens(second);
-        var common = firstTokens.Intersect(secondTokens).Count();
-        return (double)common / Math.Max(1, Math.Max(firstTokens.Count, secondTokens.Count));
+        if (line.Key != old.Key) return false;
+
+        var (before, after) = (SubtreeWords(old), SubtreeWords(line));
+        var similarity = before.Count > 0 && after.Count > 0 ? Overlap(before, after) : Similarity(old, line);
+        return similarity >= SameLineSimilarity;
     }
 
-    private static HashSet<string> Tokens(SnapshotLine line) =>
-    [
-        .. line.Words, .. line.Attributes.Select(pair => $"{pair.Key}={pair.Value}"),
-        .. (line.QuotedText ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries),
-    ];
+    private static HashSet<string> SubtreeWords(SnapshotLine line) =>
+        line.Children.Count == 0 ? line.TextWords : [.. line.TextWords, .. line.Children.SelectMany(SubtreeWords)];
+
+    // The share of words two sets have in common, out of the larger set.
+    private static double Overlap(HashSet<string> first, HashSet<string> second) =>
+        (double)first.Count(second.Contains) / Math.Max(1, Math.Max(first.Count, second.Count));
 
     private static List<string> Values(SnapshotLine line, string key) =>
         line.Attributes.Where(pair => pair.Key == key).Select(pair => pair.Value).ToList();

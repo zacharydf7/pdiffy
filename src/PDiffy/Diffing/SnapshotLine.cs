@@ -8,6 +8,10 @@ namespace PDiffy.Diffing;
 /// </summary>
 internal sealed class SnapshotLine(string text, int depth)
 {
+    // Worked out on first use and kept, since matching compares each line with many others.
+    private HashSet<string>? _textWords;
+    private HashSet<string>? _allWords;
+
     public string Text { get; } = text;
     public int Depth { get; } = depth;
     public List<SnapshotLine> Children { get; } = [];
@@ -24,6 +28,13 @@ internal sealed class SnapshotLine(string text, int depth)
 
     /// <summary>The page the line is on, from a word like p3 or p2-4.</summary>
     public int? Page => Words.Select(PageOf).FirstOrDefault(page => page is not null);
+
+    /// <summary>The words of the quoted text, for telling an edited line from a different one.</summary>
+    public HashSet<string> TextWords => _textWords ??= [.. (QuotedText ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries)];
+
+    /// <summary>The leading words, the key=value attributes and the text's words.</summary>
+    public HashSet<string> AllWords =>
+        _allWords ??= [.. Words, .. Attributes.Select(pair => $"{pair.Key}={pair.Value}"), .. TextWords];
 
     /// <summary>The line and everything nested under it, used to recognize a subtree that didn't change or moved.</summary>
     public string Signature =>

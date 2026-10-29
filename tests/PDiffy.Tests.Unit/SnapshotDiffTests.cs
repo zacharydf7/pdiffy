@@ -136,6 +136,124 @@ public class SnapshotDiffTests
         Assert.Equal(expected, changes);
     }
 
+    [Theory]
+    [InlineData("structure", "P p1 \"Take daily\"", "P p1 \"Avoid alcohol\"")]
+    [InlineData("layout", "p1 text tagged at=72,700 font=Arial size=12 color=gray:0 \"Warfarin\"",
+        "p1 text tagged at=400,300 font=Arial size=12 color=gray:0 \"Signature line\"")]
+    [InlineData("layout", "p1 text tagged at=72,700 font=Arial size=12 color=gray:0 \"Warfarin\"",
+        "p1 text tagged at=400,300 font=Arial size=12 color=gray:0 \"Total\"")]
+    public void Compare_ShouldReportRemovedAndAdded_WhenTheTextSharesNoWords(string section, string before, string after)
+    {
+        var changes = SnapshotDiff.Compare($"{SnapshotText.Header}{section}\n  {before}\n", $"{SnapshotText.Header}{section}\n  {after}\n").Changes;
+
+        Assert.Equal([ChangeKind.Removed, ChangeKind.Added], changes.Select(change => change.Kind));
+    }
+
+    [Fact]
+    public void Compare_ShouldReportATextChange_WhenAOneWordValueIsReplaced()
+    {
+        var after = Before.Replace("\"Warfarin\"", "\"Aspirin\"");
+
+        var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
+
+        Assert.Equal((ChangeKind.TextChanged, "\"[-Warfarin-] {+Aspirin+}\""), (change.Kind, change.Detail));
+    }
+
+    [Fact]
+    public void Compare_ShouldReportAMoveAndTheEdit_WhenAnElementMovesAndChanges()
+    {
+        var figure = "    Figure p1 alt=\"Pharmacy logo\"\n";
+        var after = Before.Replace(figure, "").Replace("    P p3 \"Call your pharmacist\"",
+            "    Figure p1 alt=\"Store logo\"\n    P p3 \"Call your doctor\"");
+
+        var changes = SnapshotDiff.Compare(Before, after).Changes;
+
+        SnapshotChange[] expected =
+        [
+            new(ChangeKind.Moved, Section.Structure, "structure > Document > Figure", 1, "reading position 3 -> 10"),
+            new(ChangeKind.AttributeChanged, Section.Structure, "structure > Document > Figure", 1,
+                "alt: \"Pharmacy logo\" -> \"Store logo\""),
+            new(ChangeKind.TextChanged, Section.Structure, "structure > Document > P", 3, "\"Call your [-pharmacist-] {+doctor+}\""),
+        ];
+        Assert.Equal(expected, changes);
+    }
+
+    [Fact]
+    public void Compare_ShouldReportAMoveInsideAMove_WhenAChildLeavesAnElementThatAlsoMoved()
+    {
+        var before = SnapshotText.Header + """
+            structure
+              H1 p1 "Title"
+              L p1
+                LI p1 "Apples are red"
+                LI p1 "Pears are green"
+              P p1 "Note text here"
+            """.ReplaceLineEndings("\n");
+        var after = SnapshotText.Header + """
+            structure
+              L p1
+                LI p1 "Apples are red"
+              H1 p1 "Title"
+              P p1 "Note text here"
+              LI p1 "Pears are green"
+            """.ReplaceLineEndings("\n");
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        SnapshotChange[] expected =
+        [
+            new(ChangeKind.Moved, Section.Structure, "structure > L", 1, "reading position 2 -> 1"),
+            new(ChangeKind.Moved, Section.Structure, "structure > LI", 1, "reading position 4 -> 5"),
+        ];
+        Assert.Equal(expected, changes);
+    }
+
+    [Fact]
+    public void Compare_ShouldReportRemovedAndAdded_WhenARowGoesAndAnUnrelatedRowArrivesInAnotherTable()
+    {
+        var before = SnapshotText.Header + """
+            structure
+              Table p1
+                TR
+                  TD p1 "Warfarin"
+                  TD p1 "Take with food"
+              Table p2
+                TR
+                  TD p2 "Dose"
+            """.ReplaceLineEndings("\n");
+        var after = SnapshotText.Header + """
+            structure
+              Table p1
+              Table p2
+                TR
+                  TD p2 "Dose"
+                TR
+                  TD p2 "Ibuprofen"
+                  TD p2 "Avoid alcohol"
+            """.ReplaceLineEndings("\n");
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Equal([(ChangeKind.Removed, "structure > Table[1] > TR"), (ChangeKind.Added, "structure > Table[2] > TR[2]")],
+            changes.Select(change => (change.Kind, change.Path)));
+    }
+
+    [Fact]
+    public void Compare_ShouldMoveTheNearestCopy_WhenTheSameLineIsAddedInSeveralPlaces()
+    {
+        var before = SnapshotText.Header + "structure\n" + string.Concat("ABCSDE".Select(name => $"  P p1 \"{name}\"\n"));
+        var after = SnapshotText.Header + "structure\n" + string.Concat("SABCDSE".Select(name => $"  P p1 \"{name}\"\n"));
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        SnapshotChange[] expected =
+        [
+            new(ChangeKind.Added, Section.Structure, "structure > P[1]", 1, "P p1 \"S\""),
+            new(ChangeKind.Moved, Section.Structure, "structure > P[6]", 1, "reading position 4 -> 6"),
+        ];
+        Assert.Equal(expected, changes);
+    }
+
     [Fact]
     public void Compare_ShouldNameBookmarksByTitle_WhenABookmarkChanges()
     {
