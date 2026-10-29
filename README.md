@@ -499,6 +499,15 @@ pdiffy statement-v1.pdf statement-v2.pdf --html report.html
 pdiffy statement-v1.pdf statement-v2.pdf --json
 pdiffy statement-v1.pdf statement-v2.pdf --json changes.json
 
+# Compare only what a profile guards: content, accessibility, layout or strict (the default).
+pdiffy statement-v1.pdf statement-v2.pdf --profile content
+
+# Compare two folders file by file, such as the documents two releases generate. Files pair by their path inside each
+# folder; one line per file that changed, was added or removed, or can't be read. --html saves an index page with a
+# report for each changed file, and --json and --profile work as above.
+pdiffy compare release-1.4/out release-1.5/out
+pdiffy compare release-1.4/out release-1.5/out --html compare/index.html
+
 # Print a PDF's or DOCX's snapshot, or save it to a file.
 pdiffy snapshot statement.pdf
 pdiffy snapshot statement.pdf statement.pdfua.txt

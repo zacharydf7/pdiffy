@@ -14,13 +14,16 @@ public static class Commands
         Usage:
           pdiffy <before> <after> [--html <report.html>]   Compare two PDFs, two DOCX files or two snapshot files
                  [--json [<changes.json>]]                  --json prints the changes as JSON instead, or saves them
+                 [--profile <profile>]                      content, accessibility, layout or strict (the default)
+          pdiffy compare <before> <after> [--html <index.html>] [--json [<changes.json>]] [--profile <profile>]
+                                                            Compare two folders, file by file
           pdiffy snapshot <file.pdf|file.docx> [<out>]      Print or save a PDF's or DOCX's snapshot
           pdiffy accept [<files or folders>] [--all]        Accept received snapshots as verified
           pdiffy report [<files or folders>] [--all] [--html <summary.html>] [--markdown <summary.md>]
                                                             Summarize received snapshots
 
-        compare exits with 0 when nothing changed and 1 when something did; report, with 0 when no snapshot was received
-        and 1 when one was.
+        Comparing exits with 0 when nothing changed and 1 when something did; report, with 0 when no snapshot was
+        received and 1 when one was.
         accept and report take the current folder by default; --all includes subfolders.
         """;
 
@@ -34,6 +37,8 @@ public static class Commands
                 ["snapshot", var document, var file] => Snapshot(document, file, output),
                 ["accept", .. var rest] => Accept(rest, output),
                 ["report", .. var rest] => Report(rest, output),
+                ["compare", var before, var after, .. var options] =>
+                    CompareFolders(before, after, options, output, error),
                 [var before, var after, .. var options] => Compare(before, after, options, output, error),
                 _ => ShowUsage(error),
             };
@@ -49,27 +54,36 @@ public static class Commands
     // With --json and no file, the output is only JSON, so a script can read it straight from the pipe.
     private static int Compare(string before, string after, string[] options, TextWriter output, TextWriter error)
     {
-        var (report, json, printJson) = ((string?)null, (string?)null, false);
-        for (var i = 0; i < options.Length; i++)
-        {
-            var hasValue = i + 1 < options.Length && !options[i + 1].StartsWith("--", StringComparison.Ordinal);
-            if (options[i] == "--html" && hasValue) report = options[++i];
-            else if (options[i] == "--json" && hasValue) json = options[++i];
-            else if (options[i] == "--json") printJson = true;
-            else return ShowUsage(error);
-        }
+        if (CompareOptions.Parse(options) is not { } parsed) return ShowUsage(error);
 
-        var diff = SnapshotDiff.Compare(SnapshotOf(before), SnapshotOf(after));
-        if (printJson) output.Write(diff.ToJson());
+        var diff = SnapshotDiff.Compare(SnapshotOf(before, parsed.Profile), SnapshotOf(after, parsed.Profile));
+        if (parsed.PrintJson) output.Write(diff.ToJson());
         else output.WriteLine(diff.Describe(int.MaxValue));
-        if (json is not null) File.WriteAllText(json, diff.ToJson());
-        if (report is not null)
+        if (parsed.Json is not null) File.WriteAllText(parsed.Json, diff.ToJson());
+        if (parsed.Html is not null)
         {
-            File.WriteAllText(report, diff.ToHtml());
-            if (!printJson) output.WriteLine($"report: {report}");
+            File.WriteAllText(parsed.Html, diff.ToHtml());
+            if (!parsed.PrintJson) output.WriteLine($"report: {parsed.Html}");
         }
 
         return diff.IsEmpty ? Same : Different;
+    }
+
+    private static int CompareFolders(string before, string after, string[] options, TextWriter output, TextWriter error)
+    {
+        if (CompareOptions.Parse(options) is not { } parsed) return ShowUsage(error);
+
+        var comparison = FolderComparison.Run(before, after, parsed.Profile);
+        if (parsed.PrintJson) output.Write(comparison.ToJson());
+        else output.Write(comparison.ToText());
+        if (parsed.Json is not null) File.WriteAllText(parsed.Json, comparison.ToJson());
+        if (parsed.Html is not null)
+        {
+            comparison.SaveHtml(parsed.Html);
+            if (!parsed.PrintJson) output.WriteLine($"report: {parsed.Html}");
+        }
+
+        return comparison.Differences.Count == 0 ? Same : Different;
     }
 
     private static int Snapshot(string document, string? file, TextWriter output)
@@ -120,10 +134,12 @@ public static class Commands
         return pending.Count == 0 ? Same : Different;
     }
 
-    // A PDF or a DOCX is read and snapshotted; anything else is taken to be a snapshot already.
-    private static string SnapshotOf(string path) =>
-        IsPdf(path) ? PdfUaDocument.Load(path).ToSnapshot()
-        : IsDocx(path) ? DocxDocument.Load(path).ToSnapshot()
+    // A PDF or a DOCX is read and snapshotted; anything else is taken to be a snapshot already, which a profile can't
+    // change. A Word document takes the profile of the same name, or Strict when there's none.
+    internal static string SnapshotOf(string path, SnapshotProfile profile) =>
+        IsPdf(path) ? PdfUaDocument.Load(path).ToSnapshot(options => options.Use(profile))
+        : IsDocx(path) ? DocxDocument.Load(path).ToSnapshot(options => options.Use(
+            Enum.TryParse<DocxProfile>(profile.ToString(), out var docxProfile) ? docxProfile : DocxProfile.Strict))
         : File.ReadAllText(path);
 
     private static bool IsDocx(string path) => Path.GetExtension(path).Equals(".docx", StringComparison.OrdinalIgnoreCase);
@@ -141,5 +157,35 @@ public static class Commands
     {
         error.WriteLine(Usage);
         return UsageError;
+    }
+
+    /// <summary>The options both compare commands take.</summary>
+    private sealed record CompareOptions(string? Html, string? Json, bool PrintJson, SnapshotProfile Profile)
+    {
+        // Null when an option is unknown or is missing its value.
+        public static CompareOptions? Parse(string[] options)
+        {
+            var parsed = new CompareOptions(null, null, false, SnapshotProfile.Strict);
+            for (var i = 0; i < options.Length; i++)
+            {
+                var value = i + 1 < options.Length && !options[i + 1].StartsWith("--", StringComparison.Ordinal)
+                    ? options[i + 1]
+                    : null;
+                if (options[i] == "--html" && value is not null) parsed = parsed with { Html = options[++i] };
+                else if (options[i] == "--json" && value is not null) parsed = parsed with { Json = options[++i] };
+                else if (options[i] == "--json") parsed = parsed with { PrintJson = true };
+                // Only a name: Enum.TryParse also takes numbers and comma lists, which would pick another profile.
+                else if (options[i] == "--profile"
+                    && Enum.GetNames<SnapshotProfile>().Contains(value, StringComparer.OrdinalIgnoreCase)
+                    && Enum.TryParse<SnapshotProfile>(value, ignoreCase: true, out var profile))
+                {
+                    parsed = parsed with { Profile = profile };
+                    i++;
+                }
+                else return null;
+            }
+
+            return parsed;
+        }
     }
 }

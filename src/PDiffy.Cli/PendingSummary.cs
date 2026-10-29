@@ -1,6 +1,4 @@
-using System.Net;
 using System.Text;
-using PDiffy.Diffing;
 
 namespace PDiffy.Cli;
 
@@ -18,20 +16,8 @@ internal sealed class PendingSummary
         : $"{_rows.Count} received snapshot(s): {_rows.Count(row => row.Diff is not null)} changed, "
             + $"{_rows.Count(row => row.Diff is null)} new";
 
-    public string ToText()
-    {
-        var text = new StringBuilder(Headline).Append('\n');
-        foreach (var row in _rows)
-        {
-            text.Append($"{row.Status} {row.Name}");
-            if (row.Diff is not null) text.Append($": {row.Changes}");
-            if (row.Sections.Length > 0) text.Append($"; by section: {row.Sections}");
-            if (row.Accessibility > 0) text.Append($"; {row.Accessibility} can affect accessibility");
-            text.Append('\n');
-        }
-
-        return text.ToString();
-    }
+    public string ToText() =>
+        string.Concat(_rows.Select(row => ChangeSummary.TextLine(row.Summary) + "\n").Prepend(Headline + "\n"));
 
     public string ToMarkdown()
     {
@@ -50,27 +36,8 @@ internal sealed class PendingSummary
     }
 
     /// <summary>The page links each report relative to <paramref name="folder"/>, where the page is saved.</summary>
-    public string ToHtml(string folder)
-    {
-        var html = new StringBuilder(Head).Append($"<h1>{Encode(Headline)}</h1>\n");
-        if (_rows.Count > 0)
-        {
-            html.Append("<table><tr><th>Snapshot</th><th>Status</th><th>Changes</th><th>By section</th>")
-                .Append("<th>Can affect accessibility</th></tr>\n");
-        }
-
-        foreach (var row in _rows)
-        {
-            var name = File.Exists(row.Snapshot.Report)
-                ? $"<a href=\"{Link(folder, row.Snapshot.Report)}\">{Encode(row.Name)}</a>"
-                : Encode(row.Name);
-            html.Append($"<tr><td>{name}</td><td>{row.Status}</td><td>{Encode(row.Changes)}</td>")
-                .Append($"<td>{Encode(row.Sections)}</td><td>{(row.Diff is null ? "" : row.Accessibility)}</td></tr>\n");
-        }
-
-        if (_rows.Count > 0) html.Append("</table>\n");
-        return html.Append("</body></html>\n").ToString();
-    }
+    public string ToHtml(string folder) =>
+        ChangeSummary.Page("Received snapshots", Headline, "Snapshot", _rows.ConvertAll(row => row.Summary), folder);
 
     // A new snapshot has no verified file, so it has nothing to compare with.
     private static Row RowOf(PendingSnapshot snapshot)
@@ -82,36 +49,17 @@ internal sealed class PendingSummary
         return new Row(snapshot, name, diff);
     }
 
-    // A report on another drive has no relative path, so it gets a file:// link.
-    private static string Link(string folder, string file)
-    {
-        var relative = Path.GetRelativePath(folder, file);
-        if (Path.IsPathRooted(relative)) return new Uri(file).AbsoluteUri;
-        return string.Join('/', relative.Split(Path.DirectorySeparatorChar).Select(Uri.EscapeDataString));
-    }
-
-    private static string Encode(string text) => WebUtility.HtmlEncode(text);
-
     private sealed record Row(PendingSnapshot Snapshot, string Name, SnapshotDiff? Diff)
     {
         public string Status => Diff is null ? "new" : "changed";
 
-        public string Changes => Diff is null ? "" : $"{Diff.Changes.Count}: {string.Join(", ", Diff.CountsByKind())}";
+        public SummaryRow Summary =>
+            new(Status, Name, Diff, Report: File.Exists(Snapshot.Report) ? Snapshot.Report : null);
 
-        public string Sections => Diff is { IsSectioned: true } ? string.Join(", ", Diff.CountsBySection()) : "";
+        public string Changes => Diff is null ? "" : ChangeSummary.Changes(Diff);
 
-        public int Accessibility => Diff?.Changes.Count(change => change.AffectsAccessibility) ?? 0;
+        public string Sections => Diff is null ? "" : ChangeSummary.Sections(Diff);
+
+        public int Accessibility => Diff is null ? 0 : ChangeSummary.Accessibility(Diff);
     }
-
-    private const string Head = $$"""
-        <!doctype html>
-        <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Received snapshots</title>
-        <style>
-        {{DiffReport.BaseStyle}}
-        table { border-collapse: collapse; }
-        th, td { text-align: left; padding: 4px 8px; border-top: 1px solid var(--line); vertical-align: top; }
-        th { color: var(--muted); font-weight: 600; }
-        </style></head><body>
-        """;
 }

@@ -312,9 +312,12 @@ public sealed class CliTests : IDisposable
         Assert.Equal(Commands.Same, exitCode);
     }
 
+    private string Folder(string name) => Path.Combine(_folder, name);
+
     private string Write(string name, string text)
     {
         var path = Path.Combine(_folder, name);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, text);
         return path;
     }
@@ -332,6 +335,122 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void Run_ShouldListEachFileThatDiffersAndReturnOne_WhenComparingFolders()
+    {
+        WritePdf("before/letter.pdf", "Take with food");
+        WritePdf("after/letter.pdf", "Take after food");
+        WritePdf("before/same/guide.pdf", "Hello");
+        WritePdf("after/same/guide.pdf", "Hello");
+        Write("before/old.txt", "a\n");
+        Write("after/new.json", "{}");
+        Write("before/broken.pdf", "%PDF-1.7 not really");
+        Write("after/broken.pdf", "%PDF-1.7 not really");
+        Write("after/logo.png", "not compared");
+
+        var exitCode = Commands.Run(["compare", Folder("before"), Folder("after")], _output, _error);
+
+        Assert.Equal(Commands.Different, exitCode);
+        var lines = _output.ToString().Split('\n');
+        Assert.Equal("4 file(s) differ: 1 changed, 1 added, 1 removed, 1 unreadable; 1 unchanged, 1 not compared.",
+            lines[0]);
+        Assert.StartsWith("changed letter.pdf: 2: 2 text; by section: structure 1, layout 1", lines[1]);
+        Assert.Equal(["added new.json", "removed old.txt"], lines[2..4]);
+        Assert.StartsWith("unreadable broken.pdf: ", lines[4]);
+    }
+
+    [Fact]
+    public void Run_ShouldSayNoFilesDifferAndReturnZero_WhenFoldersMatch()
+    {
+        WritePdf("before/letter.pdf", "Hello");
+        WritePdf("after/letter.pdf", "Hello");
+
+        var exitCode = Commands.Run(["compare", Folder("before"), Folder("after")], _output, _error);
+
+        Assert.Equal(Commands.Same, exitCode);
+        Assert.Equal("No files differ: 1 unchanged.\n", _output.ToString());
+    }
+
+    [Fact]
+    public void Run_ShouldSaveAnIndexWithAReportForEachChangedFileAndTheJson_WhenComparingFoldersWithHtmlAndJson()
+    {
+        Write("before/notes/a.txt", "a\n");
+        Write("after/notes/a.txt", "b\n");
+        Write("after/extra.txt", "c\n");
+        var (index, json) = (Path.Combine(_folder, "out", "index.html"), Path.Combine(_folder, "changes.json"));
+
+        Commands.Run(["compare", Folder("before"), Folder("after"), "--html", index, "--json", json], _output, _error);
+
+        Assert.Contains("<a href=\"notes/a.txt.diff.html\">notes/a.txt</a>", File.ReadAllText(index));
+        Assert.StartsWith("<!doctype html>", File.ReadAllText(Path.Combine(_folder, "out", "notes", "a.txt.diff.html")));
+        var files = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(json))!["files"]!.AsArray();
+        Assert.Equal(["changed notes/a.txt 1", "added extra.txt 0"],
+            files.Select(file => $"{file!["status"]} {file["path"]} {file["changes"]?.AsArray().Count ?? 0}"));
+    }
+
+    [Fact]
+    public void Run_ShouldSaveTheIndexInANewFolder_WhenComparingFoldersThatMatchWithHtml()
+    {
+        Write("before/a.txt", "a\n");
+        Write("after/a.txt", "a\n");
+        var index = Path.Combine(_folder, "out", "index.html");
+
+        var exitCode = Commands.Run(["compare", Folder("before"), Folder("after"), "--html", index], _output, _error);
+
+        Assert.Equal(Commands.Same, exitCode);
+        Assert.Contains("No files differ: 1 unchanged.", File.ReadAllText(index));
+    }
+
+    // Word has no accessibility profile, so a Word document is then compared in full.
+    [Theory]
+    [InlineData("content", Commands.Same)]
+    [InlineData("accessibility", Commands.Different)]
+    public void Run_ShouldUseTheWordProfileOfTheSameName_WhenComparingFoldersOfDocxFilesWithAProfile(string profile,
+        int expected)
+    {
+        WriteDocx("before/letter.docx", "Hello", font: "Arial");
+        WriteDocx("after/letter.docx", "Hello", font: "Georgia");
+
+        var exitCode = Commands.Run(["compare", Folder("before"), Folder("after"), "--profile", profile], _output, _error);
+
+        Assert.Equal(expected, exitCode);
+    }
+
+    [Fact]
+    public void Run_ShouldLeaveOutWhatTheProfileLeavesOut_WhenGivenAProfile()
+    {
+        var before = WritePdf("before.pdf", "Hello", title: "Draft");
+        var after = WritePdf("after.pdf", "Hello", title: "Final");
+
+        var exitCode = Commands.Run([before, after, "--profile", "content"], _output, _error);
+
+        Assert.Equal(Commands.Same, exitCode);
+    }
+
+    [Theory]
+    [InlineData("--profile")]
+    [InlineData("--profile", "pixels")]
+    [InlineData("--profile", "2")]
+    [InlineData("--profile", "content,accessibility")]
+    public void Run_ShouldPrintUsageAndReturnTwo_WhenTheProfileIsMissingOrUnknown(params string[] options)
+    {
+        var (before, after) = (Write("before.txt", "a\n"), Write("after.txt", "a\n"));
+
+        var exitCode = Commands.Run([before, after, .. options], _output, _error);
+
+        Assert.Equal(Commands.UsageError, exitCode);
+        Assert.Contains("Usage:", _error.ToString());
+    }
+
+    [Fact]
+    public void Run_ShouldReportTheFolderOnTheErrorOutputAndReturnTwo_WhenAFolderIsMissing()
+    {
+        var exitCode = Commands.Run(["compare", Path.Combine(_folder, "nowhere"), _folder], _output, _error);
+
+        Assert.Equal(Commands.UsageError, exitCode);
+        Assert.Contains("nowhere isn't a folder", _error.ToString());
+    }
+
+    [Fact]
     public void Run_ShouldPrintTheDocxsSnapshot_WhenGivenADocx()
     {
         var docx = WriteDocx("letter.docx", "Hello");
@@ -341,19 +460,23 @@ public sealed class CliTests : IDisposable
         Assert.Equal(DocxDocument.Load(docx).ToSnapshot(), _output.ToString());
     }
 
-    private string WriteDocx(string name, string text)
+    private string WriteDocx(string name, string text, string? font = null)
     {
         var path = Path.Combine(_folder, name);
-        File.WriteAllBytes(path, new Docx.TestDocx { Body = $"<w:p><w:r><w:t>{text}</w:t></w:r></w:p>" }.Build().ToArray());
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var properties = font is null ? "" : $"<w:rPr><w:rFonts w:ascii=\"{font}\"/></w:rPr>";
+        var docx = new Docx.TestDocx { Body = $"<w:p><w:r>{properties}<w:t>{text}</w:t></w:r></w:p>" };
+        File.WriteAllBytes(path, docx.Build().ToArray());
         return path;
     }
 
-    private string WritePdf(string name, string text)
+    private string WritePdf(string name, string text, string? title = null)
     {
-        var pdf = new TestPdf();
+        var pdf = new TestPdf { Title = title };
         pdf.AddPage().Tagged(0, text);
         pdf.Structure(new TestElement("P", 0));
         var path = Path.Combine(_folder, name);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllBytes(path, pdf.Build());
         return path;
     }

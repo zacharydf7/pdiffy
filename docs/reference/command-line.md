@@ -10,6 +10,7 @@ dotnet tool install --global PDiffy.Cli
 | Command | Does |
 |---|---|
 | [`pdiffy <before> <after>`](#compare) | Compares two PDFs, two DOCX files or two snapshot files |
+| [`pdiffy compare <before> <after>`](#compare-folders) | Compares two folders of documents, file by file |
 | [`pdiffy snapshot <file>`](#snapshot) | Prints or saves a PDF's or DOCX's snapshot |
 | [`pdiffy accept [targets]`](#accept) | Accepts received snapshots as verified |
 | [`pdiffy report [targets]`](#report) | Summarizes received snapshots, for review or a CI job page |
@@ -18,14 +19,14 @@ dotnet tool install --global PDiffy.Cli
 
 | Code | Meaning |
 |---|---|
-| `0` | Nothing changed (compare), nothing is waiting to be accepted (report), or the command succeeded |
-| `1` | Something changed (compare), or received snapshots are waiting (report) |
-| `2` | The arguments don't fit a command, or a file is missing or can't be read. The problem is written to standard error. |
+| `0` | Nothing changed (comparing files or folders), nothing is waiting to be accepted (report), or the command succeeded |
+| `1` | Something changed (comparing files or folders), or received snapshots are waiting (report) |
+| `2` | The arguments don't fit a command, or a file or folder is missing or can't be read. The problem is written to standard error. When comparing folders, a file that can't be read is listed as `unreadable` instead, and counts as a change. |
 
 ## Compare
 
 ```text
-pdiffy <before> <after> [--html <report.html>] [--json [<changes.json>]]
+pdiffy <before> <after> [--html <report.html>] [--json [<changes.json>]] [--profile <profile>]
 ```
 
 Prints what changed between two files, the same summary a failing test shows, and exits with `0` when nothing did and
@@ -36,6 +37,7 @@ Prints what changed between two files, the same summary a failing test shows, an
 | `--html <file>` | Also writes the side-by-side HTML report |
 | `--json` | Prints only the changes as [JSON](../guide/comparing.md#json-output), instead of the summary, so a script can read them from the pipe |
 | `--json <file>` | Saves the JSON to a file, and prints the summary as usual |
+| `--profile <profile>` | Leaves out what a [profile](options.md#pdf-profiles) leaves out: `content`, `accessibility`, `layout` or `strict` (the default). A Word document uses the [Word profile](options.md#word-profiles) of the same name, or `strict` when there's none. A snapshot file is compared as it is |
 
 Each input can be:
 
@@ -48,6 +50,56 @@ pdiffy statement-v1.pdf statement-v2.pdf
 pdiffy statement-v1.pdf statement-v2.pdf --html report.html
 pdiffy statement-v1.pdf statement-v2.pdf --json > changes.json
 pdiffy Invoice.verified.pdfua.txt Invoice.received.pdfua.txt
+pdiffy statement-v1.pdf statement-v2.pdf --profile content
+```
+
+## Compare folders
+
+```text
+pdiffy compare <before> <after> [--html <index.html>] [--json [<changes.json>]] [--profile <profile>]
+```
+
+Compares two folders, such as the documents two releases generate, file by file. Files are paired by their path inside
+each folder, including subfolders. PDFs and DOCX files are compared as documents, and `.txt` and `.json` files as
+snapshots; other files are counted but not compared.
+
+```text
+4 file(s) differ: 1 changed, 1 added, 1 removed, 1 unreadable; 12 unchanged, 3 not compared.
+changed invoices/acme.pdf: 2: 2 text; by section: structure 1, layout 1
+added letters/welcome.docx
+removed letters/old.pdf
+unreadable broken.pdf: <why it couldn't be read>
+```
+
+Files that differ are listed changed first, then added, removed and unreadable. Unchanged files are counted, not
+listed. A file that can't be read is listed as `unreadable` and counts as a change, so one damaged document doesn't stop
+the rest being compared.
+
+| Option | Does |
+|---|---|
+| `--html <file>` | Saves a page with one row per file that differs, and next to it each changed file's report, at the file's path with `.diff.html` added |
+| `--json` | Prints only the result as JSON, instead of the summary |
+| `--json <file>` | Saves the JSON to a file, and prints the summary as usual |
+| `--profile <profile>` | Leaves out what the profile leaves out, as when comparing two files |
+
+The JSON has one entry per file that differs, each with its `path`, its `status` and either its `changes`, in the same
+shape as [comparing two files](../guide/comparing.md#json-output), or the `problem` that stopped it being read:
+
+```json
+{
+  "version": 1,
+  "unchanged": 12,
+  "notCompared": 3,
+  "files": [
+    { "path": "invoices/acme.pdf", "status": "changed", "changes": [ ... ] },
+    { "path": "letters/welcome.docx", "status": "added" }
+  ]
+}
+```
+
+```text
+pdiffy compare release-1.4/out release-1.5/out
+pdiffy compare baseline current --profile content --html compare/index.html
 ```
 
 ## Snapshot
