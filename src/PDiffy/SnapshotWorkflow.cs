@@ -1,4 +1,5 @@
 using System.Text;
+using PDiffy.Diffing;
 
 namespace PDiffy;
 
@@ -33,7 +34,8 @@ internal static class SnapshotWorkflow
         var diff = verified is null ? null : SnapshotDiff.Compare(verified, received);
         if (diff is null) File.Delete(files.Report);
         else await File.WriteAllTextAsync(files.Report, diff.ToHtml());
-        throw new SnapshotException(FailureMessage(files, diff, kind));
+        var formatChange = verified is null ? null : FormatChange(verified, received);
+        throw new SnapshotException(FailureMessage(files, diff, kind, formatChange));
     }
 
     // The folder is the call's, else Snapshot.Directory, else the test file's; the name defaults to the test file and method.
@@ -56,9 +58,10 @@ internal static class SnapshotWorkflow
     }
 
     // A new snapshot has nothing to compare with, so it gets no diff and no report.
-    private static string FailureMessage(SnapshotFiles files, SnapshotDiff? diff, string kind)
+    private static string FailureMessage(SnapshotFiles files, SnapshotDiff? diff, string kind, string? formatChange)
     {
         var message = new StringBuilder();
+        if (formatChange is not null) message.AppendLine(formatChange).AppendLine();
         message.AppendLine(diff is null
             ? $"New {kind} snapshot. Review the received file, then accept it."
             : $"The {kind}'s snapshot differs from the verified one.");
@@ -68,6 +71,16 @@ internal static class SnapshotWorkflow
         message.Append($"To accept: set {Snapshot.AcceptVariable}=1 and run the test again, ");
         message.Append("or copy the received file over the verified one.");
         return message.ToString();
+    }
+
+    // A new format version changes nearly every snapshot, so the failure says that first, before the document's changes.
+    private static string? FormatChange(string verified, string received)
+    {
+        var (before, after) = (verified.Split('\n')[0], received.Split('\n')[0]);
+        if (before == after || !SnapshotTree.IsSectioned(verified) || !SnapshotTree.IsSectioned(received)) return null;
+
+        return $"The verified file uses {before[2..]}, and this version of PDiffy writes {after[2..]}. The format "
+            + "changes are listed in PDiffy's README; review the received file, then accept it.";
     }
 
     // Git can check text files out with CRLF on Windows; snapshots are always compared with LF. Only CRLF is converted:

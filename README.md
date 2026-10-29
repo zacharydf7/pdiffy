@@ -521,7 +521,7 @@ layout
   p1 path artifact at=72,60 size=468x1 stroke=cmyk:0,0,0,1 width=0.5
 ```
 
-- The first line is the format version. A new version means re-approving every snapshot once.
+- The first line is the format version. See [Format changes](#format-changes) for when it changes.
 - When anything is ignored, the next lines list it: `# ignored sections: ...` and `# ignored fields: ...`. With `OnlyPages`, `# only pages: ...` follows.
 - Sections always appear in the same order. An empty section prints `(none)` and an ignored one prints `(ignored)`, so something disappearing shows up as a change.
 - Two spaces of indent per nesting level. Keys appear in a fixed order and are left out when they have no value.
@@ -543,6 +543,20 @@ These change without changing what anyone reading the document gets:
 - Dates, document IDs and the producer string (only whether they're present; `ShowProducerAndCreator()` prints the producer and creator)
 
 Text is normalized to Unicode NFC, with whitespace runs collapsed to one space and trimmed. A space is added between two pieces of text when the baseline changes or the gap is wider than 0.2 em.
+
+## Format changes
+
+A newer PDiffy can print some snapshots differently, when it records something new or reads something more accurately. Releases that change what a snapshot prints are minor versions (0.3.0, 0.4.0), and each one is listed below, so a failure after an upgrade can be told apart from a change to your document.
+
+- **Some snapshots change:** a new line or key that only some documents have (one that prints only when set), or a reader fix. The format version stays the same, and the entry below says which snapshots change.
+- **Nearly every snapshot changes:** a key renamed, a value printed another way, or a section added, removed or moved. The format version goes up, at most once per format per release. A failing test then says first that the verified file uses the old version, and still lists the document's changes below.
+
+Either way, review the received files and accept them (`pdiffy accept --all`, or run the tests with `PDIFFY_ACCEPT=1`).
+
+| Release | Change |
+|---|---|
+| 0.2.0 | New format `docx-snapshot v1`, for Word documents |
+| 0.1.0 | New format `pdfua-snapshot v1` |
 
 ## Damaged files
 

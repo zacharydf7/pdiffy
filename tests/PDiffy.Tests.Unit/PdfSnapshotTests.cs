@@ -49,6 +49,21 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public async Task VerifyAsync_ShouldSayTheFormatChangedBeforeTheChanges_WhenTheVerifiedFileHasAnotherFormatVersion()
+    {
+        Directory.CreateDirectory(Folder);
+        var olderFormat = SnapshotOf("Hello").Replace("# pdfua-snapshot v1", "# pdfua-snapshot v0");
+        File.WriteAllText(Path.Combine(Folder, "Letter.verified.pdfua.txt"), olderFormat);
+
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Goodbye"), "Letter"));
+
+        Assert.StartsWith("The verified file uses pdfua-snapshot v0, and this version of PDiffy writes pdfua-snapshot v1.",
+            error.Message);
+        Assert.Contains("The PDF's snapshot differs from the verified one.", error.Message);
+        Assert.Contains("~ text structure > P (p1)\n    \"[-Hello-] {+Goodbye+}\"", error.Message);
+    }
+
+    [Fact]
     public async Task VerifyAsync_ShouldOverwriteTheVerifiedFile_WhenAcceptModeIsOn()
     {
         Directory.CreateDirectory(Folder);
