@@ -75,18 +75,25 @@ internal sealed partial class DrawingReader(DocxPackage package, string part,
         var id = (string?)ole?.Attribute(R + "id") ?? (string?)control?.Attribute(R + "id");
         var target = id is null ? null : package.Target(part, id);
         var linked = (string?)ole?.Attribute("Type") == "Link";
+        var isControl = ole is null && control is not null;
         var style = (string?)shape?.Attribute("style") ?? "";
         return new DocxImage(position)
         {
-            Kind = ole is null && control is not null ? "control" : "object",
+            Kind = isControl ? "control" : "object",
             Width = StylePoints(style, "width"),
             Height = StylePoints(style, "height"),
             AltText = NonEmpty((string?)shape?.Attribute("alt")),
             Type = NonEmpty((string?)ole?.Attribute("ProgID") ?? Attr(control, "name")),
             Source = linked ? target : null,
-            Hash = linked ? null : package.Hash(target),
+            Hash = linked ? null : package.Hash(target, isControl ? StatePart(target) : null),
         };
     }
+
+    // An ActiveX control's state, such as whether a check box is ticked, is in the binary part its XML part points to.
+    private string? StatePart(string? controlPart) =>
+        controlPart is not null && (string?)package.Xml(controlPart)?.Root?.Attribute(R + "id") is { } id
+            ? package.Target(controlPart, id)
+            : null;
 
     // The paragraphs of each text box in a graphic, in order; a text box inside one of them is read with its paragraph.
     private IReadOnlyList<DocxBlock> TextBoxes(XElement graphic) =>

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 
 namespace PDiffy.Tests.Unit.Docx;
 
@@ -180,15 +181,48 @@ public class DocxInlineTests
     [Fact]
     public void ToSnapshot_ShouldNameTheControlAndHashItsData_WhenARunHasAnActiveXControl()
     {
-        byte[] state = [1, 2, 3];
+        var docx = ActiveX("checked=1");
+
+        var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(ControlPart + "checked=1")))[..16];
+        Assert.Contains($"    control inline size=72x18 alt=(missing) type=CheckBox1 hash={hash} at=0\n", docx.Load().ToSnapshot());
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldChange_WhenOnlyTheStateInAnActiveXControlsBinaryPartChanges()
+    {
+        var (unticked, ticked) = (ActiveX("checked=0").Load(), ActiveX("checked=1").Load());
+
+        Assert.NotEqual(unticked.ToSnapshot(), ticked.ToSnapshot());
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldListTheControlPartAsUnreadable_WhenItIsNotXml()
+    {
+        var control = """<w:object><w:control r:id="box" w:name="CheckBox1"/></w:object>""";
+        var docx = new TestDocx { Body = Paragraph("", control) }.WithPart("box", "control", "activeX/activeX1.xml", [1, 2, 3]);
+
+        Assert.Contains("unreadable word/activeX/activeX1.xml", docx.Load().ToSnapshot());
+    }
+
+    // Word keeps a control's settings in a small XML part, and its state in the binary part that one points to.
+    private const string ControlPart = """<ax:ocx xmlns:ax="http://schemas.microsoft.com/office/2006/activeX" """
+        + """xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" """
+        + """ax:classid="{8BD21D40-EC42-11CE-9E0D-00AA006002F3}" ax:persistence="persistStorage" r:id="rId1"/>""";
+
+    private static TestDocx ActiveX(string state)
+    {
         var control = """
             <w:object xmlns:v="urn:schemas-microsoft-com:vml"><v:shape style="width:72pt;height:18pt"/>
               <w:control r:id="box" w:name="CheckBox1"/></w:object>
             """;
-        var docx = new TestDocx { Body = Paragraph("", control) }.WithPart("box", "control", "activeX/activeX1.xml", state);
-
-        var hash = Convert.ToHexStringLower(SHA256.HashData(state))[..16];
-        Assert.Contains($"    control inline size=72x18 alt=(missing) type=CheckBox1 hash={hash} at=0\n", docx.Load().ToSnapshot());
+        var docx = new TestDocx { Body = Paragraph("", control) }
+            .WithPart("box", "control", "activeX/activeX1.xml", Encoding.UTF8.GetBytes(ControlPart));
+        docx.RawParts["word/activeX/_rels/activeX1.xml.rels"] =
+            """<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"""
+            + """<Relationship Id="rId1" Type="http://schemas.microsoft.com/office/2006/relationships/activeXControlBinary" """
+            + """Target="activeX1.bin"/></Relationships>""";
+        docx.RawParts["word/activeX/activeX1.bin"] = state;
+        return docx;
     }
 
     [Fact]

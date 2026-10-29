@@ -26,12 +26,27 @@ internal sealed class DocxPackage : IDisposable
 
     public List<string> Unreadable { get; } = [];
 
-    /// <summary>The first 16 hex digits of a part's SHA-256, such as an image's, or null when there's no such part.</summary>
-    public string? Hash(string? part)
+    /// <summary>
+    /// The first 16 hex digits of the SHA-256 of the parts' bytes one after another, such as an image's, or null when
+    /// none of them exists.
+    /// </summary>
+    public string? Hash(params string?[] parts)
     {
-        if (part is null || _zip.GetEntry(part) is not { } entry) return null;
-        using var stream = entry.Open();
-        return Convert.ToHexStringLower(SHA256.HashData(stream))[..16];
+        var entries = parts.Select(part => part is null ? null : _zip.GetEntry(part)).OfType<ZipArchiveEntry>()
+            .ToList();
+        if (entries.Count == 0) return null;
+
+        // Read in pieces, so a large embedded file isn't held in memory to hash it.
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        var buffer = new byte[81920];
+        foreach (var entry in entries)
+        {
+            using var stream = entry.Open();
+            int read;
+            while ((read = stream.Read(buffer)) > 0) hash.AppendData(buffer, 0, read);
+        }
+
+        return Convert.ToHexStringLower(hash.GetHashAndReset())[..16];
     }
 
     /// <summary>A part's bytes in a stream of their own, such as a DOCX inserted into this one, or null when there's no such part.</summary>
