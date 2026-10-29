@@ -119,9 +119,9 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
-    public void Run_ShouldAcceptEachFileOnce_WhenTargetsDifferOnlyInCaseOnWindows()
+    public void Run_ShouldAcceptEachFileOnce_WhenTargetsDifferOnlyInCaseWhereNamesIgnoreCase()
     {
-        Assert.SkipUnless(OperatingSystem.IsWindows(), "PDiffy treats file names as ignoring case only on Windows.");
+        Assert.SkipUnless(NamesIgnoreCase(), "The test folder's file names respect case.");
         var letter = Write("Letter.received.pdfua.txt", "letter");
 
         var exitCode = Commands.Run(["accept", _folder.ToUpperInvariant(), letter], _output, _error);
@@ -129,6 +129,36 @@ public sealed class CliTests : IDisposable
         Assert.Equal(Commands.Same, exitCode);
         Assert.Equal("letter", File.ReadAllText(Path.Combine(_folder, "Letter.verified.pdfua.txt")));
     }
+
+    [Fact]
+    public void Run_ShouldAcceptOnlyTheNamedFile_WhenTwoNamesDifferOnlyInCaseWhereNamesRespectCase()
+    {
+        Assert.SkipWhen(NamesIgnoreCase(), "The test folder's file names ignore case.");
+        Write("Letter.received.txt", "upper");
+        var lower = Write("letter.received.txt", "lower");
+
+        var exitCode = Commands.Run(["accept", lower], _output, _error);
+
+        Assert.Equal(Commands.Same, exitCode);
+        Assert.Equal("lower", File.ReadAllText(Path.Combine(_folder, "letter.verified.txt")));
+        Assert.True(File.Exists(Path.Combine(_folder, "Letter.received.txt")));
+    }
+
+    [Fact]
+    public void Run_ShouldAcceptNothingAndReturnTwo_WhenATargetsCaseMatchesNoFileWhereNamesRespectCase()
+    {
+        Assert.SkipWhen(NamesIgnoreCase(), "The test folder's file names ignore case.");
+        Write("Letter.received.txt", "upper");
+
+        var exitCode = Commands.Run(["accept", Path.Combine(_folder, "letter.received.txt")], _output, _error);
+
+        Assert.Equal(Commands.UsageError, exitCode);
+        Assert.False(File.Exists(Path.Combine(_folder, "Letter.verified.txt")));
+    }
+
+    // As on Windows, and on macOS by default.
+    private bool NamesIgnoreCase() =>
+        Directory.Exists(_folder.ToUpperInvariant()) && Directory.Exists(_folder.ToLowerInvariant());
 
     [Fact]
     public void Run_ShouldPrintThePdfsSnapshot_WhenNoFileIsGiven()
