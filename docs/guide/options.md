@@ -110,6 +110,26 @@ p1 text tagged font=Arial size=18 color=gray:0 "Statement"
 
 [Every `Field`](../reference/options.md#pdf-fields) is listed in the reference.
 
+## Allow small numeric differences
+
+Positions are rounded to whole points, and font sizes and line widths to 0.1 pt. A value close to a rounding boundary
+can flip after a font or library update: text at 72.49 pt prints `at=72,...`, and moved by 0.02 pt it prints
+`at=73,...`. Ignoring `Field.Positions` would also hide a heading that moved 40 pt, so tolerate the noise instead:
+
+```csharp
+await PdfSnapshot.VerifyAsync(pdf, configure: options => options
+    .Tolerate(Field.Positions, points: 1)
+    .Tolerate(Field.FontSizes, points: 0.5));
+```
+
+- A number that differs from the verified one by no more than its tolerance doesn't fail the test, and the verified
+  file stays as it is, even in accept mode, so the baseline doesn't creep a point at a time.
+- `Positions` covers where text, images, paths and annotations are and the size of images, paths and annotations;
+  `FontSizes` a text run's size; `LineWidths` a path's width. Other fields aren't numbers and can't be tolerated.
+- The snapshot's header lists each tolerance (`# tolerances: positions 1pt, font-sizes 0.5pt`), so a reader knows its
+  numbers are approximate. Comparing two snapshots, with `SnapshotDiff.Compare` or `pdiffy`, applies the tolerances
+  their header lists.
+
 ## Scrub values that change on every run
 
 A generated document often prints today's date, an order number or a GUID. Scrubbers replace those inside quoted text

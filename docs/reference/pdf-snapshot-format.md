@@ -56,7 +56,8 @@ Sections always appear in this order. Each can be left out with [`Section`](xref
 
 - The first line is the format version. See [Format changes](format-changes.md) for when it changes.
 - When anything is ignored, the next lines list it: `# ignored sections: ...` and `# ignored fields: ...`. With
-  `OnlyPages`, `# only pages: ...` follows.
+  `Tolerate`, `# tolerances: ...` follows, such as `# tolerances: positions 1pt`, and with `OnlyPages`,
+  `# only pages: ...`. Comparing two snapshots applies the tolerances their header lists.
 
 ### Lines and keys
 

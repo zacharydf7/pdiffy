@@ -1,4 +1,5 @@
 using System.Text;
+using PDiffy.Diffing;
 
 namespace PDiffy;
 
@@ -47,6 +48,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
     {
         if (options.IgnoredSections.Any()) Line(0, $"# ignored sections: {string.Join(", ", options.IgnoredSections.Select(Name))}");
         if (options.IgnoredFields.Any()) Line(0, $"# ignored fields: {string.Join(", ", options.IgnoredFields.Select(Name))}");
+        if (options.ToleratedFields.Count > 0) Line(0, Tolerances.Header(options.ToleratedFields));
         if (options.Pages.Count > 0) Line(0, $"# only pages: {string.Join(", ", options.Pages)}");
     }
 

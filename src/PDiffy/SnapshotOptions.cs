@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using PDiffy.Diffing;
 
 namespace PDiffy;
 
@@ -12,6 +13,7 @@ public sealed class SnapshotOptions
     private readonly HashSet<Field> _ignoredFields = [];
     private readonly List<Scrubber> _scrubbers = [];
     private readonly SortedSet<int> _pages = [];
+    private readonly SortedDictionary<Field, double> _tolerances = [];
 
     /// <summary>Leaves whole sections out, such as <see cref="Section.Metadata"/>.</summary>
     public SnapshotOptions Ignore(params Section[] sections)
@@ -43,6 +45,30 @@ public sealed class SnapshotOptions
         SnapshotProfile.Layout => Ignore(Section.Settings, Section.Metadata),
         _ => throw new ArgumentOutOfRangeException(nameof(profile), profile, "Not a SnapshotProfile value."),
     };
+
+    /// <summary>
+    /// Lets a number differ by up to <paramref name="points"/> without failing the test, so a value that rounds the
+    /// other way after a library update still passes while a real move still fails. Takes <see cref="Field.Positions"/>
+    /// (where things are, and the size of images, paths and annotations), <see cref="Field.FontSizes"/> or
+    /// <see cref="Field.LineWidths"/>. A run within the tolerance passes and leaves the verified file as it is. The
+    /// snapshot's header lists each tolerance, such as "# tolerances: positions 1pt".
+    /// </summary>
+    public SnapshotOptions Tolerate(Field field, double points)
+    {
+        if (!Tolerances.Numeric.Contains(field))
+        {
+            throw new ArgumentException($"{field} isn't a number. Positions, FontSizes and LineWidths take a tolerance.",
+                nameof(field));
+        }
+
+        if (!double.IsFinite(points) || points <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(points), points, "A tolerance is a positive number of points.");
+        }
+
+        _tolerances[field] = points;
+        return this;
+    }
 
     /// <summary>
     /// Replaces matches in quoted text (element text, alt text, titles, link addresses, form values and so on).
@@ -99,6 +125,8 @@ public sealed class SnapshotOptions
     internal IReadOnlyList<Scrubber> Scrubbers => _scrubbers;
 
     internal IReadOnlySet<int> Pages => _pages;
+
+    internal IReadOnlyDictionary<Field, double> ToleratedFields => _tolerances;
 
     internal bool Ignores(Section section) => _ignoredSections.Contains(section);
 

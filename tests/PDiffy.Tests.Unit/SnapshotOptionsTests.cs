@@ -56,6 +56,26 @@ public class SnapshotOptionsTests
     }
 
     [Fact]
+    public void ToSnapshot_ShouldListTheTolerances_WhenNumbersAreTolerated()
+    {
+        var snapshot = Full().ToSnapshot(o => o.Tolerate(Field.FontSizes, 0.5).Tolerate(Field.Positions, 1));
+
+        Assert.Equal("# tolerances: positions 1pt, font-sizes 0.5pt", snapshot.Split('\n')[1]);
+        Assert.Equal(Full().ToSnapshot().Split('\n').Skip(1), snapshot.Split('\n').Skip(2));
+    }
+
+    [Theory]
+    [InlineData(Field.Colors, 1)]
+    [InlineData(Field.Positions, 0)]
+    [InlineData(Field.Positions, -1)]
+    [InlineData(Field.Positions, double.NaN)]
+    [InlineData(Field.Positions, double.PositiveInfinity)]
+    public void Tolerate_ShouldThrow_WhenTheFieldIsNotANumberOrThePointsAreNotPositive(Field field, double points)
+    {
+        Assert.ThrowsAny<ArgumentException>(() => new SnapshotOptions().Tolerate(field, points));
+    }
+
+    [Fact]
     public void ToSnapshot_ShouldLeaveOutOnlyThoseKeys_WhenFieldsAreIgnored()
     {
         var snapshot = Full().ToSnapshot(o => o.Ignore(Field.Positions).Ignore(Field.Colors));

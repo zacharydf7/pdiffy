@@ -12,8 +12,11 @@ internal static class SnapshotWorkflow
     public static async Task VerifyAsync(string received, SnapshotFiles files, string kind)
     {
         var verified = File.Exists(files.Verified) ? Normalize(await File.ReadAllTextAsync(files.Verified)) : null;
+        var diff = verified is null || received == verified ? null : SnapshotDiff.Compare(verified, received);
 
-        if (received == verified)
+        // A difference the snapshot's tolerances allow passes too, and leaves the verified file as it is, even in accept
+        // mode, so the baseline doesn't creep a point at a time.
+        if (received == verified || diff is { IsEmpty: true })
         {
             File.Delete(files.Received);
             File.Delete(files.Report);
@@ -31,7 +34,6 @@ internal static class SnapshotWorkflow
 
         Directory.CreateDirectory(files.Folder);
         await File.WriteAllTextAsync(files.Received, received);
-        var diff = verified is null ? null : SnapshotDiff.Compare(verified, received);
         if (diff is null) File.Delete(files.Report);
         else await File.WriteAllTextAsync(files.Report, diff.ToHtml());
         var formatChange = verified is null ? null : FormatChange(verified, received);

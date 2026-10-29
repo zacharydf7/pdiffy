@@ -353,6 +353,18 @@ public class SnapshotDiffTests
         Assert.Equal((kind, "untagged > p1"), (change.Kind, change.Path));
     }
 
+    [Theory]
+    [InlineData("layout\n  p1 text tagged \"Hi\"\nfonts\n  (none)\n", "fonts\n  (none)\nlayout\n  p1 text tagged \"Hi\"\n")]
+    [InlineData("layout\n  p1 text tagged \"Hi\"\n", "layout\n   p1 text tagged \"Hi\"\n")]
+    public void Compare_ShouldStillFindADifference_WhenOnlySectionOrderOrAnIndentDiffers(string before, string after)
+    {
+        var header = "# pdfua-snapshot v1\n# tolerances: positions 1pt\n";
+
+        var diff = SnapshotDiff.Compare(header + before, header + after);
+
+        Assert.False(diff.IsEmpty);
+    }
+
     [Fact]
     public void Compare_ShouldCompareTheChildren_WhenAnElementWithNoTypePrintsAsNone()
     {
@@ -362,6 +374,27 @@ public class SnapshotDiffTests
         var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
 
         Assert.Equal((ChangeKind.AttributeChanged, "structure > Document > (none) > Figure"), (change.Kind, change.Path));
+    }
+
+    [Theory]
+    [InlineData("positions 1pt", "p1 text tagged at=72,700 size=12 \"Hi\"", "p1 text tagged at=73,699 size=12 \"Hi\"", 0)]
+    [InlineData("positions 1pt", "p1 text tagged at=72,700 size=12 \"Hi\"", "p1 text tagged at=74,700 size=12 \"Hi\"", 1)]
+    [InlineData("positions 1pt", "p1 text tagged at=72,700 size=12 \"Hi\"", "p1 text tagged at=72,700 size=12.5 \"Hi\"", 1)]
+    [InlineData("font-sizes 0.3pt", "p1 text tagged at=72,700 size=12 \"Hi\"", "p1 text tagged at=72,700 size=12.3 \"Hi\"", 0)]
+    [InlineData("positions 1pt", "p1 image tagged at=72,600 size=120x40", "p1 image tagged at=72,601 size=121x40", 0)]
+    [InlineData("line-widths 0.2pt", "p1 path artifact width=0.5", "p1 path artifact width=0.7", 0)]
+    [InlineData("positions 1pt", "embedded-file \"a.txt\" size=100 hash=x",
+        "embedded-file \"a.txt\" size=101 hash=x", 1)]
+    [InlineData("positions 1pt", "p1 text tagged at=72,700 \"Take with food\"",
+        "p1 text tagged at=73,700 \"Take after food\"", 1)]
+    public void Compare_ShouldCountOnlyNumbersBeyondTheTolerance_WhenTheHeaderGivesOne(string tolerance, string before,
+        string after, int changes)
+    {
+        var header = $"# pdfua-snapshot v1\n# tolerances: {tolerance}\nlayout\n  ";
+
+        var diff = SnapshotDiff.Compare(header + before + "\n", header + after + "\n");
+
+        Assert.Equal(changes, diff.Changes.Count);
     }
 
     [Fact]

@@ -71,12 +71,13 @@ public sealed class SnapshotDiff
     {
         before = before.Replace("\r\n", "\n");
         after = after.Replace("\r\n", "\n");
-        var (changes, matchedBefore) = SnapshotTree.IsSectioned(before) && SnapshotTree.IsSectioned(after)
+        var (changes, matchedBefore, tolerated) = SnapshotTree.IsSectioned(before) && SnapshotTree.IsSectioned(after)
             ? CompareSections(before, after)
-            : (TextDiff.Compare(before, after), before);
+            : (TextDiff.Compare(before, after), before, false);
 
-        // The texts can still differ in what no line shows: blank lines, or a missing newline at the end.
-        if (changes.Count == 0 && before != after)
+        // The texts can still differ in what no line shows: blank lines, a missing newline at the end, or an indent.
+        // When the snapshot's tolerances allowed a difference, that difference is what made the texts differ.
+        if (changes.Count == 0 && before != after && !tolerated)
         {
             changes.Add(new SnapshotChange(ChangeKind.Changed, null, "whitespace", null, "Blank lines or line endings differ."));
         }
@@ -84,8 +85,10 @@ public sealed class SnapshotDiff
         return new SnapshotDiff(before, after, changes, matchedBefore);
     }
 
-    // Also returns the earlier snapshot as compared, its pages renumbered when pages were inserted or removed.
-    private static (List<SnapshotChange> Changes, string MatchedBefore) CompareSections(string before, string after)
+    // Also returns the earlier snapshot as compared, its pages renumbered when pages were inserted or removed, and
+    // whether a tolerance allowed any difference.
+    private static (List<SnapshotChange> Changes, string MatchedBefore, bool Tolerated) CompareSections(string before,
+        string after)
     {
         var changes = new List<SnapshotChange>();
         var beforeHeader = before.Split('\n').Where(line => line.StartsWith('#')).ToList();
@@ -116,14 +119,18 @@ public sealed class SnapshotDiff
             originals = Originals(beforeSections, written);
         }
 
+        // A difference in the tolerances themselves is a header change, so either side's are the ones to apply.
+        var tolerances = pdf ? Tolerances.Read(after) : null;
+        var tolerated = false;
         foreach (var name in beforeSections.Keys.Union(afterSections.Keys))
         {
-            var matcher = new TreeMatcher(name, pdf ? SectionNamed(name) : null, originals);
+            var matcher = new TreeMatcher(name, pdf ? SectionNamed(name) : null, originals, tolerances);
             changes.AddRange(matcher.Compare(beforeSections.GetValueOrDefault(name) ?? [],
                 afterSections.GetValueOrDefault(name) ?? []));
+            tolerated |= matcher.Tolerated;
         }
 
-        return (changes, matchedBefore);
+        return (changes, matchedBefore, tolerated);
     }
 
     // Renumbering keeps every line in its place, so each renumbered line pairs with the written one at the same spot.

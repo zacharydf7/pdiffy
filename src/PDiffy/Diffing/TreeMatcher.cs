@@ -8,16 +8,19 @@ namespace PDiffy.Diffing;
 /// structure, are two with the same text and a different type. Whatever is left is removed or added, unless it turns
 /// up elsewhere on the other side, unchanged or edited, which makes it a move. When the earlier snapshot's pages were
 /// renumbered to line up with the later one's, <paramref name="originals"/> gives each line as it was written, for
-/// showing.
+/// showing. A number that moved no more than <paramref name="tolerances"/> allow isn't a change.
 /// </summary>
 internal sealed class TreeMatcher(string name, Section? section,
-    IReadOnlyDictionary<SnapshotLine, SnapshotLine>? originals = null)
+    IReadOnlyDictionary<SnapshotLine, SnapshotLine>? originals = null, Tolerances? tolerances = null)
 {
     internal const double SameLineSimilarity = 0.5;
 
     private readonly List<Entry> _entries = [];
     private Dictionary<SnapshotLine, int> _beforePositions = [];
     private Dictionary<SnapshotLine, int> _afterPositions = [];
+
+    /// <summary>Whether the tolerances allowed any difference, which <see cref="Compare"/> then didn't report.</summary>
+    public bool Tolerated { get; private set; }
 
     public IReadOnlyList<SnapshotChange> Compare(List<SnapshotLine> before, List<SnapshotLine> after)
     {
@@ -94,6 +97,7 @@ internal sealed class TreeMatcher(string name, Section? section,
         var page = edited.Page ?? old.Page;
         var found = _entries.Count;
         var retyped = old.Key != edited.Key;
+        var tolerated = false;
         if (retyped) Add(ChangeKind.Changed, path, page, $"type: {old.Key} -> {edited.Key}");
         // A key can repeat, as annot= does once per annotation, so values are compared occurrence by occurrence.
         foreach (var key in old.Attributes.Select(pair => pair.Key).Union(edited.Attributes.Select(pair => pair.Key)))
@@ -104,7 +108,9 @@ internal sealed class TreeMatcher(string name, Section? section,
             {
                 var from = i < before.Count ? before[i] : "(missing)";
                 var to = i < after.Count ? after[i] : "(missing)";
-                if (from != to) Add(ChangeKind.AttributeChanged, path, page, $"{key}: {from} -> {to}");
+                if (from == to) continue;
+                if (tolerances?.Allow(edited, key, from, to) == true) tolerated = Tolerated = true;
+                else Add(ChangeKind.AttributeChanged, path, page, $"{key}: {from} -> {to}");
             }
         }
 
@@ -113,9 +119,10 @@ internal sealed class TreeMatcher(string name, Section? section,
             Add(ChangeKind.TextChanged, path, page, $"\"{WordDiff.Show(old.QuotedText ?? "", edited.QuotedText ?? "")}\"");
         }
 
-        // Other words (such as pages) changed, or nothing above caught it; a retyped line's first word is its type.
+        // Other words (such as pages) changed, or nothing above caught or tolerated it; a retyped line's first word is
+        // its type.
         var skip = retyped ? 1 : 0;
-        if (!old.Words.Skip(skip).SequenceEqual(edited.Words.Skip(skip)) || _entries.Count == found)
+        if (!old.Words.Skip(skip).SequenceEqual(edited.Words.Skip(skip)) || (_entries.Count == found && !tolerated))
         {
             Add(ChangeKind.Changed, path, page, $"{Original(old).Text.TrimStart()} -> {edited.Text.TrimStart()}");
         }

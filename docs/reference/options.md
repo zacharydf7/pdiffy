@@ -72,6 +72,7 @@ appears; the rest of each line is still compared.
 | [`ScrubText(regex, replacement)`](xref:PDiffy.SnapshotOptions.ScrubText*) | Replaces your own pattern in quoted text. The replacement can refer to groups, such as `$1` |
 | [`ShowProducerAndCreator()`](xref:PDiffy.SnapshotOptions.ShowProducerAndCreator) | Prints the producer and creator values instead of only whether they're present |
 | [`OnlyPages(3, 4)`](xref:PDiffy.SnapshotOptions.OnlyPages*) | Keeps only what is on those pages |
+| [`Tolerate(Field.Positions, 1)`](xref:PDiffy.SnapshotOptions.Tolerate*) | Lets positions differ by up to 1 pt without failing the test; also takes `FontSizes` and `LineWidths`. The header lists it as `# tolerances: positions 1pt` |
 
 ## Word profiles
 

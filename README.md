@@ -294,6 +294,18 @@ public async Task MonthlyStatement_ShouldMatchApprovedSnapshot_WhenGenerated()
 
 With `Field.Positions` ignored, a layout line such as `p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Statement"` becomes `p1 text tagged font=Arial size=18 color=gray:0 "Statement"`.
 
+### Allow small numeric differences
+
+Positions are rounded to whole points, and font sizes and line widths to 0.1 pt. A value close to a rounding boundary can flip after a font or library update: text at 72.49 pt prints `at=72,...`, and moved by 0.02 pt it prints `at=73,...`. Ignoring `Field.Positions` would also hide a heading that moved 40 pt, so tolerate the noise instead:
+
+```csharp
+await PdfSnapshot.VerifyAsync(pdf, configure: options => options
+    .Tolerate(Field.Positions, points: 1)
+    .Tolerate(Field.FontSizes, points: 0.5));
+```
+
+A number that differs from the verified one by no more than its tolerance doesn't fail the test, and the verified file stays as it is, even in accept mode, so the baseline doesn't creep a point at a time. `Positions` covers where text, images, paths and annotations are and the size of images, paths and annotations, `FontSizes` a text run's size, and `LineWidths` a path's width. The snapshot's header lists each tolerance (`# tolerances: positions 1pt, font-sizes 0.5pt`), so a reader knows its numbers are approximate.
+
 ### Scrub values that change on every run
 
 A generated document often prints today's date, an order number or a GUID. Scrubbers replace those inside quoted text with a stable placeholder, so the rest of the text is still compared.
@@ -626,6 +638,7 @@ The options can also change what's printed:
 | `ScrubText(regex, replacement)` | Replaces your own pattern in quoted text |
 | `ShowProducerAndCreator()` | Prints the producer and creator values instead of only whether they're present |
 | `OnlyPages(3, 4)` | Keeps only what is on those pages |
+| `Tolerate(Field.Positions, 1)` | Lets positions differ by up to 1 pt without failing the test; also takes `FontSizes` and `LineWidths` |
 
 For Word documents, each `DocxSection` value leaves out one section, and each `DocxDetail` value leaves out one detail wherever it appears:
 
@@ -687,7 +700,7 @@ layout
 ```
 
 - The first line is the format version. See [Format changes](#format-changes) for when it changes.
-- When anything is ignored, the next lines list it: `# ignored sections: ...` and `# ignored fields: ...`. With `OnlyPages`, `# only pages: ...` follows.
+- When anything is ignored, the next lines list it: `# ignored sections: ...` and `# ignored fields: ...`. With `Tolerate`, `# tolerances: ...` follows, and with `OnlyPages`, `# only pages: ...`.
 - Sections always appear in the same order. An empty section prints `(none)` and an ignored one prints `(ignored)`, so something disappearing shows up as a change.
 - Two spaces of indent per nesting level. Keys appear in a fixed order and are left out when they have no value.
 - Text is quoted; `"` and `\` are escaped, and control characters print as `\uXXXX`.

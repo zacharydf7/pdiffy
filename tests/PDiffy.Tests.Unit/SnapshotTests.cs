@@ -48,6 +48,22 @@ public sealed class SnapshotTests : SnapshotFolderTests
         Assert.Contains("~ text line 1\n    - \"a b\"\n    + \"a b  \"", error.Message);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("1")]
+    public async Task VerifyAsync_ShouldPassAndKeepTheVerifiedFile_WhenNumbersDifferWithinTheTolerance(string? accept)
+    {
+        Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, accept);
+        const string Verified = "# pdfua-snapshot v1\n# tolerances: positions 1pt\nlayout\n  p1 text tagged at=72,700 \"Hi\"\n";
+        Directory.CreateDirectory(Folder);
+        File.WriteAllText(Path.Combine(Folder, "Layout.verified.txt"), Verified);
+
+        await Snapshot.VerifyAsync(Verified.Replace("72,700", "73,700"), "Layout");
+
+        Assert.Equal(Verified, File.ReadAllText(Path.Combine(Folder, "Layout.verified.txt")));
+        Assert.False(File.Exists(Path.Combine(Folder, "Layout.received.txt")));
+    }
+
     [Fact]
     public async Task VerifyAsync_ShouldUseTheExtensionAndFolder_WhenGivenThem()
     {
