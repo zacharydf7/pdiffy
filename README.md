@@ -699,7 +699,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 | 0.3.0 | `docx-snapshot v1`, unchanged version: a table-column bookmark (one that sets `w:colFirst` and `w:colLast`) prints the columns it covers, counting from 0: `bookmark "Doses" columns=0-2`. Only snapshots of documents with table-column bookmarks change |
 | 0.3.0 | `pdfua-snapshot v1`, unchanged version: XMP metadata is read as UTF-8, as the XMP standard requires, so a non-ASCII value such as `Café` no longer prints as `CafÃ©`. XMP that isn't well-formed XML, or has a DTD, prints `xmp=unreadable` instead of failing the read. Snapshots with non-ASCII XMP values change |
 | 0.3.0 | `pdfua-snapshot v1`, unchanged version: an element whose children are nested more than 256 deep gets `unread-children=N`, and bookmarks nested more than 256 deep, or that loop back on themselves, print `unreadable`. Such files used to overflow the stack, so no approved snapshot changes |
-| 0.3.0 | `docx-snapshot v1`, unchanged version: a part with a DTD, with elements nested more than 256 deep, or larger than 256 MB is listed as `unreadable`. Word doesn't write such parts, so only documents from other tools can change |
+| 0.3.0 | `docx-snapshot v1`, unchanged version: a part with a DTD, with elements nested more than 256 deep, or larger than 256 MB is listed as `unreadable`, and an inserted document past one of those limits prints `Inserted docx unreadable`. Word doesn't write such parts, so only documents from other tools can change |
 | 0.2.0 | New format `docx-snapshot v1`, for Word documents |
 | 0.1.0 | New format `pdfua-snapshot v1` |
 
@@ -711,7 +711,7 @@ PDiffy also limits what it reads, so a file built to exhaust the stack or memory
 
 - Structure elements and bookmarks are read 256 levels deep. An element whose children are deeper gets `unread-children=N`, and their content counts as untagged. Bookmarks nested deeper, or that loop back on themselves, print `unreadable`.
 - XML with a DTD, or with elements nested more than 256 deep, is unreadable: a Word part or a PDF's XMP. An inserted Word document's nesting counts from where it's inserted.
-- A Word part larger than 256 MB is unreadable instead of being loaded into memory.
+- A Word part larger than 256 MB is unreadable instead of being loaded into memory. An inserted Word document that can't be read isn't listed as unreadable; it's marked where it's inserted: `Inserted docx unreadable`.
 
 ## Development
 

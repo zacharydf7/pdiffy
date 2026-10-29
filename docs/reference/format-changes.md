@@ -47,8 +47,8 @@ Only snapshots of documents that use these change:
   formatting (`paragraph-mark-format`) are recorded and listed by `Revisions()`.
 - A cell lists the content controls around it, each marked `around`.
 - A table-column bookmark prints the columns it covers, counting from 0: `bookmark "Doses" columns=0-2`.
-- A part with a DTD, with elements nested more than 256 deep, or larger than 256 MB is listed as `unreadable`. Word
-  doesn't write such parts.
+- A part with a DTD, with elements nested more than 256 deep, or larger than 256 MB is listed as `unreadable`, and an
+  inserted document past one of those limits prints `Inserted docx unreadable`. Word doesn't write such parts.
 
 ## 0.2.0
 
