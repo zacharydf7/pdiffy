@@ -17,16 +17,6 @@ The same reading of the document supports three kinds of test:
 - **Checks.** Everything in a snapshot is also a property to assert on, such as each figure's alt text, each form
   field's name or each font's Unicode mapping.
 
-## Why not compare bytes
-
-Byte-for-byte PDF snapshots fail for reasons that don't matter and explain nothing when they do:
-
-- Any change to how the file is written (compression, object order, font subsetting, a library upgrade) fails every test, even when the content is identical.
-- The same output differs between operating systems, so every test needs one snapshot per OS.
-- A failure only says the bytes differ. Finding out what changed means opening both files in a PDF checker.
-
-PDiffy records the content and leaves out the encoding. One snapshot covers Windows and Linux, and a failing test shows which element changed, on which page.
-
 The same files and workflow also work for Word documents (see [Snapshot Word documents](#snapshot-word-documents)) and for text and JSON output (see [Snapshot text and JSON](#snapshot-text-and-json)), so a test project can keep every kind of snapshot in one place.
 
 ## Getting started

@@ -51,18 +51,6 @@ by section: structure 3
 A failing test also writes a side-by-side HTML report. Open the
 [sample report](samples/DrugGuide.diff.html) to see one.
 
-## Why not compare bytes
-
-Byte-for-byte PDF snapshots fail for reasons that don't matter, and explain nothing when they do:
-
-- Any change to how the file is written (compression, object order, font subsetting, a library upgrade) fails every
-  test, even when the content is identical.
-- The same output differs between operating systems, so every test needs one snapshot per OS.
-- A failure only says the bytes differ. Finding out what changed means opening both files in a PDF checker.
-
-PDiffy records the content and leaves out the encoding. One snapshot covers Windows and Linux, and a failing test shows
-which element changed, on which page.
-
 ## Find what you need
 
 | I want to... | Go to |
