@@ -3,37 +3,38 @@ using PDiffy.Tests.Unit.Pdfs;
 namespace PDiffy.Tests.Unit;
 
 // Each case makes one small change that matters to a known PDF and checks that the snapshot catches it, in the right
-// section and as the right kind of change. Adding a new fact to the snapshot means adding a case here.
+// section, as the right kind of change, and flagged for accessibility when it should be. Adding a new fact to the
+// snapshot means adding a case here.
 public class MutationTests
 {
-    public static TheoryData<string, Sample, Section, ChangeKind> Mutations => new()
+    public static TheoryData<string, Sample, Section, ChangeKind, bool> Mutations => new()
     {
-        { "heading level", new Sample { Heading = "H3" }, Section.Structure, ChangeKind.Changed },
-        { "heading made a paragraph", new Sample { Heading = "P" }, Section.Structure, ChangeKind.Changed },
-        { "alt text removed", new Sample { Alt = null }, Section.Structure, ChangeKind.AttributeChanged },
-        { "alt text emptied", new Sample { Alt = "" }, Section.Structure, ChangeKind.AttributeChanged },
-        { "alt text edited", new Sample { Alt = "Store logo" }, Section.Structure, ChangeKind.AttributeChanged },
-        { "reading order swapped", new Sample { SwapParagraphs = true }, Section.Structure, ChangeKind.Moved },
-        { "header scope removed", new Sample { Scope = null }, Section.Structure, ChangeKind.AttributeChanged },
-        { "cell headers changed", new Sample { Headers = "(h-other)" }, Section.Structure, ChangeKind.AttributeChanged },
-        { "tagged text made untagged", new Sample { NoteTagged = false }, Section.Untagged, ChangeKind.Added },
-        { "artifact made tagged", new Sample { FooterTagged = true }, Section.Artifacts, ChangeKind.Removed },
-        { "document language", new Sample { DocumentLang = "en-GB" }, Section.Document, ChangeKind.AttributeChanged },
-        { "element language", new Sample { ElementLang = "fr-FR" }, Section.Structure, ChangeKind.AttributeChanged },
-        { "link target", new Sample { LinkUri = "https://example.com/b" }, Section.Annotations, ChangeKind.AttributeChanged },
-        { "image pixels", new Sample { ImageGray = "81" }, Section.Layout, ChangeKind.AttributeChanged },
-        { "text moved by 1 pt", new Sample { TextAt = "73 400" }, Section.Layout, ChangeKind.AttributeChanged },
-        { "font size by 0.1 pt", new Sample { FontSize = "12.1" }, Section.Layout, ChangeKind.AttributeChanged },
-        { "text color", new Sample { TextColor = "1 0 0 rg" }, Section.Layout, ChangeKind.AttributeChanged },
-        { "field's accessible name removed", new Sample { FieldEntries = "/FT /Tx /Ff 2" }, Section.Forms, ChangeKind.AttributeChanged },
-        { "field no longer required", new Sample { FieldEntries = "/FT /Tx /TU (Patient name)" }, Section.Forms, ChangeKind.AttributeChanged },
-        { "bookmark target page", new Sample { BookmarkPage = 1 }, Section.Bookmarks, ChangeKind.Changed },
+        { "heading level", new Sample { Heading = "H3" }, Section.Structure, ChangeKind.Changed, true },
+        { "heading made a paragraph", new Sample { Heading = "P" }, Section.Structure, ChangeKind.Changed, true },
+        { "alt text removed", new Sample { Alt = null }, Section.Structure, ChangeKind.AttributeChanged, true },
+        { "alt text emptied", new Sample { Alt = "" }, Section.Structure, ChangeKind.AttributeChanged, true },
+        { "alt text edited", new Sample { Alt = "Store logo" }, Section.Structure, ChangeKind.AttributeChanged, false },
+        { "reading order swapped", new Sample { SwapParagraphs = true }, Section.Structure, ChangeKind.Moved, true },
+        { "header scope removed", new Sample { Scope = null }, Section.Structure, ChangeKind.AttributeChanged, true },
+        { "cell headers changed", new Sample { Headers = "(h-other)" }, Section.Structure, ChangeKind.AttributeChanged, true },
+        { "tagged text made untagged", new Sample { NoteTagged = false }, Section.Untagged, ChangeKind.Added, true },
+        { "artifact made tagged", new Sample { FooterTagged = true }, Section.Artifacts, ChangeKind.Removed, false },
+        { "document language", new Sample { DocumentLang = "en-GB" }, Section.Document, ChangeKind.AttributeChanged, true },
+        { "element language", new Sample { ElementLang = "fr-FR" }, Section.Structure, ChangeKind.AttributeChanged, true },
+        { "link target", new Sample { LinkUri = "https://example.com/b" }, Section.Annotations, ChangeKind.AttributeChanged, false },
+        { "image pixels", new Sample { ImageGray = "81" }, Section.Layout, ChangeKind.AttributeChanged, false },
+        { "text moved by 1 pt", new Sample { TextAt = "73 400" }, Section.Layout, ChangeKind.AttributeChanged, false },
+        { "font size by 0.1 pt", new Sample { FontSize = "12.1" }, Section.Layout, ChangeKind.AttributeChanged, false },
+        { "text color", new Sample { TextColor = "1 0 0 rg" }, Section.Layout, ChangeKind.AttributeChanged, false },
+        { "field's accessible name removed", new Sample { FieldEntries = "/FT /Tx /Ff 2" }, Section.Forms, ChangeKind.AttributeChanged, true },
+        { "field no longer required", new Sample { FieldEntries = "/FT /Tx /TU (Patient name)" }, Section.Forms, ChangeKind.AttributeChanged, false },
+        { "bookmark target page", new Sample { BookmarkPage = 1 }, Section.Bookmarks, ChangeKind.Changed, false },
     };
 
     [Theory]
     [MemberData(nameof(Mutations))]
     public void CompareTo_ShouldReportTheChange_WhenAMeaningfulDetailChanges(string mutation, Sample changed,
-        Section section, ChangeKind kind)
+        Section section, ChangeKind kind, bool affectsAccessibility)
     {
         var original = Build(new Sample());
         var mutated = Build(changed);
@@ -42,6 +43,7 @@ public class MutationTests
 
         Assert.NotEqual(original.ToSnapshot(), mutated.ToSnapshot());
         Assert.True(diff.Changes.Any(item => item.Section == section && item.Kind == kind), $"{mutation}:\n{diff.Describe()}");
+        Assert.Equal(affectsAccessibility, diff.Changes.Any(item => item.AffectsAccessibility));
     }
 
     /// <summary>The details of the base document that a mutation can change.</summary>

@@ -66,13 +66,17 @@ A failure explains itself. Elements are matched one to one, so an edited paragra
 
 ```
 3 change(s): 1 moved, 1 attribute, 1 text
-↕ moved structure > Document > Figure (p1)
+by section: structure 3
+2 can affect accessibility, listed first
+↕ moved structure > Document > Figure (p1) [accessibility]
     reading position 3 -> 10
-~ attribute structure > Document > Table > TR[1] > TH2 (p2)
+~ attribute structure > Document > Table > TR[1] > TH2 (p2) [accessibility]
     scope: Column -> (missing)
 ~ text structure > Document > Table > TR[2] > TD[2] (p2)
     "Take [-with-] {+after+} food"
 ```
+
+The second line counts the changes in each section, so a reflow that moves 200 layout lines doesn't hide one change to the structure. Changes that can affect what a screen reader gets come first, tagged `[accessibility]` (see [Changes that affect accessibility](#changes-that-affect-accessibility)).
 
 What happens on each run:
 
@@ -99,7 +103,7 @@ Pass a name when one test makes several snapshots, as a theory does: `await PdfS
 
 Snapshots use LF line endings. If Git converts line endings on checkout, add `*.verified.txt text eol=lf` and `*.verified.json text eol=lf` (plus a line for any custom extension, such as `*.verified.brf`) to `.gitattributes`; PDiffy also compares a CRLF verified file as LF. Add `*.received.*` and `*.diff.html` to `.gitignore` and to your build server's artifacts, so a failed CI run keeps what it received and the report.
 
-The report is one HTML file with nothing to download, so it opens straight from a build artifact. It lists every change (filterable by kind), links to each page, and shows each section with the verified snapshot on the left and the received one on the right, edited lines side by side with the changed words highlighted. `diff.ToHtml()` gives the same page for any `SnapshotDiff`.
+The report is one HTML file with nothing to download, so it opens straight from a build artifact. It lists every change, accessibility changes first (filterable by kind, or to only those that affect accessibility), links to each page, and shows each section with the verified snapshot on the left and the received one on the right, edited lines side by side with the changed words highlighted. `diff.ToHtml()` gives the same page for any `SnapshotDiff`.
 
 ### Snapshot text and JSON
 
@@ -306,6 +310,9 @@ SnapshotDiff diff = before.CompareTo(after, options => options.Ignore(Section.La
 // the section, a path such as "structure > Document > Table > TR[2] > TD[1]", the page and a detail.
 Assert.DoesNotContain(diff.Changes, change => change.Kind == ChangeKind.Moved);
 
+// Or allow any change except those that can affect what a screen reader gets.
+Assert.DoesNotContain(diff.Changes, change => change.AffectsAccessibility);
+
 // Or print the summary a failing VerifyAsync shows.
 Console.WriteLine(diff.Describe());
 ```
@@ -492,6 +499,21 @@ The options can also change what's printed:
 | `ScrubText(regex, replacement)` | Replaces your own pattern in quoted text |
 | `ShowProducerAndCreator()` | Prints the producer and creator values instead of only whether they're present |
 | `OnlyPages(3, 4)` | Keeps only what is on those pages |
+
+## Changes that affect accessibility
+
+In a PDF snapshot, a change's `AffectsAccessibility` is true, and a failure lists it first, when it is one of these:
+
+| Change | Shows as |
+|---|---|
+| A structure element's type changed, such as a heading becoming a paragraph (a header cell's generated name, such as `TH1` becoming `TH2`, doesn't count) | `type: H2 -> P` |
+| A structure element moved in reading order | `moved` in `structure` |
+| Alt text, a table header's scope, a cell's headers or a form field's or annotation's accessible name was removed or emptied, or a cell's headers point at a header that isn't there | `alt: "Logo" -> (missing)`, `scope: Column -> (missing)`, `tu: "Name" -> ""`, `headers: [TH1] -> [?h2]` |
+| The document's or an element's language changed or was removed | `lang: en-US -> en-GB` |
+| Anything in the untagged content was added or changed, other than removed | `added`, `"Page 1 {+Draft+}"` or `images: 1 -> 2` in `untagged` |
+| An annotation became untagged | `... tagged ... -> ... untagged ...` in `annotations` |
+
+The rules are fixed, so every project sees the same flags. DOCX and text snapshots have no flags. A test passes or fails on the whole snapshot as before; the flag only orders and marks the explanation. To fail only on these, compare with `CompareTo` and assert on `AffectsAccessibility`.
 
 ## Snapshot format
 

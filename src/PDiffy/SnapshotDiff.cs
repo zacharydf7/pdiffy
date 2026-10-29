@@ -31,7 +31,14 @@ public enum ChangeKind
 /// says what changed. <see cref="Section"/> is null for the snapshot's first lines (format version and options), for blank
 /// lines, and for every change in text without sections.
 /// </summary>
-public sealed record SnapshotChange(ChangeKind Kind, Section? Section, string Path, int? Page, string Detail);
+public sealed record SnapshotChange(ChangeKind Kind, Section? Section, string Path, int? Page, string Detail)
+{
+    /// <summary>
+    /// Whether the change can affect what assistive technology gets, by the fixed rules the README lists under "Changes
+    /// that affect accessibility", such as a heading that became a paragraph or a figure that lost its alt text.
+    /// </summary>
+    public bool AffectsAccessibility => AccessibilityRules.Affects(this);
+}
 
 /// <summary>
 /// The differences between two snapshots. PDF snapshots are matched element by element, so an edited paragraph is one
@@ -105,7 +112,10 @@ public sealed class SnapshotDiff
         Enum.GetValues<Section>().Where(section => SnapshotWriter.Name(section) == name)
             .Select(section => (Section?)section).FirstOrDefault();
 
-    /// <summary>A summary for a test failure: counts by kind, then up to <paramref name="maxChanges"/> changes.</summary>
+    /// <summary>
+    /// A summary for a test failure: counts by kind and by section, then up to <paramref name="maxChanges"/> changes,
+    /// those that can affect accessibility first.
+    /// </summary>
     public string Describe(int maxChanges = 20)
     {
         if (IsEmpty) return "No changes.";
@@ -113,10 +123,18 @@ public sealed class SnapshotDiff
         var counts = Changes.GroupBy(change => change.Kind).OrderBy(group => group.Key)
             .Select(group => $"{group.Count()} {Label(group.Key)}");
         var text = new StringBuilder($"{Changes.Count} change(s): {string.Join(", ", counts)}");
-        foreach (var change in Changes.Take(maxChanges))
+        if (SnapshotTree.IsSectioned(_before) && SnapshotTree.IsSectioned(_after))
+        {
+            text.Append($"\nby section: {string.Join(", ", CountsBySection())}");
+        }
+
+        var flagged = Changes.Count(change => change.AffectsAccessibility);
+        if (flagged > 0) text.Append($"\n{flagged} can affect accessibility, listed first");
+        foreach (var change in AccessibilityFirst().Take(maxChanges))
         {
             var page = change.Page is int number ? $" (p{number})" : "";
-            text.Append($"\n{Symbol(change.Kind)} {Label(change.Kind)} {change.Path}{page}");
+            var tag = change.AffectsAccessibility ? " [accessibility]" : "";
+            text.Append($"\n{Symbol(change.Kind)} {Label(change.Kind)} {change.Path}{page}{tag}");
             foreach (var line in change.Detail.Split('\n')) text.Append($"\n    {line}");
         }
 
@@ -128,9 +146,16 @@ public sealed class SnapshotDiff
     /// A self-contained HTML page with the two snapshots side by side and the changed words highlighted, for reading a
     /// failure in a browser or keeping it as a build artifact.
     /// </summary>
-    public string ToHtml() => DiffReport.Write(_before, _after, Changes);
+    public string ToHtml() => DiffReport.Write(_before, _after, this);
 
     public override string ToString() => Describe(int.MaxValue);
+
+    // The section is the path's first part, such as "structure" or "body", in the order sections first change.
+    internal IEnumerable<string> CountsBySection() =>
+        Changes.GroupBy(change => change.Path.Split(" > ")[0]).Select(group => $"{group.Key} {group.Count()}");
+
+    // Order is kept within each group, so changes still read in snapshot order.
+    internal IEnumerable<SnapshotChange> AccessibilityFirst() => Changes.OrderBy(change => !change.AffectsAccessibility);
 
     private static string Symbol(ChangeKind kind) => kind switch
     {

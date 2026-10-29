@@ -21,6 +21,19 @@ public class DiffReportTests
     }
 
     [Fact]
+    public void ToHtml_ShouldListAccessibilityChangesFirstWithAFilter_WhenSomeAffectAccessibility()
+    {
+        var after = Before.Replace("  P p1 \"Line 1\"", "  P p1 \"Line one\"").Replace("  P p3 \"Take with food\"", "  H2 p3 \"Take with food\"");
+
+        var html = SnapshotDiff.Compare(Before, after).ToHtml();
+
+        Assert.Contains("2 change(s), by section: structure 2", html);
+        Assert.Contains("<input type=\"checkbox\" data-accessibility> Only accessibility (1)", html);
+        var flagged = html.IndexOf("<li data-kind=\"Changed\" data-accessibility>", StringComparison.Ordinal);
+        Assert.InRange(flagged, 0, html.IndexOf("<li data-kind=\"TextChanged\">", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void ToHtml_ShouldShowARetypedElementOnOneRow_WhenOnlyItsTypeChanges()
     {
         var html = SnapshotDiff.Compare(Before, Before.Replace("  P p3 \"Take with food\"", "  H2 p3 \"Take with food\"")).ToHtml();

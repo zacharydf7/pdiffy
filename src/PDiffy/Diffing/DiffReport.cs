@@ -14,15 +14,16 @@ internal static class DiffReport
     private const int Context = 3;
     private const int MinFoldedLines = 4;
 
-    public static string Write(string before, string after, IReadOnlyList<SnapshotChange> changes)
+    public static string Write(string before, string after, SnapshotDiff diff)
     {
+        var changes = diff.Changes;
+        var plain = !SnapshotTree.IsSectioned(before) || !SnapshotTree.IsSectioned(after);
         var html = new StringBuilder();
         html.Append(Head);
-        html.Append($"<h1>Snapshot differences</h1><p class=\"summary\">{Encode(Summary(changes))}</p>");
-        WriteChangeList(html, changes);
+        html.Append($"<h1>Snapshot differences</h1><p class=\"summary\">{Encode(Summary(diff, plain))}</p>");
+        WriteChangeList(html, diff.AccessibilityFirst().ToList());
         WritePageIndex(html, changes);
 
-        var plain = !SnapshotTree.IsSectioned(before) || !SnapshotTree.IsSectioned(after);
         var beforeSections = Sections(before, plain);
         var afterSections = Sections(after, plain);
         var sections = beforeSections.Keys.Union(afterSections.Keys)
@@ -43,10 +44,13 @@ internal static class DiffReport
         return html.Append(Tail).ToString();
     }
 
-    private static string Summary(IReadOnlyList<SnapshotChange> changes) =>
-        changes.Count == 0 ? "No changes." : $"{changes.Count} change(s)";
+    private static string Summary(SnapshotDiff diff, bool plain) =>
+        diff.IsEmpty ? "No changes."
+        : plain ? $"{diff.Changes.Count} change(s)"
+        : $"{diff.Changes.Count} change(s), by section: {string.Join(", ", diff.CountsBySection())}";
 
-    // One entry per change, each tagged with its kind so the checkboxes above can hide kinds.
+    // One entry per change, those that can affect accessibility first and labeled, each tagged so the checkboxes above
+    // can hide kinds or show only accessibility changes.
     private static void WriteChangeList(StringBuilder html, IReadOnlyList<SnapshotChange> changes)
     {
         if (changes.Count == 0) return;
@@ -58,11 +62,19 @@ internal static class DiffReport
             html.Append($"<label><input type=\"checkbox\" checked data-kind=\"{kind}\"> {kind} ({count})</label>");
         }
 
+        var flagged = changes.Count(change => change.AffectsAccessibility);
+        if (flagged > 0)
+        {
+            html.Append($"<label><input type=\"checkbox\" data-accessibility> Only accessibility ({flagged})</label>");
+        }
+
         html.Append("</div><ul class=\"changes\">");
         foreach (var change in changes)
         {
             var page = change.Page is int number ? $" <a href=\"#p{number}\">p{number}</a>" : "";
-            html.Append($"<li data-kind=\"{change.Kind}\"><b>{change.Kind}</b> {Encode(change.Path)}{page}");
+            var flag = change.AffectsAccessibility ? " data-accessibility" : "";
+            var label = change.AffectsAccessibility ? " <span class=\"accessibility\">accessibility</span>" : "";
+            html.Append($"<li data-kind=\"{change.Kind}\"{flag}><b>{change.Kind}</b> {Encode(change.Path)}{page}{label}");
             html.Append($"<pre>{Encode(change.Detail)}</pre></li>");
         }
 
@@ -233,6 +245,7 @@ internal static class DiffReport
         a { color: var(--link); }
         .summary, .same { color: var(--muted); }
         .filters label { margin-right: 12px; }
+        .accessibility { background: #fde68a; color: #1f2328; border-radius: 3px; padding: 0 4px; font-size: 12px; }
         .changes { padding-left: 20px; }
         .changes pre { margin: 2px 0 8px; white-space: pre-wrap; }
         .pages { margin: 12px 0; }
@@ -255,10 +268,15 @@ internal static class DiffReport
 
     private const string Tail = """
         <script>
-        document.querySelectorAll('.filters input').forEach(box => box.addEventListener('change', () => {
-          document.querySelectorAll('.changes li[data-kind="' + box.dataset.kind + '"]')
-            .forEach(item => item.hidden = !box.checked);
-        }));
+        // A change shows when its kind is ticked and, with "Only accessibility" ticked, it can affect accessibility.
+        function filter() {
+          const kinds = [...document.querySelectorAll('.filters input[data-kind]')].filter(box => box.checked)
+            .map(box => box.dataset.kind);
+          const onlyAccessibility = document.querySelector('.filters input[data-accessibility]')?.checked;
+          document.querySelectorAll('.changes li').forEach(item => item.hidden = !kinds.includes(item.dataset.kind)
+            || onlyAccessibility && !item.hasAttribute('data-accessibility'));
+        }
+        document.querySelectorAll('.filters input').forEach(box => box.addEventListener('change', filter));
         // A page link can point into a folded block or a closed section, so open everything around the target.
         function reveal() {
           const target = location.hash && document.getElementById(location.hash.slice(1));

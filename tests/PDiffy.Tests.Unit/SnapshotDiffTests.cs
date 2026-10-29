@@ -330,10 +330,72 @@ public class SnapshotDiffTests
 
         var text = SnapshotDiff.Compare(Before, after).Describe(maxChanges: 1);
 
-        var expected = "2 change(s): 1 attribute, 1 text\n"
-            + "~ attribute structure > Document > Table > TR[1] > TH2 (p2)\n    scope: Column -> (missing)\n"
+        var expected = "2 change(s): 1 attribute, 1 text\nby section: structure 2\n1 can affect accessibility, listed first\n"
+            + "~ attribute structure > Document > Table > TR[1] > TH2 (p2) [accessibility]\n    scope: Column -> (missing)\n"
             + "... and 1 more";
         Assert.Equal(expected, text);
+    }
+
+    [Fact]
+    public void Describe_ShouldListAccessibilityChangesFirst_WhenTheyComeLaterInTheSnapshot()
+    {
+        var before = SnapshotText.Header + "structure\n  P p1 \"Take with food\"\nuntagged\n  (none)\n";
+        var after = SnapshotText.Header + "structure\n  P p1 \"Take after food\"\nuntagged\n  p1 \"Stray text\"\n";
+
+        var lines = SnapshotDiff.Compare(before, after).Describe().Split('\n');
+
+        Assert.Equal("by section: structure 1, untagged 2", lines[1]);
+        Assert.Equal("+ added untagged > p1 (p1) [accessibility]", lines[3]);
+        Assert.Contains("~ text structure > P (p1)", lines);
+    }
+
+    [Theory]
+    [InlineData("structure", "Figure p1 alt=\"Logo\"", "Figure p1", true)]
+    [InlineData("structure", "Figure p1 alt=\"Logo\"", "Figure p1 alt=\"\"", true)]
+    [InlineData("structure", "Figure p1 alt=\"Logo\"", "Figure p1 alt=\"Store logo\"", false)]
+    [InlineData("structure", "H2 p1 \"Dosage\"", "P p1 \"Dosage\"", true)]
+    [InlineData("structure", "TH1 p1 scope=Column \"Drug\"", "TH1 p1 \"Drug\"", true)]
+    [InlineData("structure", "TD p1 headers=[TH1] \"Warfarin\"", "TD p1 \"Warfarin\"", true)]
+    [InlineData("structure", "P p1 lang=es-ES \"Hola\"", "P p1 lang=fr-FR \"Hola\"", true)]
+    [InlineData("structure", "P p1 \"Take with food\"", "P p1 \"Take after food\"", false)]
+    [InlineData("structure", "TH1 p1 scope=Column \"Drug\"", "TH2 p1 scope=Column \"Drug\"", false)]
+    [InlineData("structure", "TD p1 headers=[TH1] \"Warfarin\"", "TD p1 headers=[?h-other] \"Warfarin\"", true)]
+    [InlineData("document", "marked=yes lang=en-US", "marked=yes lang=en-GB", true)]
+    [InlineData("untagged", "p1 images=1", "p1 images=2", true)]
+    [InlineData("untagged", "p1 \"Page 1\"", "p1 \"Page 1 Draft\"", true)]
+    [InlineData("annotations", "p1 Link tagged at=0,0 size=10x10", "p1 Link untagged at=0,0 size=10x10", true)]
+    [InlineData("annotations", "p1 Link tagged", "p1 Link untagged", true)]
+    [InlineData("annotations", "p1 Link untagged at=0,0 size=10x10", "p1 Link tagged at=0,0 size=10x10", false)]
+    [InlineData("forms", "text \"patient\" p1 tu=\"Patient name\"", "text \"patient\" p1", true)]
+    [InlineData("layout", "p1 text tagged at=72,700 color=gray:0 \"Dosage\"", "p1 text tagged at=72,700 color=#ff0000 \"Dosage\"", false)]
+    public void AffectsAccessibility_ShouldFollowTheFixedRules_WhenGivenAChange(string section, string before, string after,
+        bool affects)
+    {
+        var changes = SnapshotDiff.Compare($"{SnapshotText.Header}{section}\n  {before}\n", $"{SnapshotText.Header}{section}\n  {after}\n").Changes;
+
+        Assert.NotEmpty(changes);
+        Assert.Equal(affects, changes.Any(change => change.AffectsAccessibility));
+    }
+
+    [Fact]
+    public void AffectsAccessibility_ShouldBeFalse_WhenTheChangeIsInADocxSnapshot()
+    {
+        var before = "# docx-snapshot v1\nsections\n  s1 letter headers=default\nbody\n  P lang=en-US \"Take\"\n";
+        var after = "# docx-snapshot v1\nsections\n  s1 letter\nbody\n  P lang=fr-FR \"Take\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Equal(2, changes.Count);
+        Assert.DoesNotContain(changes, change => change.AffectsAccessibility);
+    }
+
+    [Fact]
+    public void Compare_ShouldFlagAMoveInTheStructure_WhenAnElementChangesPlaceInReadingOrder()
+    {
+        var figure = "    Figure p1 alt=\"Pharmacy logo\"\n";
+        var after = Before.Replace(figure, "").Replace("    P p3", figure + "    P p3");
+
+        Assert.True(Assert.Single(SnapshotDiff.Compare(Before, after).Changes).AffectsAccessibility);
     }
 
     [Fact]
