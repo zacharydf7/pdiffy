@@ -455,6 +455,49 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldReportOnlyTheNewAttributes_WhenLinesWithoutTextGainSome()
+    {
+        var before = "# docx-snapshot v1\nbody\n  Table\n    Row\n      Cell\n        P \"Name\"\n      Cell\n";
+        var cell = "Cell margins=top:2 borders=top:none:0";
+        var after = $"# docx-snapshot v1\nbody\n  Table\n    Row\n      {cell}\n        P \"Name\"\n      {cell}\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        (ChangeKind, string)[] expected =
+        [
+            (ChangeKind.AttributeChanged, "body > Table > Row > Cell[1]"),
+            (ChangeKind.AttributeChanged, "body > Table > Row > Cell[1]"),
+            (ChangeKind.AttributeChanged, "body > Table > Row > Cell[2]"),
+            (ChangeKind.AttributeChanged, "body > Table > Row > Cell[2]"),
+        ];
+        Assert.Equal(expected, changes.Select(change => (change.Kind, change.Path)));
+    }
+
+    [Fact]
+    public void Compare_ShouldPairTheEditedLine_WhenANewLineWithTheSameLeadingWordsComesFirst()
+    {
+        var image = "p1 image tagged at=72,600 size=120x40 pixels=600x200 hash=aaa";
+        var added = "p1 image tagged at=300,100 size=50x50 pixels=10x10 hash=bbb";
+        var before = $"{SnapshotText.Header}layout\n  {image}\n";
+        var after = $"{SnapshotText.Header}layout\n  {added}\n  {image.Replace("aaa", "ccc")}\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Equal([ChangeKind.Added, ChangeKind.AttributeChanged], changes.Select(change => change.Kind));
+    }
+
+    [Fact]
+    public void Compare_ShouldNotReportAMove_WhenAnEditedLineIsStillInItsPlace()
+    {
+        var before = "# docx-snapshot v1\nbody\n  Table\n    Row\n      Cell\n        P \"Name\"\n";
+        var after = "# docx-snapshot v1\nbody\n  Table\n    Row header height=20\n      Cell\n        P \"Name\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Equal([ChangeKind.AttributeChanged, ChangeKind.Changed], changes.Select(change => change.Kind));
+    }
+
+    [Fact]
     public void Compare_ShouldFlagAMoveInTheStructure_WhenAnElementChangesPlaceInReadingOrder()
     {
         var figure = "    Figure p1 alt=\"Pharmacy logo\"\n";

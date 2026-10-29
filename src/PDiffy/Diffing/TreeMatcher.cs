@@ -4,11 +4,13 @@ namespace PDiffy.Diffing;
 
 /// <summary>
 /// Compares one section of two snapshots. Siblings that didn't change at all are matched first. Between them, a removed
-/// and an added line with the same key and mostly the same words are treated as one edited line, and so, in the
-/// structure, are two with the same text and a different type. Whatever is left is removed or added, unless it turns
-/// up elsewhere on the other side, unchanged or edited, which makes it a move. When the earlier snapshot's pages were
-/// renumbered to line up with the later one's, <paramref name="originals"/> gives each line as it was written, for
-/// showing. A number that moved no more than <paramref name="tolerances"/> allow isn't a change.
+/// and an added line with the same key and mostly the same words are treated as one edited line; failing that, so are
+/// two without text whose leading words match, such as a table cell that gained attributes, and, in the structure, two
+/// with the same text and a different type. Whatever is left is removed or added, unless it turns up elsewhere on the
+/// other side, unchanged or edited, which makes it a move; found again in its own place, it was only edited. When the
+/// earlier snapshot's pages were renumbered to line up with the later one's, <paramref name="originals"/> gives each
+/// line as it was written, for showing. A number that moved no more than <paramref name="tolerances"/> allow isn't a
+/// change.
 /// </summary>
 internal sealed class TreeMatcher(string name, Section? section,
     IReadOnlyDictionary<SnapshotLine, SnapshotLine>? originals = null, Tolerances? tolerances = null)
@@ -148,10 +150,17 @@ internal sealed class TreeMatcher(string name, Section? section,
             CompareChildren(old.Children, line.Children, path);
             var edits = _entries.GetRange(start, _entries.Count - start);
             _entries.RemoveRange(start, edits.Count);
-            var detail = $"reading position {_beforePositions[old]} -> {_afterPositions[line]}";
             var index = _entries.IndexOf(match);
-            _entries[index] = new Entry(Change: new SnapshotChange(ChangeKind.Moved, section, path, line.Page, detail));
-            _entries.InsertRange(index + 1, edits);
+            _entries.RemoveAt(index);
+            // A line found again in its own place, at the same path and reading position, was edited, not moved.
+            if (path != removed.Path || _beforePositions[old] != _afterPositions[line])
+            {
+                var detail = $"reading position {_beforePositions[old]} -> {_afterPositions[line]}";
+                var moved = new SnapshotChange(ChangeKind.Moved, section, path, line.Page, detail);
+                _entries.Insert(index++, new Entry(Change: moved));
+            }
+
+            _entries.InsertRange(index, edits);
             _entries.Remove(removed);
             foreach (var child in edits.Where(entry => entry.Removed is not null)) pending.Enqueue(child);
         }
@@ -186,16 +195,16 @@ internal sealed class TreeMatcher(string name, Section? section,
     internal static bool IsRetyped(SnapshotLine old, SnapshotLine line) =>
         line.Key != old.Key && !string.IsNullOrEmpty(old.QuotedText) && line.QuotedText == old.QuotedText;
 
-    // A page's counts of untagged images and paths ("p1 images=2 paths=3"), however much they changed.
-    private static bool IsSameCounts(SnapshotLine old, SnapshotLine line) =>
-        old.QuotedText is null && line.QuotedText is null && old.Words.SequenceEqual(line.Words)
-        && old.Attributes.Select(pair => pair.Key).SequenceEqual(line.Attributes.Select(pair => pair.Key));
+    // A line without text whose attributes alone changed, however much: a table cell that gained margins and borders,
+    // or a page's counts of untagged images and paths ("p1 images=2 paths=3").
+    private static bool IsReattributed(SnapshotLine old, SnapshotLine line) =>
+        old.QuotedText is null && line.QuotedText is null && old.Words.SequenceEqual(line.Words);
 
-    // One of the same type, else a retype in the structure; untagged counts always pair, so a drop isn't new content.
+    // The same line edited, else one without text that only changed attributes, else a retype in the structure.
     internal static int MatchOf(SnapshotLine old, List<SnapshotLine> added, int start, string sectionName)
     {
-        var counts = sectionName == SnapshotWriter.Name(Section.Untagged);
-        var match = added.FindIndex(start, line => IsSameLine(old, line) || counts && IsSameCounts(old, line));
+        var match = added.FindIndex(start, line => IsSameLine(old, line));
+        if (match < 0) match = added.FindIndex(start, line => IsReattributed(old, line));
         return match >= 0 || sectionName != SnapshotWriter.Name(Section.Structure) ? match
             : added.FindIndex(start, line => IsRetyped(old, line));
     }
