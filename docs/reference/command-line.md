@@ -15,6 +15,7 @@ dotnet tool install --global PDiffy.Cli
 | [`pdiffy check <file.pdf>`](#check) | Runs every built-in check on a PDF |
 | [`pdiffy accept [targets]`](#accept) | Accepts received snapshots as verified |
 | [`pdiffy report [targets]`](#report) | Summarizes received snapshots, for review or a CI job page |
+| [`pdiffy coverage [targets]`](#coverage) | Counts what the verified snapshots compare and leave out |
 
 ## Exit codes
 
@@ -187,3 +188,35 @@ new tests/Snapshots/Letter.received.docx.txt
 ```
 
 See [Continuous integration](../guide/ci.md) for complete pipeline examples.
+
+## Coverage
+
+```text
+pdiffy coverage [<files or folders>] [--all] [--markdown <coverage.md>]
+```
+
+Every snapshot's header says what it leaves out. `coverage` adds those headers up across the verified snapshots, so a
+suite that has drifted into ignoring layout everywhere, or fonts in half its tests, shows it. It reads only the headers,
+so it's fast and needs no documents.
+
+| Option | Does |
+|---|---|
+| `<files or folders>` | Which verified snapshots to count. The current folder by default |
+| `--all` | Includes every folder under each folder |
+| `--markdown <file>` | Adds the counts, as tables, to the end of the file, such as GitHub's `$GITHUB_STEP_SUMMARY` |
+
+```text
+42 PDF snapshot(s)
+  document     42 of 42
+  ...
+  layout        6 of 42, ignored in 36
+  fields ignored: positions in 30, colors in 12
+  limited to some pages: 3
+  with tolerances: 2
+5 Word snapshot(s)
+  ...
+```
+
+Each section shows how many snapshots compare it, and the fields line lists every field some snapshot leaves out, most
+often first. Text and JSON snapshots have no sections, so they're only counted. `coverage` exits with `0`, or with `2`
+when a target is missing or isn't a verified snapshot.

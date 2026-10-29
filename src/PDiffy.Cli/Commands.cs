@@ -22,10 +22,12 @@ public static class Commands
           pdiffy accept [<files or folders>] [--all]        Accept received snapshots as verified
           pdiffy report [<files or folders>] [--all] [--html <summary.html>] [--markdown <summary.md>]
                                                             Summarize received snapshots
+          pdiffy coverage [<files or folders>] [--all] [--markdown <coverage.md>]
+                                                            Count what the verified snapshots compare
 
         Comparing exits with 0 when nothing changed and 1 when something did; check, with 0 when it finds nothing and 1
         when it finds something; report, with 0 when no snapshot was received and 1 when one was.
-        accept and report take the current folder by default; --all includes subfolders.
+        accept, report and coverage take the current folder by default; --all includes subfolders.
         """;
 
     public static int Run(string[] args, TextWriter output, TextWriter error)
@@ -39,6 +41,7 @@ public static class Commands
                 ["check", var document] => Check(document, output),
                 ["accept", .. var rest] => Accept(rest, output),
                 ["report", .. var rest] => Report(rest, output),
+                ["coverage", .. var rest] => Coverage(rest, output),
                 ["compare", var before, var after, .. var options] =>
                     CompareFolders(before, after, options, output, error),
                 [var before, var after, .. var options] => Compare(before, after, options, output, error),
@@ -142,6 +145,24 @@ public static class Commands
         // A CI job summary file collects what every command in the step writes, so the table is added at its end.
         if (markdown is not null) File.AppendAllText(markdown, summary.ToMarkdown());
         return pending.Count == 0 ? Same : Different;
+    }
+
+    // Only the verified snapshots' headers are read, so a whole suite is summarized quickly, without its documents.
+    private static int Coverage(string[] args, TextWriter output)
+    {
+        var (targets, markdown) = (new List<string>(), (string?)null);
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i] == "--markdown" && i + 1 == args.Length) throw new ArgumentException("--markdown needs a file.");
+            if (args[i] == "--markdown") markdown = args[++i];
+            else if (args[i] != "--all") targets.Add(args[i]);
+        }
+
+        var verified = SnapshotFileSearch.Find(targets, args.Contains("--all"), SnapshotFiles.VerifiedPart);
+        var coverage = SnapshotCoverage.Of(verified);
+        output.Write(coverage.ToText());
+        if (markdown is not null) File.AppendAllText(markdown, coverage.ToMarkdown());
+        return Same;
     }
 
     // A PDF or a DOCX is read and snapshotted; anything else is taken to be a snapshot already, which a profile can't

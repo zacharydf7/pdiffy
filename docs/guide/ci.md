@@ -117,6 +117,9 @@ CI shows what changed; accepting is done on a developer machine, so the change g
 2. Review the reports, or run `pdiffy report --all` for a summary.
 3. Run `pdiffy accept --all` and commit the updated `.verified.*` files.
 
+Now and then, run `pdiffy coverage --all` to see how many snapshots still compare each section, in case tests have
+drifted into ignoring the same thing everywhere.
+
 ## See also
 
 - [Command line](../reference/command-line.md): `report` and `accept` in full

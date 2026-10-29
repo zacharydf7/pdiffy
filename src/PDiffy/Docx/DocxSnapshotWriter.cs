@@ -6,7 +6,8 @@ namespace PDiffy;
 /// <summary>Writes a <see cref="DocxDocument"/> in the canonical snapshot format: one item per line, LF endings.</summary>
 internal sealed class DocxSnapshotWriter
 {
-    public const string FormatHeader = "# docx-snapshot v1";
+    public const string FormatPrefix = "# docx-snapshot v";
+    public const string FormatHeader = FormatPrefix + "1";
 
     private const string None = SnapshotWriter.None;
     private const string Missing = "(missing)";

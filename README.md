@@ -574,6 +574,10 @@ pdiffy accept --all    # the current folder and every folder under it
 # $GITHUB_STEP_SUMMARY), and --html saves a page that links each snapshot's report.
 pdiffy report --all
 pdiffy report --all --markdown "$GITHUB_STEP_SUMMARY" --html snapshot-summary.html
+
+# Count, from the verified snapshots' headers, how many compare each section and how many leave out each field, so a
+# suite that has drifted into ignoring layout or fonts everywhere shows it. --markdown works as for report.
+pdiffy coverage --all
 ```
 
 ## Moving from Verify

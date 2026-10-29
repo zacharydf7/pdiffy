@@ -487,6 +487,53 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void Run_ShouldCountWhatTheVerifiedSnapshotsCompare_WhenAskedForCoverage()
+    {
+        Write("a.verified.pdfua.txt", "# pdfua-snapshot v1\n# ignored sections: layout\n# ignored fields: positions, colors\n");
+        Write("b.verified.pdfua.txt", "# pdfua-snapshot v1\n# ignored fields: positions\n# tolerances: font-sizes 0.5pt\n"
+            + "# only pages: 1\ndocument\n");
+        Write("c.verified.docx.txt", "# docx-snapshot v1\n# ignored sections: styles\n");
+        Write("d.verified.json", "{}\n");
+        Write("a.received.pdfua.txt", "# pdfua-snapshot v1\n# ignored sections: structure\n");
+        var markdown = Path.Combine(_folder, "coverage.md");
+
+        var exitCode = Commands.Run(["coverage", _folder, "--markdown", markdown], _output, _error);
+
+        Assert.Equal(Commands.Same, exitCode);
+        var lines = _output.ToString().Split('\n');
+        Assert.Equal("2 PDF snapshot(s)", lines[0]);
+        Assert.Contains($"  {"structure",-11}  2 of 2", lines);
+        Assert.Contains($"  {"layout",-11}  1 of 2, ignored in 1", lines);
+        Assert.Contains("  fields ignored: positions in 2, colors in 1", lines);
+        Assert.Contains("  limited to some pages: 1", lines);
+        Assert.Contains("  with tolerances: 1", lines);
+        Assert.Contains("1 Word snapshot(s)", lines);
+        Assert.Contains($"  {"styles",-9}  0 of 1, ignored in 1", lines);
+        Assert.Contains("1 other snapshot(s), text or JSON, which have no sections", lines);
+        Assert.Contains("| `layout` | 1 | 1 |", File.ReadAllText(markdown));
+        Assert.Contains("\nLimited to some pages: 1\n\nWith tolerances: 1\n", File.ReadAllText(markdown));
+    }
+
+    [Fact]
+    public void Run_ShouldSayThereAreNone_WhenAskedForCoverageOfAFolderWithoutVerifiedSnapshots()
+    {
+        var exitCode = Commands.Run(["coverage", _folder], _output, _error);
+
+        Assert.Equal((Commands.Same, "No verified snapshots.\n"), (exitCode, _output.ToString()));
+    }
+
+    [Fact]
+    public void Run_ShouldRefuseAndReturnTwo_WhenAskedForCoverageOfAFileThatIsNotVerified()
+    {
+        var received = Write("a.received.pdfua.txt", "# pdfua-snapshot v1\n");
+
+        var exitCode = Commands.Run(["coverage", received], _output, _error);
+
+        Assert.Equal(Commands.UsageError, exitCode);
+        Assert.Contains("isn't a verified snapshot", _error.ToString());
+    }
+
+    [Fact]
     public void Run_ShouldPrintTheDocxsSnapshot_WhenGivenADocx()
     {
         var docx = WriteDocx("letter.docx", "Hello");
