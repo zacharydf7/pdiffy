@@ -65,17 +65,30 @@ public class DiffReportTests
     }
 
     // The change list calls this a move of the page 1 part; line by line, the page 2 part looks like the one that moved.
+    private const string SwapBefore = "structure\n  Document\n    Sect p1\n      P p1 \"a\"\n      P p1 \"b\"\n    Sect p2\n"
+        + "      P p2 \"c\"\n";
+
+    private const string SwapAfter = "structure\n  Document\n    Sect p2\n      P p2 \"c\"\n    Sect p1\n      P p1 \"a\"\n"
+        + "      P p1 \"b\"\n";
+
     [Fact]
     public void ToHtml_ShouldGiveEveryLinkedPageAnAnchor_WhenTheTwoViewsDisagreeAboutWhatMoved()
     {
-        var before = SnapshotText.Header + "structure\n  Document\n    Sect p1\n      P p1 \"a\"\n      P p1 \"b\"\n    Sect p2\n      P p2 \"c\"\n";
-        var after = SnapshotText.Header + "structure\n  Document\n    Sect p2\n      P p2 \"c\"\n    Sect p1\n      P p1 \"a\"\n      P p1 \"b\"\n";
-
-        var html = SnapshotDiff.Compare(before, after).ToHtml();
+        var html = SnapshotDiff.Compare(SnapshotText.Header + SwapBefore, SnapshotText.Header + SwapAfter).ToHtml();
 
         var links = Regex.Matches(html, "href=\"#(p\\d+)\"").Select(match => match.Groups[1].Value).Distinct().ToList();
         Assert.NotEmpty(links);
         Assert.All(links, page => Assert.Contains($"id=\"{page}\"", html));
+    }
+
+    [Fact]
+    public void ToHtml_ShouldAnchorAPageInTheSectionItChangedIn_WhenTheLineViewShowsNoChangeOnThatPage()
+    {
+        var header = SnapshotText.Header + "pages\n  p1 letter rotate=0\n  p2 letter rotate=0\n";
+
+        var html = SnapshotDiff.Compare(header + SwapBefore, header + SwapAfter).ToHtml();
+
+        Assert.Contains("<tr id=\"p1\"><td>    Sect p1</td>", html);
     }
 
     [Fact]

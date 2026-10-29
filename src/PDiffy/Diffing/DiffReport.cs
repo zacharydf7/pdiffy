@@ -30,7 +30,7 @@ internal static class DiffReport
             .Select(name => (Name: name, Rows: Rows(beforeSections.GetValueOrDefault(name) ?? [],
                 afterSections.GetValueOrDefault(name) ?? [], plain, name)))
             .ToList();
-        var anchors = Anchors(sections.SelectMany(section => section.Rows).ToList(), changes);
+        var anchors = Anchors(sections, diff);
         foreach (var (name, rows) in sections)
         {
             var changed = rows.Any(row => row.Kind != ' ');
@@ -81,15 +81,23 @@ internal static class DiffReport
         html.Append("</ul>");
     }
 
-    // Each page a change mentions gets one id, which its links point to: on the page's first changed row, or on its first
-    // row when this line-by-line view shows no change there (the change list can call a swap a move of the other part).
-    private static Dictionary<Row, int> Anchors(List<Row> rows, IReadOnlyList<SnapshotChange> changes)
+    // Each linked page gets one id on its first changed row; the change list can call a swap a move of the other part,
+    // so a page with no changed row here falls back to the sections it changed in.
+    private static Dictionary<Row, int> Anchors(List<(string Name, List<Row> Rows)> sections, SnapshotDiff diff)
     {
-        var pages = changes.Select(change => change.Page).OfType<int>().ToHashSet();
+        var pages = diff.Changes.Select(change => change.Page).OfType<int>().ToHashSet();
+        var changedIn = diff.Changes.Where(change => change.Page is not null)
+            .Select(change => (change.Page, diff.SectionOf(change))).ToHashSet();
+        var rows = sections.SelectMany(section => section.Rows.Select(row => (Section: section.Name, Row: row)))
+            .ToList();
+        var candidates = rows.Where(item => item.Row.Kind != ' ')
+            .Concat(rows.Where(item => changedIn.Contains((PageOf(item.Row), item.Section))))
+            .Concat(rows);
+
         var anchors = new Dictionary<Row, int>(ReferenceEqualityComparer.Instance);
-        foreach (var row in rows.Where(row => row.Kind != ' ').Concat(rows))
+        foreach (var (_, row) in candidates)
         {
-            if (PageOf(row.After ?? row.Before ?? "") is int page && pages.Remove(page)) anchors[row] = page;
+            if (PageOf(row) is int page && pages.Remove(page)) anchors[row] = page;
         }
 
         return anchors;
@@ -224,7 +232,7 @@ internal static class DiffReport
     private static IEnumerable<string> Flatten(IEnumerable<SnapshotLine> lines) =>
         lines.SelectMany(line => Flatten(line.Children).Prepend(line.Text));
 
-    private static int? PageOf(string line) => SnapshotLine.Parse(line, 0).Page;
+    private static int? PageOf(Row row) => SnapshotLine.Parse(row.After ?? row.Before ?? "", 0).Page;
 
     private static string Encode(string text) => WebUtility.HtmlEncode(text);
 
