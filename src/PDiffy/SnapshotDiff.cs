@@ -49,11 +49,13 @@ public sealed class SnapshotDiff
 {
     private readonly string _before;
     private readonly string _after;
+    private readonly string _matchedBefore;
 
-    private SnapshotDiff(string before, string after, IReadOnlyList<SnapshotChange> changes)
+    private SnapshotDiff(string before, string after, IReadOnlyList<SnapshotChange> changes, string matchedBefore)
     {
         _before = before;
         _after = after;
+        _matchedBefore = matchedBefore;
         Changes = changes;
     }
 
@@ -69,9 +71,9 @@ public sealed class SnapshotDiff
     {
         before = before.Replace("\r\n", "\n");
         after = after.Replace("\r\n", "\n");
-        var changes = SnapshotTree.IsSectioned(before) && SnapshotTree.IsSectioned(after)
+        var (changes, matchedBefore) = SnapshotTree.IsSectioned(before) && SnapshotTree.IsSectioned(after)
             ? CompareSections(before, after)
-            : TextDiff.Compare(before, after);
+            : (TextDiff.Compare(before, after), before);
 
         // The texts can still differ in what no line shows: blank lines, or a missing newline at the end.
         if (changes.Count == 0 && before != after)
@@ -79,10 +81,12 @@ public sealed class SnapshotDiff
             changes.Add(new SnapshotChange(ChangeKind.Changed, null, "whitespace", null, "Blank lines or line endings differ."));
         }
 
-        return new SnapshotDiff(before, after, changes);
+        return new SnapshotDiff(before, after, changes, matchedBefore);
     }
 
-    private static List<SnapshotChange> CompareSections(string before, string after)
+    // The earlier snapshot comes back as compared: renumbered to line up with the later one when pages were inserted or
+    // removed.
+    private static (List<SnapshotChange> Changes, string MatchedBefore) CompareSections(string before, string after)
     {
         var changes = new List<SnapshotChange>();
         var beforeHeader = before.Split('\n').Where(line => line.StartsWith('#')).ToList();
@@ -99,14 +103,38 @@ public sealed class SnapshotDiff
             && after.StartsWith(SnapshotWriter.FormatPrefix, StringComparison.Ordinal);
         var beforeSections = SnapshotTree.Parse(before);
         var afterSections = SnapshotTree.Parse(after);
+
+        var matchedBefore = before;
+        Dictionary<SnapshotLine, SnapshotLine>? originals = null;
+
+        // An inserted or removed page renumbers every later one, so the pages are lined up first.
+        if (pdf && PageAlignment.Find(beforeSections, afterSections) is { } alignment)
+        {
+            changes.Add(alignment.Change());
+            matchedBefore = alignment.Renumber(before);
+            var written = beforeSections;
+            beforeSections = SnapshotTree.Parse(matchedBefore);
+            originals = Originals(beforeSections, written);
+        }
+
         foreach (var name in beforeSections.Keys.Union(afterSections.Keys))
         {
-            var matcher = new TreeMatcher(name, pdf ? SectionNamed(name) : null);
+            var matcher = new TreeMatcher(name, pdf ? SectionNamed(name) : null, originals);
             changes.AddRange(matcher.Compare(beforeSections.GetValueOrDefault(name) ?? [],
                 afterSections.GetValueOrDefault(name) ?? []));
         }
 
-        return changes;
+        return (changes, matchedBefore);
+    }
+
+    // Renumbering keeps every line in its place, so each renumbered line pairs with the written one at the same spot.
+    private static Dictionary<SnapshotLine, SnapshotLine> Originals(Dictionary<string, List<SnapshotLine>> renumbered,
+        Dictionary<string, List<SnapshotLine>> written)
+    {
+        static IEnumerable<SnapshotLine> Flatten(SnapshotLine line) => line.Children.SelectMany(Flatten).Prepend(line);
+        return renumbered.SelectMany(section => section.Value.SelectMany(Flatten)
+                .Zip(written[section.Key].SelectMany(Flatten)))
+            .ToDictionary(pair => pair.First, pair => pair.Second);
     }
 
     private static Section? SectionNamed(string name) =>
@@ -145,7 +173,7 @@ public sealed class SnapshotDiff
     /// A self-contained HTML page with the two snapshots side by side and the changed words highlighted, for reading a
     /// failure in a browser or keeping it as a build artifact.
     /// </summary>
-    public string ToHtml() => DiffReport.Write(_before, _after, this);
+    public string ToHtml() => DiffReport.Write(_before, _matchedBefore, _after, this);
 
     /// <summary>
     /// The changes as JSON, for scripts and tools outside .NET: a version number and, for each change, its kind,

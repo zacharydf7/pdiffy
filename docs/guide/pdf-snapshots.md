@@ -90,6 +90,8 @@ Elements are matched one to one, so:
 - A heading that became another level or a paragraph is one change: `type: H2 -> P`.
 - A one-word value replaced on an otherwise unchanged line, such as a number in a table cell, is changed, not removed
   and added. A paragraph replaced by entirely different words is removed and added.
+- Inserted or removed pages are one change, such as `p2 inserted; p2-10 -> p3-11`. Pages are lined up by their text,
+  and each element is compared with the page it lines up with, so a new cover page doesn't report every later element.
 
 ## The HTML report
 

@@ -6,11 +6,14 @@ namespace PDiffy.Diffing;
 /// Compares one section of two snapshots. Siblings that didn't change at all are matched first. Between them, a removed
 /// and an added line with the same key and mostly the same words are treated as one edited line, and so, in the
 /// structure, are two with the same text and a different type. Whatever is left is removed or added, unless it turns
-/// up elsewhere on the other side, unchanged or edited, which makes it a move.
+/// up elsewhere on the other side, unchanged or edited, which makes it a move. When the earlier snapshot's pages were
+/// renumbered to line up with the later one's, <paramref name="originals"/> gives each line as it was written, for
+/// showing.
 /// </summary>
-internal sealed class TreeMatcher(string name, Section? section)
+internal sealed class TreeMatcher(string name, Section? section,
+    IReadOnlyDictionary<SnapshotLine, SnapshotLine>? originals = null)
 {
-    private const double SameLineSimilarity = 0.5;
+    internal const double SameLineSimilarity = 0.5;
 
     private readonly List<Entry> _entries = [];
     private Dictionary<SnapshotLine, int> _beforePositions = [];
@@ -105,7 +108,7 @@ internal sealed class TreeMatcher(string name, Section? section)
         var skip = retyped ? 1 : 0;
         if (!old.Words.Skip(skip).SequenceEqual(edited.Words.Skip(skip)) || _entries.Count == found)
         {
-            Add(ChangeKind.Changed, path, page, $"{old.Text.TrimStart()} -> {edited.Text.TrimStart()}");
+            Add(ChangeKind.Changed, path, page, $"{Original(old).Text.TrimStart()} -> {edited.Text.TrimStart()}");
         }
     }
 
@@ -145,8 +148,11 @@ internal sealed class TreeMatcher(string name, Section? section)
 
     private SnapshotChange ToChange(Entry entry) => entry.Change
         ?? (entry.Removed is { } removed
-            ? new SnapshotChange(ChangeKind.Removed, section, entry.Path!, removed.Page, removed.Text.Trim())
+            ? new SnapshotChange(ChangeKind.Removed, section, entry.Path!, Original(removed).Page,
+                Original(removed).Text.Trim())
             : new SnapshotChange(ChangeKind.Added, section, entry.Path!, entry.Added!.Page, entry.Added.Text.Trim()));
+
+    private SnapshotLine Original(SnapshotLine line) => originals?.GetValueOrDefault(line) ?? line;
 
     // The key, numbered when siblings share it: "TR[2]".
     private static string PathOf(SnapshotLine line, List<SnapshotLine> siblings, string parentPath)
@@ -204,7 +210,7 @@ internal sealed class TreeMatcher(string name, Section? section)
         line.Children.Count == 0 ? line.TextWords : [.. line.TextWords, .. line.Children.SelectMany(SubtreeWords)];
 
     // The share of words two sets have in common, out of the larger set.
-    private static double Overlap(HashSet<string> first, HashSet<string> second) =>
+    internal static double Overlap(HashSet<string> first, HashSet<string> second) =>
         (double)first.Count(second.Contains) / Math.Max(1, Math.Max(first.Count, second.Count));
 
     private static List<string> Values(SnapshotLine line, string key) =>

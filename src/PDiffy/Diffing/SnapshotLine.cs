@@ -56,7 +56,7 @@ internal sealed class SnapshotLine(string text, int depth)
     }
 
     // Splits on spaces outside quotes; a quoted value keeps its quotes and escapes.
-    private static IEnumerable<string> Tokens(string text)
+    internal static IEnumerable<string> Tokens(string text)
     {
         var token = new StringBuilder();
         var quoted = false;

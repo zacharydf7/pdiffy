@@ -89,7 +89,7 @@ by section: structure 3
     "Take [-with-] {+after+} food"
 ```
 
-The second line counts the changes in each section, so a reflow that moves 200 layout lines doesn't hide one change to the structure. Changes that can affect what a screen reader gets come first, tagged `[accessibility]` (see [Changes that affect accessibility](#changes-that-affect-accessibility)).
+When pages are inserted or removed, the shift is one change (`p2 inserted; p2-10 -> p3-11`) and each element is compared with the page it lines up with, so a new cover page doesn't report every later element as changed. The second line counts the changes in each section, so a reflow that moves 200 layout lines doesn't hide one change to the structure. Changes that can affect what a screen reader gets come first, tagged `[accessibility]` (see [Changes that affect accessibility](#changes-that-affect-accessibility)).
 
 What happens on each run:
 

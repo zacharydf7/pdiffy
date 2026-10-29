@@ -14,7 +14,8 @@ internal static class DiffReport
     private const int Context = 3;
     private const int MinFoldedLines = 4;
 
-    public static string Write(string before, string after, SnapshotDiff diff)
+    // Rows pair the earlier snapshot as matched (pages renumbered) and show it as written.
+    public static string Write(string before, string matchedBefore, string after, SnapshotDiff diff)
     {
         var changes = diff.Changes;
         var plain = !SnapshotTree.IsSectioned(before) || !SnapshotTree.IsSectioned(after);
@@ -24,11 +25,13 @@ internal static class DiffReport
         WriteChangeList(html, diff.AccessibilityFirst().ToList());
         WritePageIndex(html, changes);
 
-        var beforeSections = Sections(before, plain);
+        var writtenSections = Sections(before, plain);
+        var beforeSections = Sections(matchedBefore, plain);
         var afterSections = Sections(after, plain);
         var sections = beforeSections.Keys.Union(afterSections.Keys)
             .Select(name => (Name: name, Rows: Rows(beforeSections.GetValueOrDefault(name) ?? [],
-                afterSections.GetValueOrDefault(name) ?? [], plain, name)))
+                writtenSections.GetValueOrDefault(name) ?? [], afterSections.GetValueOrDefault(name) ?? [], plain,
+                name)))
             .ToList();
         var anchors = Anchors(sections, diff);
         foreach (var (name, rows) in sections)
@@ -154,23 +157,27 @@ internal static class DiffReport
 
     // Lines align by the longest common run of lines. Between those, a removed and an added line share a row when the
     // change list would call them one edited line.
-    private static List<Row> Rows(List<string> before, List<string> after, bool plain, string sectionName)
+    // A before line is matched as given and shown as written; the two lists hold the same lines in the same order.
+    private static List<Row> Rows(List<string> before, List<string> written, List<string> after, bool plain,
+        string sectionName)
     {
         var rows = new List<Row>();
-        var removed = new List<string>();
+        var removed = new List<int>();
         var added = new List<string>();
+        var index = 0;
         foreach (var step in LineDiff.Compare(before, after).Append(new LineChange(' ', "")))
         {
-            if (step.Kind == '-') removed.Add(step.Line);
+            if (step.Kind == '-') removed.Add(index++);
             else if (step.Kind == '+') added.Add(step.Line);
             else
             {
-                if (plain) PairInOrder(rows, removed, added);
-                else PairGap(rows, removed, added, sectionName);
+                if (plain) PairInOrder(rows, removed.ConvertAll(i => written[i]), added);
+                else PairGap(rows, removed, before, written, added, sectionName);
 
                 removed.Clear();
                 added.Clear();
-                rows.Add(new Row(' ', step.Line, step.Line));
+                rows.Add(new Row(' ', index < written.Count ? written[index] : step.Line, step.Line));
+                index++;
             }
         }
 
@@ -178,22 +185,22 @@ internal static class DiffReport
         return rows;
     }
 
-    private static void PairGap(List<Row> rows, List<string> removed, List<string> added, string sectionName)
+    private static void PairGap(List<Row> rows, List<int> removed, List<string> before, List<string> written,
+        List<string> added, string sectionName)
     {
         var addedLines = added.ConvertAll(line => SnapshotLine.Parse(line, 0));
         var next = 0;
         foreach (var old in removed)
         {
-            var oldLine = SnapshotLine.Parse(old, 0);
-            var match = TreeMatcher.MatchOf(oldLine, addedLines, next, sectionName);
+            var match = TreeMatcher.MatchOf(SnapshotLine.Parse(before[old], 0), addedLines, next, sectionName);
             if (match < 0)
             {
-                rows.Add(new Row('-', old, null));
+                rows.Add(new Row('-', written[old], null));
                 continue;
             }
 
             rows.AddRange(added.Skip(next).Take(match - next).Select(line => new Row('+', null, line)));
-            rows.Add(new Row('~', old, added[match]));
+            rows.Add(new Row('~', written[old], added[match]));
             next = match + 1;
         }
 

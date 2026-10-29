@@ -1,3 +1,6 @@
+using System.Text.RegularExpressions;
+using PDiffy.Diffing;
+
 namespace PDiffy.Tests.Unit;
 
 public class SnapshotDiffTests
@@ -432,6 +435,114 @@ public class SnapshotDiffTests
 
         Assert.Equal([null, Section.Structure], changes.Select(change => change.Section));
         Assert.Equal("header", changes[0].Path);
+    }
+
+    [Fact]
+    public void Compare_ShouldReportTheShiftOnceAndOnlyTheNewPagesContent_WhenAPageIsInserted()
+    {
+        var changes = SnapshotDiff.Compare(Pages(10), Pages(10, insertedAfter: 1)).Changes;
+
+        SnapshotChange[] expected =
+        [
+            new(ChangeKind.Changed, Section.Pages, "pages", 2, "p2 inserted; p2-10 -> p3-11"),
+            new(ChangeKind.AttributeChanged, Section.Document, "document > marked", null, "pages: 10 -> 11"),
+            new(ChangeKind.Added, Section.Structure, "structure > Document > P[2]", 2, "P p2 \"A new page\""),
+            new(ChangeKind.Added, Section.Layout, "layout > p2", 2, "p2 text tagged at=72,700 \"A new page\""),
+        ];
+        Assert.Equal(expected, changes);
+    }
+
+    [Fact]
+    public void Compare_ShouldReportTheShiftOnceAndOnlyTheRemovedPagesContent_WhenAPageIsRemoved()
+    {
+        var changes = SnapshotDiff.Compare(Pages(10, insertedAfter: 1), Pages(10)).Changes;
+
+        Assert.Equal("p2 removed; p3-11 -> p2-10", changes[0].Detail);
+        Assert.Equal([ChangeKind.Changed, ChangeKind.AttributeChanged, ChangeKind.Removed, ChangeKind.Removed],
+            changes.Select(change => change.Kind));
+    }
+
+    [Fact]
+    public void Compare_ShouldNotLineUpPages_WhenNoPageHasTheSameText()
+    {
+        var after = Pages(10, insertedAfter: 1).Replace("Paragraph", "Chapter").Replace("of the guide", "about cheese");
+
+        var changes = SnapshotDiff.Compare(Pages(10), after).Changes;
+
+        Assert.DoesNotContain(changes, change => change.Path == "pages");
+    }
+
+    [Fact]
+    public void Compare_ShouldCarryTheShiftPastABlankPage_WhenAPageIsInsertedBeforeIt()
+    {
+        var changes = SnapshotDiff.Compare(Pages(10, blank: 5), Pages(10, insertedAfter: 1, blank: 5)).Changes;
+
+        Assert.Equal("p2 inserted; p2-10 -> p3-11", changes[0].Detail);
+        Assert.Equal(4, changes.Count);
+    }
+
+    [Fact]
+    public void Compare_ShouldNotLineUpPages_WhenPagesAreBothInsertedAndRewritten()
+    {
+        var after = Pages(10, insertedAfter: 1).Replace("Paragraph 5 of the guide", "Entirely rewritten text");
+
+        var changes = SnapshotDiff.Compare(Pages(10), after).Changes;
+
+        Assert.DoesNotContain(changes, change => change.Path == "pages");
+    }
+
+    [Fact]
+    public void Compare_ShouldShowAWrittenPageNumber_WhenALaterLineIsRemovedAlongWithAPage()
+    {
+        var note = "    P p8 \"Paragraph 7 of the guide\"\n";
+        var before = Pages(10, insertedAfter: 1).Replace(note, note + "    P p8 \"A note\"\n");
+
+        var changes = SnapshotDiff.Compare(before, Pages(10)).Changes;
+
+        var removed = Assert.Single(changes, change => change.Detail == "P p8 \"A note\"");
+        Assert.Equal(8, removed.Page);
+    }
+
+    [Theory]
+    [InlineData("    P p3 \"Paragraph 2 of the guide\"", "    P p2 \"Paragraph 2 of the guide\"")]
+    [InlineData("    Table p3-5", "    Table p2-4")]
+    [InlineData("    Table p2-3", "    Table p2")]
+    [InlineData("  \"Interactions\" -> p4", "  \"Interactions\" -> p3")]
+    [InlineData("  label from p3 style=decimal", "  label from p2 style=decimal")]
+    [InlineData("    P p3 \"See p3 and \\\"p4\\\"\"", "    P p2 \"See p3 and \\\"p4\\\"\"")]
+    [InlineData("  info p3=\"x\"", "  info p3=\"x\"")]
+    [InlineData("# only pages: 3", "# only pages: 3")]
+    public void Renumber_ShouldChangeOnlyPageWords_WhenAPageWasRemoved(string line, string expected)
+    {
+        var before = SnapshotTree.Parse(Pages(10, insertedAfter: 1));
+        var alignment = PageAlignment.Find(before, SnapshotTree.Parse(Pages(10)))!;
+
+        var renumbered = alignment.Renumber(line);
+
+        Assert.Equal(expected, renumbered);
+    }
+
+    [Fact]
+    public void ToHtml_ShouldNotMarkShiftedLinesAsChanged_WhenAPageIsInserted()
+    {
+        var html = SnapshotDiff.Compare(Pages(10), Pages(10, insertedAfter: 1)).ToHtml();
+
+        // Only the document line's page count is an edited row; everything else is unchanged or the new page's lines.
+        Assert.Single(Regex.Matches(html, "<td class=\"removed\">"));
+        Assert.Equal(2, Regex.Matches(html, "<td></td><td class=\"added\">").Count);
+    }
+
+    // One paragraph per page, in the structure and the layout, with an optional page added after the given one and an
+    // optional page left blank.
+    private static string Pages(int count, int? insertedAfter = null, int? blank = null)
+    {
+        var texts = Enumerable.Range(1, count).Select(i => i == blank ? null : $"Paragraph {i} of the guide").ToList();
+        if (insertedAfter is int index) texts.Insert(index, "A new page");
+        var pages = texts.Select((text, i) => (Text: text, Page: i + 1)).Where(page => page.Text is not null).ToList();
+        var structure = pages.Select(page => $"    P p{page.Page} \"{page.Text}\"");
+        var layout = pages.Select(page => $"  p{page.Page} text tagged at=72,700 \"{page.Text}\"");
+        return SnapshotText.Header + $"document\n  marked=yes pages={texts.Count}\nstructure\n  Document\n"
+            + string.Join("\n", structure) + "\nlayout\n" + string.Join("\n", layout) + "\n";
     }
 
     [Fact]
