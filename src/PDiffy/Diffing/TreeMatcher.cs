@@ -138,9 +138,8 @@ internal sealed class TreeMatcher(string name, Section? section,
         while (pending.TryDequeue(out var removed))
         {
             var old = removed.Removed!;
-            var candidates = _entries.Where(entry => entry.Added is not null).ToList();
-            var match = Nearest(old, candidates.Where(entry => entry.Added!.Signature == old.Signature))
-                ?? Nearest(old, candidates.Where(entry => IsEditedCopy(old, entry.Added!)));
+            var match = Nearest(old, _entries.Where(entry => entry.Added?.Signature == old.Signature))
+                ?? Nearest(old, _entries.Where(entry => entry.Added is { } line && IsEditedCopy(old, line)));
             if (match is null) continue;
 
             // The edits to a moved line go right after its move, not at the end of the list.
@@ -217,17 +216,23 @@ internal sealed class TreeMatcher(string name, Section? section,
     {
         if (line.Key != old.Key) return false;
 
-        var (before, after) = (SubtreeWords(old), SubtreeWords(line));
+        var (before, after) = (old.SubtreeWords, line.SubtreeWords);
         var similarity = before.Count > 0 && after.Count > 0 ? Overlap(before, after) : Similarity(old, line);
         return similarity >= SameLineSimilarity;
     }
 
-    private static HashSet<string> SubtreeWords(SnapshotLine line) =>
-        line.Children.Count == 0 ? line.TextWords : [.. line.TextWords, .. line.Children.SelectMany(SubtreeWords)];
+    // The share of words two sets have in common, out of the larger set. A plain loop, since a diff with nothing in
+    // common runs it for every pair of lines.
+    internal static double Overlap(HashSet<string> first, HashSet<string> second)
+    {
+        var shared = 0;
+        foreach (var word in first)
+        {
+            if (second.Contains(word)) shared++;
+        }
 
-    // The share of words two sets have in common, out of the larger set.
-    internal static double Overlap(HashSet<string> first, HashSet<string> second) =>
-        (double)first.Count(second.Contains) / Math.Max(1, Math.Max(first.Count, second.Count));
+        return (double)shared / Math.Max(1, Math.Max(first.Count, second.Count));
+    }
 
     private static List<string> Values(SnapshotLine line, string key) =>
         line.Attributes.Where(pair => pair.Key == key).Select(pair => pair.Value).ToList();

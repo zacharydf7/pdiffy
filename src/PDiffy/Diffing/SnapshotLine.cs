@@ -9,9 +9,13 @@ namespace PDiffy.Diffing;
 /// </summary>
 internal sealed class SnapshotLine(string text, int depth)
 {
-    // Worked out on first use and kept, since matching compares each line with many others.
+    // Worked out on first use and kept, since matching compares each line with many others. The tree is built before
+    // anything compares it, so a line's children are all there by then.
     private HashSet<string>? _textWords;
     private HashSet<string>? _allWords;
+    private HashSet<string>? _subtreeWords;
+    private string? _signature;
+    private string? _key;
 
     public string Text { get; } = text;
     public int Depth { get; } = depth;
@@ -24,7 +28,7 @@ internal sealed class SnapshotLine(string text, int depth)
     /// What identifies the line among its siblings: the text a line starts with (a bookmark's title), else its first
     /// word, else its first key for a line of keys.
     /// </summary>
-    public string Key => Text.TrimStart().StartsWith('"') ? QuotedText ?? ""
+    public string Key => _key ??= Text.TrimStart().StartsWith('"') ? QuotedText ?? ""
         : Words.Count > 0 ? Words[0] : Attributes.Count > 0 ? Attributes[0].Key : "";
 
     /// <summary>The page the line is on, from a word like p3 or p2-4.</summary>
@@ -37,8 +41,12 @@ internal sealed class SnapshotLine(string text, int depth)
     public HashSet<string> AllWords =>
         _allWords ??= [.. Words, .. Attributes.Select(pair => $"{pair.Key}={pair.Value}"), .. TextWords];
 
+    /// <summary>The text words of the line and everything nested under it.</summary>
+    public HashSet<string> SubtreeWords => _subtreeWords ??=
+        Children.Count == 0 ? TextWords : [.. TextWords, .. Children.SelectMany(child => child.SubtreeWords)];
+
     /// <summary>The line and everything nested under it, used to recognize a subtree that didn't change or moved.</summary>
-    public string Signature =>
+    public string Signature => _signature ??=
         Children.Count == 0 ? Text : Text + "\n" + string.Join("\n", Children.Select(child => child.Signature));
 
     public static SnapshotLine Parse(string text, int depth)

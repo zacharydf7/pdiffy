@@ -42,12 +42,11 @@ no words with it but numbers, so almost no line pairs with another.
 
 | Pages | One paragraph edited | Allocated | Nothing in common | Allocated |
 |---|---|---|---|---|
-| 10 | 0.7 ms | 2.8 MB | 25 ms | 157 MB |
-| 100 | 29 ms | 27 MB | 1.7 s | 14.8 GB |
+| 10 | 0.7 ms | 2.7 MB | 8 ms | 6.5 MB |
+| 100 | 32 ms | 26 MB | 0.64 s | 66 MB |
 
 An edit, the usual case for a failing test, is cheap. When nothing matches, each unmatched line is compared with every
-other in its section, so time and memory grow with the square of the lines that differ. At 100 pages that's enough to
-strain a build agent; reducing it is tracked in [issue #45](https://github.com/zacharydf7/pdiffy/issues/45).
+other in its section, so the time grows with the square of the lines that differ, while memory stays modest.
 
 ## Running the benchmarks
 
