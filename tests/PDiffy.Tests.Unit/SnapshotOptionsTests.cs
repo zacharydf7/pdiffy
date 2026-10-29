@@ -121,12 +121,12 @@ public class SnapshotOptionsTests
     [Fact]
     public void ToSnapshot_ShouldReplaceOnlyQuotedText_WhenScrubbingAPattern()
     {
-        var paragraph = new StructureElement { Type = "P", Text = "Order 12345 for P. Smith" };
+        var paragraph = new StructureElement { Type = "P", Text = "Ticket 12345 for P. Smith" };
         var document = Documents.Empty() with { Structure = [paragraph] };
 
-        var snapshot = document.ToSnapshot(o => o.ScrubText(new Regex(@"Order (\d+)"), "Order <id>").ScrubText(new Regex("P"), "X"));
+        var snapshot = document.ToSnapshot(o => o.ScrubText(new Regex(@"Ticket (\d+)"), "Ticket <id>").ScrubText(new Regex("P"), "X"));
 
-        Assert.Equal(["  P \"Order <id> for X. Smith\""], SectionLines(snapshot, "structure"));
+        Assert.Equal(["  P \"Ticket <id> for X. Smith\""], SectionLines(snapshot, "structure"));
     }
 
     [Theory]
@@ -273,9 +273,9 @@ public class SnapshotOptionsTests
             PdfVersion = "1.7", OpenAction = "p1 Fit", IsEncrypted = true, Permissions = DocumentPermissions.Print,
             EmbeddedFiles = [new EmbeddedFile("a.txt", null, null, null, 5, "2cf24dba5fb0a30e")],
         },
-        Metadata = new Metadata("Title", "Ann", "Drugs", "pharmacy", true, true, "Producer 1.0", "Word", "1", "Title")
+        Metadata = new Metadata("Title", "Ann", "Trails", "park", true, true, "Producer 1.0", "Word", "1", "Title")
         {
-            OtherInfo = [new Setting("Company", "Example Pharmacy")], XmpCreator = "Ann", XmpDescription = "Drugs", XmpLanguage = "en-US",
+            OtherInfo = [new Setting("Company", "Example Park")], XmpCreator = "Ann", XmpDescription = "Trails", XmpLanguage = "en-US",
         },
         Pages = [new PageInfo(1, 612, 792, 0, null, false) { CropBox = new PageBox(0, 0, 600, 780) }],
         Structure =

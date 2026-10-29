@@ -128,7 +128,7 @@ public sealed class DocxSnapshotOptions
 
     /// <summary>
     /// Replaces matches in quoted text (paragraph text, alt text, titles, field results and so on) and link addresses.
-    /// The replacement can refer to groups, such as "Order $1".
+    /// The replacement can refer to groups, such as "Permit $1".
     /// </summary>
     public DocxSnapshotOptions ScrubText(Regex pattern, string replacement)
     {

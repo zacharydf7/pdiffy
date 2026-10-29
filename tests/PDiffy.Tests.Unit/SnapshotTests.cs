@@ -86,12 +86,12 @@ public sealed class SnapshotTests : SnapshotFolderTests
     [Fact]
     public async Task VerifyAsync_ShouldScrubTheWholeText_WhenAskedTo()
     {
-        var text = "Order 1234 for 0f8fad5b-d9cb-469f-a165-70867728950e on 2026-10-28\n";
+        var text = "Permit 1234 for 0f8fad5b-d9cb-469f-a165-70867728950e on 2026-10-28\n";
 
-        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync(text, "Order",
-            o => o.ScrubText(new Regex(@"Order \d+"), "Order N").ScrubGuids().ScrubDates()));
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync(text, "Permit",
+            o => o.ScrubText(new Regex(@"Permit \d+"), "Permit N").ScrubGuids().ScrubDates()));
 
-        Assert.Equal("Order N for Guid_1 on Date_1\n", File.ReadAllText(Path.Combine(Folder, "Order.received.txt")));
+        Assert.Equal("Permit N for Guid_1 on Date_1\n", File.ReadAllText(Path.Combine(Folder, "Permit.received.txt")));
     }
 
     [Fact]
@@ -130,18 +130,18 @@ public sealed class SnapshotTests : SnapshotFolderTests
     {
         var json = """{"Date":"January 12, 2022","Text":"Sent 2020-11-14 to 0f8fad5b-d9cb-469f-a165-70867728950e"}""";
 
-        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyJsonAsync(json, "Letter"));
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyJsonAsync(json, "Guide"));
 
         var expected = "{\n  \"Date\": \"January 12, 2022\",\n  \"Text\": \"Sent 2020-11-14 to 0f8fad5b-d9cb-469f-a165-70867728950e\"\n}\n";
-        Assert.Equal(expected, File.ReadAllText(Path.Combine(Folder, "Letter.received.json")));
+        Assert.Equal(expected, File.ReadAllText(Path.Combine(Folder, "Guide.received.json")));
     }
 
     [Fact]
     public async Task VerifyJsonAsync_ShouldKeepADate_WhenItFollowsAQuoteMarkInsideText()
     {
-        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyJsonAsync("""{"Text":"He wrote \"2020-11-14"}""", "Letter"));
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyJsonAsync("""{"Text":"He wrote \"2020-11-14"}""", "Guide"));
 
-        Assert.Contains("2020-11-14", File.ReadAllText(Path.Combine(Folder, "Letter.received.json")));
+        Assert.Contains("2020-11-14", File.ReadAllText(Path.Combine(Folder, "Guide.received.json")));
     }
 
     [Fact]
@@ -150,10 +150,10 @@ public sealed class SnapshotTests : SnapshotFolderTests
         var guid = "0f8fad5b-d9cb-469f-a165-70867728950e";
         var json = $$"""{"Created":"2020-11-14","Text":"Sent 2020-11-14 to {{guid}}"}""";
 
-        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyJsonAsync(json, "Letter", o => o.ScrubDates().ScrubGuids()));
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyJsonAsync(json, "Guide", o => o.ScrubDates().ScrubGuids()));
 
         var expected = "{\n  \"Created\": \"Date_1\",\n  \"Text\": \"Sent Date_1 to Guid_1\"\n}\n";
-        Assert.Equal(expected, File.ReadAllText(Path.Combine(Folder, "Letter.received.json")));
+        Assert.Equal(expected, File.ReadAllText(Path.Combine(Folder, "Guide.received.json")));
     }
 
     [Fact]

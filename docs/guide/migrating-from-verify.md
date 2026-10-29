@@ -11,7 +11,7 @@ one line per test.
 | `await Verify(docxStream, "docx")`, or `VerifyXml` of the document's parts | `await DocxSnapshot.VerifyAsync(docxStream)` |
 | `await VerifyJson(json)` | `await Snapshot.VerifyJsonAsync(json)` |
 | `await Verify(text)` | `await Snapshot.VerifyAsync(text)` |
-| `.UseFileName("Invoice")` | `name: "Invoice"` |
+| `.UseFileName("TrailMap")` | `name: "TrailMap"` |
 | `DerivePathInfo(...)` or `UseDirectory(...)` | `Snapshot.Directory = "..."` once, or `directory:` on one call |
 | `.UniqueForOSPlatform()` | Nothing: a snapshot is the same text on every OS, so one file covers them all |
 | `.ScrubLinesWithReplace(...)` or a custom scrubber | `ScrubText(regex, replacement)` |
@@ -25,8 +25,8 @@ tests last approved, so the `pdiffy` tool can turn each one into a PDiffy snapsh
 PDiffy does: `{TestFile}.{TestMethod}.verified.pdfua.txt`, or `{name}.verified.pdfua.txt` when the test passes a name.
 
 ```text
-pdiffy snapshot InvoiceTests.Invoice_ShouldMatch.verified.pdf InvoiceTests.Invoice_ShouldMatch.verified.pdfua.txt
-pdiffy snapshot LetterTests.Letter_ShouldMatch.verified.docx LetterTests.Letter_ShouldMatch.verified.docx.txt
+pdiffy snapshot TrailMapTests.TrailMap_ShouldMatch.verified.pdf TrailMapTests.TrailMap_ShouldMatch.verified.pdfua.txt
+pdiffy snapshot GuideTests.Guide_ShouldMatch.verified.docx GuideTests.Guide_ShouldMatch.verified.docx.txt
 ```
 
 - A Word document saved as `.verified.bin` needs a `.docx` name first, since that's how the tool tells it from a PDF.

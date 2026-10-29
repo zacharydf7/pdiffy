@@ -25,7 +25,7 @@ public static class Snapshot
     /// </summary>
     /// <param name="text">The text to check.</param>
     /// <param name="name">The snapshot's file name without extension. Defaults to the test file and method, such as
-    /// "InvoiceTests.Invoice_ShouldMatch".</param>
+    /// "TrailMapTests.TrailMap_ShouldMatch".</param>
     /// <param name="configure">What to scrub, such as dates or GUIDs.</param>
     /// <param name="extension">The snapshot files' extension, without the dot.</param>
     /// <param name="directory">The folder for this snapshot, instead of <see cref="Directory"/>.</param>

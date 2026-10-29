@@ -17,7 +17,7 @@ public static class PdfSnapshot
     /// </summary>
     /// <param name="pdf">The PDF to check. The stream is left open.</param>
     /// <param name="name">The snapshot's file name without extension. Defaults to the test file and method, such as
-    /// "InvoiceTests.Invoice_ShouldMatch". Pass one when a test makes several snapshots, as a theory does.</param>
+    /// "TrailMapTests.TrailMap_ShouldMatch". Pass one when a test makes several snapshots, as a theory does.</param>
     /// <param name="configure">What to leave out or scrub, as for <see cref="PdfUaDocument.ToSnapshot"/>.</param>
     /// <param name="directory">The folder for this snapshot, instead of <see cref="Snapshot.Directory"/>.</param>
     /// <param name="testFile">Filled in by the compiler with the calling test's file; leave it out.</param>

@@ -33,7 +33,7 @@ Everything starts with `PdfUaDocument.Load`, which reads the whole PDF once. Fro
 using PDiffy;
 
 // Read the PDF. Load also takes a Stream, so you can pass your generator's output without saving it first.
-PdfUaDocument document = PdfUaDocument.Load("drug-guide.pdf");
+PdfUaDocument document = PdfUaDocument.Load("trail-guide.pdf");
 
 // The snapshot is a string: one line per element, in a fixed order, the same on every OS.
 string snapshot = document.ToSnapshot();
@@ -54,12 +54,12 @@ The core workflow is one call. `PdfSnapshot.VerifyAsync` prints the snapshot and
 
 ```csharp
 [Fact]
-public async Task DrugGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
+public async Task TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
     // Generate the PDF in memory.
-    using Stream pdf = await ReportGenerator.CreateDrugGuideAsync();
+    using Stream pdf = await ReportGenerator.CreateTrailGuideAsync();
 
-    // Compare it with DrugGuideTests.DrugGuide_ShouldMatchApprovedSnapshot_WhenGenerated.verified.pdfua.txt,
+    // Compare it with TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.verified.pdfua.txt,
     // named after this test file and method. A difference throws SnapshotException saying what changed.
     await PdfSnapshot.VerifyAsync(pdf);
 }
@@ -76,7 +76,7 @@ by section: structure 3
 ~ attribute structure > Document > Table > TR[1] > TH2 (p2) [accessibility]
     scope: Column -> (missing)
 ~ text structure > Document > Table > TR[2] > TD[2] (p2)
-    "Take [-with-] {+after+} food"
+    "Go [-with-] {+without+} a guide"
 ```
 
 When pages are inserted or removed, the shift is one change (`p2 inserted; p2-10 -> p3-11`) and each element is compared with the page it lines up with, so a new cover page doesn't report every later element as changed. The second line counts the changes in each section, so a reflow that moves 200 layout lines doesn't hide one change to the structure. Changes that can affect what a screen reader gets come first, tagged `[accessibility]` (see [Changes that affect accessibility](#changes-that-affect-accessibility)).
@@ -102,11 +102,11 @@ Snapshot.Directory = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "S
 
 A test whose snapshots belong somewhere else passes the folder: `await PdfSnapshot.VerifyAsync(pdf, directory: otherFolder)`.
 
-Pass a name when one test makes several snapshots, as a theory does: `await PdfSnapshot.VerifyAsync(pdf, $"Invoice.{customer}")`.
+Pass a name when one test makes several snapshots, as a theory does: `await PdfSnapshot.VerifyAsync(pdf, $"TrailMap.{trail}")`.
 
 Snapshots use LF line endings. If Git converts line endings on checkout, add `*.verified.txt text eol=lf` and `*.verified.json text eol=lf` (plus a line for any custom extension, such as `*.verified.csv`) to `.gitattributes`; PDiffy also compares a CRLF verified file as LF. Add `*.received.*` and `*.diff.html` to `.gitignore` and to your build server's artifacts, so a failed CI run keeps what it received and the report.
 
-The report is one HTML file with nothing to download, so it opens straight from a build artifact. It lists every change, accessibility changes first (filterable by kind, or to only those that affect accessibility), links to each page, and shows each section with the verified snapshot on the left and the received one on the right, edited lines side by side with the changed words highlighted. For each page with a layout change, it also draws a map of where things are, from the layout lines alone: a dashed outline where something was and a filled box where it is now (a sketch of positions, not a picture of the page). `diff.ToHtml()` gives the same page for any `SnapshotDiff`. See a [sample report](https://zacharydf7.github.io/pdiffy/samples/DrugGuide.diff.html).
+The report is one HTML file with nothing to download, so it opens straight from a build artifact. It lists every change, accessibility changes first (filterable by kind, or to only those that affect accessibility), links to each page, and shows each section with the verified snapshot on the left and the received one on the right, edited lines side by side with the changed words highlighted. For each page with a layout change, it also draws a map of where things are, from the layout lines alone: a dashed outline where something was and a filled box where it is now (a sketch of positions, not a picture of the page). `diff.ToHtml()` gives the same page for any `SnapshotDiff`. See a [sample report](https://zacharydf7.github.io/pdiffy/samples/TrailGuide.diff.html).
 
 ### Snapshot text and JSON
 
@@ -116,7 +116,7 @@ The report is one HTML file with nothing to download, so it opens straight from 
 [Fact]
 public async Task Export_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
-    string csv = await OrderExporter.CreateCsvAsync();
+    string csv = await TrailExporter.CreateCsvAsync();
 
     // Compared exactly, spaces included; only CRLF line endings are read as LF. Saved as {name}.verified.txt.
     await Snapshot.VerifyAsync(csv);
@@ -143,7 +143,7 @@ A text failure lists each changed line by number, with the changed words marked:
       "c": 3
 ```
 
-Text options scrub the whole text: `o => o.ScrubText(new Regex(@"Order \d+"), "Order N").ScrubDates()`. JSON scrubs strings (values or keys) that are a GUID or an ISO 8601 timestamp (`"2026-10-28T09:15:00Z"`), but leaves dates written for people, such as a letter's "November 14, 2020", and anything inside longer text, because that is content. Turn either off with `o => o.KeepGuids()` or `o => o.KeepDates()`; to scrub ids or dates inside text too, add `o => o.ScrubGuids()` or `o => o.ScrubDates()`. Pass `extension: "csv"` to name text files something other than `.txt`. A verified file that starts with a UTF-8 byte-order mark matches as if it didn't, so files approved by other tools carry over.
+Text options scrub the whole text: `o => o.ScrubText(new Regex(@"Permit \d+"), "Permit N").ScrubDates()`. JSON scrubs strings (values or keys) that are a GUID or an ISO 8601 timestamp (`"2026-10-28T09:15:00Z"`), but leaves dates written for people, such as a guide's "November 14, 2020", and anything inside longer text, because that is content. Turn either off with `o => o.KeepGuids()` or `o => o.KeepDates()`; to scrub ids or dates inside text too, add `o => o.ScrubGuids()` or `o => o.ScrubDates()`. Pass `extension: "csv"` to name text files something other than `.txt`. A verified file that starts with a UTF-8 byte-order mark matches as if it didn't, so files approved by other tools carry over.
 
 ### Snapshot Word documents
 
@@ -151,9 +151,9 @@ Text options scrub the whole text: `o => o.ScrubText(new Regex(@"Order \d+"), "O
 
 ```csharp
 [Fact]
-public async Task Letter_ShouldMatchApprovedSnapshot_WhenGenerated()
+public async Task Notes_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
-    using Stream docx = await LetterGenerator.CreateAsync();
+    using Stream docx = await NotesGenerator.CreateAsync();
 
     await DocxSnapshot.VerifyAsync(docx);
 }
@@ -164,7 +164,7 @@ A DOCX snapshot reads like the document: one line per paragraph with its runs me
 ```
 # docx-snapshot v1
 document
-  title="Welcome letter" lang=en-US compat=15 track-changes=no protection=none even-odd-headers=no created=<present> modified=<present>
+  title="Trail notes" lang=en-US compat=15 track-changes=no protection=none even-odd-headers=no created=<present> modified=<present>
 sections
   s1 letter margins=72,72,72,72 header=36 footer=36 columns=1 break=nextPage headers=default
 styles
@@ -174,14 +174,14 @@ numbering
   list 1 definition=3
     level 0 format=decimal text="%1." start=1 indent=36 hanging=18
 body
-  P style=ListParagraph list=1:0 label="1." "Bring your appointment card"
-    span "appointment" bold
+  P style=ListParagraph list=1:0 label="1." "Bring a trail map"
+    span "trail" bold
   Table style=TableGrid widths=144,216
     Row header
       Cell
-        P "Drug"
+        P "Trail"
       Cell
-        P "Interacts with"
+        P "Length"
   P "Visit example.com"
     link "example.com" -> https://example.com at=6
   P
@@ -203,9 +203,9 @@ Anything in a paragraph, or between paragraphs, tables, rows and cells, that PDi
 `DocxDocument.Load` gives the same content as properties, and `CompareTo` compares two documents. Options leave out sections, leave out one detail everywhere (see [What you can ignore](#what-you-can-ignore)) or scrub text: `o => o.Ignore(DocxSection.Styles).Ignore(DocxDetail.FieldResults).ScrubDates()`.
 
 ```csharp
-DocxDocument letter = DocxDocument.Load("letter.docx");
-Assert.All(letter.Images(), image => Assert.NotNull(image.AltText));
-Assert.Empty(letter.Revisions());
+DocxDocument notes = DocxDocument.Load("notes.docx");
+Assert.All(notes.Images(), image => Assert.NotNull(image.AltText));
+Assert.Empty(notes.Revisions());
 ```
 
 ### Use a profile for what a test guards
@@ -238,9 +238,9 @@ Some tests only care about part of the document. Pass the sections to leave out,
 
 ```csharp
 [Fact]
-public async Task InvoiceTemplate_ShouldKeepItsTagStructure_WhenStylingChanges()
+public async Task TrailMapTemplate_ShouldKeepItsTagStructure_WhenStylingChanges()
 {
-    using Stream pdf = await ReportGenerator.CreateInvoiceAsync();
+    using Stream pdf = await ReportGenerator.CreateTrailMapAsync();
 
     // This test guards the tag tree and the text, so leave out the metadata, the document settings
     // and the layout (positions, fonts and colors), which the design team changes freely.
@@ -269,20 +269,20 @@ For something narrower than a section, ignore a `Field`. It's left out everywher
 
 ```csharp
 [Fact]
-public async Task MonthlyStatement_ShouldMatchApprovedSnapshot_WhenGenerated()
+public async Task SeasonalGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
-    using Stream pdf = await ReportGenerator.CreateStatementAsync(month: 6);
+    using Stream pdf = await ReportGenerator.CreateSeasonalGuideAsync(month: 6);
 
     await PdfSnapshot.VerifyAsync(pdf, configure: options => options
         // The title includes the month, so it changes every time.
         .Ignore(Field.Title)
-        // Text reflows when the statement has more rows, so where things land doesn't matter here.
+        // Text reflows when the guide has more rows, so where things land doesn't matter here.
         // Fonts, sizes and colors are still compared.
         .Ignore(Field.Positions));
 }
 ```
 
-With `Field.Positions` ignored, a layout line such as `p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Statement"` becomes `p1 text tagged font=Arial size=18 color=gray:0 "Statement"`.
+With `Field.Positions` ignored, a layout line such as `p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Trails"` becomes `p1 text tagged font=Arial size=18 color=gray:0 "Trails"`.
 
 ### Allow small numeric differences
 
@@ -298,22 +298,22 @@ A number that differs from the verified one by no more than its tolerance doesn'
 
 ### Scrub values that change on every run
 
-A generated document often prints today's date, an order number or a GUID. Scrubbers replace those inside quoted text with a stable placeholder, so the rest of the text is still compared.
+A generated document often prints today's date, a permit number or a GUID. Scrubbers replace those inside quoted text with a stable placeholder, so the rest of the text is still compared.
 
 ```csharp
 [Fact]
-public async Task PharmacyReceipt_ShouldMatchApprovedSnapshot_WhenGenerated()
+public async Task TrailPass_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
-    using Stream pdf = await ReportGenerator.CreateReceiptAsync();
+    using Stream pdf = await ReportGenerator.CreateTrailPassAsync();
 
     await PdfSnapshot.VerifyAsync(pdf, configure: options => options
         // "Printed 10/27/2026" becomes "Printed Date_1". The same text always gets the same number,
-        // so the snapshot still shows that the print date and the fill date match.
+        // so the snapshot still shows that the print date and the issue date match.
         .ScrubDates()
-        // Transaction IDs become Guid_1, Guid_2 and so on.
+        // Booking IDs become Guid_1, Guid_2 and so on.
         .ScrubGuids()
         // Anything else that changes, with your own pattern. "$1" keeps the first group.
-        .ScrubText(new Regex(@"(Rx) #\d+"), "$1 #<number>"));
+        .ScrubText(new Regex(@"(Permit) #\d+"), "$1 #<number>"));
 }
 ```
 
@@ -339,8 +339,8 @@ public async Task AnnualReport_ShouldKeepTheSummaryTable_WhenGenerated()
 `CompareTo` gives the same element-by-element comparison for any two documents, without snapshot files. It suits one-off checks such as before and after a library upgrade, or a customer's file against yours.
 
 ```csharp
-PdfUaDocument before = PdfUaDocument.Load("statement-v1.pdf");
-PdfUaDocument after = PdfUaDocument.Load("statement-v2.pdf");
+PdfUaDocument before = PdfUaDocument.Load("guide-v1.pdf");
+PdfUaDocument after = PdfUaDocument.Load("guide-v2.pdf");
 
 // The same options as a snapshot: here, only the tag structure and text matter.
 SnapshotDiff diff = before.CompareTo(after, options => options.Ignore(Section.Layout, Section.Metadata));
@@ -387,9 +387,9 @@ For scripts and tools outside .NET, `diff.ToJson()` (or `pdiffy before.pdf after
 
 ```csharp
 [Fact]
-public async Task PatientLetter_ShouldPassTheAccessibilityChecks_WhenGenerated()
+public async Task TrailMap_ShouldPassTheAccessibilityChecks_WhenGenerated()
 {
-    using Stream pdf = await ReportGenerator.CreatePatientLetterAsync();
+    using Stream pdf = await ReportGenerator.CreateTrailMapAsync();
 
     IReadOnlyList<CheckFinding> findings = PdfUaDocument.Load(pdf)
         .Check(PdfCheck.DocumentLanguage, PdfCheck.FigureAltText, PdfCheck.UntaggedContent);
@@ -424,9 +424,9 @@ You don't need a snapshot to use PDiffy. The document model answers questions su
 
 ```csharp
 [Fact]
-public async Task PatientLetter_ShouldBeReadableByScreenReaders_WhenGenerated()
+public async Task TrailMap_ShouldBeReadableByScreenReaders_WhenGenerated()
 {
-    using Stream pdf = await ReportGenerator.CreatePatientLetterAsync();
+    using Stream pdf = await ReportGenerator.CreateTrailMapAsync();
     PdfUaDocument document = PdfUaDocument.Load(pdf);
 
     // The document is tagged and declares a language, so a screen reader knows how to pronounce it.
@@ -462,10 +462,10 @@ public async Task EnrollmentForm_ShouldLabelAndRequireTheRightFields_WhenGenerat
 
     // Find the required fields. Names include their parents, joined with dots.
     var required = document.FormFields.Where(field => field.Flags.HasFlag(FormFieldFlags.Required)).Select(field => field.Name);
-    Assert.Equal(["patient.name", "patient.dateOfBirth"], required);
+    Assert.Equal(["hiker.name", "hiker.dateOfBirth"], required);
 
     // The state picker is a drop-down with all 50 states.
-    FormField state = document.FormFields.Single(field => field.Name == "patient.address.state");
+    FormField state = document.FormFields.Single(field => field.Name == "hiker.address.state");
     Assert.Equal(FormFieldType.ComboBox, state.Type);
     Assert.Equal(50, state.Options.Count);
 }
@@ -529,17 +529,17 @@ dotnet tool install --global PDiffy.Cli
 ```
 # Compare two PDFs, two DOCX files or two snapshot files: prints what changed, exits with 0 when nothing did and 1 when
 # something did.
-pdiffy statement-v1.pdf statement-v2.pdf
+pdiffy guide-v1.pdf guide-v2.pdf
 
 # The same, also writing the side-by-side HTML report.
-pdiffy statement-v1.pdf statement-v2.pdf --html report.html
+pdiffy guide-v1.pdf guide-v2.pdf --html report.html
 
 # The changes as JSON for a script: --json alone prints only the JSON, and --json with a file saves it there.
-pdiffy statement-v1.pdf statement-v2.pdf --json
-pdiffy statement-v1.pdf statement-v2.pdf --json changes.json
+pdiffy guide-v1.pdf guide-v2.pdf --json
+pdiffy guide-v1.pdf guide-v2.pdf --json changes.json
 
 # Compare only what a profile guards: content, accessibility, layout or strict (the default).
-pdiffy statement-v1.pdf statement-v2.pdf --profile content
+pdiffy guide-v1.pdf guide-v2.pdf --profile content
 
 # Compare two folders file by file, such as the documents two releases generate. Files pair by their path inside each
 # folder; one line per file that changed, was added or removed, or can't be read. --html saves an index page with a
@@ -548,11 +548,11 @@ pdiffy compare release-1.4/out release-1.5/out
 pdiffy compare release-1.4/out release-1.5/out --html compare/index.html
 
 # Run every built-in check on a PDF: prints each finding, exits with 0 when there are none and 1 when there are.
-pdiffy check statement.pdf
+pdiffy check guide.pdf
 
 # Print a PDF's or DOCX's snapshot, or save it to a file.
-pdiffy snapshot statement.pdf
-pdiffy snapshot statement.pdf statement.pdfua.txt
+pdiffy snapshot guide.pdf
+pdiffy snapshot guide.pdf guide.pdfua.txt
 
 # Accept every received snapshot (PDF, text or JSON) in a folder after reviewing them: each replaces its verified file,
 # keeping its extension, and its report goes.
@@ -580,7 +580,7 @@ Tests that snapshot PDFs, Word documents or JSON with Verify can move over one t
 | `await Verify(docxStream, "docx")`, or `VerifyXml` of the document's parts | `await DocxSnapshot.VerifyAsync(docxStream)` |
 | `await VerifyJson(json)` | `await Snapshot.VerifyJsonAsync(json)` |
 | `await Verify(text)` | `await Snapshot.VerifyAsync(text)` |
-| `.UseFileName("Invoice")` | `name: "Invoice"` |
+| `.UseFileName("TrailMap")` | `name: "TrailMap"` |
 | `DerivePathInfo(...)` or `UseDirectory(...)` | `Snapshot.Directory = "..."` once, or `directory:` on one call |
 | `.UniqueForOSPlatform()` | Nothing: a snapshot is the same text on every OS, so one file covers them all |
 | `.ScrubLinesWithReplace(...)` or a custom scrubber | `ScrubText(regex, replacement)` |
@@ -592,8 +592,8 @@ Tests that snapshot PDFs, Word documents or JSON with Verify can move over one t
 There's no need to regenerate anything. The approved `.verified.pdf` or `.verified.bin` files are the documents your tests last approved, so the `pdiffy` tool can turn each one into a PDiffy snapshot. Name the output after the test, as PDiffy does: `{TestFile}.{TestMethod}.verified.pdfua.txt`, or `{name}.verified.pdfua.txt` when the test passes a name.
 
 ```
-pdiffy snapshot InvoiceTests.Invoice_ShouldMatch.verified.pdf InvoiceTests.Invoice_ShouldMatch.verified.pdfua.txt
-pdiffy snapshot LetterTests.Letter_ShouldMatch.verified.docx LetterTests.Letter_ShouldMatch.verified.docx.txt
+pdiffy snapshot TrailMapTests.TrailMap_ShouldMatch.verified.pdf TrailMapTests.TrailMap_ShouldMatch.verified.pdfua.txt
+pdiffy snapshot GuideTests.Guide_ShouldMatch.verified.docx GuideTests.Guide_ShouldMatch.verified.docx.txt
 ```
 
 A Word document saved as `.verified.bin` needs a `.docx` name first, since that's how the tool tells it from a PDF. With `UniqueForOSPlatform`, convert one OS's copy (`...Windows.verified.pdf`) and delete the others. Then delete the old files.
@@ -712,22 +712,22 @@ document
 ...
 structure
   Document lang=en-US
-    H1 p1 "Drug Interaction Table"
-    Figure p1 alt="Pharmacy logo"
-    Table p2-3 summary="Drug interactions"
+    H1 p1 "Trail Table"
+    Figure p1 alt="Park logo"
+    Table p2-3 summary="Trail details"
       TR
-        TH1 p2 scope=Column "Drug"
-        TH2 p2 scope=Column "Interacts with"
+        TH1 p2 scope=Column "Trail"
+        TH2 p2 scope=Column "Length"
       TR
-        TD p2 headers=[TH1] "Warfarin"
-        TD p2-3 headers=[TH2] "Aspirin"
+        TD p2 headers=[TH1] "Ridgeline"
+        TD p2-3 headers=[TH2] "Cedars"
 untagged
   p1 "Stray text"
   p1 images=1 paths=2
 fonts
   Arial TrueType embedded=yes to-unicode=yes
 layout
-  p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Drug Interaction Table"
+  p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Trail Table"
   p1 text untagged at=72,90 font=Arial size=9 color=gray:0 mode=invisible "Stray text"
   p1 image tagged at=72,600 size=120x40 pixels=600x200 hash=3f9c0a1b2d4e5f60
   p1 path artifact at=72,60 size=468x1 stroke=cmyk:0,0,0,1 width=0.5
@@ -776,7 +776,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 | 0.3.0 | `docx-snapshot v1`, unchanged version: a bookmark between table rows or cells prints as `bookmark "Name"` in place, rows and cells offered as `mc:AlternateContent` are read through the first choice, and anything else there PDiffy can't read prints as `unsupported`. Only snapshots of documents with those change |
 | 0.3.0 | `docx-snapshot v1`, unchanged version: tracked changes to a table (`table-format`, `table-grid`), to the table properties a row sets for itself (`row-table-format`), to cells (`cell-insert`, `cell-delete`, `cell-merge`, `cell-format`) and to a paragraph mark's formatting (`paragraph-mark-format`) are recorded and listed by `Revisions()`. Only snapshots of documents with those change |
 | 0.3.0 | `docx-snapshot v1`, unchanged version: a cell lists the content controls around it, as a row does, each marked `around` so it can't be mistaken for a control inside the cell. Only snapshots of documents with content controls around cells change |
-| 0.3.0 | `docx-snapshot v1`, unchanged version: a table-column bookmark (one that sets `w:colFirst` and `w:colLast`) prints the columns it covers, counting from 0: `bookmark "Doses" columns=0-2`. Only snapshots of documents with table-column bookmarks change |
+| 0.3.0 | `docx-snapshot v1`, unchanged version: a table-column bookmark (one that sets `w:colFirst` and `w:colLast`) prints the columns it covers, counting from 0: `bookmark "Stages" columns=0-2`. Only snapshots of documents with table-column bookmarks change |
 | 0.3.0 | `pdfua-snapshot v1`, unchanged version: XMP metadata is read as UTF-8, as the XMP standard requires, so a non-ASCII value such as `Café` no longer prints as `CafÃ©`. XMP that isn't well-formed XML, or has a DTD, prints `xmp=unreadable` instead of failing the read. Snapshots with non-ASCII XMP values change |
 | 0.3.0 | `pdfua-snapshot v1`, unchanged version: an open action that chains others with `/Next` lists them all, in the order they run: `open-action="GoTo p1 Fit, Launch"`. Only snapshots of documents with chained open actions change |
 | 0.3.0 | `pdfua-snapshot v1`, unchanged version: an element whose children are nested more than 256 deep gets `unread-children=N`, and bookmarks nested more than 256 deep, or that loop back on themselves, print `unreadable`. Such files used to overflow the stack, so no approved snapshot changes |

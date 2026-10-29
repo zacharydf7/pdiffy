@@ -29,13 +29,13 @@ dotnet tool install --global PDiffy.Cli
 ```csharp
 using PDiffy;
 
-public class DrugGuideTests
+public class TrailGuideTests
 {
     [Fact]
-    public async Task DrugGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
+    public async Task TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
     {
         // Your code that produces a PDF. A FileStream works too.
-        using Stream pdf = await ReportGenerator.CreateDrugGuideAsync();
+        using Stream pdf = await ReportGenerator.CreateTrailGuideAsync();
 
         await PdfSnapshot.VerifyAsync(pdf);
     }
@@ -43,7 +43,7 @@ public class DrugGuideTests
 ```
 
 The snapshot is named after the test file and method, and sits next to the test file:
-`DrugGuideTests.DrugGuide_ShouldMatchApprovedSnapshot_WhenGenerated.verified.pdfua.txt`.
+`TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.verified.pdfua.txt`.
 
 ## 3. Run it and approve the snapshot
 
@@ -115,7 +115,7 @@ static class SnapshotSetup
 Everything PDiffy reads is also available as properties, so you can assert on the parts you care about:
 
 ```csharp
-PdfUaDocument document = PdfUaDocument.Load("drug-guide.pdf");
+PdfUaDocument document = PdfUaDocument.Load("trail-guide.pdf");
 
 Assert.True(document.Document.Marked);
 Assert.Equal("en-US", document.Document.Lang);

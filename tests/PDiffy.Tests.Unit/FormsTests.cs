@@ -9,7 +9,7 @@ public class FormsTests
     {
         var pdf = new TestPdf();
         pdf.AddPage().Tagged(0, "example.com", "Link")
-            .Annotation("/Subtype /Text /Rect [120 130 100 100] /F 6 /Contents (Check the dose)");
+            .Annotation("/Subtype /Text /Rect [120 130 100 100] /F 6 /Contents (Check the stage)");
         pdf.Structure(new TestElement("Link", 0, new TestLink("https://example.com", "Example site")));
 
         var annotations = pdf.Load().Annotations;
@@ -17,7 +17,7 @@ public class FormsTests
         Assert.Equal(2, annotations.Count);
         var (link, note) = (annotations[0], annotations[1]);
         Assert.Equal(("Link", ContentRole.Tagged, "https://example.com"), (link.Subtype, link.Role, link.Uri));
-        Assert.Equal(("Text", ContentRole.Untagged, "Check the dose"), (note.Subtype, note.Role, note.Contents));
+        Assert.Equal(("Text", ContentRole.Untagged, "Check the stage"), (note.Subtype, note.Role, note.Contents));
         Assert.Equal((1, 100, 100, 20, 30), (note.Page!.Value, note.X, note.Y, note.Width, note.Height));
         Assert.Equal(AnnotationFlags.Hidden | AnnotationFlags.Print, note.Flags);
     }

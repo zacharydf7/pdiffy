@@ -19,7 +19,7 @@ internal sealed record Scrubber(Regex Pattern, string Replacement, bool Numbered
         "Guid", Numbered: true);
 
     // JSON strings (values or keys) that are a timestamp or a GUID and nothing more, such as "2026-10-28T09:15:00Z".
-    // Serializers write timestamps in ISO 8601, so a date written for people, such as a letter's "November 14, 2020",
+    // Serializers write timestamps in ISO 8601, so a date written for people, such as a guide's "November 14, 2020",
     // is content and stays, alone or inside longer text. An escaped quote (\") is inside a string, not its start.
     public static readonly Scrubber JsonDates = new(WholeString(@"\d{4}-\d{2}-\d{2}" + Time), "Date", Numbered: true);
 

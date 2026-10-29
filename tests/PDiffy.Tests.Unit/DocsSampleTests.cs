@@ -12,42 +12,42 @@ public class DocsSampleTests
 
         var report = SnapshotDiff.Compare(before, after).ToHtml();
 
-        AssertSample("DrugGuide.verified.pdfua.txt", before);
-        AssertSample("DrugGuide.received.pdfua.txt", after);
-        AssertSample("DrugGuide.diff.html", report);
+        AssertSample("TrailGuide.verified.pdfua.txt", before);
+        AssertSample("TrailGuide.received.pdfua.txt", after);
+        AssertSample("TrailGuide.diff.html", report);
     }
 
     // The revision edits a cell, moves the logo after the text in reading order and further down the page, drops its alt
     // text, removes a header's scope, swaps one paragraph for another and stamps untagged "Draft" text on the table page.
     private static TestPdf Guide(bool revised)
     {
-        var pdf = new TestPdf { Title = "Drug Interaction Guide" };
-        var first = pdf.AddPage().Tagged(0, "Drug Interaction Guide", "H1");
+        var pdf = new TestPdf { Title = "Trail Guide" };
+        var first = pdf.AddPage().Tagged(0, "Trail Guide", "H1");
         if (revised)
         {
-            first.Tagged(1, "Read this guide before you start a new medicine.")
-                .Tagged(2, "Keep all medicines out of reach of children.").TaggedImage(3, y: 520);
+            first.Tagged(1, "Read this guide before you start a new trail.")
+                .Tagged(2, "Keep every trail free of litter.").TaggedImage(3, y: 520);
         }
         else
         {
-            first.TaggedImage(1).Tagged(2, "Read this guide before you start a new medicine.")
-                .Tagged(3, "Ask your pharmacist if you have questions.");
+            first.TaggedImage(1).Tagged(2, "Read this guide before you start a new trail.")
+                .Tagged(3, "Ask a ranger if you have questions.");
         }
 
-        first.Artifact("Example Pharmacy");
-        var second = pdf.AddPage().Tagged(0, "Interactions", "H2").Tagged(1, "Drug").Tagged(2, "Advice")
-            .Tagged(3, "Warfarin").Tagged(4, revised ? "Take after food" : "Take with food")
-            .Tagged(5, "Simvastatin").Tagged(6, "Avoid grapefruit juice");
+        first.Artifact("Example Park");
+        var second = pdf.AddPage().Tagged(0, "Trails", "H2").Tagged(1, "Trail").Tagged(2, "Advice")
+            .Tagged(3, "Ridgeline").Tagged(4, revised ? "Go without a guide" : "Go with a guide")
+            .Tagged(5, "Lakeshore").Tagged(6, "Avoid loose rocks");
         if (revised) second.Untagged("Draft");
         second.Artifact("Page 2");
 
         var heading = new TestElement("H1", 0);
-        var logo = new TestElement("Figure", revised ? 3 : 1) { Entries = revised ? "" : "/Alt (Pharmacy logo)" };
+        var logo = new TestElement("Figure", revised ? 3 : 1) { Entries = revised ? "" : "/Alt (Park logo)" };
         TestElement[] page1 = revised
             ? [heading, new TestElement("P", 1), new TestElement("P", 2), logo]
             : [heading, logo, new TestElement("P", 2), new TestElement("P", 3)];
         pdf.Structure([.. page1, new TestElement("H2", 0) { Page = 2 }, Table()]);
-        pdf.Bookmark("Interactions", 2);
+        pdf.Bookmark("Trails", 2);
         return pdf;
 
         TestElement Table() => new("Table",

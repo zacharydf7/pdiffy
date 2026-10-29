@@ -14,13 +14,13 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Run_ShouldPrintTheChangesAndReturnOne_WhenTwoSnapshotFilesDiffer()
     {
-        var before = Write("before.txt", "structure\n  P p1 \"Take with food\"\n");
-        var after = Write("after.txt", "structure\n  P p1 \"Take after food\"\n");
+        var before = Write("before.txt", "structure\n  P p1 \"Go with a guide\"\n");
+        var after = Write("after.txt", "structure\n  P p1 \"Go without a guide\"\n");
 
         var exitCode = Commands.Run([before, after], _output, _error);
 
         Assert.Equal(Commands.Different, exitCode);
-        Assert.Contains("\"Take [-with-] {+after+} food\"", _output.ToString());
+        Assert.Contains("\"Go [-with-] {+without+} a guide\"", _output.ToString());
     }
 
     [Fact]
@@ -40,8 +40,8 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Run_ShouldPrintOnlyJson_WhenAskedForJsonWithoutAFile()
     {
-        var before = Write("before.txt", "structure\n  P p1 \"Take with food\"\n");
-        var after = Write("after.txt", "structure\n  P p1 \"Take after food\"\n");
+        var before = Write("before.txt", "structure\n  P p1 \"Go with a guide\"\n");
+        var after = Write("after.txt", "structure\n  P p1 \"Go without a guide\"\n");
         var report = Path.Combine(_folder, "report.html");
 
         var exitCode = Commands.Run([before, after, "--json", "--html", report], _output, _error);
@@ -68,8 +68,8 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Run_ShouldSaveThePdfsSnapshot_WhenAskedForASnapshot()
     {
-        var pdf = WritePdf("letter.pdf", "Hello");
-        var file = Path.Combine(_folder, "letter.pdfua.txt");
+        var pdf = WritePdf("guide.pdf", "Hello");
+        var file = Path.Combine(_folder, "guide.pdfua.txt");
 
         var exitCode = Commands.Run(["snapshot", pdf, file], _output, _error);
 
@@ -80,80 +80,80 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Run_ShouldMoveReceivedOverVerifiedAndDeleteTheReport_WhenAcceptingAFolder()
     {
-        Write("Letter.received.pdfua.txt", "new");
-        Write("Letter.verified.pdfua.txt", "old");
-        Write("Letter.diff.html", "report");
+        Write("Guide.received.pdfua.txt", "new");
+        Write("Guide.verified.pdfua.txt", "old");
+        Write("Guide.diff.html", "report");
         Directory.CreateDirectory(Path.Combine(_folder, "nested"));
         Write(Path.Combine("nested", "Memo.received.pdfua.txt"), "nested");
 
         var exitCode = Commands.Run(["accept", _folder], _output, _error);
 
         Assert.Equal(Commands.Same, exitCode);
-        Assert.Equal("new", File.ReadAllText(Path.Combine(_folder, "Letter.verified.pdfua.txt")));
-        Assert.False(File.Exists(Path.Combine(_folder, "Letter.received.pdfua.txt")));
-        Assert.False(File.Exists(Path.Combine(_folder, "Letter.diff.html")));
+        Assert.Equal("new", File.ReadAllText(Path.Combine(_folder, "Guide.verified.pdfua.txt")));
+        Assert.False(File.Exists(Path.Combine(_folder, "Guide.received.pdfua.txt")));
+        Assert.False(File.Exists(Path.Combine(_folder, "Guide.diff.html")));
         Assert.True(File.Exists(Path.Combine(_folder, "nested", "Memo.received.pdfua.txt")));
     }
 
     [Fact]
     public void Run_ShouldAcceptEveryTarget_WhenGivenSeveralFiles()
     {
-        var letter = Write("Letter.received.pdfua.txt", "letter");
+        var guide = Write("Guide.received.pdfua.txt", "guide");
         var memo = Write("Memo.received.pdfua.txt", "memo");
 
-        Commands.Run(["accept", letter, memo], _output, _error);
+        Commands.Run(["accept", guide, memo], _output, _error);
 
-        Assert.Equal("letter", File.ReadAllText(Path.Combine(_folder, "Letter.verified.pdfua.txt")));
+        Assert.Equal("guide", File.ReadAllText(Path.Combine(_folder, "Guide.verified.pdfua.txt")));
         Assert.Equal("memo", File.ReadAllText(Path.Combine(_folder, "Memo.verified.pdfua.txt")));
     }
 
     [Fact]
     public void Run_ShouldAcceptEachFileOnce_WhenTargetsOverlap()
     {
-        var letter = Write("Letter.received.pdfua.txt", "letter");
+        var guide = Write("Guide.received.pdfua.txt", "guide");
 
-        var exitCode = Commands.Run(["accept", _folder, letter], _output, _error);
+        var exitCode = Commands.Run(["accept", _folder, guide], _output, _error);
 
         Assert.Equal(Commands.Same, exitCode);
-        Assert.Equal("letter", File.ReadAllText(Path.Combine(_folder, "Letter.verified.pdfua.txt")));
+        Assert.Equal("guide", File.ReadAllText(Path.Combine(_folder, "Guide.verified.pdfua.txt")));
     }
 
     [Fact]
     public void Run_ShouldAcceptEachFileOnce_WhenTargetsDifferOnlyInCaseWhereNamesIgnoreCase()
     {
         Assert.SkipUnless(NamesIgnoreCase(), "The test folder's file names respect case.");
-        var letter = Write("Letter.received.pdfua.txt", "letter");
+        var guide = Write("Guide.received.pdfua.txt", "guide");
 
-        var exitCode = Commands.Run(["accept", _folder.ToUpperInvariant(), letter], _output, _error);
+        var exitCode = Commands.Run(["accept", _folder.ToUpperInvariant(), guide], _output, _error);
 
         Assert.Equal(Commands.Same, exitCode);
-        Assert.Equal("letter", File.ReadAllText(Path.Combine(_folder, "Letter.verified.pdfua.txt")));
+        Assert.Equal("guide", File.ReadAllText(Path.Combine(_folder, "Guide.verified.pdfua.txt")));
     }
 
     [Fact]
     public void Run_ShouldAcceptOnlyTheNamedFile_WhenTwoNamesDifferOnlyInCaseWhereNamesRespectCase()
     {
         Assert.SkipWhen(NamesIgnoreCase(), "The test folder's file names ignore case.");
-        Write("Letter.received.txt", "upper");
-        var lower = Write("letter.received.txt", "lower");
+        Write("Guide.received.txt", "upper");
+        var lower = Write("guide.received.txt", "lower");
 
         var exitCode = Commands.Run(["accept", lower], _output, _error);
 
         Assert.Equal(Commands.Same, exitCode);
-        Assert.Equal("lower", File.ReadAllText(Path.Combine(_folder, "letter.verified.txt")));
-        Assert.True(File.Exists(Path.Combine(_folder, "Letter.received.txt")));
+        Assert.Equal("lower", File.ReadAllText(Path.Combine(_folder, "guide.verified.txt")));
+        Assert.True(File.Exists(Path.Combine(_folder, "Guide.received.txt")));
     }
 
     [Fact]
     public void Run_ShouldAcceptNothingAndReturnTwo_WhenATargetsCaseMatchesNoFileWhereNamesRespectCase()
     {
         Assert.SkipWhen(NamesIgnoreCase(), "The test folder's file names ignore case.");
-        Write("Letter.received.txt", "upper");
+        Write("Guide.received.txt", "upper");
 
-        var exitCode = Commands.Run(["accept", Path.Combine(_folder, "letter.received.txt")], _output, _error);
+        var exitCode = Commands.Run(["accept", Path.Combine(_folder, "guide.received.txt")], _output, _error);
 
         Assert.Equal(Commands.UsageError, exitCode);
-        Assert.False(File.Exists(Path.Combine(_folder, "Letter.verified.txt")));
+        Assert.False(File.Exists(Path.Combine(_folder, "Guide.verified.txt")));
     }
 
     // As on Windows, and on macOS by default.
@@ -163,7 +163,7 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Run_ShouldPrintThePdfsSnapshot_WhenNoFileIsGiven()
     {
-        var pdf = WritePdf("letter.pdf", "Hello");
+        var pdf = WritePdf("guide.pdf", "Hello");
 
         Commands.Run(["snapshot", pdf], _output, _error);
 
@@ -236,7 +236,7 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Run_ShouldSayNothingIsPendingAndReturnZero_WhenReportingAFolderWithoutReceivedSnapshots()
     {
-        Write("Letter.verified.pdfua.txt", Sectioned("Take with food"));
+        Write("Guide.verified.pdfua.txt", Sectioned("Go with a guide"));
 
         var markdown = Path.Combine(_folder, "summary.md");
 
@@ -251,8 +251,8 @@ public sealed class CliTests : IDisposable
     public void Run_ShouldListEachReceivedSnapshotAndReturnOne_WhenReporting()
     {
         // Git can check a verified file out with CRLF on Windows.
-        Write("Letter.verified.pdfua.txt", Sectioned("Take with food", "H1").Replace("\n", "\r\n"));
-        Write("Letter.received.pdfua.txt", Sectioned("Take with food"));
+        Write("Guide.verified.pdfua.txt", Sectioned("Go with a guide", "H1").Replace("\n", "\r\n"));
+        Write("Guide.received.pdfua.txt", Sectioned("Go with a guide"));
         Write("Job.verified.json", "{}\n");
         Write("Job.received.json", "{\n  \"id\": 1\n}\n");
         Write("Memo.received.txt", "new");
@@ -262,7 +262,7 @@ public sealed class CliTests : IDisposable
         Assert.Equal(Commands.Different, exitCode);
         Assert.StartsWith("3 received snapshot(s): 2 changed, 1 new\n", _output.ToString());
         Assert.Matches(@"changed \S*Job\.received\.json: 3: 2 added, 1 text\n", _output.ToString());
-        Assert.Matches(@"changed \S*Letter\.received\.pdfua\.txt: 1: 1 changed; by section: structure 1; "
+        Assert.Matches(@"changed \S*Guide\.received\.pdfua\.txt: 1: 1 changed; by section: structure 1; "
             + @"1 can affect accessibility\n", _output.ToString());
         Assert.Matches(@"new \S*Memo\.received\.txt\n", _output.ToString());
     }
@@ -271,9 +271,9 @@ public sealed class CliTests : IDisposable
     public void Run_ShouldSaveTheSummaryAsMarkdownAndHtml_WhenAskedFor()
     {
         Directory.CreateDirectory(Path.Combine(_folder, "Snapshots"));
-        Write(Path.Combine("Snapshots", "Letter.verified.pdfua.txt"), Sectioned("Take with food"));
-        Write(Path.Combine("Snapshots", "Letter.received.pdfua.txt"), Sectioned("Take after food"));
-        Write(Path.Combine("Snapshots", "Letter.diff.html"), "report");
+        Write(Path.Combine("Snapshots", "Guide.verified.pdfua.txt"), Sectioned("Go with a guide"));
+        Write(Path.Combine("Snapshots", "Guide.received.pdfua.txt"), Sectioned("Go without a guide"));
+        Write(Path.Combine("Snapshots", "Guide.diff.html"), "report");
         Write(Path.Combine("Snapshots", "Memo.received.txt"), "new");
         var (markdown, html) = (Path.Combine(_folder, "summary.md"), Path.Combine(_folder, "summary.html"));
         Write("summary.md", "Earlier steps\n");
@@ -283,8 +283,8 @@ public sealed class CliTests : IDisposable
         var table = File.ReadAllText(markdown);
         Assert.StartsWith("Earlier steps\n### PDiffy: 2 received snapshot(s)", table);
         Assert.Contains("| Snapshot | Status | Changes | By section | Can affect accessibility |", table);
-        Assert.Matches(@"\| `\S*Letter\.received\.pdfua\.txt` \| changed \| 1: 1 text \| structure 1 \| 0 \|", table);
-        Assert.Contains("<a href=\"Snapshots/Letter.diff.html\">", File.ReadAllText(html));
+        Assert.Matches(@"\| `\S*Guide\.received\.pdfua\.txt` \| changed \| 1: 1 text \| structure 1 \| 0 \|", table);
+        Assert.Contains("<a href=\"Snapshots/Guide.diff.html\">", File.ReadAllText(html));
         Assert.Matches(@"<tr><td>[^<]*Memo\.received\.txt</td><td>new</td>", File.ReadAllText(html));
     }
 
@@ -303,7 +303,7 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Run_ShouldTreatAFileAsAPdf_WhenItsHeaderComesAfterOtherBytes()
     {
-        var pdf = WritePdf("letter.pdf", "Hello");
+        var pdf = WritePdf("guide.pdf", "Hello");
         var shifted = Path.Combine(_folder, "shifted.pdf");
         File.WriteAllBytes(shifted, [0xEF, 0xBB, 0xBF, .. File.ReadAllBytes(pdf)]);
 
@@ -325,20 +325,20 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Run_ShouldCompareTheDocumentsAndReturnOne_WhenTwoDocxFilesDiffer()
     {
-        var before = WriteDocx("before.docx", "Take with food");
-        var after = WriteDocx("after.docx", "Take after food");
+        var before = WriteDocx("before.docx", "Go with a guide");
+        var after = WriteDocx("after.docx", "Go without a guide");
 
         var exitCode = Commands.Run([before, after], _output, _error);
 
         Assert.Equal(Commands.Different, exitCode);
-        Assert.Contains("\"Take [-with-] {+after+} food\"", _output.ToString());
+        Assert.Contains("\"Go [-with-] {+without+} a guide\"", _output.ToString());
     }
 
     [Fact]
     public void Run_ShouldListEachFileThatDiffersAndReturnOne_WhenComparingFolders()
     {
-        WritePdf("before/letter.pdf", "Take with food");
-        WritePdf("after/letter.pdf", "Take after food");
+        WritePdf("before/guide.pdf", "Go with a guide");
+        WritePdf("after/guide.pdf", "Go without a guide");
         WritePdf("before/same/guide.pdf", "Hello");
         WritePdf("after/same/guide.pdf", "Hello");
         Write("before/old.txt", "a\n");
@@ -353,7 +353,7 @@ public sealed class CliTests : IDisposable
         var lines = _output.ToString().Split('\n');
         Assert.Equal("4 file(s) differ: 1 changed, 1 added, 1 removed, 1 unreadable; 1 unchanged, 1 not compared.",
             lines[0]);
-        Assert.StartsWith("changed letter.pdf: 2: 2 text; by section: structure 1, layout 1", lines[1]);
+        Assert.StartsWith("changed guide.pdf: 2: 2 text; by section: structure 1, layout 1", lines[1]);
         Assert.Equal(["added new.json", "removed old.txt"], lines[2..4]);
         Assert.StartsWith("unreadable broken.pdf: ", lines[4]);
     }
@@ -361,8 +361,8 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Run_ShouldSayNoFilesDifferAndReturnZero_WhenFoldersMatch()
     {
-        WritePdf("before/letter.pdf", "Hello");
-        WritePdf("after/letter.pdf", "Hello");
+        WritePdf("before/guide.pdf", "Hello");
+        WritePdf("after/guide.pdf", "Hello");
 
         var exitCode = Commands.Run(["compare", Folder("before"), Folder("after")], _output, _error);
 
@@ -407,8 +407,8 @@ public sealed class CliTests : IDisposable
     public void Run_ShouldUseTheWordProfileOfTheSameName_WhenComparingFoldersOfDocxFilesWithAProfile(string profile,
         int expected)
     {
-        WriteDocx("before/letter.docx", "Hello", font: "Arial");
-        WriteDocx("after/letter.docx", "Hello", font: "Georgia");
+        WriteDocx("before/guide.docx", "Hello", font: "Arial");
+        WriteDocx("after/guide.docx", "Hello", font: "Georgia");
 
         var exitCode = Commands.Run(["compare", Folder("before"), Folder("after"), "--profile", profile], _output, _error);
 
@@ -453,7 +453,7 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Run_ShouldPrintEveryFindingAndReturnOne_WhenCheckingAPdfThatHasFindings()
     {
-        var pdf = WritePdf("letter.pdf", "Hello");
+        var pdf = WritePdf("guide.pdf", "Hello");
 
         var exitCode = Commands.Run(["check", pdf], _output, _error);
 
@@ -536,7 +536,7 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Run_ShouldPrintTheDocxsSnapshot_WhenGivenADocx()
     {
-        var docx = WriteDocx("letter.docx", "Hello");
+        var docx = WriteDocx("guide.docx", "Hello");
 
         Commands.Run(["snapshot", docx], _output, _error);
 

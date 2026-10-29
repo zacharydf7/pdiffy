@@ -13,8 +13,8 @@ public class SnapshotWriterTests
             Type = "TR",
             Children =
             [
-                new StructureElement { Type = "TH", Name = "TH1", FirstPage = 2, Scope = "Column", Text = "Drug" },
-                new StructureElement { Type = "TH", Name = "TH2", FirstPage = 2, Scope = "Column", ColSpan = 2, Text = "Interacts with" },
+                new StructureElement { Type = "TH", Name = "TH1", FirstPage = 2, Scope = "Column", Text = "Trail" },
+                new StructureElement { Type = "TH", Name = "TH2", FirstPage = 2, Scope = "Column", ColSpan = 2, Text = "Length" },
             ],
         };
         var bodyRow = new StructureElement
@@ -22,8 +22,8 @@ public class SnapshotWriterTests
             Type = "TR",
             Children =
             [
-                new StructureElement { Type = "TD", FirstPage = 2, Headers = ["TH1"], Text = "Warfarin" },
-                new StructureElement { Type = "TD", FirstPage = 2, LastPage = 3, Headers = ["TH1", "TH2"], RowSpan = 2, Text = "Aspirin" },
+                new StructureElement { Type = "TD", FirstPage = 2, Headers = ["TH1"], Text = "Ridgeline" },
+                new StructureElement { Type = "TD", FirstPage = 2, LastPage = 3, Headers = ["TH1", "TH2"], RowSpan = 2, Text = "Cedars" },
             ],
         };
         var link = new StructureElement
@@ -48,13 +48,13 @@ public class SnapshotWriterTests
                     Type = "Heading",
                     MappedType = "H1",
                     FirstPage = 1,
-                    ActualText = "Drug table",
+                    ActualText = "Trail table",
                     Expansion = "DIT",
                     Title = "Intro",
-                    Text = "Drug Interaction Table",
+                    Text = "Trail Table",
                 },
-                new StructureElement { Type = "Figure", FirstPage = 1, Alt = "Pharmacy logo" },
-                new StructureElement { Type = "Table", FirstPage = 2, LastPage = 3, Summary = "Drug interactions", Children = [headerRow, bodyRow] },
+                new StructureElement { Type = "Figure", FirstPage = 1, Alt = "Park logo" },
+                new StructureElement { Type = "Table", FirstPage = 2, LastPage = 3, Summary = "Trail details", Children = [headerRow, bodyRow] },
                 new StructureElement { Type = "L", FirstPage = 3, LastPage = 3, ListNumbering = "Decimal" },
                 link,
             ],
@@ -70,7 +70,7 @@ public class SnapshotWriterTests
                 new PageInfo(3, 595, 842, 0, null, false),
             ],
             PageLabels = [new PageLabelRange(1, "r", "A-", 1)],
-            Bookmarks = [new Bookmark("Warnings", 3, [new Bookmark("Food", null, [])])],
+            Bookmarks = [new Bookmark("Safety", 3, [new Bookmark("Gear", null, [])])],
             Structure = [root],
             Artifacts = [new PageText(1, "Page i")],
             Fonts = [new FontInfo("Symbol", null, false, false), new FontInfo("Arial", "TrueType", true, true)],
@@ -96,19 +96,19 @@ public class SnapshotWriterTests
               p3 a4 rotate=0
               label from p1 style=r prefix="A-" start=1
             bookmarks
-              "Warnings" -> p3
-                "Food"
+              "Safety" -> p3
+                "Gear"
             structure
               Document lang=en-US
-                Heading->H1 p1 actual="Drug table" expansion="DIT" title="Intro" "Drug Interaction Table"
-                Figure p1 alt="Pharmacy logo"
-                Table p2-3 summary="Drug interactions"
+                Heading->H1 p1 actual="Trail table" expansion="DIT" title="Intro" "Trail Table"
+                Figure p1 alt="Park logo"
+                Table p2-3 summary="Trail details"
                   TR
-                    TH1 p2 scope=Column "Drug"
-                    TH2 p2 scope=Column colspan=2 "Interacts with"
+                    TH1 p2 scope=Column "Trail"
+                    TH2 p2 scope=Column colspan=2 "Length"
                   TR
-                    TD p2 headers=[TH1] "Warfarin"
-                    TD p2-3 headers=[TH1,TH2] rowspan=2 "Aspirin"
+                    TD p2 headers=[TH1] "Ridgeline"
+                    TD p2-3 headers=[TH1,TH2] rowspan=2 "Cedars"
                 L p3 numbering=Decimal
                 Link p3 annot=Link uri="https://example.com" contents="Example" annot=Link action=GoTo dest=yes tu="Go to warnings" "example.com"
             artifacts
@@ -235,7 +235,7 @@ public class SnapshotWriterTests
                 ViewerPreferences = [new Setting("CenterWindow", "true")], Layers = [new Layer("Draft", false)],
                 EmbeddedFiles = [new EmbeddedFile("data.xml", "data.xml", null, "Data", 5, "2cf24dba5fb0a30e")],
             },
-            Metadata = Documents.Empty().Metadata with { OtherInfo = [new Setting("Company", "Example Pharmacy")], PdfAConformance = "2B" },
+            Metadata = Documents.Empty().Metadata with { OtherInfo = [new Setting("Company", "Example Park")], PdfAConformance = "2B" },
             Pages =
             [
                 new PageInfo(1, 612, 792, 0, "S", false)
@@ -256,7 +256,7 @@ public class SnapshotWriterTests
             "  embedded-file \"data.xml\" file=\"data.xml\" relationship=Data size=5 hash=2cf24dba5fb0a30e",
         ];
         Assert.Equal(expectedSettings, SectionLines(snapshot, "settings"));
-        string[] expectedMetadataTail = ["  pdfuaid-part=1 xmp-title=\"Title\" pdfa=2B", "  info Company=\"Example Pharmacy\""];
+        string[] expectedMetadataTail = ["  pdfuaid-part=1 xmp-title=\"Title\" pdfa=2B", "  info Company=\"Example Park\""];
         Assert.Equal(expectedMetadataTail, SectionLines(snapshot, "metadata")[2..]);
         var expectedPage = "  p1 letter rotate=0 tabs=S crop=10,10,592,772 group=Transparency group-color-space=DeviceRGB isolated=yes";
         Assert.Equal([expectedPage], SectionLines(snapshot, "pages"));

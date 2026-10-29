@@ -5,9 +5,9 @@ received and verified files, accept mode and report. It reads the file directly:
 
 ```csharp
 [Fact]
-public async Task Letter_ShouldMatchApprovedSnapshot_WhenGenerated()
+public async Task Notes_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
-    using Stream docx = await LetterGenerator.CreateAsync();
+    using Stream docx = await NotesGenerator.CreateAsync();
 
     await DocxSnapshot.VerifyAsync(docx);
 }
@@ -24,7 +24,7 @@ style listed.
 ```text
 # docx-snapshot v1
 document
-  title="Welcome letter" lang=en-US compat=15 track-changes=no protection=none even-odd-headers=no created=<present> modified=<present>
+  title="Trail notes" lang=en-US compat=15 track-changes=no protection=none even-odd-headers=no created=<present> modified=<present>
 sections
   s1 letter margins=72,72,72,72 header=36 footer=36 columns=1 break=nextPage headers=default
 styles
@@ -34,14 +34,14 @@ numbering
   list 1 definition=3
     level 0 format=decimal text="%1." start=1 indent=36 hanging=18
 body
-  P style=ListParagraph list=1:0 label="1." "Bring your appointment card"
-    span "appointment" bold
+  P style=ListParagraph list=1:0 label="1." "Bring a trail map"
+    span "trail" bold
   Table style=TableGrid widths=144,216
     Row header
       Cell
-        P "Drug"
+        P "Trail"
       Cell
-        P "Interacts with"
+        P "Length"
   P "Visit example.com"
     link "example.com" -> https://example.com at=6
   P
@@ -97,16 +97,16 @@ See [Ignore and scrub](options.md#word-documents) for every option.
 [`DocxDocument.Load`](xref:PDiffy.DocxDocument.Load*) gives the same content as properties:
 
 ```csharp
-DocxDocument letter = DocxDocument.Load("letter.docx");
+DocxDocument notes = DocxDocument.Load("notes.docx");
 
 // Every image has alt text.
-Assert.All(letter.Images(), image => Assert.NotNull(image.AltText));
+Assert.All(notes.Images(), image => Assert.NotNull(image.AltText));
 
 // No tracked changes shipped.
-Assert.Empty(letter.Revisions());
+Assert.Empty(notes.Revisions());
 
 // The first paragraph uses the Title style.
-Assert.Equal("Title", letter.Paragraphs().First().Style);
+Assert.Equal("Title", notes.Paragraphs().First().Style);
 ```
 
 | Member | Gives |

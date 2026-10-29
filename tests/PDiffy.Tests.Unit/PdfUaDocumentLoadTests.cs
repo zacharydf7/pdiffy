@@ -7,13 +7,13 @@ public class PdfUaDocumentLoadTests
     [Fact]
     public void Load_ShouldReadDocumentInfoAndMetadata_WhenCatalogDeclaresThem()
     {
-        var pdf = new TestPdf { Lang = "en-US", Title = "Drug Guide", PdfUaPart = "1" };
+        var pdf = new TestPdf { Lang = "en-US", Title = "Trail Guide", PdfUaPart = "1" };
         pdf.AddPage();
 
         var document = pdf.Load();
 
         Assert.Equal(new DocumentInfo(Marked: true, Lang: "en-US", DisplayDocTitle: true, PageCount: 1), document.Document);
-        Assert.Equal("Drug Guide", document.Metadata.Title);
+        Assert.Equal("Trail Guide", document.Metadata.Title);
         Assert.Equal("1", document.Metadata.PdfUaPart);
     }
 
@@ -32,12 +32,12 @@ public class PdfUaDocumentLoadTests
     public void Load_ShouldJoinTextOfEveryMcid_WhenElementPointsToSeveral()
     {
         var pdf = new TestPdf();
-        pdf.AddPage().Tagged(0, "Take with").Tagged(1, "food");
+        pdf.AddPage().Tagged(0, "Go with").Tagged(1, "a guide");
         pdf.Structure(new TestElement("P", 0, 1));
 
         var paragraph = Assert.Single(pdf.Load().Structure);
 
-        Assert.Equal("Take with food", paragraph.Text);
+        Assert.Equal("Go with a guide", paragraph.Text);
         Assert.Equal(1, paragraph.FirstPage);
     }
 
@@ -103,7 +103,7 @@ public class PdfUaDocumentLoadTests
         var pdf = new TestPdf().RoleMap("Chart", "Diagram").RoleMap("Diagram", "Figure");
         pdf.AddPage().Tagged(0, "Logo").Tagged(1, "Hola", "Span");
         pdf.Structure(new TestElement("Document",
-            new TestElement("Chart", 0) { Entries = "/Alt (Pharmacy logo) /ActualText (Logo)" },
+            new TestElement("Chart", 0) { Entries = "/Alt (Park logo) /ActualText (Logo)" },
             new TestElement("P", 1) { Entries = "/Lang (es-ES) /E (Hello) /T (Greeting)" },
             new TestElement("L") { Entries = "/A << /O /List /ListNumbering /Decimal >>" }));
 
@@ -113,7 +113,7 @@ public class PdfUaDocumentLoadTests
         Assert.Equal("Document", root.Type);
         var (chart, paragraph, list) = (root.Children[0], root.Children[1], root.Children[2]);
         Assert.Equal("Figure", chart.MappedType);
-        Assert.Equal("Pharmacy logo", chart.Alt);
+        Assert.Equal("Park logo", chart.Alt);
         Assert.Equal("Logo", chart.ActualText);
         Assert.Equal(("es-ES", "Hello", "Greeting"), (paragraph.Lang, paragraph.Expansion, paragraph.Title));
         Assert.Equal("Decimal", list.ListNumbering);
@@ -190,21 +190,21 @@ public class PdfUaDocumentLoadTests
     public void Load_ShouldNameOnlyReferencedHeaderCells_WhenCellsUseHeaders()
     {
         var pdf = new TestPdf();
-        pdf.AddPage().Tagged(0, "Drug").Tagged(1, "Dose").Tagged(2, "Warfarin");
+        pdf.AddPage().Tagged(0, "Trail").Tagged(1, "Stage").Tagged(2, "Ridgeline");
         var headerRow = new TestElement("TR",
-            new TestElement("TH", 0) { Entries = "/ID (h-drug) /A << /O /Table /Scope /Column >>" },
-            new TestElement("TH", 1) { Entries = "/ID (h-dose) /A << /O /Table /Scope /Column >>" });
+            new TestElement("TH", 0) { Entries = "/ID (h-trail) /A << /O /Table /Scope /Column >>" },
+            new TestElement("TH", 1) { Entries = "/ID (h-stage) /A << /O /Table /Scope /Column >>" });
         var bodyRow = new TestElement("TR",
-            new TestElement("TD", 2) { Entries = "/A << /O /Table /Headers [(h-drug) (missing)] /RowSpan 2 /ColSpan 3 >>" });
+            new TestElement("TD", 2) { Entries = "/A << /O /Table /Headers [(h-trail) (missing)] /RowSpan 2 /ColSpan 3 >>" });
         pdf.Structure(new TestElement("Table", headerRow, bodyRow));
 
         var table = Assert.Single(pdf.Load().Structure);
 
-        var drugHeader = table.Children[0].Children[0];
-        var doseHeader = table.Children[0].Children[1];
+        var trailHeader = table.Children[0].Children[0];
+        var stageHeader = table.Children[0].Children[1];
         var cell = table.Children[1].Children[0];
-        Assert.Equal(("TH1", "Column"), (drugHeader.Name, drugHeader.Scope));
-        Assert.Null(doseHeader.Name);
+        Assert.Equal(("TH1", "Column"), (trailHeader.Name, trailHeader.Scope));
+        Assert.Null(stageHeader.Name);
         Assert.Equal(["TH1", "?missing"], cell.Headers);
         Assert.Equal((2, 3), (cell.RowSpan, cell.ColSpan));
     }
@@ -309,13 +309,13 @@ public class PdfUaDocumentLoadTests
     {
         var pdf = new TestPdf();
         pdf.AddPage()
-            .Raw("/P << /MCID 0 >> BDC BT /F1 12 Tf 72 400 Td (Ta) Tj (ke) Tj ET EMC")
-            .Raw("/P << /MCID 1 >> BDC BT /F1 12 Tf 72 380 Td (with) Tj 40 0 Td (food) Tj ET EMC");
+            .Raw("/P << /MCID 0 >> BDC BT /F1 12 Tf 72 400 Td (G) Tj (o) Tj ET EMC")
+            .Raw("/P << /MCID 1 >> BDC BT /F1 12 Tf 72 380 Td (with) Tj 40 0 Td (a guide) Tj ET EMC");
         pdf.Structure(new TestElement("P", 0), new TestElement("P", 1));
 
         var structure = pdf.Load().Structure;
 
-        Assert.Equal(["Take", "with food"], structure.Select(element => element.Text));
+        Assert.Equal(["Go", "with a guide"], structure.Select(element => element.Text));
     }
 
     [Fact]
@@ -352,14 +352,14 @@ public class PdfUaDocumentLoadTests
     [Fact]
     public void Load_ShouldReadBookmarksAndPageLabels_WhenCatalogHasThem()
     {
-        var pdf = new TestPdf().Bookmark("Intro", 1).Bookmark("Warnings", 2)
+        var pdf = new TestPdf().Bookmark("Intro", 1).Bookmark("Safety", 2)
             .CatalogEntries("/PageLabels << /Nums [0 << /S /r >> 1 << /S /D /P (A-) /St 5 >>] >>");
         pdf.AddPage();
         pdf.AddPage();
 
         var document = pdf.Load();
 
-        Assert.Equal(["Intro", "Warnings"], document.Bookmarks.Select(b => b.Title));
+        Assert.Equal(["Intro", "Safety"], document.Bookmarks.Select(b => b.Title));
         Assert.Equal([1, 2], document.Bookmarks.Select(b => b.Page));
         Assert.Equal([new PageLabelRange(1, "r", null, 1), new PageLabelRange(2, "D", "A-", 5)], document.PageLabels);
     }

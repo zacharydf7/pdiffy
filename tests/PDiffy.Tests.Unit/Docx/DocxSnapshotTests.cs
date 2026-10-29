@@ -8,45 +8,45 @@ public sealed class DocxSnapshotTests : SnapshotFolderTests
     [Fact]
     public async Task VerifyAsync_ShouldWriteTheReceivedSnapshotAndFail_WhenThereIsNoVerifiedFile()
     {
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => DocxSnapshot.VerifyAsync(Docx("Hello"), "Letter"));
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => DocxSnapshot.VerifyAsync(Docx("Hello"), "Guide"));
 
         Assert.StartsWith("New DOCX snapshot.", error.Message);
-        Assert.Equal(DocxDocument.Load(Docx("Hello")).ToSnapshot(), File.ReadAllText(Path.Combine(Folder, "Letter.received.docx.txt")));
+        Assert.Equal(DocxDocument.Load(Docx("Hello")).ToSnapshot(), File.ReadAllText(Path.Combine(Folder, "Guide.received.docx.txt")));
     }
 
     [Fact]
     public async Task VerifyAsync_ShouldFailWithTheChangedWords_WhenTheDocumentChanged()
     {
         Directory.CreateDirectory(Folder);
-        File.WriteAllText(Path.Combine(Folder, "Letter.verified.docx.txt"), DocxDocument.Load(Docx("Take with food")).ToSnapshot());
+        File.WriteAllText(Path.Combine(Folder, "Guide.verified.docx.txt"), DocxDocument.Load(Docx("Go with a guide")).ToSnapshot());
 
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => DocxSnapshot.VerifyAsync(Docx("Take after food"), "Letter"));
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => DocxSnapshot.VerifyAsync(Docx("Go without a guide"), "Guide"));
 
         Assert.StartsWith("The DOCX's snapshot differs from the verified one.", error.Message);
-        Assert.Contains("\"Take [-with-] {+after+} food\"", error.Message);
+        Assert.Contains("\"Go [-with-] {+without+} a guide\"", error.Message);
     }
 
     [Fact]
     public async Task VerifyAsync_ShouldPass_WhenTheDocumentMatchesItsAcceptedSnapshot()
     {
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, "1");
-        await DocxSnapshot.VerifyAsync(Docx("Hello"), "Letter", directory: Path.Combine(Folder, "other"));
+        await DocxSnapshot.VerifyAsync(Docx("Hello"), "Guide", directory: Path.Combine(Folder, "other"));
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, null);
 
-        await DocxSnapshot.VerifyAsync(Docx("Hello"), "Letter", directory: Path.Combine(Folder, "other"));
+        await DocxSnapshot.VerifyAsync(Docx("Hello"), "Guide", directory: Path.Combine(Folder, "other"));
 
-        Assert.True(File.Exists(Path.Combine(Folder, "other", "Letter.verified.docx.txt")));
+        Assert.True(File.Exists(Path.Combine(Folder, "other", "Guide.verified.docx.txt")));
     }
 
     [Fact]
     public void ToSnapshot_ShouldLeaveOutIgnoredSectionsAndScrubText_WhenOptionsSaySo()
     {
-        var snapshot = DocxDocument.Load(Docx("Sent 2026-10-28 to order 1234"))
-            .ToSnapshot(o => o.Ignore(DocxSection.Styles, DocxSection.Sections).ScrubDates().ScrubText(new Regex(@"order \d+"), "order N"));
+        var snapshot = DocxDocument.Load(Docx("Sent 2026-10-28 to permit 1234"))
+            .ToSnapshot(o => o.Ignore(DocxSection.Styles, DocxSection.Sections).ScrubDates().ScrubText(new Regex(@"permit \d+"), "permit N"));
 
         Assert.StartsWith("# docx-snapshot v1\n# ignored sections: sections, styles\n", snapshot);
         Assert.Contains("sections\n  (ignored)\nstyles\n  (ignored)\n", snapshot);
-        Assert.Contains("  P \"Sent Date_1 to order N\"\n", snapshot);
+        Assert.Contains("  P \"Sent Date_1 to permit N\"\n", snapshot);
     }
 
     [Fact]

@@ -55,11 +55,11 @@ The job summary then shows a table like this:
 
 | Snapshot | Status | Changes | By section | Can affect accessibility |
 |---|---|---|---|---|
-| `tests/Snapshots/Invoice.received.pdfua.txt` | changed | 3: 1 moved, 1 attribute, 1 text | structure 3 | 2 |
-| `tests/Snapshots/Letter.received.docx.txt` | new | | | |
+| `tests/Snapshots/TrailMap.received.pdfua.txt` | changed | 3: 1 moved, 1 attribute, 1 text | structure 3 | 2 |
+| `tests/Snapshots/Guide.received.docx.txt` | new | | | |
 
 Download the artifact to open each report, or `snapshot-summary.html`, which links them all. Each report looks like
-the [sample report](../samples/DrugGuide.diff.html).
+the [sample report](../samples/TrailGuide.diff.html).
 
 > [!NOTE]
 > `pdiffy report` exits with 1 when it finds received snapshots. After `if: failure()` that doesn't matter, since the

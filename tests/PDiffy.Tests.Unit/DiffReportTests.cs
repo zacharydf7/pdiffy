@@ -7,7 +7,7 @@ public class DiffReportTests
     private static readonly string Before = string.Join("\n",
     [
         "# pdfua-snapshot v1", "pages", "  p1 letter rotate=0", "  p2 letter rotate=0", "  p3 letter rotate=0",
-        "structure", .. Enumerable.Range(1, 20).Select(i => $"  P p{i / 10 + 1} \"Line {i}\""), "  P p3 \"Take with food\"", "",
+        "structure", .. Enumerable.Range(1, 20).Select(i => $"  P p{i / 10 + 1} \"Line {i}\""), "  P p3 \"Go with a guide\"", "",
     ]);
 
     [Fact]
@@ -64,9 +64,9 @@ public class DiffReportTests
     [Fact]
     public void ToHtml_ShouldDrawTheRenumberedPage_WhenAPageIsInsertedBeforeIt()
     {
-        var before = Layout("p1 letter rotate=0", "p1 text tagged at=72,700 size=12 \"The body of the letter\"");
+        var before = Layout("p1 letter rotate=0", "p1 text tagged at=72,700 size=12 \"The body of the guide\"");
         var after = Layout("p1 letter rotate=0\n  p2 letter rotate=0", "p1 text tagged at=72,700 size=12 \"A new cover\"",
-            "p2 text tagged at=72,690 size=12 \"The body of the letter\"");
+            "p2 text tagged at=72,690 size=12 \"The body of the guide\"");
 
         var html = SnapshotDiff.Compare(before, after).ToHtml();
 
@@ -101,17 +101,17 @@ public class DiffReportTests
     [Fact]
     public void ToHtml_ShouldShowBothSidesWithTheChangedWordsMarked_WhenALineChanges()
     {
-        var html = SnapshotDiff.Compare(Before, Before.Replace("Take with food", "Take after food")).ToHtml();
+        var html = SnapshotDiff.Compare(Before, Before.Replace("Go with a guide", "Go without a guide")).ToHtml();
 
         Assert.Contains("<th>Before</th><th>After</th>", html);
-        Assert.Contains("<td class=\"removed\">  P p3 &quot;Take <mark>with </mark>food&quot;</td>", html);
-        Assert.Contains("<td class=\"added\">  P p3 &quot;Take <mark>after </mark>food&quot;</td>", html);
+        Assert.Contains("<td class=\"removed\">  P p3 &quot;Go <mark>with </mark>a guide&quot;</td>", html);
+        Assert.Contains("<td class=\"added\">  P p3 &quot;Go <mark>without </mark>a guide&quot;</td>", html);
     }
 
     [Fact]
     public void ToHtml_ShouldListAccessibilityChangesFirstWithAFilter_WhenSomeAffectAccessibility()
     {
-        var after = Before.Replace("  P p1 \"Line 1\"", "  P p1 \"Line one\"").Replace("  P p3 \"Take with food\"", "  H2 p3 \"Take with food\"");
+        var after = Before.Replace("  P p1 \"Line 1\"", "  P p1 \"Line one\"").Replace("  P p3 \"Go with a guide\"", "  H2 p3 \"Go with a guide\"");
 
         var html = SnapshotDiff.Compare(Before, after).ToHtml();
 
@@ -124,16 +124,16 @@ public class DiffReportTests
     [Fact]
     public void ToHtml_ShouldShowARetypedElementOnOneRow_WhenOnlyItsTypeChanges()
     {
-        var html = SnapshotDiff.Compare(Before, Before.Replace("  P p3 \"Take with food\"", "  H2 p3 \"Take with food\"")).ToHtml();
+        var html = SnapshotDiff.Compare(Before, Before.Replace("  P p3 \"Go with a guide\"", "  H2 p3 \"Go with a guide\"")).ToHtml();
 
-        Assert.Contains("<td class=\"removed\">  <mark>P </mark>p3 &quot;Take with food&quot;</td>"
-            + "<td class=\"added\">  <mark>H2 </mark>p3 &quot;Take with food&quot;</td>", html);
+        Assert.Contains("<td class=\"removed\">  <mark>P </mark>p3 &quot;Go with a guide&quot;</td>"
+            + "<td class=\"added\">  <mark>H2 </mark>p3 &quot;Go with a guide&quot;</td>", html);
     }
 
     [Fact]
     public void ToHtml_ShouldPairLinesLikeTheChangeList_WhenALineIsInsertedBeforeAnEditedOne()
     {
-        var after = Before.Replace("  P p3 \"Take with food\"", "  P p3 \"New warning\"\n  P p3 \"Take after food\"");
+        var after = Before.Replace("  P p3 \"Go with a guide\"", "  P p3 \"New warning\"\n  P p3 \"Go without a guide\"");
 
         var html = SnapshotDiff.Compare(Before, after).ToHtml();
 
@@ -144,7 +144,7 @@ public class DiffReportTests
     [Fact]
     public void ToHtml_ShouldLinkEachPageToItsFirstChangeAndFoldUnchangedLines_WhenMostLinesMatch()
     {
-        var html = SnapshotDiff.Compare(Before, Before.Replace("Take with food", "Take after food")).ToHtml();
+        var html = SnapshotDiff.Compare(Before, Before.Replace("Go with a guide", "Go without a guide")).ToHtml();
 
         Assert.Single(html.Split("id=\"p3\"").Skip(1));
         Assert.Contains("<tr id=\"p3\"><td class=\"removed\">", html);
@@ -182,17 +182,17 @@ public class DiffReportTests
     [Fact]
     public void ToHtml_ShouldShowTheWholeTextAsOneSection_WhenTheTextIsNotASnapshot()
     {
-        var html = SnapshotDiff.Compare("structure\nTake with food\n", "structure\nTake after food\n").ToHtml();
+        var html = SnapshotDiff.Compare("structure\nGo with a guide\n", "structure\nGo without a guide\n").ToHtml();
 
         Assert.Single(html.Split("<details class=\"section\"").Skip(1));
         Assert.Contains("<summary>text</summary>", html);
-        Assert.Contains("<td class=\"added\">Take <mark>after </mark>food</td>", html);
+        Assert.Contains("<td class=\"added\">Go <mark>without </mark>a guide</td>", html);
     }
 
     [Fact]
     public void ToHtml_ShouldEncodeTextAndLoadNothingFromOutside_WhenTextLooksLikeMarkup()
     {
-        var html = SnapshotDiff.Compare(Before, Before.Replace("Take with food", "<script>alert(1)</script>")).ToHtml();
+        var html = SnapshotDiff.Compare(Before, Before.Replace("Go with a guide", "<script>alert(1)</script>")).ToHtml();
 
         Assert.Contains("&lt;script&gt;alert(1)&lt;/script&gt;", html);
         Assert.DoesNotContain("src=", html);

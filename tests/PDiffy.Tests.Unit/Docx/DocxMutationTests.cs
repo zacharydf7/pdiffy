@@ -22,7 +22,7 @@ public class DocxMutationTests
         { "image alt text", new Sample { ImageAlt = "Store logo" }, DocxSection.Body, ChangeKind.AttributeChanged },
         { "image bytes", new Sample { ImageBytes = [0x89, 0x50, 0x4E, 0x47, 9, 9, 9] }, DocxSection.Body, ChangeKind.AttributeChanged },
         { "field result", new Sample { PageResult = "4" }, DocxSection.Body, ChangeKind.AttributeChanged },
-        { "header text", new Sample { HeaderText = "Drug leaflet" }, DocxSection.Headers, ChangeKind.TextChanged },
+        { "header text", new Sample { HeaderText = "Trail leaflet" }, DocxSection.Headers, ChangeKind.TextChanged },
         { "footnote text", new Sample { FootnoteText = "Source: leaflet" }, DocxSection.Notes, ChangeKind.TextChanged },
         { "tracked change added", new Sample { TrackedInsert = true }, DocxSection.Body, ChangeKind.Added },
         { "comment added", new Sample { Comment = true }, DocxSection.Body, ChangeKind.Added },
@@ -55,10 +55,10 @@ public class DocxMutationTests
         public int SecondItemList { get; init; } = 1;
         public bool HeaderRow { get; init; } = true;
         public int CellSpan { get; init; } = 1;
-        public string ImageAlt { get; init; } = "Pharmacy logo";
+        public string ImageAlt { get; init; } = "Park logo";
         public byte[] ImageBytes { get; init; } = Logo;
         public string PageResult { get; init; } = "3";
-        public string HeaderText { get; init; } = "Drug guide";
+        public string HeaderText { get; init; } = "Trail guide";
         public string FootnoteText { get; init; } = "Source: label";
         public bool TrackedInsert { get; init; }
         public bool Comment { get; init; }
@@ -86,19 +86,19 @@ public class DocxMutationTests
         var comment = sample.Comment ? """<w:r><w:commentReference w:id="0"/></w:r>""" : "";
         // A cell spanning both columns replaces the second cell, as Word merges them.
         var span = sample.CellSpan == 1 ? "" : $"""<w:tcPr><w:gridSpan w:val="{sample.CellSpan}"/></w:tcPr>""";
-        var secondCell = sample.CellSpan == 1 ? "<w:tc><w:p><w:r><w:t>Dose</w:t></w:r></w:p></w:tc>" : "";
+        var secondCell = sample.CellSpan == 1 ? "<w:tc><w:p><w:r><w:t>Stage</w:t></w:r></w:p></w:tc>" : "";
         var header = sample.HeaderRow ? "<w:trPr><w:tblHeader/></w:trPr>" : "";
         var body = $"""
             <w:p><w:pPr><w:pStyle w:val="{sample.Style}"/><w:jc w:val="{sample.Alignment}"/><w:ind w:left="{sample.IndentTwips}"/>
                 <w:spacing w:after="{sample.SpacingAfterTwips}"/></w:pPr>
-              <w:r><w:t xml:space="preserve">Take </w:t></w:r><w:r><w:rPr>{sample.WordFormat}</w:rPr><w:t>with</w:t></w:r>
-              <w:r><w:t xml:space="preserve"> food</w:t></w:r>{insert}<w:r><w:footnoteReference w:id="1"/></w:r>{comment}
+              <w:r><w:t xml:space="preserve">Go </w:t></w:r><w:r><w:rPr>{sample.WordFormat}</w:rPr><w:t>with</w:t></w:r>
+              <w:r><w:t xml:space="preserve"> a guide</w:t></w:r>{insert}<w:r><w:footnoteReference w:id="1"/></w:r>{comment}
               <w:r><w:t xml:space="preserve"> page </w:t></w:r><w:fldSimple w:instr="PAGE"><w:r><w:t>{sample.PageResult}</w:t></w:r></w:fldSimple></w:p>
-            <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Warfarin</w:t></w:r></w:p>
+            <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Ridgeline</w:t></w:r></w:p>
             <w:p><w:pPr><w:numPr><w:ilvl w:val="{sample.SecondItemLevel}"/><w:numId w:val="{sample.SecondItemList}"/></w:numPr></w:pPr>
-              <w:r><w:t>Aspirin</w:t></w:r></w:p>
+              <w:r><w:t>Cedars</w:t></w:r></w:p>
             <w:tbl><w:tblGrid><w:gridCol w:w="2880"/><w:gridCol w:w="2880"/></w:tblGrid>
-              <w:tr>{header}<w:tc>{span}<w:p><w:r><w:t>Drug</w:t></w:r></w:p></w:tc>{secondCell}</w:tr></w:tbl>
+              <w:tr>{header}<w:tc>{span}<w:p><w:r><w:t>Trail</w:t></w:r></w:p></w:tc>{secondCell}</w:tr></w:tbl>
             <w:p><w:r><w:drawing xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
                 xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
               <wp:inline><wp:extent cx="1524000" cy="508000"/><wp:docPr id="1" name="Picture 1" descr="{sample.ImageAlt}"/>

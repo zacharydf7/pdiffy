@@ -47,7 +47,7 @@ whole read failing. A file that can't be opened at all throws. Open the PDF in a
 ## `pdiffy accept` says a file isn't a received snapshot
 
 `accept` only moves files whose names contain `.received.`. Pass a folder, or a received file, such as
-`Invoice.received.pdfua.txt`.
+`TrailMap.received.pdfua.txt`.
 
 ## Still stuck?
 

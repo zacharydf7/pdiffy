@@ -10,7 +10,7 @@ public sealed class TextSnapshotOptions
 {
     private readonly List<Scrubber> _scrubbers = [];
 
-    /// <summary>Replaces matches anywhere in the text. The replacement can refer to groups, such as "Order $1".</summary>
+    /// <summary>Replaces matches anywhere in the text. The replacement can refer to groups, such as "Permit $1".</summary>
     public TextSnapshotOptions ScrubText(Regex pattern, string replacement)
     {
         _scrubbers.Add(new Scrubber(pattern, replacement, Numbered: false));

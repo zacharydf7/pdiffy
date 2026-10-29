@@ -14,7 +14,7 @@ public class DocxDocumentTests
         {
             Styles = NormalStyle,
             Settings = """<w:compat><w:compatSetting w:name="compatibilityMode" w:val="15"/></w:compat>""",
-            Core = "<dc:title>Letter</dc:title><dcterms:created>2026-10-28T00:00:00Z</dcterms:created>",
+            Core = "<dc:title>Notes</dc:title><dcterms:created>2026-10-28T00:00:00Z</dcterms:created>",
             Body = """
                 <w:p><w:r><w:t>Bring </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>your</w:t></w:r><w:r><w:t> card</w:t></w:r></w:p>
                 <w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720"/></w:sectPr>
@@ -26,7 +26,7 @@ public class DocxDocumentTests
         var expected = """
             # docx-snapshot v1
             document
-              title="Letter" lang=(missing) compat=15 track-changes=no protection=none even-odd-headers=no created=<present> modified=<missing>
+              title="Notes" lang=(missing) compat=15 track-changes=no protection=none even-odd-headers=no created=<present> modified=<missing>
             sections
               s1 letter margins=72,72,72,72 header=36 footer=36 columns=1 break=nextPage
             styles
@@ -147,11 +147,11 @@ public class DocxDocumentTests
     public void ToSnapshot_ShouldRecordABookmarkBetweenBlocks_WhenOneStartsAtATable()
     {
         var body = """
-            <w:bookmarkStart w:id="1" w:name="Doses"/><w:tbl><w:tr><w:tc><w:p><w:r><w:t>Warfarin</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
+            <w:bookmarkStart w:id="1" w:name="Stages"/><w:tbl><w:tr><w:tc><w:p><w:r><w:t>Ridgeline</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
             <w:bookmarkEnd w:id="1"/>
             """;
 
-        Assert.Contains("body\n  bookmark \"Doses\"\n  Table\n", new TestDocx { Body = body }.Load().ToSnapshot());
+        Assert.Contains("body\n  bookmark \"Stages\"\n  Table\n", new TestDocx { Body = body }.Load().ToSnapshot());
     }
 
     [Fact]
@@ -226,14 +226,14 @@ public class DocxDocumentTests
         var docx = new TestDocx
         {
             Body = """
-                <w:tbl><w:tr><w:tc><w:p><w:r><w:t>Drug</w:t></w:r></w:p></w:tc>
-                  <w:sdt><w:sdtPr><w:tag w:val="food"/></w:sdtPr><w:sdtContent><w:tc><w:p><w:r><w:t>Food</w:t></w:r></w:p></w:tc>
+                <w:tbl><w:tr><w:tc><w:p><w:r><w:t>Trail</w:t></w:r></w:p></w:tc>
+                  <w:sdt><w:sdtPr><w:tag w:val="gear"/></w:sdtPr><w:sdtContent><w:tc><w:p><w:r><w:t>Gear</w:t></w:r></w:p></w:tc>
                   </w:sdtContent></w:sdt></w:tr></w:tbl>
                 """,
         };
 
-        Assert.Contains("  Table\n    Row\n      Cell\n        P \"Drug\"\n      Cell\n        Control rich-text name=\"food\" "
-            + "around\n        P \"Food\"\n", docx.Load().ToSnapshot());
+        Assert.Contains("  Table\n    Row\n      Cell\n        P \"Trail\"\n      Cell\n        Control rich-text name=\"gear\" "
+            + "around\n        P \"Gear\"\n", docx.Load().ToSnapshot());
     }
 
     [Fact]
@@ -307,11 +307,11 @@ public class DocxDocumentTests
     [Fact]
     public void CompareTo_ShouldReportTheChangedWords_WhenAParagraphsTextChanges()
     {
-        var before = new TestDocx { Body = "<w:p><w:r><w:t>Take with food</w:t></w:r></w:p>" }.Load();
-        var after = new TestDocx { Body = "<w:p><w:r><w:t>Take after food</w:t></w:r></w:p>" }.Load();
+        var before = new TestDocx { Body = "<w:p><w:r><w:t>Go with a guide</w:t></w:r></w:p>" }.Load();
+        var after = new TestDocx { Body = "<w:p><w:r><w:t>Go without a guide</w:t></w:r></w:p>" }.Load();
 
         var change = Assert.Single(before.CompareTo(after).Changes);
 
-        Assert.Equal((ChangeKind.TextChanged, "\"Take [-with-] {+after+} food\""), (change.Kind, change.Detail));
+        Assert.Equal((ChangeKind.TextChanged, "\"Go [-with-] {+without+} a guide\""), (change.Kind, change.Detail));
     }
 }

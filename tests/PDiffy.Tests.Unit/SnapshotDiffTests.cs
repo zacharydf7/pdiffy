@@ -10,18 +10,18 @@ public class SnapshotDiffTests
         # pdfua-snapshot v1
         structure
           Document lang=en-US
-            H1 p1 "Drug Interaction Table"
-            Figure p1 alt="Pharmacy logo"
+            H1 p1 "Trail Table"
+            Figure p1 alt="Park logo"
             Table p2
               TR
-                TH1 p2 scope=Column "Drug"
-                TH2 p2 scope=Column "Interacts with"
+                TH1 p2 scope=Column "Trail"
+                TH2 p2 scope=Column "Length"
               TR
-                TD p2 headers=[TH1] "Warfarin"
-                TD p2 headers=[TH2] "Take with food"
-            P p3 "Call your pharmacist"
+                TD p2 headers=[TH1] "Ridgeline"
+                TD p2 headers=[TH2] "Go with a guide"
+            P p3 "Call your ranger"
         layout
-          p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Drug Interaction Table"
+          p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Trail Table"
         """.ReplaceLineEndings("\n");
 
     [Fact]
@@ -36,12 +36,12 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldShowTheChangedWords_WhenAnElementsTextChanges()
     {
-        var after = Before.Replace("Take with food", "Take after food");
+        var after = Before.Replace("Go with a guide", "Go without a guide");
 
         var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
 
         var path = "structure > Document > Table > TR[2] > TD[2]";
-        Assert.Equal(new SnapshotChange(ChangeKind.TextChanged, Section.Structure, path, 2, "\"Take [-with-] {+after+} food\""), change);
+        Assert.Equal(new SnapshotChange(ChangeKind.TextChanged, Section.Structure, path, 2, "\"Go [-with-] {+without+} a guide\""), change);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public class SnapshotDiffTests
 
         var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
 
-        var detail = "TD p2 headers=[TH1] \"Warfarin\" -> TD p3 headers=[TH1] \"Warfarin\"";
+        var detail = "TD p2 headers=[TH1] \"Ridgeline\" -> TD p3 headers=[TH1] \"Ridgeline\"";
         Assert.Equal((ChangeKind.Changed, detail), (change.Kind, change.Detail));
     }
 
@@ -114,7 +114,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldReportAMove_WhenAnElementChangesPlaceInReadingOrder()
     {
-        var figure = "    Figure p1 alt=\"Pharmacy logo\"\n";
+        var figure = "    Figure p1 alt=\"Park logo\"\n";
         var after = Before.Replace(figure, "").Replace("    P p3", figure + "    P p3");
 
         var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
@@ -127,24 +127,24 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldReportRemovedAndAdded_WhenAReplacementSharesTooFewWords()
     {
-        var after = Before.Replace("P p3 \"Call your pharmacist\"", "P p3 \"Ask questions\"");
+        var after = Before.Replace("P p3 \"Call your ranger\"", "P p3 \"Ask questions\"");
 
         var changes = SnapshotDiff.Compare(Before, after).Changes;
 
         SnapshotChange[] expected =
         [
-            new(ChangeKind.Removed, Section.Structure, "structure > Document > P", 3, "P p3 \"Call your pharmacist\""),
+            new(ChangeKind.Removed, Section.Structure, "structure > Document > P", 3, "P p3 \"Call your ranger\""),
             new(ChangeKind.Added, Section.Structure, "structure > Document > P", 3, "P p3 \"Ask questions\""),
         ];
         Assert.Equal(expected, changes);
     }
 
     [Theory]
-    [InlineData("structure", "P p1 \"Take daily\"", "P p1 \"Avoid alcohol\"")]
-    [InlineData("layout", "p1 text tagged at=72,700 font=Arial size=12 color=gray:0 \"Warfarin\"",
+    [InlineData("structure", "P p1 \"Walk daily\"", "P p1 \"Avoid shortcuts\"")]
+    [InlineData("layout", "p1 text tagged at=72,700 font=Arial size=12 color=gray:0 \"Ridgeline\"",
         "p1 text tagged at=400,300 font=Arial size=12 color=gray:0 \"Signature line\"")]
-    [InlineData("layout", "p1 text tagged at=72,700 font=Arial size=12 color=gray:0 \"Warfarin\"",
-        "p1 text tagged at=400,300 font=Arial size=12 color=gray:0 \"Total\"")]
+    [InlineData("layout", "p1 text tagged at=72,700 font=Arial size=12 color=gray:0 \"Ridgeline\"",
+        "p1 text tagged at=400,300 font=Arial size=12 color=gray:0 \"Summit\"")]
     public void Compare_ShouldReportRemovedAndAdded_WhenTheTextSharesNoWords(string section, string before, string after)
     {
         var changes = SnapshotDiff.Compare($"{SnapshotText.Header}{section}\n  {before}\n", $"{SnapshotText.Header}{section}\n  {after}\n").Changes;
@@ -155,7 +155,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldReportOneTypeChange_WhenAStructureElementsTypeChangesButItsTextDoesNot()
     {
-        var after = Before.Replace("H1 p1 \"Drug Interaction Table\"", "H2 p1 \"Drug Interaction Table\"");
+        var after = Before.Replace("H1 p1 \"Trail Table\"", "H2 p1 \"Trail Table\"");
 
         var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
 
@@ -165,8 +165,8 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldPairALineWithOneOfItsOwnType_WhenAnotherTypeHasTheSameTextFirst()
     {
-        var before = SnapshotText.Header + "structure\n  P p1 lang=en \"Take\"\n";
-        var after = SnapshotText.Header + "structure\n  H3 p1 \"Take\"\n  P p1 lang=fr \"Take\"\n";
+        var before = SnapshotText.Header + "structure\n  P p1 lang=en \"Walk\"\n";
+        var after = SnapshotText.Header + "structure\n  H3 p1 \"Walk\"\n  P p1 lang=fr \"Walk\"\n";
 
         var changes = SnapshotDiff.Compare(before, after).Changes;
 
@@ -187,19 +187,19 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldReportATextChange_WhenAOneWordValueIsReplaced()
     {
-        var after = Before.Replace("\"Warfarin\"", "\"Aspirin\"");
+        var after = Before.Replace("\"Ridgeline\"", "\"Cedars\"");
 
         var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
 
-        Assert.Equal((ChangeKind.TextChanged, "\"[-Warfarin-] {+Aspirin+}\""), (change.Kind, change.Detail));
+        Assert.Equal((ChangeKind.TextChanged, "\"[-Ridgeline-] {+Cedars+}\""), (change.Kind, change.Detail));
     }
 
     [Fact]
     public void Compare_ShouldReportAMoveAndTheEdit_WhenAnElementMovesAndChanges()
     {
-        var figure = "    Figure p1 alt=\"Pharmacy logo\"\n";
-        var after = Before.Replace(figure, "").Replace("    P p3 \"Call your pharmacist\"",
-            "    Figure p1 alt=\"Store logo\"\n    P p3 \"Call your doctor\"");
+        var figure = "    Figure p1 alt=\"Park logo\"\n";
+        var after = Before.Replace(figure, "").Replace("    P p3 \"Call your ranger\"",
+            "    Figure p1 alt=\"Store logo\"\n    P p3 \"Call your warden\"");
 
         var changes = SnapshotDiff.Compare(Before, after).Changes;
 
@@ -207,8 +207,8 @@ public class SnapshotDiffTests
         [
             new(ChangeKind.Moved, Section.Structure, "structure > Document > Figure", 1, "reading position 3 -> 10"),
             new(ChangeKind.AttributeChanged, Section.Structure, "structure > Document > Figure", 1,
-                "alt: \"Pharmacy logo\" -> \"Store logo\""),
-            new(ChangeKind.TextChanged, Section.Structure, "structure > Document > P", 3, "\"Call your [-pharmacist-] {+doctor+}\""),
+                "alt: \"Park logo\" -> \"Store logo\""),
+            new(ChangeKind.TextChanged, Section.Structure, "structure > Document > P", 3, "\"Call your [-ranger-] {+warden+}\""),
         ];
         Assert.Equal(expected, changes);
     }
@@ -250,21 +250,21 @@ public class SnapshotDiffTests
             structure
               Table p1
                 TR
-                  TD p1 "Warfarin"
-                  TD p1 "Take with food"
+                  TD p1 "Ridgeline"
+                  TD p1 "Go with a guide"
               Table p2
                 TR
-                  TD p2 "Dose"
+                  TD p2 "Stage"
             """.ReplaceLineEndings("\n");
         var after = SnapshotText.Header + """
             structure
               Table p1
               Table p2
                 TR
-                  TD p2 "Dose"
+                  TD p2 "Stage"
                 TR
-                  TD p2 "Ibuprofen"
-                  TD p2 "Avoid alcohol"
+                  TD p2 "Meadows"
+                  TD p2 "Avoid shortcuts"
             """.ReplaceLineEndings("\n");
 
         var changes = SnapshotDiff.Compare(before, after).Changes;
@@ -292,12 +292,12 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldNameBookmarksByTitle_WhenABookmarkChanges()
     {
-        var before = SnapshotText.Header + "bookmarks\n  \"Warnings\" -> p3\n    \"Food\"\n";
-        var after = before.Replace("\"Food\"", "\"Food\" -> p4");
+        var before = SnapshotText.Header + "bookmarks\n  \"Safety\" -> p3\n    \"Gear\"\n";
+        var after = before.Replace("\"Gear\"", "\"Gear\" -> p4");
 
         var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
 
-        Assert.Equal((ChangeKind.Changed, "bookmarks > Warnings > Food", 4), (change.Kind, change.Path, change.Page));
+        Assert.Equal((ChangeKind.Changed, "bookmarks > Safety > Gear", 4), (change.Kind, change.Path, change.Page));
     }
 
     [Theory]
@@ -329,7 +329,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Describe_ShouldCountChangesByKindAndListThem_WhenThereAreChanges()
     {
-        var after = Before.Replace("Take with food", "Take after food").Replace("TH2 p2 scope=Column", "TH2 p2");
+        var after = Before.Replace("Go with a guide", "Go without a guide").Replace("TH2 p2 scope=Column", "TH2 p2");
 
         var text = SnapshotDiff.Compare(Before, after).Describe(maxChanges: 1);
 
@@ -385,8 +385,8 @@ public class SnapshotDiffTests
     [InlineData("line-widths 0.2pt", "p1 path artifact width=0.5", "p1 path artifact width=0.7", 0)]
     [InlineData("positions 1pt", "embedded-file \"a.txt\" size=100 hash=x",
         "embedded-file \"a.txt\" size=101 hash=x", 1)]
-    [InlineData("positions 1pt", "p1 text tagged at=72,700 \"Take with food\"",
-        "p1 text tagged at=73,700 \"Take after food\"", 1)]
+    [InlineData("positions 1pt", "p1 text tagged at=72,700 \"Go with a guide\"",
+        "p1 text tagged at=73,700 \"Go without a guide\"", 1)]
     public void Compare_ShouldCountOnlyNumbersBeyondTheTolerance_WhenTheHeaderGivesOne(string tolerance, string before,
         string after, int changes)
     {
@@ -400,8 +400,8 @@ public class SnapshotDiffTests
     [Fact]
     public void Describe_ShouldListAccessibilityChangesFirst_WhenTheyComeLaterInTheSnapshot()
     {
-        var before = SnapshotText.Header + "structure\n  P p1 \"Take with food\"\nuntagged\n  (none)\n";
-        var after = SnapshotText.Header + "structure\n  P p1 \"Take after food\"\nuntagged\n  p1 \"Stray text\"\n";
+        var before = SnapshotText.Header + "structure\n  P p1 \"Go with a guide\"\nuntagged\n  (none)\n";
+        var after = SnapshotText.Header + "structure\n  P p1 \"Go without a guide\"\nuntagged\n  p1 \"Stray text\"\n";
 
         var lines = SnapshotDiff.Compare(before, after).Describe().Split('\n');
 
@@ -414,25 +414,25 @@ public class SnapshotDiffTests
     [InlineData("structure", "Figure p1 alt=\"Logo\"", "Figure p1", true)]
     [InlineData("structure", "Figure p1 alt=\"Logo\"", "Figure p1 alt=\"\"", true)]
     [InlineData("structure", "Figure p1 alt=\"Logo\"", "Figure p1 alt=\"Store logo\"", false)]
-    [InlineData("structure", "H2 p1 \"Dosage\"", "P p1 \"Dosage\"", true)]
-    [InlineData("structure", "TH1 p1 scope=Column \"Drug\"", "TH1 p1 \"Drug\"", true)]
-    [InlineData("structure", "TD p1 headers=[TH1] \"Warfarin\"", "TD p1 \"Warfarin\"", true)]
+    [InlineData("structure", "H2 p1 \"Elevation\"", "P p1 \"Elevation\"", true)]
+    [InlineData("structure", "TH1 p1 scope=Column \"Trail\"", "TH1 p1 \"Trail\"", true)]
+    [InlineData("structure", "TD p1 headers=[TH1] \"Ridgeline\"", "TD p1 \"Ridgeline\"", true)]
     [InlineData("structure", "P p1 lang=es-ES \"Hola\"", "P p1 lang=fr-FR \"Hola\"", true)]
-    [InlineData("structure", "P p1 \"Take with food\"", "P p1 \"Take after food\"", false)]
-    [InlineData("structure", "TH1 p1 scope=Column \"Drug\"", "TH2 p1 scope=Column \"Drug\"", false)]
-    [InlineData("structure", "TD p1 headers=[TH1] \"Warfarin\"", "TD p1 headers=[?h-other] \"Warfarin\"", true)]
+    [InlineData("structure", "P p1 \"Go with a guide\"", "P p1 \"Go without a guide\"", false)]
+    [InlineData("structure", "TH1 p1 scope=Column \"Trail\"", "TH2 p1 scope=Column \"Trail\"", false)]
+    [InlineData("structure", "TD p1 headers=[TH1] \"Ridgeline\"", "TD p1 headers=[?h-other] \"Ridgeline\"", true)]
     [InlineData("document", "marked=yes lang=en-US", "marked=yes lang=en-GB", true)]
     [InlineData("untagged", "p1 images=1 paths=1", "p1 images=2 paths=1", true)]
     [InlineData("untagged", "p1 images=1 paths=1", "p1 images=2 paths=2", true)]
     [InlineData("untagged", "p1 images=2 paths=3", "p1 images=1 paths=1", false)]
     [InlineData("untagged", "p1 \"Page 1\"", "p1 \"Page 1 Draft\"", true)]
     [InlineData("untagged", "p1 \"Draft copy for review only Page 3\"", "p1 \"Draft copy for review only\"", false)]
-    [InlineData("structure", "Custom->H2 p1 \"Dosage\"", "Custom->H3 p1 \"Dosage\"", true)]
+    [InlineData("structure", "Custom->H2 p1 \"Elevation\"", "Custom->H3 p1 \"Elevation\"", true)]
     [InlineData("annotations", "p1 Link tagged at=0,0 size=10x10", "p1 Link untagged at=0,0 size=10x10", true)]
     [InlineData("annotations", "p1 Link tagged", "p1 Link untagged", true)]
     [InlineData("annotations", "p1 Link untagged at=0,0 size=10x10", "p1 Link tagged at=0,0 size=10x10", false)]
-    [InlineData("forms", "text \"patient\" p1 tu=\"Patient name\"", "text \"patient\" p1", true)]
-    [InlineData("layout", "p1 text tagged at=72,700 color=gray:0 \"Dosage\"", "p1 text tagged at=72,700 color=#ff0000 \"Dosage\"", false)]
+    [InlineData("forms", "text \"hiker\" p1 tu=\"Hiker name\"", "text \"hiker\" p1", true)]
+    [InlineData("layout", "p1 text tagged at=72,700 color=gray:0 \"Elevation\"", "p1 text tagged at=72,700 color=#ff0000 \"Elevation\"", false)]
     public void AffectsAccessibility_ShouldFollowTheFixedRules_WhenGivenAChange(string section, string before, string after,
         bool affects)
     {
@@ -445,8 +445,8 @@ public class SnapshotDiffTests
     [Fact]
     public void AffectsAccessibility_ShouldBeFalse_WhenTheChangeIsInADocxSnapshot()
     {
-        var before = "# docx-snapshot v1\nsections\n  s1 letter headers=default\nbody\n  P lang=en-US \"Take\"\n";
-        var after = "# docx-snapshot v1\nsections\n  s1 letter\nbody\n  P lang=fr-FR \"Take\"\n";
+        var before = "# docx-snapshot v1\nsections\n  s1 letter headers=default\nbody\n  P lang=en-US \"Walk\"\n";
+        var after = "# docx-snapshot v1\nsections\n  s1 letter\nbody\n  P lang=fr-FR \"Walk\"\n";
 
         var changes = SnapshotDiff.Compare(before, after).Changes;
 
@@ -511,7 +511,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldFlagAMoveInTheStructure_WhenAnElementChangesPlaceInReadingOrder()
     {
-        var figure = "    Figure p1 alt=\"Pharmacy logo\"\n";
+        var figure = "    Figure p1 alt=\"Park logo\"\n";
         var after = Before.Replace(figure, "").Replace("    P p3", figure + "    P p3");
 
         Assert.True(Assert.Single(SnapshotDiff.Compare(Before, after).Changes).AffectsAccessibility);
@@ -543,7 +543,7 @@ public class SnapshotDiffTests
     {
         var older = Before.Replace("# pdfua-snapshot v1", "# pdfua-snapshot v0");
 
-        var changes = SnapshotDiff.Compare(older, Before.Replace("Take with food", "Take after food")).Changes;
+        var changes = SnapshotDiff.Compare(older, Before.Replace("Go with a guide", "Go without a guide")).Changes;
 
         Assert.Equal([null, Section.Structure], changes.Select(change => change.Section));
         Assert.Equal("header", changes[0].Path);
@@ -619,7 +619,7 @@ public class SnapshotDiffTests
     [InlineData("    P p3 \"Paragraph 2 of the guide\"", "    P p2 \"Paragraph 2 of the guide\"")]
     [InlineData("    Table p3-5", "    Table p2-4")]
     [InlineData("    Table p2-3", "    Table p2")]
-    [InlineData("  \"Interactions\" -> p4", "  \"Interactions\" -> p3")]
+    [InlineData("  \"Trails\" -> p4", "  \"Trails\" -> p3")]
     [InlineData("  label from p3 style=decimal", "  label from p2 style=decimal")]
     [InlineData("    P p3 \"See p3 and \\\"p4\\\"\"", "    P p2 \"See p3 and \\\"p4\\\"\"")]
     [InlineData("  info p3=\"x\"", "  info p3=\"x\"")]
@@ -661,7 +661,7 @@ public class SnapshotDiffTests
     [Fact]
     public void ToJson_ShouldListEachChangeWithItsSectionAndPage_WhenGivenASnapshot()
     {
-        var diff = SnapshotDiff.Compare(Before, Before.Replace("H1 p1 \"Drug", "P p1 \"Drug"));
+        var diff = SnapshotDiff.Compare(Before, Before.Replace("H1 p1 \"Trail", "P p1 \"Trail"));
 
         var json = diff.ToJson();
 
@@ -707,9 +707,9 @@ public class SnapshotDiffTests
     [Fact]
     public void CompareTo_ShouldCompareTheSnapshots_WhenGivenTwoDocuments()
     {
-        var paragraph = new StructureElement { Type = "P", FirstPage = 1, Text = "Take with food" };
+        var paragraph = new StructureElement { Type = "P", FirstPage = 1, Text = "Go with a guide" };
         var before = Documents.Empty() with { Structure = [paragraph] };
-        var after = before with { Structure = [paragraph with { Text = "Take after food" }] };
+        var after = before with { Structure = [paragraph with { Text = "Go without a guide" }] };
 
         var change = Assert.Single(before.CompareTo(after).Changes);
 

@@ -31,7 +31,7 @@ public class DocxEquivalenceTests
     {
         static TestDocx Paragraph(string rsid) => new()
         {
-            Body = $"""<w:p w:rsidR="{rsid}" w:rsidRDefault="{rsid}"><w:r w:rsidRPr="{rsid}"><w:t>Take with food</w:t></w:r></w:p>""",
+            Body = $"""<w:p w:rsidR="{rsid}" w:rsidRDefault="{rsid}"><w:r w:rsidRPr="{rsid}"><w:t>Go with a guide</w:t></w:r></w:p>""",
         };
 
         AssertSameSnapshot(Paragraph("00A1B2C3"), Paragraph("00D4E5F6"));
@@ -40,12 +40,12 @@ public class DocxEquivalenceTests
     [Fact]
     public void ToSnapshot_ShouldNotChange_WhenTheSameTextIsSplitAcrossRunsThatLookTheSame()
     {
-        var oneRun = new TestDocx { Body = "<w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Take with food</w:t></w:r></w:p>" };
+        var oneRun = new TestDocx { Body = "<w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Go with a guide</w:t></w:r></w:p>" };
         var threeRuns = new TestDocx
         {
             Body = """
-                <w:p><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">Take </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>with</w:t></w:r>
-                  <w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve"> food</w:t></w:r></w:p>
+                <w:p><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">Go </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>with</w:t></w:r>
+                  <w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve"> a guide</w:t></w:r></w:p>
                 """,
         };
 

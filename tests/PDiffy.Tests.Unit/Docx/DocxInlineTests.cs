@@ -17,11 +17,11 @@ public class DocxInlineTests
     [Fact]
     public void ToSnapshot_ShouldDescribeTheImage_WhenAParagraphHasOne()
     {
-        var docx = new TestDocx { Body = Paragraph("Logo: ", string.Format(Drawing, "inline", "descr=\"Pharmacy logo\" title=\"Logo\"")) }
+        var docx = new TestDocx { Body = Paragraph("Logo: ", string.Format(Drawing, "inline", "descr=\"Park logo\" title=\"Logo\"")) }
             .WithImage("logo", "image1.png", Logo);
 
         var hash = Convert.ToHexStringLower(SHA256.HashData(Logo))[..16];
-        Assert.Contains($"    image inline size=120x40 alt=\"Pharmacy logo\" title=\"Logo\" type=png hash={hash} at=6\n", docx.Load().ToSnapshot());
+        Assert.Contains($"    image inline size=120x40 alt=\"Park logo\" title=\"Logo\" type=png hash={hash} at=6\n", docx.Load().ToSnapshot());
     }
 
     [Fact]

@@ -9,13 +9,13 @@ public class DocxDetailTests
     [InlineData(DocxDetail.FieldResults, TocEntry + "3" + TocEntryEnd, TocEntry + "4" + TocEntryEnd)]
     [InlineData(DocxDetail.FieldResults, NestedResult + "3" + NestedResultEnd, NestedResult + "4" + NestedResultEnd)]
     [InlineData(DocxDetail.FieldResults, InControl + "3" + InControlEnd, InControl + "4" + InControlEnd)]
-    [InlineData(DocxDetail.Fonts, """<w:p><w:r><w:rPr><w:rFonts w:ascii="Arial"/></w:rPr><w:t>Take</w:t></w:r></w:p>""",
-        """<w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri"/></w:rPr><w:t>Take</w:t></w:r></w:p>""")]
-    [InlineData(DocxDetail.FontSizes, """<w:p><w:r><w:rPr><w:sz w:val="24"/></w:rPr><w:t>Take</w:t></w:r></w:p>""",
-        """<w:p><w:r><w:rPr><w:sz w:val="28"/></w:rPr><w:t>Take</w:t></w:r></w:p>""")]
+    [InlineData(DocxDetail.Fonts, """<w:p><w:r><w:rPr><w:rFonts w:ascii="Arial"/></w:rPr><w:t>Walk</w:t></w:r></w:p>""",
+        """<w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri"/></w:rPr><w:t>Walk</w:t></w:r></w:p>""")]
+    [InlineData(DocxDetail.FontSizes, """<w:p><w:r><w:rPr><w:sz w:val="24"/></w:rPr><w:t>Walk</w:t></w:r></w:p>""",
+        """<w:p><w:r><w:rPr><w:sz w:val="28"/></w:rPr><w:t>Walk</w:t></w:r></w:p>""")]
     [InlineData(DocxDetail.Colors,
-        """<w:p><w:r><w:rPr><w:color w:val="FF0000"/><w:highlight w:val="yellow"/></w:rPr><w:t>Take</w:t></w:r></w:p>""",
-        """<w:p><w:r><w:rPr><w:color w:val="0000FF"/><w:highlight w:val="green"/></w:rPr><w:t>Take</w:t></w:r></w:p>""")]
+        """<w:p><w:r><w:rPr><w:color w:val="FF0000"/><w:highlight w:val="yellow"/></w:rPr><w:t>Walk</w:t></w:r></w:p>""",
+        """<w:p><w:r><w:rPr><w:color w:val="0000FF"/><w:highlight w:val="green"/></w:rPr><w:t>Walk</w:t></w:r></w:p>""")]
     [InlineData(DocxDetail.Colors,
         """<w:tbl><w:tr><w:tc><w:tcPr><w:shd w:fill="D9D9D9"/></w:tcPr><w:p/></w:tc></w:tr></w:tbl>""",
         """<w:tbl><w:tr><w:tc><w:tcPr><w:shd w:fill="FFFF00"/></w:tcPr><w:p/></w:tc></w:tr></w:tbl>""")]
@@ -28,8 +28,8 @@ public class DocxDetailTests
     [InlineData(DocxDetail.Indents, """<w:p><w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr></w:p>""",
         """<w:p><w:pPr><w:ind w:left="1440" w:hanging="180"/></w:pPr></w:p>""")]
     [InlineData(DocxDetail.RevisionAuthors,
-        """<w:p><w:ins w:id="1" w:author="Ann"><w:r><w:t>Take</w:t></w:r></w:ins></w:p>""",
-        """<w:p><w:ins w:id="1" w:author="Bo"><w:r><w:t>Take</w:t></w:r></w:ins></w:p>""")]
+        """<w:p><w:ins w:id="1" w:author="Ann"><w:r><w:t>Walk</w:t></w:r></w:ins></w:p>""",
+        """<w:p><w:ins w:id="1" w:author="Bo"><w:r><w:t>Walk</w:t></w:r></w:ins></w:p>""")]
     public void ToSnapshot_ShouldNotChange_WhenOnlyAnIgnoredDetailDiffers(DocxDetail detail, string before,
         string after)
     {
@@ -61,7 +61,7 @@ public class DocxDetailTests
     {
         static string Snapshot(string author, bool ignore) => new TestDocx
         {
-            Body = """<w:p><w:r><w:t>Take</w:t></w:r><w:r><w:commentReference w:id="0"/></w:r></w:p>""",
+            Body = """<w:p><w:r><w:t>Walk</w:t></w:r><w:r><w:commentReference w:id="0"/></w:r></w:p>""",
         }.WithXmlPart("remarks", "comments", "comments",
             $"""<w:comment w:id="0" w:author="{author}"><w:p><w:r><w:t>Check</w:t></w:r></w:p></w:comment>""")
             .Load().ToSnapshot(o => { if (ignore) o.Ignore(DocxDetail.CommentAuthors); });

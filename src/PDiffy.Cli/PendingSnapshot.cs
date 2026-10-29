@@ -7,7 +7,7 @@ internal sealed record PendingSnapshot(string Received, string Verified, string 
     public static List<PendingSnapshot> Find(IEnumerable<string> targets, bool includeSubfolders) =>
         SnapshotFileSearch.Find(targets, includeSubfolders, SnapshotFiles.ReceivedPart).ConvertAll(Of);
 
-    // Each file keeps its extension: Letter.received.json goes with Letter.verified.json and Letter.diff.html.
+    // Each file keeps its extension: Guide.received.json goes with Guide.verified.json and Guide.diff.html.
     private static PendingSnapshot Of(string received)
     {
         var fileName = Path.GetFileName(received);

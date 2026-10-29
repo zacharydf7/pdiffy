@@ -9,22 +9,22 @@ document
 ...
 structure
   Document lang=en-US
-    H1 p1 "Drug Interaction Table"
-    Figure p1 alt="Pharmacy logo"
-    Table p2-3 summary="Drug interactions"
+    H1 p1 "Trail Table"
+    Figure p1 alt="Park logo"
+    Table p2-3 summary="Trail details"
       TR
-        TH1 p2 scope=Column "Drug"
-        TH2 p2 scope=Column "Interacts with"
+        TH1 p2 scope=Column "Trail"
+        TH2 p2 scope=Column "Length"
       TR
-        TD p2 headers=[TH1] "Warfarin"
-        TD p2-3 headers=[TH2] "Aspirin"
+        TD p2 headers=[TH1] "Ridgeline"
+        TD p2-3 headers=[TH2] "Cedars"
 untagged
   p1 "Stray text"
   p1 images=1 paths=2
 fonts
   Arial TrueType embedded=yes to-unicode=yes
 layout
-  p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Drug Interaction Table"
+  p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Trail Table"
   p1 text untagged at=72,90 font=Arial size=9 color=gray:0 mode=invisible "Stray text"
   p1 image tagged at=72,600 size=120x40 pixels=600x200 hash=3f9c0a1b2d4e5f60
   p1 path artifact at=72,60 size=468x1 stroke=cmyk:0,0,0,1 width=0.5

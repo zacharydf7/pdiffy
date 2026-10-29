@@ -10,8 +10,8 @@ public class DocxNotesAndFormsTests
         var docx = new TestDocx
         {
             Body = """
-                <w:p><w:r><w:t>Warfarin</w:t></w:r><w:r><w:footnoteReference w:id="1"/></w:r>
-                  <w:r><w:t xml:space="preserve"> and food</w:t></w:r><w:r><w:commentReference w:id="0"/></w:r></w:p>
+                <w:p><w:r><w:t>Ridgeline</w:t></w:r><w:r><w:footnoteReference w:id="1"/></w:r>
+                  <w:r><w:t xml:space="preserve"> and care</w:t></w:r><w:r><w:commentReference w:id="0"/></w:r></w:p>
                 """,
         }.WithXmlPart("notes", "footnotes", "footnotes", """
             <w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>
@@ -20,7 +20,7 @@ public class DocxNotesAndFormsTests
 
         var snapshot = docx.Load().ToSnapshot();
 
-        Assert.Contains("  P \"Warfarin and food\"\n    note footnote 1 at=8\n    comment 0 at=17\n", snapshot);
+        Assert.Contains("  P \"Ridgeline and care\"\n    note footnote 1 at=9\n    comment 0 at=18\n", snapshot);
         Assert.EndsWith("notes\n  footnote 1\n    P \"Source: label\"\n  comment 0 author=\"Ann\"\n    P \"Check this\"\n", snapshot);
     }
 

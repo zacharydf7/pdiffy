@@ -1,0 +1,57 @@
+# pdfua-snapshot v1
+document
+  marked=yes lang=en-US display-doc-title=yes pages=2
+settings
+  version=1.7 javascript=no additional-actions=no encrypted=no
+metadata
+  title="Trail Guide" author=(missing) subject=(missing) keywords=(missing)
+  creation-date=<missing> mod-date=<missing> producer=<missing> creator=<missing>
+  pdfuaid-part=(missing) xmp-title=(missing)
+role-map
+  (none)
+pages
+  p1 letter rotate=0 tabs=S
+  p2 letter rotate=0 tabs=S
+bookmarks
+  "Trails" -> p2
+structure
+  H1 p1 "Trail Guide"
+  Figure p1 alt="Park logo"
+  P p1 "Read this guide before you start a new trail."
+  P p1 "Ask a ranger if you have questions."
+  H2 p2 "Trails"
+  Table
+    TR
+      TH1 p2 scope=Column "Trail"
+      TH2 p2 scope=Column "Advice"
+    TR
+      TD p2 headers=[TH1] "Ridgeline"
+      TD p2 headers=[TH2] "Go with a guide"
+    TR
+      TD p2 headers=[TH1] "Lakeshore"
+      TD p2 headers=[TH2] "Avoid loose rocks"
+artifacts
+  p1 "Example Park"
+  p2 "Page 2"
+untagged
+  (none)
+fonts
+  Helvetica Type1 embedded=no to-unicode=no
+annotations
+  (none)
+forms
+  (none)
+layout
+  p1 text tagged at=72,720 font=Helvetica size=12 color=gray:0 "Trail Guide"
+  p1 text tagged at=72,700 font=Helvetica size=12 color=gray:0 "Read this guide before you start a new trail."
+  p1 text tagged at=72,680 font=Helvetica size=12 color=gray:0 "Ask a ranger if you have questions."
+  p1 text artifact at=72,660 font=Helvetica size=12 color=gray:0 "Example Park"
+  p1 image tagged at=72,600 size=10x10 pixels=1x1 hash=76be8b528d0075f7
+  p2 text tagged at=72,720 font=Helvetica size=12 color=gray:0 "Trails"
+  p2 text tagged at=72,700 font=Helvetica size=12 color=gray:0 "Trail"
+  p2 text tagged at=72,680 font=Helvetica size=12 color=gray:0 "Advice"
+  p2 text tagged at=72,660 font=Helvetica size=12 color=gray:0 "Ridgeline"
+  p2 text tagged at=72,640 font=Helvetica size=12 color=gray:0 "Go with a guide"
+  p2 text tagged at=72,620 font=Helvetica size=12 color=gray:0 "Lakeshore"
+  p2 text tagged at=72,600 font=Helvetica size=12 color=gray:0 "Avoid loose rocks"
+  p2 text artifact at=72,580 font=Helvetica size=12 color=gray:0 "Page 2"

@@ -24,21 +24,21 @@ document
   marked=yes lang=en-US display-doc-title=yes pages=3
 structure
   Document lang=en-US
-    H1 p1 "Drug Interaction Table"
-    Figure p1 alt="Pharmacy logo"
-    Table p2-3 summary="Drug interactions"
+    H1 p1 "Trail Table"
+    Figure p1 alt="Park logo"
+    Table p2-3 summary="Trail details"
       TR
-        TH1 p2 scope=Column "Drug"
-        TH2 p2 scope=Column "Interacts with"
+        TH1 p2 scope=Column "Trail"
+        TH2 p2 scope=Column "Length"
       TR
-        TD p2 headers=[TH1] "Warfarin"
-        TD p2-3 headers=[TH2] "Aspirin"
+        TD p2 headers=[TH1] "Ridgeline"
+        TD p2-3 headers=[TH2] "Cedars"
 untagged
   p1 "Stray text"
 fonts
   Arial TrueType embedded=yes to-unicode=yes
 layout
-  p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Drug Interaction Table"
+  p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Trail Table"
   p1 image tagged at=72,600 size=120x40 pixels=600x200 hash=3f9c0a1b2d4e5f60
 ```
 
@@ -60,11 +60,11 @@ by section: structure 3
 ~ attribute structure > Document > Table > TR[1] > TH2 (p2) [accessibility]
     scope: Column -> (missing)
 ~ text structure > Document > Table > TR[2] > TD[2] (p2)
-    "Take [-with-] {+after+} food"
+    "Go [-with-] {+without+} a guide"
 
-verified: Snapshots/DrugGuideTests.DrugGuide_ShouldMatchApprovedSnapshot_WhenGenerated.verified.pdfua.txt
-received: Snapshots/DrugGuideTests.DrugGuide_ShouldMatchApprovedSnapshot_WhenGenerated.received.pdfua.txt
-report: Snapshots/DrugGuideTests.DrugGuide_ShouldMatchApprovedSnapshot_WhenGenerated.diff.html
+verified: Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.verified.pdfua.txt
+received: Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.received.pdfua.txt
+report: Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.diff.html
 To accept: set PDIFFY_ACCEPT=1 and run the test again, or copy the received file over the verified one.
 ```
 
@@ -80,7 +80,7 @@ To accept: set PDIFFY_ACCEPT=1 and run the test again, or copy the received file
 | `-` | Removed | The old line |
 | `↕` | Moved | `reading position 3 -> 10` |
 | `~` | Attribute | `scope: Column -> (missing)` |
-| `~` | Text | `"Take [-with-] {+after+} food"`: removed words in `[- -]`, added in `{+ +}` |
+| `~` | Text | `"Go [-with-] {+without+} a guide"`: removed words in `[- -]`, added in `{+ +}` |
 | `~` | Changed | `type: H2 -> H3`, or a changed page range |
 
 Elements are matched one to one, so:
@@ -96,8 +96,8 @@ Elements are matched one to one, so:
 ## The HTML report
 
 A failing test also writes `{name}.diff.html` next to the received file. It's one self-contained page that opens
-straight from a build artifact. Open the [sample report](../samples/DrugGuide.diff.html)
-to see one, built from two versions of a small drug guide. It has:
+straight from a build artifact. Open the [sample report](../samples/TrailGuide.diff.html)
+to see one, built from two versions of a small trail guide. It has:
 
 - The list of changes, accessibility changes first, filterable by kind or to only those that affect accessibility.
 - Links to each page that changed.
@@ -115,13 +115,13 @@ One snapshot per test is named after the test file and method. When a test makes
 
 ```csharp
 [Theory]
-[InlineData("acme")]
-[InlineData("globex")]
-public async Task Invoice_ShouldMatchApprovedSnapshot_WhenGeneratedForACustomer(string customer)
+[InlineData("ridgeline")]
+[InlineData("lakeshore")]
+public async Task TrailMap_ShouldMatchApprovedSnapshot_WhenGeneratedForATrail(string trail)
 {
-    using Stream pdf = await ReportGenerator.CreateInvoiceAsync(customer);
+    using Stream pdf = await ReportGenerator.CreateTrailMapAsync(trail);
 
-    await PdfSnapshot.VerifyAsync(pdf, $"Invoice.{customer}");
+    await PdfSnapshot.VerifyAsync(pdf, $"TrailMap.{trail}");
 }
 ```
 

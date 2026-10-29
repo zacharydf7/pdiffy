@@ -10,7 +10,7 @@ same received and verified files, accept mode and report. A test project can kee
 [Fact]
 public async Task Export_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
-    string csv = await OrderExporter.CreateCsvAsync();
+    string csv = await TrailExporter.CreateCsvAsync();
 
     await Snapshot.VerifyAsync(csv);
 }
@@ -38,7 +38,7 @@ The JSON is written the same way every time before it's compared:
 - Indented with two spaces, keys in the order written, numbers exactly as written.
 - Strings (values or keys) that are a GUID or an ISO 8601 timestamp, such as `"2026-10-28T09:15:00Z"`, become `Guid_1`
   and `Date_1`. The same value always gets the same token, so the snapshot still shows that two ids match.
-- Dates written for people, such as a letter's "November 14, 2020", and anything inside longer text are kept, because
+- Dates written for people, such as a guide's "November 14, 2020", and anything inside longer text are kept, because
   that is content.
 - Invalid JSON fails the test with the parser's message.
 
@@ -55,8 +55,8 @@ Saved as `{name}.verified.json`.
 | [`KeepGuids()`](xref:PDiffy.TextSnapshotOptions.KeepGuids) | Undoes an earlier `ScrubGuids()` | Keeps GUID strings as they are |
 
 ```csharp
-await Snapshot.VerifyAsync(receipt, configure: options => options
-    .ScrubText(new Regex(@"Order \d+"), "Order N")
+await Snapshot.VerifyAsync(csv, configure: options => options
+    .ScrubText(new Regex(@"Permit \d+"), "Permit N")
     .ScrubDates());
 
 await Snapshot.VerifyJsonAsync(json, configure: options => options.KeepGuids());

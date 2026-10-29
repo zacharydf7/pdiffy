@@ -98,7 +98,7 @@ public class PdfCheckTests
         int findings)
     {
         var pdf = new TestPdf();
-        pdf.AddPage().Tagged(0, "Drug").Tagged(1, "Warfarin");
+        pdf.AddPage().Tagged(0, "Trail").Tagged(1, "Ridgeline");
         pdf.Structure(new TestElement("Table",
             new TestElement("TR", new TestElement("TH", 0) { Entries = "/ID (TH1)" + scope }),
             new TestElement("TR", new TestElement("TD", 1) { Entries = $"/A << /O /Table /Headers [{named}] >>" })));
@@ -110,7 +110,7 @@ public class PdfCheckTests
     public void Check_ShouldReportANestedTablesHeaderOnce_WhenATableHoldsAnother()
     {
         var pdf = new TestPdf();
-        pdf.AddPage().Tagged(0, "Dose");
+        pdf.AddPage().Tagged(0, "Stage");
         var inner = new TestElement("Table", new TestElement("TR", new TestElement("TH", 0)));
         pdf.Structure(new TestElement("Table", new TestElement("TR", new TestElement("TD", inner))));
 

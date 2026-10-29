@@ -83,7 +83,7 @@ public class EquivalenceTests
     [Fact]
     public void ToSnapshot_ShouldNotChange_WhenTextIsDrawnInOnePieceOrInKernedPieces()
     {
-        AssertSameSnapshot(OneLine("(Take with food) Tj"), OneLine("[(Ta) -15 (ke with f) 10 (ood)] TJ"));
+        AssertSameSnapshot(OneLine("(Go with a guide) Tj"), OneLine("[(G) -15 (o with a g) 10 (uide)] TJ"));
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public class EquivalenceTests
         static TestPdf Numbered(int first, int second)
         {
             var pdf = new TestPdf();
-            pdf.AddPage().Tagged(first, "Dosage", "H1").Tagged(second, "Take with food");
+            pdf.AddPage().Tagged(first, "Elevation", "H1").Tagged(second, "Go with a guide");
             pdf.Structure(new TestElement("H1", first), new TestElement("P", second));
             return pdf;
         }
@@ -106,14 +106,14 @@ public class EquivalenceTests
         static TestPdf Table(string id)
         {
             var pdf = new TestPdf();
-            pdf.AddPage().Tagged(0, "Drug").Tagged(1, "Warfarin");
+            pdf.AddPage().Tagged(0, "Trail").Tagged(1, "Ridgeline");
             pdf.Structure(new TestElement("Table",
                 new TestElement("TR", new TestElement("TH", 0) { Entries = $"/ID ({id}) /A << /O /Table /Scope /Column >>" }),
                 new TestElement("TR", new TestElement("TD", 1) { Entries = $"/A << /O /Table /Headers [({id})] >>" })));
             return pdf;
         }
 
-        AssertSameSnapshot(Table("h-drug"), Table("x9"));
+        AssertSameSnapshot(Table("h-trail"), Table("x9"));
     }
 
     [Fact]
@@ -129,16 +129,16 @@ public class EquivalenceTests
     [Fact]
     public void ToSnapshot_ShouldNotChange_WhenSpacesBetweenWordsRepeat()
     {
-        AssertSameSnapshot(OneLine("(Take with food) Tj"), OneLine("(Take  with   food) Tj"));
+        AssertSameSnapshot(OneLine("(Go with a guide) Tj"), OneLine("(Go  with   a guide) Tj"));
     }
 
     [Fact]
     public void ToSnapshot_ShouldNotChange_WhenAPageIsWithinAPointOfAStandardSize()
     {
         var letter = new TestPdf();
-        letter.AddPage().Tagged(0, "Dosage");
+        letter.AddPage().Tagged(0, "Elevation");
         var nearlyLetter = new TestPdf();
-        nearlyLetter.AddPage(width: 612.4, height: 791.6).Tagged(0, "Dosage");
+        nearlyLetter.AddPage(width: 612.4, height: 791.6).Tagged(0, "Elevation");
 
         AssertSameSnapshot(letter, nearlyLetter);
     }
@@ -146,7 +146,7 @@ public class EquivalenceTests
     [Fact]
     public void ToSnapshot_ShouldNotChange_WhenAPositionMovesByLessThanItsRounding()
     {
-        AssertSameSnapshot(OneLine("(Dosage) Tj", at: "72 700"), OneLine("(Dosage) Tj", at: "72.3 700.2"));
+        AssertSameSnapshot(OneLine("(Elevation) Tj", at: "72 700"), OneLine("(Elevation) Tj", at: "72.3 700.2"));
     }
 
     // A small document with something for each encoding difference to touch: tagged text, an artifact, an image, a
@@ -159,12 +159,12 @@ public class EquivalenceTests
             Title = "Guide", PdfUaPart = "1", CompressStreams = compress, Layout = layout ?? new PdfLayout(), BaseFont = baseFont,
             InfoEntries = infoEntries, TrailerEntries = trailerEntries, Xmp = xmp,
         };
-        pdf.AddPage().Tagged(0, "Dosage", "H1").Tagged(1, "Take with food").Artifact("Page 1").TaggedImage(2);
-        pdf.AddPage().Tagged(0, "Warnings");
+        pdf.AddPage().Tagged(0, "Elevation", "H1").Tagged(1, "Go with a guide").Artifact("Page 1").TaggedImage(2);
+        pdf.AddPage().Tagged(0, "Safety");
         pdf.Structure(new TestElement("Document",
             new TestElement("H1", 0), new TestElement("P", 1), new TestElement("Figure", 2) { Entries = "/Alt (Logo)" },
             new TestElement("P", 0) { Page = 2 }));
-        pdf.Bookmark("Warnings", 2);
+        pdf.Bookmark("Safety", 2);
         return pdf;
     }
 

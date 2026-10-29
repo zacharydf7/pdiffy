@@ -53,9 +53,9 @@ runs them all. For a rule of your own, assert on the model, as the rest of this 
 
 ```csharp
 [Fact]
-public async Task PatientLetter_ShouldBeReadableByScreenReaders_WhenGenerated()
+public async Task TrailMap_ShouldBeReadableByScreenReaders_WhenGenerated()
 {
-    using Stream pdf = await ReportGenerator.CreatePatientLetterAsync();
+    using Stream pdf = await ReportGenerator.CreateTrailMapAsync();
     PdfUaDocument document = PdfUaDocument.Load(pdf);
 
     // The document is tagged and declares a language, so a screen reader knows how to pronounce it.
@@ -91,10 +91,10 @@ public async Task EnrollmentForm_ShouldLabelAndRequireTheRightFields_WhenGenerat
 
     // Find the required fields. Names include their parents, joined with dots.
     var required = document.FormFields.Where(field => field.Flags.HasFlag(FormFieldFlags.Required)).Select(field => field.Name);
-    Assert.Equal(["patient.name", "patient.dateOfBirth"], required);
+    Assert.Equal(["hiker.name", "hiker.dateOfBirth"], required);
 
     // The state picker is a drop-down with all 50 states.
-    FormField state = document.FormFields.Single(field => field.Name == "patient.address.state");
+    FormField state = document.FormFields.Single(field => field.Name == "hiker.address.state");
     Assert.Equal(FormFieldType.ComboBox, state.Type);
     Assert.Equal(50, state.Options.Count);
 }

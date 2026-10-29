@@ -19,7 +19,7 @@ await PdfSnapshot.VerifyAsync(pdf, configure: options => options
 | Compare only what a test guards | `Use(SnapshotProfile...)` | Only what assistive technology uses |
 | Leave out a whole section | `Ignore(Section...)` | Layout the design team changes freely |
 | Leave out one detail everywhere | `Ignore(Field...)` | Positions, colors, the title |
-| Replace values that change on every run | `ScrubDates()`, `ScrubGuids()`, `ScrubText(...)` | Print dates, order numbers, transaction ids |
+| Replace values that change on every run | `ScrubDates()`, `ScrubGuids()`, `ScrubText(...)` | Print dates, permit numbers, booking ids |
 | Snapshot part of a long document | `OnlyPages(...)` | The summary on pages 3 and 4 |
 
 The snapshot's first lines always list what was ignored, so nobody reading it mistakes a missing section for an empty
@@ -49,9 +49,9 @@ Pass the sections to leave out. They print as `(ignored)` instead of their conte
 
 ```csharp
 [Fact]
-public async Task InvoiceTemplate_ShouldKeepItsTagStructure_WhenStylingChanges()
+public async Task TrailMapTemplate_ShouldKeepItsTagStructure_WhenStylingChanges()
 {
-    using Stream pdf = await ReportGenerator.CreateInvoiceAsync();
+    using Stream pdf = await ReportGenerator.CreateTrailMapAsync();
 
     // This test guards the tag tree and the text, so leave out the metadata, the document settings
     // and the layout (positions, fonts and colors), which the design team changes freely.
@@ -83,14 +83,14 @@ the rest of each line is still compared.
 
 ```csharp
 [Fact]
-public async Task MonthlyStatement_ShouldMatchApprovedSnapshot_WhenGenerated()
+public async Task SeasonalGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
-    using Stream pdf = await ReportGenerator.CreateStatementAsync(month: 6);
+    using Stream pdf = await ReportGenerator.CreateSeasonalGuideAsync(month: 6);
 
     await PdfSnapshot.VerifyAsync(pdf, configure: options => options
         // The title includes the month, so it changes every time.
         .Ignore(Field.Title)
-        // Text reflows when the statement has more rows, so where things land doesn't matter here.
+        // Text reflows when the guide has more rows, so where things land doesn't matter here.
         // Fonts, sizes and colors are still compared.
         .Ignore(Field.Positions));
 }
@@ -99,13 +99,13 @@ public async Task MonthlyStatement_ShouldMatchApprovedSnapshot_WhenGenerated()
 With `Field.Positions` ignored, a layout line such as
 
 ```text
-p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Statement"
+p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Trails"
 ```
 
 becomes
 
 ```text
-p1 text tagged font=Arial size=18 color=gray:0 "Statement"
+p1 text tagged font=Arial size=18 color=gray:0 "Trails"
 ```
 
 [Every `Field`](../reference/options.md#pdf-fields) is listed in the reference.
@@ -132,23 +132,23 @@ await PdfSnapshot.VerifyAsync(pdf, configure: options => options
 
 ## Scrub values that change on every run
 
-A generated document often prints today's date, an order number or a GUID. Scrubbers replace those inside quoted text
+A generated document often prints today's date, a permit number or a GUID. Scrubbers replace those inside quoted text
 with a stable placeholder, so the rest of the text is still compared.
 
 ```csharp
 [Fact]
-public async Task PharmacyReceipt_ShouldMatchApprovedSnapshot_WhenGenerated()
+public async Task TrailPass_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
-    using Stream pdf = await ReportGenerator.CreateReceiptAsync();
+    using Stream pdf = await ReportGenerator.CreateTrailPassAsync();
 
     await PdfSnapshot.VerifyAsync(pdf, configure: options => options
         // "Printed 10/27/2026" becomes "Printed Date_1". The same text always gets the same number,
-        // so the snapshot still shows that the print date and the fill date match.
+        // so the snapshot still shows that the print date and the issue date match.
         .ScrubDates()
-        // Transaction IDs become Guid_1, Guid_2 and so on.
+        // Booking IDs become Guid_1, Guid_2 and so on.
         .ScrubGuids()
         // Anything else that changes, with your own pattern. "$1" keeps the first group.
-        .ScrubText(new Regex(@"(Rx) #\d+"), "$1 #<number>"));
+        .ScrubText(new Regex(@"(Permit) #\d+"), "$1 #<number>"));
 }
 ```
 

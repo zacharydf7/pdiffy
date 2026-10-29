@@ -11,10 +11,10 @@ public class DocxTableTests
             Body = """
                 <w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/></w:tblPr><w:tblGrid><w:gridCol w:w="2880"/><w:gridCol w:w="4320"/></w:tblGrid>
                   <w:tr><w:trPr><w:tblHeader/></w:trPr>
-                    <w:tc><w:tcPr><w:gridSpan w:val="2"/><w:shd w:val="clear" w:fill="d9d9d9"/></w:tcPr><w:p><w:r><w:t>Drugs</w:t></w:r></w:p></w:tc></w:tr>
-                  <w:tr><w:tc><w:tcPr><w:vMerge w:val="restart"/></w:tcPr><w:p><w:r><w:t>Warfarin</w:t></w:r></w:p></w:tc>
-                    <w:tc><w:p><w:r><w:t>Food</w:t></w:r></w:p></w:tc></w:tr>
-                  <w:tr><w:tc><w:tcPr><w:vMerge/></w:tcPr><w:p/></w:tc><w:tc><w:p><w:r><w:t>Alcohol</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
+                    <w:tc><w:tcPr><w:gridSpan w:val="2"/><w:shd w:val="clear" w:fill="d9d9d9"/></w:tcPr><w:p><w:r><w:t>Trails</w:t></w:r></w:p></w:tc></w:tr>
+                  <w:tr><w:tc><w:tcPr><w:vMerge w:val="restart"/></w:tcPr><w:p><w:r><w:t>Ridgeline</w:t></w:r></w:p></w:tc>
+                    <w:tc><w:p><w:r><w:t>Gear</w:t></w:r></w:p></w:tc></w:tr>
+                  <w:tr><w:tc><w:tcPr><w:vMerge/></w:tcPr><w:p/></w:tc><w:tc><w:p><w:r><w:t>Water</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
                 """,
         };
 
@@ -24,12 +24,12 @@ public class DocxTableTests
               Table style=TableGrid widths=144,216
                 Row header
                   Cell span=2 shading=D9D9D9
-                    P "Drugs"
+                    P "Trails"
                 Row
                   Cell merge=restart
-                    P "Warfarin"
+                    P "Ridgeline"
                   Cell
-                    P "Food"
+                    P "Gear"
                 Row
                   Cell merge=continue
                     P
@@ -135,17 +135,17 @@ public class DocxTableTests
     public void ToSnapshot_ShouldNameTheControlsAroundARow_WhenRowsSitInARepeatingSection()
     {
         var body = """
-            <w:tbl><w:sdt><w:sdtPr><w:tag w:val="drugs"/><w15:repeatingSection xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml"/></w:sdtPr>
+            <w:tbl><w:sdt><w:sdtPr><w:tag w:val="trails"/><w15:repeatingSection xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml"/></w:sdtPr>
               <w:sdtContent><w:sdt><w:sdtPr><w15:repeatingSectionItem xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml"/></w:sdtPr>
-                <w:sdtContent><w:tr><w:tc><w:p><w:r><w:t>Warfarin</w:t></w:r></w:p></w:tc></w:tr></w:sdtContent></w:sdt></w:sdtContent></w:sdt></w:tbl>
+                <w:sdtContent><w:tr><w:tc><w:p><w:r><w:t>Ridgeline</w:t></w:r></w:p></w:tc></w:tr></w:sdtContent></w:sdt></w:sdtContent></w:sdt></w:tbl>
             """;
 
         Assert.Contains("""
                 Row
-                  Control repeating-section name="drugs"
+                  Control repeating-section name="trails"
                   Control repeating-section-item
                   Cell
-                    P "Warfarin"
+                    P "Ridgeline"
             """.ReplaceLineEndings("\n"), new TestDocx { Body = body }.Load().ToSnapshot());
     }
 
@@ -153,24 +153,24 @@ public class DocxTableTests
     public void ToSnapshot_ShouldNameTheControlsAroundACell_WhenACellSitsInContentControls()
     {
         var body = """
-            <w:tbl><w:tr><w:sdt><w:sdtPr><w:tag w:val="dose"/><w:alias w:val="Dose"/></w:sdtPr><w:sdtContent>
-              <w:sdt><w:sdtPr><w:text/></w:sdtPr><w:sdtContent><w:tc><w:p><w:r><w:t>5 mg</w:t></w:r></w:p></w:tc>
+            <w:tbl><w:tr><w:sdt><w:sdtPr><w:tag w:val="stage"/><w:alias w:val="Stage"/></w:sdtPr><w:sdtContent>
+              <w:sdt><w:sdtPr><w:text/></w:sdtPr><w:sdtContent><w:tc><w:p><w:r><w:t>5 km</w:t></w:r></w:p></w:tc>
               </w:sdtContent></w:sdt></w:sdtContent></w:sdt></w:tr></w:tbl>
             """;
 
         Assert.Contains("""
                 Row
                   Cell
-                    Control rich-text name="dose" title="Dose" around
+                    Control rich-text name="stage" title="Stage" around
                     Control text around
-                    P "5 mg"
+                    P "5 km"
             """.ReplaceLineEndings("\n"), new TestDocx { Body = body }.Load().ToSnapshot());
     }
 
     [Fact]
     public void ToSnapshot_ShouldTellAControlAroundACellFromOneInside_WhenBothHoldTheSameTag()
     {
-        var control = """<w:sdt><w:sdtPr><w:tag w:val="food"/></w:sdtPr><w:sdtContent>""";
+        var control = """<w:sdt><w:sdtPr><w:tag w:val="gear"/></w:sdtPr><w:sdtContent>""";
         var around = $"<w:tbl><w:tr>{control}<w:tc><w:p/></w:tc></w:sdtContent></w:sdt></w:tr></w:tbl>";
         var inside = $"<w:tbl><w:tr><w:tc>{control}</w:sdtContent></w:sdt><w:p/></w:tc></w:tr></w:tbl>";
 
@@ -184,8 +184,8 @@ public class DocxTableTests
     public void ToSnapshot_ShouldRecordBookmarksAndUnknownContentInPlace_WhenTheyComeBetweenRowsAndCells()
     {
         var body = """
-            <w:tbl><w:tblPr/><w:tblGrid/><w:bookmarkStart w:id="1" w:name="Doses"/>
-              <w:tr><w:trPr/><w:tblPrEx/><w:tc><w:p/></w:tc><w:bookmarkStart w:id="2" w:colFirst="1" w:colLast="1" w:name="Food"/>
+            <w:tbl><w:tblPr/><w:tblGrid/><w:bookmarkStart w:id="1" w:name="Stages"/>
+              <w:tr><w:trPr/><w:tblPrEx/><w:tc><w:p/></w:tc><w:bookmarkStart w:id="2" w:colFirst="1" w:colLast="1" w:name="Gear"/>
                 <w:tc><w:p/></w:tc><w:newCellThing/></w:tr>
               <w:bookmarkEnd w:id="1"/><w:bookmarkEnd w:id="2"/><w:newRowThing/></w:tbl>
             """;
@@ -194,11 +194,11 @@ public class DocxTableTests
 
         Assert.Matches("""
               Table
-                bookmark "Doses"
+                bookmark "Stages"
                 Row
                   Cell
                     P
-                  bookmark "Food" columns=1-1
+                  bookmark "Gear" columns=1-1
                   Cell
                     P
                   unsupported w:newCellThing hash=[0-9a-f]{16}
@@ -211,11 +211,11 @@ public class DocxTableTests
     public void ToSnapshot_ShouldRecordTheColumnsABookmarkCovers_WhenItStartsInACellsParagraph()
     {
         var body = """
-            <w:tbl><w:tr><w:tc><w:p><w:bookmarkStart w:id="1" w:colFirst="0" w:colLast="2" w:name="Doses"/>
-              <w:r><w:t>Drug</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
+            <w:tbl><w:tr><w:tc><w:p><w:bookmarkStart w:id="1" w:colFirst="0" w:colLast="2" w:name="Stages"/>
+              <w:r><w:t>Trail</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
             """;
 
-        Assert.Contains("        P \"Drug\"\n          bookmark \"Doses\" columns=0-2 at=0\n",
+        Assert.Contains("        P \"Trail\"\n          bookmark \"Stages\" columns=0-2 at=0\n",
             new TestDocx { Body = body }.Load().ToSnapshot());
     }
 

@@ -48,11 +48,11 @@ Each input can be:
 - **A snapshot file**, or any other text, compared line by line when it isn't a PDiffy snapshot.
 
 ```text
-pdiffy statement-v1.pdf statement-v2.pdf
-pdiffy statement-v1.pdf statement-v2.pdf --html report.html
-pdiffy statement-v1.pdf statement-v2.pdf --json > changes.json
-pdiffy Invoice.verified.pdfua.txt Invoice.received.pdfua.txt
-pdiffy statement-v1.pdf statement-v2.pdf --profile content
+pdiffy guide-v1.pdf guide-v2.pdf
+pdiffy guide-v1.pdf guide-v2.pdf --html report.html
+pdiffy guide-v1.pdf guide-v2.pdf --json > changes.json
+pdiffy TrailMap.verified.pdfua.txt TrailMap.received.pdfua.txt
+pdiffy guide-v1.pdf guide-v2.pdf --profile content
 ```
 
 ## Compare folders
@@ -67,9 +67,9 @@ snapshots; other files are counted but not compared.
 
 ```text
 4 file(s) differ: 1 changed, 1 added, 1 removed, 1 unreadable; 12 unchanged, 3 not compared.
-changed invoices/acme.pdf: 2: 2 text; by section: structure 1, layout 1
-added letters/welcome.docx
-removed letters/old.pdf
+changed maps/ridgeline.pdf: 2: 2 text; by section: structure 1, layout 1
+added guides/welcome.docx
+removed guides/old.pdf
 unreadable broken.pdf: <why it couldn't be read>
 ```
 
@@ -93,8 +93,8 @@ shape as [comparing two files](../guide/comparing.md#json-output), or the `probl
   "unchanged": 12,
   "notCompared": 3,
   "files": [
-    { "path": "invoices/acme.pdf", "status": "changed", "changes": [ ... ] },
-    { "path": "letters/welcome.docx", "status": "added" }
+    { "path": "maps/ridgeline.pdf", "status": "changed", "changes": [ ... ] },
+    { "path": "guides/welcome.docx", "status": "added" }
   ]
 }
 ```
@@ -115,8 +115,8 @@ Prints the file's snapshot, or saves it to `<out>`. Useful for seeing what PDiff
 files.
 
 ```text
-pdiffy snapshot statement.pdf
-pdiffy snapshot statement.pdf statement.pdfua.txt
+pdiffy snapshot guide.pdf
+pdiffy snapshot guide.pdf guide.pdfua.txt
 ```
 
 ## Check
@@ -141,8 +141,8 @@ FontsEmbedded: Font Helvetica isn't embedded (fonts > Helvetica)
 pdiffy accept [<files or folders>] [--all]
 ```
 
-Replaces each received snapshot's verified file with it, keeping its extension (`Letter.received.json` becomes
-`Letter.verified.json`), and deletes its report, as a test does in accept mode.
+Replaces each received snapshot's verified file with it, keeping its extension (`Guide.received.json` becomes
+`Guide.verified.json`), and deletes its report, as a test does in accept mode.
 
 | Argument | Does |
 |---|---|
@@ -183,8 +183,8 @@ The printed summary looks like this:
 
 ```text
 2 received snapshot(s): 1 changed, 1 new
-changed tests/Snapshots/Invoice.received.pdfua.txt: 3: 1 moved, 1 attribute, 1 text; by section: structure 3; 2 can affect accessibility
-new tests/Snapshots/Letter.received.docx.txt
+changed tests/Snapshots/TrailMap.received.pdfua.txt: 3: 1 moved, 1 attribute, 1 text; by section: structure 3; 2 can affect accessibility
+new tests/Snapshots/Guide.received.docx.txt
 ```
 
 See [Continuous integration](../guide/ci.md) for complete pipeline examples.

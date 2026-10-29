@@ -8,14 +8,14 @@ public class LayoutTests
     public void Load_ShouldSplitTextIntoRunsWithPositionFontSizeColorAndRole_WhenTextIsDrawn()
     {
         var pdf = new TestPdf();
-        pdf.AddPage().Tagged(0, "Take with food").Artifact("Page 1").Untagged("Stray");
+        pdf.AddPage().Tagged(0, "Go with a guide").Artifact("Page 1").Untagged("Stray");
         pdf.Structure(new TestElement("P", 0));
 
         var runs = pdf.Load().TextRuns;
 
         TextRun[] expected =
         [
-            new(1, 72, 720, "Helvetica", 12, "gray:0", TextRenderMode.Fill, ContentRole.Tagged, "Take with food"),
+            new(1, 72, 720, "Helvetica", 12, "gray:0", TextRenderMode.Fill, ContentRole.Tagged, "Go with a guide"),
             new(1, 72, 700, "Helvetica", 12, "gray:0", TextRenderMode.Fill, ContentRole.Artifact, "Page 1"),
             new(1, 72, 680, "Helvetica", 12, "gray:0", TextRenderMode.Fill, ContentRole.Untagged, "Stray"),
         ];
@@ -26,11 +26,11 @@ public class LayoutTests
     public void Load_ShouldStartANewRun_WhenColorOrSizeChangesMidLine()
     {
         var pdf = new TestPdf();
-        pdf.AddPage().Raw("BT /F1 12 Tf 72 400 Td (Take ) Tj 1 0 0 rg (with) Tj /F1 14 Tf ( food) Tj ET");
+        pdf.AddPage().Raw("BT /F1 12 Tf 72 400 Td (Go ) Tj 1 0 0 rg (with) Tj /F1 14 Tf ( a guide) Tj ET");
 
         var runs = pdf.Load().TextRuns;
 
-        Assert.Equal(["Take", "with", "food"], runs.Select(run => run.Text));
+        Assert.Equal(["Go", "with", "a guide"], runs.Select(run => run.Text));
         Assert.Equal(["gray:0", "#ff0000", "#ff0000"], runs.Select(run => run.Color));
         Assert.Equal([12.0, 12.0, 14.0], runs.Select(run => run.Size));
     }

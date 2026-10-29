@@ -28,9 +28,9 @@ approved one. When it doesn't, the failure reads like a change to the document.
 
 ```csharp
 [Fact]
-public async Task DrugGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
+public async Task TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
-    using Stream pdf = await ReportGenerator.CreateDrugGuideAsync();
+    using Stream pdf = await ReportGenerator.CreateTrailGuideAsync();
 
     await PdfSnapshot.VerifyAsync(pdf);
 }
@@ -45,11 +45,11 @@ by section: structure 3
 ~ attribute structure > Document > Table > TR[1] > TH2 (p2) [accessibility]
     scope: Column -> (missing)
 ~ text structure > Document > Table > TR[2] > TD[2] (p2)
-    "Take [-with-] {+after+} food"
+    "Go [-with-] {+without+} a guide"
 ```
 
 A failing test also writes a side-by-side HTML report. Open the
-[sample report](samples/DrugGuide.diff.html) to see one.
+[sample report](samples/TrailGuide.diff.html) to see one.
 
 ## Find what you need
 

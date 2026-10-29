@@ -9,43 +9,43 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
     public async Task VerifyAsync_ShouldWriteTheReceivedFileAndFail_WhenThereIsNoVerifiedFile()
     {
         Directory.CreateDirectory(Folder);
-        File.WriteAllText(Path.Combine(Folder, "Letter.diff.html"), "left over");
+        File.WriteAllText(Path.Combine(Folder, "Guide.diff.html"), "left over");
 
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Letter"));
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide"));
 
         Assert.StartsWith("New PDF snapshot.", error.Message);
-        Assert.False(File.Exists(Path.Combine(Folder, "Letter.diff.html")));
-        Assert.Equal(SnapshotOf("Hello"), File.ReadAllText(Path.Combine(Folder, "Letter.received.pdfua.txt")));
+        Assert.False(File.Exists(Path.Combine(Folder, "Guide.diff.html")));
+        Assert.Equal(SnapshotOf("Hello"), File.ReadAllText(Path.Combine(Folder, "Guide.received.pdfua.txt")));
     }
 
     [Fact]
     public async Task VerifyAsync_ShouldPassAndDeleteTheStaleReceivedFile_WhenTheVerifiedFileMatches()
     {
         Directory.CreateDirectory(Folder);
-        File.WriteAllText(Path.Combine(Folder, "Letter.verified.pdfua.txt"), SnapshotOf("Hello").ReplaceLineEndings("\r\n"));
-        File.WriteAllText(Path.Combine(Folder, "Letter.received.pdfua.txt"), "left over");
-        File.WriteAllText(Path.Combine(Folder, "Letter.diff.html"), "left over");
+        File.WriteAllText(Path.Combine(Folder, "Guide.verified.pdfua.txt"), SnapshotOf("Hello").ReplaceLineEndings("\r\n"));
+        File.WriteAllText(Path.Combine(Folder, "Guide.received.pdfua.txt"), "left over");
+        File.WriteAllText(Path.Combine(Folder, "Guide.diff.html"), "left over");
 
-        await PdfSnapshot.VerifyAsync(Pdf("Hello"), "Letter");
+        await PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide");
 
-        Assert.False(File.Exists(Path.Combine(Folder, "Letter.received.pdfua.txt")));
-        Assert.False(File.Exists(Path.Combine(Folder, "Letter.diff.html")));
+        Assert.False(File.Exists(Path.Combine(Folder, "Guide.received.pdfua.txt")));
+        Assert.False(File.Exists(Path.Combine(Folder, "Guide.diff.html")));
     }
 
     [Fact]
     public async Task VerifyAsync_ShouldFailWithTheChangedLines_WhenTheSnapshotDiffers()
     {
         Directory.CreateDirectory(Folder);
-        File.WriteAllText(Path.Combine(Folder, "Letter.verified.pdfua.txt"), SnapshotOf("Hello"));
+        File.WriteAllText(Path.Combine(Folder, "Guide.verified.pdfua.txt"), SnapshotOf("Hello"));
 
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Goodbye"), "Letter"));
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Goodbye"), "Guide"));
 
         Assert.StartsWith("The PDF's snapshot differs from the verified one.", error.Message);
         Assert.Contains("~ text structure > P (p1)\n    \"[-Hello-] {+Goodbye+}\"", error.Message);
-        Assert.Contains($"received: {Path.Combine(Folder, "Letter.received.pdfua.txt")}", error.Message);
-        Assert.Equal(SnapshotOf("Goodbye"), File.ReadAllText(Path.Combine(Folder, "Letter.received.pdfua.txt")));
-        Assert.Contains($"report: {Path.Combine(Folder, "Letter.diff.html")}", error.Message);
-        Assert.Contains("<mark>", File.ReadAllText(Path.Combine(Folder, "Letter.diff.html")));
+        Assert.Contains($"received: {Path.Combine(Folder, "Guide.received.pdfua.txt")}", error.Message);
+        Assert.Equal(SnapshotOf("Goodbye"), File.ReadAllText(Path.Combine(Folder, "Guide.received.pdfua.txt")));
+        Assert.Contains($"report: {Path.Combine(Folder, "Guide.diff.html")}", error.Message);
+        Assert.Contains("<mark>", File.ReadAllText(Path.Combine(Folder, "Guide.diff.html")));
     }
 
     [Fact]
@@ -53,9 +53,9 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
     {
         Directory.CreateDirectory(Folder);
         var olderFormat = SnapshotOf("Hello").Replace("# pdfua-snapshot v1", "# pdfua-snapshot v0");
-        File.WriteAllText(Path.Combine(Folder, "Letter.verified.pdfua.txt"), olderFormat);
+        File.WriteAllText(Path.Combine(Folder, "Guide.verified.pdfua.txt"), olderFormat);
 
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Goodbye"), "Letter"));
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Goodbye"), "Guide"));
 
         Assert.StartsWith("The verified file uses pdfua-snapshot v0, and this version of PDiffy writes pdfua-snapshot v1.",
             error.Message);
@@ -67,16 +67,16 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
     public async Task VerifyAsync_ShouldOverwriteTheVerifiedFile_WhenAcceptModeIsOn()
     {
         Directory.CreateDirectory(Folder);
-        File.WriteAllText(Path.Combine(Folder, "Letter.verified.pdfua.txt"), SnapshotOf("Goodbye"));
-        File.WriteAllText(Path.Combine(Folder, "Letter.received.pdfua.txt"), "left over");
-        File.WriteAllText(Path.Combine(Folder, "Letter.diff.html"), "left over");
+        File.WriteAllText(Path.Combine(Folder, "Guide.verified.pdfua.txt"), SnapshotOf("Goodbye"));
+        File.WriteAllText(Path.Combine(Folder, "Guide.received.pdfua.txt"), "left over");
+        File.WriteAllText(Path.Combine(Folder, "Guide.diff.html"), "left over");
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, "1");
 
-        await PdfSnapshot.VerifyAsync(Pdf("Hello"), "Letter");
+        await PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide");
 
-        Assert.Equal(SnapshotOf("Hello"), File.ReadAllText(Path.Combine(Folder, "Letter.verified.pdfua.txt")));
-        Assert.False(File.Exists(Path.Combine(Folder, "Letter.received.pdfua.txt")));
-        Assert.False(File.Exists(Path.Combine(Folder, "Letter.diff.html")));
+        Assert.Equal(SnapshotOf("Hello"), File.ReadAllText(Path.Combine(Folder, "Guide.verified.pdfua.txt")));
+        Assert.False(File.Exists(Path.Combine(Folder, "Guide.received.pdfua.txt")));
+        Assert.False(File.Exists(Path.Combine(Folder, "Guide.diff.html")));
     }
 
     [Theory]
@@ -87,9 +87,9 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, "1");
         Environment.SetEnvironmentVariable(variable, value);
 
-        await Assert.ThrowsAsync<SnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Letter"));
+        await Assert.ThrowsAsync<SnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide"));
 
-        Assert.False(File.Exists(Path.Combine(Folder, "Letter.verified.pdfua.txt")));
+        Assert.False(File.Exists(Path.Combine(Folder, "Guide.verified.pdfua.txt")));
     }
 
     [Fact]
@@ -110,12 +110,12 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
         pdf.AddPage();
         var bytes = pdf.Build();
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, "1");
-        await PdfSnapshot.VerifyAsync(new MemoryStream(bytes), "Letter");
+        await PdfSnapshot.VerifyAsync(new MemoryStream(bytes), "Guide");
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, null);
 
-        await PdfSnapshot.VerifyAsync(new MemoryStream(bytes), "Letter");
+        await PdfSnapshot.VerifyAsync(new MemoryStream(bytes), "Guide");
 
-        Assert.Contains("info Note=\"A\u2028B\"", File.ReadAllText(Path.Combine(Folder, "Letter.verified.pdfua.txt")));
+        Assert.Contains("info Note=\"A\u2028B\"", File.ReadAllText(Path.Combine(Folder, "Guide.verified.pdfua.txt")));
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
         Snapshot.Directory = null;
 
         var error = await Assert.ThrowsAsync<SnapshotException>(
-            () => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Letter", testFile: "/_/tests/LetterTests.cs"));
+            () => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide", testFile: "/_/tests/GuideTests.cs"));
 
         Assert.Contains("Set Snapshot.Directory", error.Message);
     }
@@ -133,9 +133,9 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
     public async Task VerifyAsync_ShouldApplyTheOptions_WhenGivenSome()
     {
         await Assert.ThrowsAsync<SnapshotException>(
-            () => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Letter", o => o.Ignore(Section.Layout)));
+            () => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide", o => o.Ignore(Section.Layout)));
 
-        Assert.Contains("# ignored sections: layout\n", File.ReadAllText(Path.Combine(Folder, "Letter.received.pdfua.txt")));
+        Assert.Contains("# ignored sections: layout\n", File.ReadAllText(Path.Combine(Folder, "Guide.received.pdfua.txt")));
     }
 
     private static MemoryStream Pdf(string text)

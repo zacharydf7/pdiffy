@@ -25,7 +25,7 @@ internal static class ChangeSummary
     public static int Accessibility(SnapshotDiff diff) => diff.Changes.Count(change => change.AffectsAccessibility);
 
     /// <summary>
-    /// Such as "changed letter.pdf: 3: 1 moved, 2 text; by section: structure 3; 1 can affect accessibility", or
+    /// Such as "changed guide.pdf: 3: 1 moved, 2 text; by section: structure 3; 1 can affect accessibility", or
     /// "unreadable broken.pdf: " and the problem.
     /// </summary>
     public static string TextLine(SummaryRow row)

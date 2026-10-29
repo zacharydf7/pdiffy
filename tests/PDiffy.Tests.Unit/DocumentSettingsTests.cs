@@ -124,9 +124,9 @@ public class DocumentSettingsTests
     {
         var pdf = new TestPdf
         {
-            InfoEntries = "/Company (Example Pharmacy) /Trapped /False /SourceModified (D:20210101)",
+            InfoEntries = "/Company (Example Park) /Trapped /False /SourceModified (D:20210101)",
             Xmp = "<dc:creator><rdf:Seq><rdf:li>Ann</rdf:li><rdf:li>Bo</rdf:li></rdf:Seq></dc:creator>"
-                + "<dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">Drug guide</rdf:li></rdf:Alt></dc:description>"
+                + "<dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">Trail guide</rdf:li></rdf:Alt></dc:description>"
                 + "<dc:language><rdf:Bag><rdf:li>en-US</rdf:li></rdf:Bag></dc:language>"
                 + "<pdfaid:part>2</pdfaid:part><pdfaid:conformance>B</pdfaid:conformance>",
         };
@@ -134,9 +134,9 @@ public class DocumentSettingsTests
 
         var metadata = pdf.Load().Metadata;
 
-        Setting[] expectedInfo = [new("Company", "Example Pharmacy"), new("SourceModified", "D:20210101"), new("Trapped", "False")];
+        Setting[] expectedInfo = [new("Company", "Example Park"), new("SourceModified", "D:20210101"), new("Trapped", "False")];
         Assert.Equal(expectedInfo, metadata.OtherInfo);
-        Assert.Equal(("Ann; Bo", "Drug guide", "en-US", "2B"),
+        Assert.Equal(("Ann; Bo", "Trail guide", "en-US", "2B"),
             (metadata.XmpCreator, metadata.XmpDescription, metadata.XmpLanguage, metadata.PdfAConformance));
     }
 

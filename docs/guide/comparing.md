@@ -5,8 +5,8 @@ snapshot files. It suits one-off checks such as before and after a library upgra
 yours.
 
 ```csharp
-PdfUaDocument before = PdfUaDocument.Load("statement-v1.pdf");
-PdfUaDocument after = PdfUaDocument.Load("statement-v2.pdf");
+PdfUaDocument before = PdfUaDocument.Load("guide-v1.pdf");
+PdfUaDocument after = PdfUaDocument.Load("guide-v2.pdf");
 
 // The same options as a snapshot: here, only the tag structure and text matter.
 SnapshotDiff diff = before.CompareTo(after, options => options.Ignore(Section.Layout, Section.Metadata));
@@ -27,7 +27,7 @@ A [`SnapshotDiff`](xref:PDiffy.SnapshotDiff) lists its [`Changes`](xref:PDiffy.S
 | [`Section`](xref:PDiffy.SnapshotChange.Section) | The PDF [`Section`](xref:PDiffy.Section) it's in; null for Word and text, and for the snapshot's first lines and whitespace-only changes | `Section.Structure` |
 | [`Path`](xref:PDiffy.SnapshotChange.Path) | Where it is | `structure > Document > Table > TR[2] > TD[1]` |
 | [`Page`](xref:PDiffy.SnapshotChange.Page) | The page, when it's on one | `2` |
-| [`Detail`](xref:PDiffy.SnapshotChange.Detail) | What changed | `"Take [-with-] {+after+} food"` |
+| [`Detail`](xref:PDiffy.SnapshotChange.Detail) | What changed | `"Go [-with-] {+without+} a guide"` |
 | [`AffectsAccessibility`](xref:PDiffy.SnapshotChange.AffectsAccessibility) | Whether it can change what a screen reader gets | `true` |
 
 ```csharp

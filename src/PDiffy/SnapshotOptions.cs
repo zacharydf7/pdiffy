@@ -72,7 +72,7 @@ public sealed class SnapshotOptions
 
     /// <summary>
     /// Replaces matches in quoted text (element text, alt text, titles, link addresses, form values and so on).
-    /// The replacement can refer to groups, such as "Order $1".
+    /// The replacement can refer to groups, such as "Permit $1".
     /// </summary>
     public SnapshotOptions ScrubText(Regex pattern, string replacement)
     {

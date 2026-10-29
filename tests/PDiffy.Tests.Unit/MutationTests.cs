@@ -27,7 +27,7 @@ public class MutationTests
         { "font size by 0.1 pt", new Sample { FontSize = "12.1" }, Section.Layout, ChangeKind.AttributeChanged, false },
         { "text color", new Sample { TextColor = "1 0 0 rg" }, Section.Layout, ChangeKind.AttributeChanged, false },
         { "field's accessible name removed", new Sample { FieldEntries = "/FT /Tx /Ff 2" }, Section.Forms, ChangeKind.AttributeChanged, true },
-        { "field no longer required", new Sample { FieldEntries = "/FT /Tx /TU (Patient name)" }, Section.Forms, ChangeKind.AttributeChanged, false },
+        { "field no longer required", new Sample { FieldEntries = "/FT /Tx /TU (Hiker name)" }, Section.Forms, ChangeKind.AttributeChanged, false },
         { "bookmark target page", new Sample { BookmarkPage = 1 }, Section.Bookmarks, ChangeKind.Changed, false },
     };
 
@@ -50,10 +50,10 @@ public class MutationTests
     public sealed record Sample
     {
         public string Heading { get; init; } = "H2";
-        public string? Alt { get; init; } = "Pharmacy logo";
+        public string? Alt { get; init; } = "Park logo";
         public bool SwapParagraphs { get; init; }
         public string? Scope { get; init; } = "Column";
-        public string Headers { get; init; } = "(h-drug)";
+        public string Headers { get; init; } = "(h-trail)";
         public bool NoteTagged { get; init; } = true;
         public bool FooterTagged { get; init; }
         public string DocumentLang { get; init; } = "en-US";
@@ -63,7 +63,7 @@ public class MutationTests
         public string TextAt { get; init; } = "72 400";
         public string FontSize { get; init; } = "12";
         public string TextColor { get; init; } = "0 g";
-        public string FieldEntries { get; init; } = "/FT /Tx /TU (Patient name) /Ff 2";
+        public string FieldEntries { get; init; } = "/FT /Tx /TU (Hiker name) /Ff 2";
         public int BookmarkPage { get; init; } = 2;
     }
 
@@ -72,15 +72,15 @@ public class MutationTests
     private static PdfUaDocument Build(Sample sample)
     {
         var pdf = new TestPdf { Lang = sample.DocumentLang };
-        var page = pdf.AddPage().Tagged(0, "Dosage", sample.Heading).Tagged(1, "Take with food").Tagged(2, "Avoid alcohol")
+        var page = pdf.AddPage().Tagged(0, "Elevation", sample.Heading).Tagged(1, "Go with a guide").Tagged(2, "Avoid shortcuts")
             .TaggedImage(3, sample.ImageGray)
             .Raw($"/P << /MCID 6 >> BDC q BT /F1 {sample.FontSize} Tf {sample.TextColor} {sample.TextAt} Td (Styled) Tj ET Q EMC")
-            .Tagged(7, "Drug", "TH").Tagged(8, "Warfarin", "TD").Tagged(9, "example.com", "Link");
-        if (sample.NoteTagged) page.Tagged(4, "Store cold");
-        else page.Untagged("Store cold");
+            .Tagged(7, "Trail", "TH").Tagged(8, "Ridgeline", "TD").Tagged(9, "example.com", "Link");
+        if (sample.NoteTagged) page.Tagged(4, "Pack light");
+        else page.Untagged("Pack light");
         if (sample.FooterTagged) page.Tagged(5, "Page 1");
         else page.Artifact("Page 1");
-        pdf.AddPage().Tagged(0, "Warnings");
+        pdf.AddPage().Tagged(0, "Safety");
 
         var paragraphs = new[] { new TestElement("P", 1), new TestElement("P", 2) { Entries = $"/Lang ({sample.ElementLang})" } };
         if (sample.SwapParagraphs) paragraphs = [paragraphs[1], paragraphs[0]];
@@ -91,15 +91,15 @@ public class MutationTests
         elements.Add(new TestElement("Figure", 3) { Entries = alt });
         elements.Add(new TestElement("P", 6));
         elements.Add(new TestElement("Table",
-            new TestElement("TR", new TestElement("TH", 7) { Entries = $"/ID (h-drug) /A << /O /Table {scope} >>" }),
+            new TestElement("TR", new TestElement("TH", 7) { Entries = $"/ID (h-trail) /A << /O /Table {scope} >>" }),
             new TestElement("TR", new TestElement("TD", 8) { Entries = $"/A << /O /Table /Headers [{sample.Headers}] >>" })));
-        elements.Add(new TestElement("Link", 9, new TestLink(sample.LinkUri, "Drug database")));
+        elements.Add(new TestElement("Link", 9, new TestLink(sample.LinkUri, "Trail database")));
         if (sample.NoteTagged) elements.Add(new TestElement("Note", 4));
         if (sample.FooterTagged) elements.Add(new TestElement("P", 5));
         elements.Add(new TestElement("P", 0) { Page = 2 });
         pdf.Structure(new TestElement("Document", [.. elements]));
-        pdf.Bookmark("Warnings", sample.BookmarkPage);
-        pdf.FormField("patient", sample.FieldEntries);
+        pdf.Bookmark("Safety", sample.BookmarkPage);
+        pdf.FormField("hiker", sample.FieldEntries);
         return pdf.Load();
     }
 }

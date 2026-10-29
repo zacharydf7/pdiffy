@@ -48,7 +48,7 @@ Only snapshots of documents that use these change:
   (`row-table-format`), to cells (`cell-insert`, `cell-delete`, `cell-merge`, `cell-format`) and to a paragraph mark's
   formatting (`paragraph-mark-format`) are recorded and listed by `Revisions()`.
 - A cell lists the content controls around it, each marked `around`.
-- A table-column bookmark prints the columns it covers, counting from 0: `bookmark "Doses" columns=0-2`.
+- A table-column bookmark prints the columns it covers, counting from 0: `bookmark "Stages" columns=0-2`.
 - A part with a DTD, with elements nested more than 256 deep, or larger than 256 MB is listed as `unreadable`, and an
   inserted document past one of those limits prints `Inserted docx unreadable`. Word doesn't write such parts.
 
