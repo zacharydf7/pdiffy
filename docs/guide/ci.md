@@ -58,7 +58,8 @@ The job summary then shows a table like this:
 | `tests/Snapshots/Invoice.received.pdfua.txt` | changed | 3: 1 moved, 1 attribute, 1 text | structure 3 | 2 |
 | `tests/Snapshots/Letter.received.docx.txt` | new | | | |
 
-Download the artifact to open each report, or `snapshot-summary.html`, which links them all.
+Download the artifact to open each report, or `snapshot-summary.html`, which links them all. Each report looks like
+the [sample report](../samples/DrugGuide.diff.html).
 
 > [!NOTE]
 > `pdiffy report` exits with 1 when it finds received snapshots. After `if: failure()` that doesn't matter, since the

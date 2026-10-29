@@ -10,3 +10,5 @@
   href: accessibility-changes.md
 - name: Format changes
   href: format-changes.md
+- name: Limitations and guarantees
+  href: limitations.md

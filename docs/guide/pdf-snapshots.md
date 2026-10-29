@@ -96,7 +96,8 @@ Elements are matched one to one, so:
 ## The HTML report
 
 A failing test also writes `{name}.diff.html` next to the received file. It's one self-contained page that opens
-straight from a build artifact:
+straight from a build artifact. Open the [sample report](../samples/DrugGuide.diff.html)
+to see one, built from two versions of a small drug guide. It has:
 
 - The list of changes, accessibility changes first, filterable by kind or to only those that affect accessibility.
 - Links to each page that changed.

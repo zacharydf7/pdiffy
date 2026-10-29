@@ -116,7 +116,7 @@ Pass a name when one test makes several snapshots, as a theory does: `await PdfS
 
 Snapshots use LF line endings. If Git converts line endings on checkout, add `*.verified.txt text eol=lf` and `*.verified.json text eol=lf` (plus a line for any custom extension, such as `*.verified.brf`) to `.gitattributes`; PDiffy also compares a CRLF verified file as LF. Add `*.received.*` and `*.diff.html` to `.gitignore` and to your build server's artifacts, so a failed CI run keeps what it received and the report.
 
-The report is one HTML file with nothing to download, so it opens straight from a build artifact. It lists every change, accessibility changes first (filterable by kind, or to only those that affect accessibility), links to each page, and shows each section with the verified snapshot on the left and the received one on the right, edited lines side by side with the changed words highlighted. `diff.ToHtml()` gives the same page for any `SnapshotDiff`.
+The report is one HTML file with nothing to download, so it opens straight from a build artifact. It lists every change, accessibility changes first (filterable by kind, or to only those that affect accessibility), links to each page, and shows each section with the verified snapshot on the left and the received one on the right, edited lines side by side with the changed words highlighted. `diff.ToHtml()` gives the same page for any `SnapshotDiff`. See a [sample report](https://zacharydf7.github.io/pdiffy/samples/DrugGuide.diff.html).
 
 ### Snapshot text and JSON
 

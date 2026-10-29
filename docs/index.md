@@ -48,6 +48,9 @@ by section: structure 3
     "Take [-with-] {+after+} food"
 ```
 
+A failing test also writes a side-by-side HTML report. Open the
+[sample report](samples/DrugGuide.diff.html) to see one.
+
 ## Why not compare bytes
 
 Byte-for-byte PDF snapshots fail for reasons that don't matter, and explain nothing when they do:

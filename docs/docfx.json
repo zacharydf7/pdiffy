@@ -12,7 +12,7 @@
     "content": [
       { "files": ["**/*.{md,yml}"], "exclude": ["_site/**", "obj/**"] }
     ],
-    "resource": [{ "files": ["images/**"] }],
+    "resource": [{ "files": ["images/**", "samples/**"] }],
     "output": "_site",
     "sitemap": { "baseUrl": "https://zacharydf7.github.io/pdiffy/" },
     "template": ["default", "modern", "template"],

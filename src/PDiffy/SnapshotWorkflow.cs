@@ -87,7 +87,7 @@ internal static class SnapshotWorkflow
     // other line separators, such as U+2028 in alt text, are part of the content.
     private static string Normalize(string text) => text.Replace("\r\n", "\n");
 
-    private static bool AcceptMode() =>
+    internal static bool AcceptMode() =>
         Environment.GetEnvironmentVariable(Snapshot.AcceptVariable) is "1" or "true" && !OnCi();
 
     // CI and TF_BUILD are what most build servers (GitHub Actions, Bitbucket, GitLab, Azure DevOps) set.
