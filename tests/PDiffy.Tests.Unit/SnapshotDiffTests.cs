@@ -424,6 +424,17 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldKeepEachChangesSection_WhenTheVerifiedSnapshotHasAnOlderFormatVersion()
+    {
+        var older = Before.Replace("# pdfua-snapshot v1", "# pdfua-snapshot v0");
+
+        var changes = SnapshotDiff.Compare(older, Before.Replace("Take with food", "Take after food")).Changes;
+
+        Assert.Equal([null, Section.Structure], changes.Select(change => change.Section));
+        Assert.Equal("header", changes[0].Path);
+    }
+
+    [Fact]
     public void ToJson_ShouldListEachChangeWithItsSectionAndPage_WhenGivenASnapshot()
     {
         var diff = SnapshotDiff.Compare(Before, Before.Replace("H1 p1 \"Drug", "P p1 \"Drug"));

@@ -5,7 +5,10 @@ namespace PDiffy;
 /// <summary>Writes a <see cref="PdfUaDocument"/> in the canonical snapshot format: one element per line, LF endings.</summary>
 internal sealed partial class SnapshotWriter(SnapshotOptions options)
 {
-    public const string FormatHeader = "# pdfua-snapshot v1";
+    // Every format version starts with this, so an older verified file is still known as a PDF snapshot.
+    public const string FormatPrefix = "# pdfua-snapshot v";
+
+    public const string FormatHeader = FormatPrefix + "1";
 
     private const string None = "(none)";
     private const string Missing = "(missing)";

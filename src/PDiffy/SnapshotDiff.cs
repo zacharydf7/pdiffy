@@ -95,7 +95,8 @@ public sealed class SnapshotDiff
         }
 
         // Section names a PDF snapshot's sections; other formats, such as DOCX, have sections of their own.
-        var pdf = before.StartsWith(SnapshotWriter.FormatHeader, StringComparison.Ordinal);
+        var pdf = before.StartsWith(SnapshotWriter.FormatPrefix, StringComparison.Ordinal)
+            && after.StartsWith(SnapshotWriter.FormatPrefix, StringComparison.Ordinal);
         var beforeSections = SnapshotTree.Parse(before);
         var afterSections = SnapshotTree.Parse(after);
         foreach (var name in beforeSections.Keys.Union(afterSections.Keys))
