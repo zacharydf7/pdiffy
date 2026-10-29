@@ -179,7 +179,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
-    // Opening at a page, by its number or a named destination, is fine; JavaScript is reported once, on its own.
+    // Opening at a page, by its number or a named destination, is fine; JavaScript is reported once, on its own. Every
+    // action chained after the open action counts too.
     private void NoActions()
     {
         var settings = document.Settings;
@@ -190,9 +191,13 @@ internal sealed class PdfChecker(PdfUaDocument document)
                 "The document runs actions on events such as closing or printing");
         }
 
-        if (settings.OpenAction is { } action && !IsPageDestination(action) && action != "JavaScript")
+        // Settings built by hand rather than read from a file have only the joined description.
+        var actions = settings.OpenActions.Count > 0 ? settings.OpenActions
+            : settings.OpenAction is { } only ? [only] : [];
+        if (actions.Any(action => !IsPageDestination(action) && action != "JavaScript"))
         {
-            Add(PdfCheck.NoActions, null, Name(Section.Settings), $"The document runs an action when it opens: {action}");
+            Add(PdfCheck.NoActions, null, Name(Section.Settings),
+                $"The document runs an action when it opens: {settings.OpenAction}");
         }
     }
 

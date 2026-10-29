@@ -174,6 +174,8 @@ public class PdfCheckTests
     [InlineData("/OpenAction [3 0 R /Fit]")]
     [InlineData("/OpenAction << /S /GoTo /D [3 0 R /Fit] >>")]
     [InlineData("/OpenAction (Chapter1)")]
+    [InlineData("/OpenAction (Chapter 1, Intro)")]
+    [InlineData("/OpenAction << /S /GoTo /D [3 0 R /Fit] /Next << /S /GoTo /D [3 0 R /FitH 700] >> >>")]
     public void Check_ShouldFindNoAction_WhenTheDocumentOnlyOpensAtAPage(string catalogEntries)
     {
         var document = OnePage(new TestPdf().CatalogEntries(catalogEntries));
@@ -181,9 +183,21 @@ public class PdfCheckTests
         Assert.Empty(document.Check(PdfCheck.NoActions));
     }
 
+    [Fact]
+    public void Check_ShouldReportChainedJavaScriptOnce_WhenItRunsAfterGoingToAPage()
+    {
+        var document = OnePage(new TestPdf().CatalogEntries(
+            "/OpenAction << /S /GoTo /D [3 0 R /Fit] /Next << /S /JavaScript /JS (x) >> >>"));
+
+        var finding = Assert.Single(document.Check(PdfCheck.NoActions));
+
+        Assert.Equal("The document has JavaScript", finding.Message);
+    }
+
     [Theory]
     [InlineData("/OpenAction << /S /GoToR /F (other.pdf) /D [0 /Fit] >>", "GoToR")]
     [InlineData("/OpenAction << /S /GoToE /D [0 /Fit] >>", "GoToE")]
+    [InlineData("/OpenAction << /S /GoTo /D [3 0 R /Fit] /Next << /S /Launch /F (setup.exe) >> >>", "GoTo p? Fit, Launch")]
     public void Check_ShouldFindTheOpenAction_WhenItOpensAnotherFile(string catalogEntries, string action)
     {
         var document = OnePage(new TestPdf().CatalogEntries(catalogEntries));

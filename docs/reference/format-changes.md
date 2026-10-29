@@ -22,6 +22,8 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 - XMP metadata is read as UTF-8, as the XMP standard requires, so a non-ASCII value such as `Café` no longer prints as
   `CafÃ©`. XMP that isn't well-formed XML, or has a DTD, prints `xmp=unreadable` instead of failing the read. Snapshots
   with non-ASCII XMP values change.
+- An open action that chains others with `/Next` lists them all, in the order they run:
+  `open-action="GoTo p1 Fit, Launch"`. Only snapshots of documents with chained open actions change.
 - An element whose children are nested more than 256 deep gets `unread-children=N`, and bookmarks nested more than 256
   deep, or that loop back on themselves, print `unreadable`. Such files used to overflow the stack, so no approved
   snapshot changes.

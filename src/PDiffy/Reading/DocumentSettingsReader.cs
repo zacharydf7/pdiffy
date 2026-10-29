@@ -21,16 +21,18 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, PageTree pages)
         var reader = new DocumentSettingsReader(objects, pages);
         var names = objects.Dictionary(catalog, "Names");
         var openAction = catalog.Data.GetValueOrDefault("OpenAction");
+        var openActions = reader.DescribeOpenActions(openAction);
         return new DocumentSettings
         {
             PdfVersion = document.Version.ToString("0.0", CultureInfo.InvariantCulture),
             CatalogVersion = objects.Name(catalog, "Version"),
             PageMode = objects.Name(catalog, "PageMode"),
             PageLayout = objects.Name(catalog, "PageLayout"),
-            OpenAction = reader.DescribeAction(openAction),
+            OpenAction = openActions.Count == 0 ? null : string.Join(", ", openActions),
+            OpenActions = openActions,
             // The catalog's /AA actions (run on close, save and print) are always JavaScript.
             HasJavaScript = names?.Data.ContainsKey("JavaScript") == true || catalog.Data.ContainsKey("AA")
-                || reader.ChainHasJavaScript(openAction),
+                || reader.Chain(openAction).Any(action => objects.Name(action, "S") == "JavaScript"),
             HasAdditionalActions = catalog.Data.ContainsKey("AA"),
             IsEncrypted = document.IsEncrypted,
             Permissions = document.IsEncrypted ? reader.ReadPermissions(document) : null,
@@ -70,9 +72,18 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, PageTree pages)
         return string.Join(" ", view.Prepend($"p{page}"));
     }
 
-    // An action can chain further actions through /Next. An action reached a second time (a malformed loop) is skipped.
-    private bool ChainHasJavaScript(IToken? first)
+    // The open action and those it chains through /Next, in the order they run, each described on its own.
+    private List<string> DescribeOpenActions(IToken? openAction)
     {
+        var chained = Chain(openAction).Skip(1).Select(action => DescribeAction(action));
+        return chained.Prepend(DescribeAction(openAction)).OfType<string>().ToList();
+    }
+
+    // An action and those it chains through /Next, in the order they run. An action reached a second time (a
+    // malformed loop) is skipped.
+    private List<DictionaryToken> Chain(IToken? first)
+    {
+        var chain = new List<DictionaryToken>();
         var pending = new Stack<IToken>();
         var visited = new HashSet<IndirectReference>();
         if (first is not null)
@@ -93,18 +104,16 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, PageTree pages)
                 continue;
             }
 
-            if (objects.Name(action, "S") == "JavaScript")
-            {
-                return true;
-            }
+            chain.Add(action);
 
-            foreach (var next in objects.Items(action.Data.GetValueOrDefault("Next")))
+            // Pushed last to first, so they're taken first to last.
+            foreach (var next in objects.Items(action.Data.GetValueOrDefault("Next")).Reverse())
             {
                 pending.Push(next);
             }
         }
 
-        return false;
+        return chain;
     }
 
     private DocumentPermissions ReadPermissions(PdfDocument document)

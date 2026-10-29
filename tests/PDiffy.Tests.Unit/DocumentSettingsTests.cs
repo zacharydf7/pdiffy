@@ -87,6 +87,8 @@ public class DocumentSettingsTests
     [Theory]
     [InlineData("/OpenAction << /S /URI /URI (https://example.com) >>", "URI https://example.com", false)]
     [InlineData("/OpenAction << /S /JavaScript /JS (app.alert(1)) >>", "JavaScript", true)]
+    [InlineData("/OpenAction << /S /URI /URI (https://example.com) /Next [<< /S /Launch /Next << /S /JavaScript /JS (x) >> >> "
+        + "<< /S /Named /N /NextPage >>] >>", "URI https://example.com, Launch, JavaScript, Named", true)]
     public void Load_ShouldDescribeTheOpenAction_WhenItIsAnAction(string catalogEntries, string expected, bool hasJavaScript)
     {
         var pdf = new TestPdf().CatalogEntries(catalogEntries);

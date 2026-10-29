@@ -15,8 +15,14 @@ public sealed record DocumentSettings
     /// <summary>How pages are arranged: one at a time, a continuous column, two side by side. One of <see cref="PageLayouts"/>.</summary>
     public string? PageLayout { get; init; }
 
-    /// <summary>What happens when the file opens, such as "p1 Fit" (go to page 1) or "JavaScript".</summary>
+    /// <summary>
+    /// What happens when the file opens, such as "p1 Fit" (go to page 1) or "JavaScript". Actions chained after it are
+    /// listed in the order they run: "GoTo p1 Fit, Launch".
+    /// </summary>
     public string? OpenAction { get; init; }
+
+    // Each action of OpenAction on its own, since a destination's name can hold the ", " that joins them.
+    internal IReadOnlyList<string> OpenActions { get; init; } = [];
 
     public bool HasJavaScript { get; init; }
 
