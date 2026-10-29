@@ -6,7 +6,7 @@ namespace PDiffy.Tests.Unit;
 public class DocsSampleTests
 {
     [Fact]
-    public void Samples_ShouldMatchWhatPDiffyWrites_WhenTheGuideIsRevised()
+    public void ToHtml_ShouldMatchTheDocsSamples_WhenTheGuideIsRevised()
     {
         var (before, after) = (Guide(revised: false).Load().ToSnapshot(), Guide(revised: true).Load().ToSnapshot());
 
@@ -17,8 +17,8 @@ public class DocsSampleTests
         AssertSample("DrugGuide.diff.html", report);
     }
 
-    // The revision edits a cell, moves the logo after the text in reading order and drops its alt text, removes a
-    // header's scope, swaps one paragraph for another and stamps untagged "Draft" text on the table page.
+    // The revision edits a cell, moves the logo after the text in reading order and further down the page, drops its alt
+    // text, removes a header's scope, swaps one paragraph for another and stamps untagged "Draft" text on the table page.
     private static TestPdf Guide(bool revised)
     {
         var pdf = new TestPdf { Title = "Drug Interaction Guide" };
@@ -26,7 +26,7 @@ public class DocsSampleTests
         if (revised)
         {
             first.Tagged(1, "Read this guide before you start a new medicine.")
-                .Tagged(2, "Keep all medicines out of reach of children.").TaggedImage(3);
+                .Tagged(2, "Keep all medicines out of reach of children.").TaggedImage(3, y: 520);
         }
         else
         {

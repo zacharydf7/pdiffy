@@ -39,8 +39,11 @@ internal sealed class TestPage(double width, double height, int rotate, string? 
 
     public TestPage Untagged(string text) => Raw(TextLine(text));
 
-    /// <summary>A one-pixel gray image at 72,600. <paramref name="gray"/> is the pixel's value as two hex digits.</summary>
-    public TestPage TaggedImage(int mcid, string gray = "80") => Raw($"/Figure << /MCID {mcid} >> BDC {DrawImage(gray)} EMC");
+    /// <summary>
+    /// A one-pixel gray image at 72,<paramref name="y"/>. <paramref name="gray"/> is the pixel's value as two hex digits.
+    /// </summary>
+    public TestPage TaggedImage(int mcid, string gray = "80", int y = 600) =>
+        Raw($"/Figure << /MCID {mcid} >> BDC {DrawImage(gray, y)} EMC");
 
     public TestPage UntaggedImage(string gray = "80") => Raw(DrawImage(gray));
 
@@ -101,10 +104,10 @@ internal sealed class TestPage(double width, double height, int rotate, string? 
             + $"/Contents {content} 0 R{tabsEntry}{annotsEntry}{_pageEntries} >>";
     }
 
-    private string DrawImage(string gray)
+    private string DrawImage(string gray, int y = 600)
     {
         _imagePixels.Add(gray);
-        return $"q 10 0 0 10 72 600 cm /Im{_imagePixels.Count} Do Q";
+        return $"q 10 0 0 10 72 {y} cm /Im{_imagePixels.Count} Do Q";
     }
 
     // Uncompressed, the pixel is written as hex text; compressed, as one Flate-compressed byte. Both decode to the same pixel.
