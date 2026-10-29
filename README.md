@@ -443,6 +443,12 @@ pdiffy snapshot statement.pdf statement.pdfua.txt
 # keeping its extension, and its report goes.
 pdiffy accept tests/Snapshots
 pdiffy accept --all    # the current folder and every folder under it
+
+# Summarize every received snapshot, new or changed, with its changes by kind and by section. Exits with 0 when there
+# are none and 1 when there are. --markdown adds the table to the end of a file, such as a CI job summary (GitHub's
+# $GITHUB_STEP_SUMMARY), and --html saves a page that links each snapshot's report.
+pdiffy report --all
+pdiffy report --all --markdown "$GITHUB_STEP_SUMMARY" --html snapshot-summary.html
 ```
 
 ## Moving from Verify

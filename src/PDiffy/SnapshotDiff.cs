@@ -120,10 +120,8 @@ public sealed class SnapshotDiff
     {
         if (IsEmpty) return "No changes.";
 
-        var counts = Changes.GroupBy(change => change.Kind).OrderBy(group => group.Key)
-            .Select(group => $"{group.Count()} {Label(group.Key)}");
-        var text = new StringBuilder($"{Changes.Count} change(s): {string.Join(", ", counts)}");
-        if (SnapshotTree.IsSectioned(_before) && SnapshotTree.IsSectioned(_after))
+        var text = new StringBuilder($"{Changes.Count} change(s): {string.Join(", ", CountsByKind())}");
+        if (IsSectioned)
         {
             text.Append($"\nby section: {string.Join(", ", CountsBySection())}");
         }
@@ -149,6 +147,11 @@ public sealed class SnapshotDiff
     public string ToHtml() => DiffReport.Write(_before, _after, this);
 
     public override string ToString() => Describe(int.MaxValue);
+
+    internal bool IsSectioned => SnapshotTree.IsSectioned(_before) && SnapshotTree.IsSectioned(_after);
+
+    internal IEnumerable<string> CountsByKind() => Changes.GroupBy(change => change.Kind).OrderBy(group => group.Key)
+        .Select(group => $"{group.Count()} {Label(group.Key)}");
 
     // The section is the path's first part, such as "structure" or "body", in the order sections first change.
     internal IEnumerable<string> CountsBySection() =>

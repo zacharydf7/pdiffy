@@ -162,6 +162,73 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void Run_ShouldSayNothingIsPendingAndReturnZero_WhenReportingAFolderWithoutReceivedSnapshots()
+    {
+        Write("Letter.verified.pdfua.txt", Sectioned("Take with food"));
+
+        var markdown = Path.Combine(_folder, "summary.md");
+
+        var exitCode = Commands.Run(["report", _folder, "--markdown", markdown], _output, _error);
+
+        Assert.Equal(Commands.Same, exitCode);
+        Assert.Equal("No received snapshots.\n", _output.ToString());
+        Assert.Equal("### PDiffy: No received snapshots.\n", File.ReadAllText(markdown));
+    }
+
+    [Fact]
+    public void Run_ShouldListEachReceivedSnapshotAndReturnOne_WhenReporting()
+    {
+        // Git can check a verified file out with CRLF on Windows.
+        Write("Letter.verified.pdfua.txt", Sectioned("Take with food", "H1").Replace("\n", "\r\n"));
+        Write("Letter.received.pdfua.txt", Sectioned("Take with food"));
+        Write("Job.verified.json", "{}\n");
+        Write("Job.received.json", "{\n  \"id\": 1\n}\n");
+        Write("Memo.received.txt", "new");
+
+        var exitCode = Commands.Run(["report", _folder], _output, _error);
+
+        Assert.Equal(Commands.Different, exitCode);
+        Assert.StartsWith("3 received snapshot(s): 2 changed, 1 new\n", _output.ToString());
+        Assert.Matches(@"changed \S*Job\.received\.json: 3: 2 added, 1 text\n", _output.ToString());
+        Assert.Matches(@"changed \S*Letter\.received\.pdfua\.txt: 1: 1 changed; by section: structure 1; "
+            + @"1 can affect accessibility\n", _output.ToString());
+        Assert.Matches(@"new \S*Memo\.received\.txt\n", _output.ToString());
+    }
+
+    [Fact]
+    public void Run_ShouldSaveTheSummaryAsMarkdownAndHtml_WhenAskedFor()
+    {
+        Directory.CreateDirectory(Path.Combine(_folder, "Snapshots"));
+        Write(Path.Combine("Snapshots", "Letter.verified.pdfua.txt"), Sectioned("Take with food"));
+        Write(Path.Combine("Snapshots", "Letter.received.pdfua.txt"), Sectioned("Take after food"));
+        Write(Path.Combine("Snapshots", "Letter.diff.html"), "report");
+        Write(Path.Combine("Snapshots", "Memo.received.txt"), "new");
+        var (markdown, html) = (Path.Combine(_folder, "summary.md"), Path.Combine(_folder, "summary.html"));
+        Write("summary.md", "Earlier steps\n");
+
+        Commands.Run(["report", _folder, "--all", "--markdown", markdown, "--html", html], _output, _error);
+
+        var table = File.ReadAllText(markdown);
+        Assert.StartsWith("Earlier steps\n### PDiffy: 2 received snapshot(s)", table);
+        Assert.Contains("| Snapshot | Status | Changes | By section | Can affect accessibility |", table);
+        Assert.Matches(@"\| `\S*Letter\.received\.pdfua\.txt` \| changed \| 1: 1 text \| structure 1 \| 0 \|", table);
+        Assert.Contains("<a href=\"Snapshots/Letter.diff.html\">", File.ReadAllText(html));
+        Assert.Matches(@"<tr><td>[^<]*Memo\.received\.txt</td><td>new</td>", File.ReadAllText(html));
+    }
+
+    [Fact]
+    public void Run_ShouldReturnTwo_WhenReportingWithoutAFileForTheHtml()
+    {
+        var exitCode = Commands.Run(["report", _folder, "--html"], _output, _error);
+
+        Assert.Equal(Commands.UsageError, exitCode);
+        Assert.Contains("--html needs a file", _error.ToString());
+    }
+
+    private static string Sectioned(string text, string type = "P") =>
+        $"# pdfua-snapshot v1\nstructure\n  {type} p1 \"{text}\"\n";
+
+    [Fact]
     public void Run_ShouldTreatAFileAsAPdf_WhenItsHeaderComesAfterOtherBytes()
     {
         var pdf = WritePdf("letter.pdf", "Hello");

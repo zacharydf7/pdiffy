@@ -230,19 +230,26 @@ internal static class DiffReport
 
     private sealed record Row(char Kind, string? Before, string? After);
 
-    private const string Head = """
-        <!doctype html>
-        <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Snapshot differences</title>
-        <style>
-        :root { --bg: #ffffff; --text: #1f2328; --muted: #656d76; --line: #d0d7de; --link: #0969da; --removed: #ffebe9;
-          --added: #e6ffec; --mark-removed: #ff818266; --mark-added: #4ac26b66; }
+    // The colors and page styles this report shares with the command line's summary page.
+    internal const string BaseStyle = """
+        :root { --bg: #ffffff; --text: #1f2328; --muted: #656d76; --line: #d0d7de; --link: #0969da; }
         @media (prefers-color-scheme: dark) { :root { --bg: #0d1117; --text: #e6edf3; --muted: #8d96a0; --line: #30363d;
-          --link: #4493f8; --removed: #3c1618; --added: #12261e; --mark-removed: #f8514966; --mark-added: #2ea04366; } }
+          --link: #4493f8; } }
         body { margin: 0 auto; max-width: 1400px; padding: 16px; background: var(--bg); color: var(--text);
           font: 14px/1.4 system-ui, sans-serif; }
         h1 { font-size: 20px; }
         a { color: var(--link); }
+        """;
+
+    private const string Head = $$"""
+        <!doctype html>
+        <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Snapshot differences</title>
+        <style>
+        {{BaseStyle}}
+        :root { --removed: #ffebe9; --added: #e6ffec; --mark-removed: #ff818266; --mark-added: #4ac26b66; }
+        @media (prefers-color-scheme: dark) { :root { --removed: #3c1618; --added: #12261e; --mark-removed: #f8514966;
+          --mark-added: #2ea04366; } }
         .summary, .same { color: var(--muted); }
         .filters label { margin-right: 12px; }
         .accessibility { background: #fde68a; color: #1f2328; border-radius: 3px; padding: 0 4px; font-size: 12px; }

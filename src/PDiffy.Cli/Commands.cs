@@ -15,9 +15,12 @@ public static class Commands
           pdiffy <before> <after> [--html <report.html>]   Compare two PDFs, two DOCX files or two snapshot files
           pdiffy snapshot <file.pdf|file.docx> [<out>]      Print or save a PDF's or DOCX's snapshot
           pdiffy accept [<files or folders>] [--all]        Accept received snapshots as verified
+          pdiffy report [<files or folders>] [--all] [--html <summary.html>] [--markdown <summary.md>]
+                                                            Summarize received snapshots
 
-        compare exits with 0 when nothing changed and 1 when something did.
-        accept takes the current folder by default; --all includes subfolders.
+        compare exits with 0 when nothing changed and 1 when something did; report, with 0 when no snapshot was received
+        and 1 when one was.
+        accept and report take the current folder by default; --all includes subfolders.
         """;
 
     public static int Run(string[] args, TextWriter output, TextWriter error)
@@ -28,7 +31,8 @@ public static class Commands
             {
                 ["snapshot", var document] => Snapshot(document, null, output),
                 ["snapshot", var document, var file] => Snapshot(document, file, output),
-                ["accept", .. var rest] => Accept(rest, output, error),
+                ["accept", .. var rest] => Accept(rest, output),
+                ["report", .. var rest] => Report(rest, output),
                 [var before, var after] => Compare(before, after, null, output),
                 [var before, var after, "--html", var report] => Compare(before, after, report, output),
                 _ => ShowUsage(error),
@@ -63,36 +67,44 @@ public static class Commands
         return Same;
     }
 
-    // Each received snapshot replaces its verified one, and its report goes, as when a test runs in accept mode. Several
-    // targets are allowed because shells expand a pattern like *.received.* into many. Each file keeps its extension:
-    // Letter.received.json becomes Letter.verified.json.
-    private static int Accept(string[] args, TextWriter output, TextWriter error)
+    // Each received snapshot replaces its verified one, and its report goes, as when a test runs in accept mode.
+    private static int Accept(string[] args, TextWriter output)
     {
-        var search = args.Contains("--all") ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-        var targets = args.Where(arg => arg != "--all").DefaultIfEmpty(".");
-        var pattern = $"*{SnapshotFiles.ReceivedPart}*";
-        var received = targets
-            .SelectMany(target => File.Exists(target) ? [target] : Directory.GetFiles(target, pattern, search))
-            .Select(Path.GetFullPath).Distinct().ToList();
-        if (received.FirstOrDefault(file => !Path.GetFileName(file).Contains(SnapshotFiles.ReceivedPart)) is { } wrong)
+        var pending = PendingSnapshot.Find(args.Where(arg => arg != "--all"), args.Contains("--all"));
+        foreach (var snapshot in pending)
         {
-            error.WriteLine($"pdiffy: {wrong} isn't a received snapshot ({pattern}).");
-            return UsageError;
+            File.Move(snapshot.Received, snapshot.Verified, overwrite: true);
+            File.Delete(snapshot.Report);
+            output.WriteLine($"accepted {snapshot.Verified}");
         }
 
-        foreach (var file in received)
-        {
-            var fileName = Path.GetFileName(file);
-            var at = fileName.LastIndexOf(SnapshotFiles.ReceivedPart, StringComparison.Ordinal);
-            var name = Path.Combine(Path.GetDirectoryName(file)!, fileName[..at]);
-            var verified = name + SnapshotFiles.VerifiedPart + fileName[(at + SnapshotFiles.ReceivedPart.Length)..];
-            File.Move(file, verified, overwrite: true);
-            File.Delete(name + SnapshotFiles.ReportSuffix);
-            output.WriteLine($"accepted {verified}");
-        }
-
-        if (received.Count == 0) output.WriteLine("No received snapshots to accept.");
+        if (pending.Count == 0) output.WriteLine("No received snapshots to accept.");
         return Same;
+    }
+
+    // The summary always prints; --html and --markdown also save it, for a build's artifacts or a CI job summary.
+    private static int Report(string[] args, TextWriter output)
+    {
+        var (targets, html, markdown) = (new List<string>(), (string?)null, (string?)null);
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i] is "--html" or "--markdown" && i + 1 == args.Length)
+            {
+                throw new ArgumentException($"{args[i]} needs a file.");
+            }
+
+            if (args[i] == "--html") html = args[++i];
+            else if (args[i] == "--markdown") markdown = args[++i];
+            else if (args[i] != "--all") targets.Add(args[i]);
+        }
+
+        var pending = PendingSnapshot.Find(targets, args.Contains("--all"));
+        var summary = new PendingSummary(pending);
+        output.Write(summary.ToText());
+        if (html is not null) File.WriteAllText(html, summary.ToHtml(Path.GetDirectoryName(Path.GetFullPath(html))!));
+        // A CI job summary file collects what every command in the step writes, so the table is added at its end.
+        if (markdown is not null) File.AppendAllText(markdown, summary.ToMarkdown());
+        return pending.Count == 0 ? Same : Different;
     }
 
     // A PDF or a DOCX is read and snapshotted; anything else is taken to be a snapshot already.
