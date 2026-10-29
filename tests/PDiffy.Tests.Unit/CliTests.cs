@@ -119,6 +119,18 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void Run_ShouldAcceptEachFileOnce_WhenTargetsDifferOnlyInCaseOnWindows()
+    {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "PDiffy treats file names as ignoring case only on Windows.");
+        var letter = Write("Letter.received.pdfua.txt", "letter");
+
+        var exitCode = Commands.Run(["accept", _folder.ToUpperInvariant(), letter], _output, _error);
+
+        Assert.Equal(Commands.Same, exitCode);
+        Assert.Equal("letter", File.ReadAllText(Path.Combine(_folder, "Letter.verified.pdfua.txt")));
+    }
+
+    [Fact]
     public void Run_ShouldPrintThePdfsSnapshot_WhenNoFileIsGiven()
     {
         var pdf = WritePdf("letter.pdf", "Hello");

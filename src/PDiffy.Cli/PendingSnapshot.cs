@@ -5,6 +5,10 @@ internal sealed record PendingSnapshot(string Received, string Verified, string 
 {
     private static readonly string Pattern = $"*{SnapshotFiles.ReceivedPart}*";
 
+    // Windows file names ignore case, so tests/Snaps and tests/snaps reach the same files.
+    private static readonly StringComparer PathComparer =
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
     /// <summary>
     /// The received snapshots in the targets, each once. Several targets are allowed because shells expand a pattern
     /// like *.received.* into many; no target means the current folder.
@@ -14,7 +18,7 @@ internal sealed record PendingSnapshot(string Received, string Verified, string 
         var search = includeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
         var received = targets.DefaultIfEmpty(".")
             .SelectMany(target => File.Exists(target) ? [target] : Directory.GetFiles(target, Pattern, search))
-            .Select(Path.GetFullPath).Distinct().Order(StringComparer.Ordinal).ToList();
+            .Select(Path.GetFullPath).Distinct(PathComparer).Order(StringComparer.Ordinal).ToList();
         if (received.FirstOrDefault(file => !Path.GetFileName(file).Contains(SnapshotFiles.ReceivedPart)) is { } wrong)
         {
             throw new ArgumentException($"{wrong} isn't a received snapshot ({Pattern}).");
