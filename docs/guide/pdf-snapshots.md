@@ -155,8 +155,9 @@ metadata that isn't well-formed XML or has a DTD (`xmp=unreadable`). A file that
 
 PDiffy also reads structure elements and bookmarks only 256 levels deep, so a file built to overflow the stack can't
 crash the test run. An element whose children are deeper gets `unread-children=N`, and their content counts as untagged.
-Bookmarks nested deeper, or that loop back on themselves, print `unreadable`. See
-[Limitations](../reference/limitations.md) for what PDiffy can't guard against.
+Bookmarks nested deeper, or that loop back on themselves, print `unreadable`. A stream that would decompress to more
+than 256 MB isn't decompressed: a page whose content it is comes back unreadable, an image is hashed as stored, and XMP
+prints `xmp=unreadable`. See [Limitations](../reference/limitations.md) for what PDiffy can't guard against.
 
 ## See also
 

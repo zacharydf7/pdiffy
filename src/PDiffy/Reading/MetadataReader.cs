@@ -55,7 +55,7 @@ internal static class MetadataReader
         {
             return UntrustedXml.Load(new MemoryStream(xmp.GetXmlBytes().ToArray()), preserveWhitespace: false);
         }
-        catch (XmlException)
+        catch (Exception problem) when (problem is XmlException or CappedFilterProvider.StreamTooLargeException)
         {
             return null;
         }

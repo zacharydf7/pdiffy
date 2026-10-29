@@ -9,7 +9,7 @@ internal static class PdfPigReader
 {
     public static PdfUaDocument Read(Stream pdf)
     {
-        using var document = PdfDocument.Open(pdf);
+        using var document = PdfDocument.Open(pdf, new ParsingOptions { FilterProvider = CappedFilterProvider.Instance });
         var objects = new PdfObjects(document);
         var catalog = document.Structure.Catalog.CatalogDictionary;
         var pageTree = PageTree.Read(objects, catalog);

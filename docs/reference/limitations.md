@@ -19,9 +19,11 @@ What you can rely on PDiffy for, and what it doesn't do.
 - **It compares content, not appearance.** A substituted font that looks different but extracts the same text, a clipping path that hides text, or an image drawn over text doesn't change the text a snapshot records. Layout records positions, sizes, fonts and colors, not pixels.
 - **It can't read text that isn't text.** Text drawn as vector paths or embedded in an image has no characters to extract; it shows only as a path or an image in the layout.
 - **Gradients are recorded only by kind.** A shading-pattern fill prints as `pattern:shading`, so changing a gradient's colors doesn't change the snapshot, and a fill drawn with the `sh` operator isn't recorded at all.
-- **PDF streams are decoded in memory by PdfPig**, the library PDiffy reads PDFs with. A small stream that decompresses
-  to gigabytes, or a page tree nested many thousands deep, can still exhaust memory or the stack. Run untrusted PDFs in
-  a process with a memory limit.
+- **Some limits are PdfPig's**, the library PDiffy reads PDFs with. PDiffy refuses to decompress a Flate stream past
+  256 MB: a page whose content stream is refused comes back unreadable, an image is hashed as stored, and XMP prints
+  `xmp=unreadable`. The cap is per stream, so a page whose content is split across many large streams can still add up,
+  streams in other encodings are decoded whole, and a page tree nested many thousands deep can still overflow the stack
+  while the file opens. Run untrusted PDFs in a process with a memory limit.
 - **It reads what the file declares.** When a font's character codes don't map to Unicode, the extracted text may be wrong; the `fonts` section lists such codes as `unmapped` so you can see it.
 - **Word documents are read from the file, not laid out.** There are no page numbers or positions for DOCX, and fields such as PAGE record the result Word last computed, which `DocxDetail.FieldResults` can leave out.
 

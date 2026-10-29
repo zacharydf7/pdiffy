@@ -77,6 +77,50 @@ public class ResourceLimitTests
     }
 
     [Fact]
+    public void Load_ShouldMarkThePageUnreadable_WhenItsContentDecompressesToMoreThan256Megabytes()
+    {
+        var bomb = Bomb();
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+            $"<< /Filter /FlateDecode /Length {bomb.Length} >>\nstream\n{bomb}\nendstream",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R >>",
+            TestPdf.Stream(""));
+
+        Assert.Equal([true, false], document.Pages.Select(page => page.Unreadable));
+    }
+
+    [Fact]
+    public void Load_ShouldHashTheImageAsStored_WhenItsPixelsDecompressToMoreThan256Megabytes()
+    {
+        var bomb = Bomb();
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /XObject << /Im1 5 0 R >> >> "
+                + "/Contents 4 0 R >>",
+            TestPdf.Stream("q 10 0 0 10 72 600 cm /Im1 Do Q"),
+            "<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 "
+                + $"/Filter /FlateDecode /Length {bomb.Length} >>\nstream\n{bomb}\nendstream");
+
+        var image = Assert.Single(document.Images);
+
+        Assert.Equal((false, 16), (document.Pages[0].Unreadable, image.Hash.Length));
+    }
+
+    [Fact]
+    public void Load_ShouldMarkTheXmpUnreadable_WhenItDecompressesToMoreThan256Megabytes()
+    {
+        var bomb = Bomb();
+
+        var document = OnePage("/Metadata 6 0 R",
+            [$"<< /Type /Metadata /Subtype /XML /Filter /FlateDecode /Length {bomb.Length} >>\nstream\n{bomb}\nendstream"]);
+
+        Assert.True(document.Metadata.XmpUnreadable);
+    }
+
+    [Fact]
     public void Load_ShouldReadTheText_WhenMarkedContentNestsThousandsDeep()
     {
         var content = Nested("/Span << >> BDC ", " EMC", 5000, "BT /F1 12 Tf 72 700 Td (Deep) Tj ET");
@@ -164,6 +208,20 @@ public class ResourceLimitTests
         TestPdf.Stream(content),
         .. extraObjects,
     ]);
+
+    // 256 MB and one byte of spaces, Flate-compressed to a few hundred KB: the shape of a decompression bomb.
+    private static string Bomb()
+    {
+        var compressed = new MemoryStream();
+        using (var zlib = new ZLibStream(compressed, CompressionLevel.Fastest))
+        {
+            var spaces = Enumerable.Repeat((byte)' ', 1024 * 1024).ToArray();
+            for (var i = 0; i < 256; i++) zlib.Write(spaces);
+            zlib.WriteByte((byte)' ');
+        }
+
+        return Encoding.Latin1.GetString(compressed.ToArray());
+    }
 
     private static string Nested(string open, string close, int count, string inside) =>
         string.Concat(Enumerable.Repeat(open, count)) + inside + string.Concat(Enumerable.Repeat(close, count));
