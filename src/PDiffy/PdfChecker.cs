@@ -205,9 +205,10 @@ internal sealed class PdfChecker(PdfUaDocument document)
     }
 
     // A destination prints as its page (p1 Fit, or p? Fit for a page that can't be found), as GoTo and the page, or
-    // as named and its name.
+    // as named and its name. GoToR and GoToE open another file, so they don't count.
     private static bool IsPageDestination(string action) =>
-        action.StartsWith("GoTo", StringComparison.Ordinal) || action.StartsWith("named ", StringComparison.Ordinal)
+        action == "GoTo" || action.StartsWith("GoTo ", StringComparison.Ordinal)
+        || action.StartsWith("named ", StringComparison.Ordinal)
         || action is ['p', var page, ..] && (char.IsAsciiDigit(page) || page == '?');
 
     // Every structure element in reading order, with its path as a snapshot diff shows it. Read once, since several

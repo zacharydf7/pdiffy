@@ -181,6 +181,18 @@ public class PdfCheckTests
         Assert.Empty(document.Check(PdfCheck.NoActions));
     }
 
+    [Theory]
+    [InlineData("/OpenAction << /S /GoToR /F (other.pdf) /D [0 /Fit] >>", "GoToR")]
+    [InlineData("/OpenAction << /S /GoToE /D [0 /Fit] >>", "GoToE")]
+    public void Check_ShouldFindTheOpenAction_WhenItOpensAnotherFile(string catalogEntries, string action)
+    {
+        var document = OnePage(new TestPdf().CatalogEntries(catalogEntries));
+
+        var finding = Assert.Single(document.Check(PdfCheck.NoActions));
+
+        Assert.Equal($"The document runs an action when it opens: {action}", finding.Message);
+    }
+
     [Fact]
     public void Check_ShouldApplyEveryCheckInTheirOrder_WhenGivenNoneOrGivenThemTwiceOutOfOrder()
     {
