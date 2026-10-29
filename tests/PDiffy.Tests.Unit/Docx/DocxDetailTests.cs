@@ -8,6 +8,7 @@ public class DocxDetailTests
     [InlineData(DocxDetail.FieldResults, BoldPage + "3" + BoldPageEnd, BoldPage + "4" + BoldPageEnd)]
     [InlineData(DocxDetail.FieldResults, TocEntry + "3" + TocEntryEnd, TocEntry + "4" + TocEntryEnd)]
     [InlineData(DocxDetail.FieldResults, NestedResult + "3" + NestedResultEnd, NestedResult + "4" + NestedResultEnd)]
+    [InlineData(DocxDetail.FieldResults, InControl + "3" + InControlEnd, InControl + "4" + InControlEnd)]
     [InlineData(DocxDetail.Fonts, """<w:p><w:r><w:rPr><w:rFonts w:ascii="Arial"/></w:rPr><w:t>Take</w:t></w:r></w:p>""",
         """<w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri"/></w:rPr><w:t>Take</w:t></w:r></w:p>""")]
     [InlineData(DocxDetail.FontSizes, """<w:p><w:r><w:rPr><w:sz w:val="24"/></w:rPr><w:t>Take</w:t></w:r></w:p>""",
@@ -118,6 +119,24 @@ public class DocxDetailTests
         Assert.Equal(ignored, Snapshot("1440", ignore: true));
     }
 
+    [Fact]
+    public void ToSnapshot_ShouldKeepALegacyFieldsValue_WhenFieldResultsAreIgnored()
+    {
+        var document = new TestDocx
+        {
+            Body = """
+                <w:p><w:r><w:fldChar w:fldCharType="begin"><w:ffData><w:name w:val="Field1"/><w:textInput/></w:ffData></w:fldChar>
+                  </w:r><w:r><w:instrText>FORMTEXT</w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>
+                  <w:r><w:t>Jane</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>
+                """,
+        }.Load();
+
+        var snapshot = document.ToSnapshot(o => o.Ignore(DocxDetail.FieldResults));
+
+        Assert.Contains("  P\n    field \"FORMTEXT\" at=0\n    form legacy-text name=\"Field1\" value=\"Jane\" at=0\n",
+            snapshot);
+    }
+
     private const string Field =
         """<w:p><w:r><w:t xml:space="preserve">Page </w:t></w:r><w:fldSimple w:instr="PAGE"><w:r><w:t>""";
 
@@ -140,6 +159,12 @@ public class DocxDetailTests
         + """</w:r><w:fldSimple w:instr="PAGE"><w:r><w:t>""";
 
     private const string NestedResultEnd = "</w:t></w:r></w:fldSimple></w:fldSimple><w:r><w:t>end</w:t></w:r></w:p>";
+
+    // A content control's value is the text it covers, here a page number.
+    private const string InControl = """<w:p><w:sdt><w:sdtPr><w:text/></w:sdtPr><w:sdtContent>"""
+        + """<w:fldSimple w:instr="PAGE"><w:r><w:t>""";
+
+    private const string InControlEnd = "</w:t></w:r></w:fldSimple></w:sdtContent></w:sdt></w:p>";
 
     private const string Image = """
         <w:p><w:r><w:drawing xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"

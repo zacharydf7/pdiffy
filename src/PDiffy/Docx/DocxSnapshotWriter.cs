@@ -289,7 +289,10 @@ internal sealed class DocxSnapshotWriter
                 line.Append($"form {form.Kind}");
                 Key(line, "name", Quote(form.Name));
                 Key(line, "title", Quote(form.Title));
-                Key(line, "value", Quote(form.Value));
+                // A content control's value is the paragraph text it covers; a check box's and a legacy field's aren't.
+                var coversText = form.Kind != "checkbox" && !form.Kind.StartsWith("legacy-", StringComparison.Ordinal);
+                var value = coversText && form.Value is { } text ? WithoutResults(text, form.Position, results) : form.Value;
+                Key(line, "value", Quote(value));
                 Key(line, "items", form.Items.Count > 0 ? string.Join(",", form.Items.Select(Quote)) : null);
                 break;
             case DocxStrayText stray:

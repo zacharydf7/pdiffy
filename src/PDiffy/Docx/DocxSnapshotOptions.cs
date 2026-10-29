@@ -39,7 +39,7 @@ public enum DocxDetail
 
     /// <summary>
     /// The result of each field, such as the page number a PAGE field last showed: the field's result= and the result's
-    /// text in the paragraph, also inside links, formatted text and tracked changes.
+    /// text in the paragraph, also inside links, formatted text, tracked changes and content controls' values.
     /// </summary>
     FieldResults,
 

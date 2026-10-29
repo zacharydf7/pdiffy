@@ -586,7 +586,7 @@ For Word documents, each `DocxSection` value leaves out one section, and each `D
 | DocxDetail | Leaves out |
 |---|---|
 | `ImageHashes` | The hash of each image, embedded object and control's data |
-| `FieldResults` | Each field's `result=` and the result's text in the paragraph, also inside links, formatted text and tracked changes, so a PAGE or DATE field or a table of contents that shows something new doesn't fail the test. Positions after the result move back |
+| `FieldResults` | Each field's `result=` and the result's text in the paragraph, also inside links, formatted text, tracked changes and content controls' values, so a PAGE or DATE field or a table of contents that shows something new doesn't fail the test. Positions after the result move back |
 | `Fonts` | The font of styles and of text that differs from its style. A symbol's or a bullet's font stays, since it decides which character shows |
 | `FontSizes` | The font size of styles and of text that differs from its style |
 | `Colors` | Text color, highlight, cell shading and border colors |
