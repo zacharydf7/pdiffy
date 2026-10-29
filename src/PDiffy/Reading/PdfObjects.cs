@@ -9,7 +9,7 @@ namespace PDiffy.Reading;
 internal sealed class PdfObjects(PdfDocument document)
 {
     // How deep Describe goes into nested arrays, so an array that contains itself can't loop forever.
-    private const int MaxArrayDepth = 4;
+    internal const int MaxArrayDepth = 4;
 
     public IToken? Resolve(IToken? token)
     {
@@ -79,32 +79,41 @@ internal sealed class PdfObjects(PdfDocument document)
     {
         var entries = new List<(IToken Key, IToken Value)>();
         var visited = new HashSet<IndirectReference>();
-        AddEntries(root);
-        return entries;
 
-        void AddEntries(IToken? node)
+        // Walked with a stack, so a tree nested thousands deep can't overflow it. A node's kids come before its own pairs,
+        // so the node goes back on the stack, already read, under its kids.
+        var pending = new Stack<(IToken? Node, DictionaryToken? Read)>([(root, null)]);
+        while (pending.TryPop(out var next))
         {
-            if (node is IndirectReferenceToken visit && !visited.Add(visit.Data))
+            if (next.Read is { } read)
             {
-                return;
+                var pairs = Items(read.Data.GetValueOrDefault(pairsKey));
+                for (var i = 0; i + 1 < pairs.Count; i += 2)
+                {
+                    entries.Add((pairs[i], pairs[i + 1]));
+                }
+
+                continue;
             }
 
-            if (Resolve(node) is not DictionaryToken dictionary)
+            if (next.Node is IndirectReferenceToken visit && !visited.Add(visit.Data))
             {
-                return;
+                continue;
             }
 
-            foreach (var kid in Items(dictionary.Data.GetValueOrDefault("Kids")))
+            if (Resolve(next.Node) is not DictionaryToken dictionary)
             {
-                AddEntries(kid);
+                continue;
             }
 
-            var pairs = Items(dictionary.Data.GetValueOrDefault(pairsKey));
-            for (var i = 0; i + 1 < pairs.Count; i += 2)
+            pending.Push((null, dictionary));
+            foreach (var kid in Items(dictionary.Data.GetValueOrDefault("Kids")).Reverse())
             {
-                entries.Add((pairs[i], pairs[i + 1]));
+                pending.Push((kid, null));
             }
         }
+
+        return entries;
     }
 
     /// <summary>

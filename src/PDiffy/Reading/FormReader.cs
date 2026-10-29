@@ -38,11 +38,13 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages)
 
         var reader = new FormReader(objects, pages);
         reader.MapWidgetPages();
-        foreach (var field in objects.Items(form.Data.GetValueOrDefault("Fields")))
+        var pending = new Stack<(IToken Field, Inherited Parent)>();
+        foreach (var field in objects.Items(form.Data.GetValueOrDefault("Fields")).Reverse())
         {
-            reader.AddField(field, new Inherited(null, null, null, null, null));
+            pending.Push((field, new Inherited(null, null, null, null, null)));
         }
 
+        while (pending.TryPop(out var next)) reader.AddField(next.Field, next.Parent, pending);
         return reader._fields;
     }
 
@@ -61,9 +63,10 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages)
         }
     }
 
-    // Type, flags, value and maximum length pass down to child fields that don't set their own. A node reached a second
+    // Type, flags, value and maximum length pass down to child fields that don't set their own. Child fields go on the
+    // stack instead of being read in turn, so a tree nested thousands deep can't overflow it. A node reached a second
     // time (a malformed loop) is skipped.
-    private void AddField(IToken token, Inherited parent)
+    private void AddField(IToken token, Inherited parent, Stack<(IToken Field, Inherited Parent)> pending)
     {
         if (token is IndirectReferenceToken visit && !_visited.Add(visit.Data))
         {
@@ -88,9 +91,10 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages)
             .ToList();
         if (childFields.Count > 0)
         {
-            foreach (var child in childFields)
+            // Pushed last to first, so they're read first to last.
+            for (var i = childFields.Count - 1; i >= 0; i--)
             {
-                AddField(child, current);
+                pending.Push((childFields[i], current));
             }
 
             return;
@@ -130,12 +134,15 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages)
             .Select(option => PdfObjects.TextOf(option) ?? "")
             .ToList();
 
-    private string? FormatValue(IToken? value) => value switch
+    // Nested arrays are followed only so deep, so a value that contains itself can't loop forever.
+    private string? FormatValue(IToken? value, int depth = 0) => value switch
     {
         null => null,
         NameToken name => name.Data,
         NumericToken number => number.Data.ToString(System.Globalization.CultureInfo.InvariantCulture),
-        ArrayToken array => string.Join(", ", array.Data.Select(item => FormatValue(objects.Resolve(item)))),
+        ArrayToken array when depth < PdfObjects.MaxArrayDepth =>
+            string.Join(", ", array.Data.Select(item => FormatValue(objects.Resolve(item), depth + 1))),
+        ArrayToken => "...",
         _ => PdfObjects.TextOf(value),
     };
 

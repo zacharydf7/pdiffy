@@ -1,4 +1,6 @@
+using System.Xml;
 using System.Xml.Linq;
+using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Tokens;
 
@@ -29,7 +31,8 @@ internal static class MetadataReader
         var info = document.Information;
         var otherInfo = objects.Settings(info.DocumentInformationDictionary, StandardInfoKeys);
 
-        XDocument? xml = document.TryGetXmpMetadata(out var xmp) ? xmp.GetXDocument() : null;
+        var xmp = document.TryGetXmpMetadata(out var found) ? found : null;
+        var xml = xmp is null ? null : ReadXmp(xmp);
         var pdfUaPart = XmpValue(xml, PdfUaId + "part");
         var pdfAPart = XmpValue(xml, PdfAId + "part");
         var xmpTitle = xml?.Descendants(DublinCore + "title").Descendants().LastOrDefault()?.Value;
@@ -42,7 +45,20 @@ internal static class MetadataReader
             XmpDescription = XmpValue(xml, DublinCore + "description"),
             XmpLanguage = XmpValue(xml, DublinCore + "language"),
             PdfAConformance = pdfAPart is null ? null : pdfAPart + XmpValue(xml, PdfAId + "conformance"),
+            XmpUnreadable = xmp is not null && xml is null,
         };
+    }
+
+    private static XDocument? ReadXmp(XmpMetadata xmp)
+    {
+        try
+        {
+            return UntrustedXml.Load(new MemoryStream(xmp.GetXmlBytes().ToArray()), preserveWhitespace: false);
+        }
+        catch (XmlException)
+        {
+            return null;
+        }
     }
 
     // An XMP property can be an element, a list of rdf:li items (joined with "; "), or an attribute of rdf:Description.

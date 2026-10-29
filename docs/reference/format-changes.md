@@ -19,6 +19,12 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   the page shows a gap (`"Num ber:"` becomes `"Number:"`). Snapshots with such elements change in `structure`.
 - An element with marked-content references that name no page gets `mcids-without-page=N`. Only snapshots with such
   elements change.
+- XMP metadata is read as UTF-8, as the XMP standard requires, so a non-ASCII value such as `Café` no longer prints as
+  `CafÃ©`. XMP that isn't well-formed XML, or has a DTD, prints `xmp=unreadable` instead of failing the read. Snapshots
+  with non-ASCII XMP values change.
+- An element whose children are nested more than 256 deep gets `unread-children=N`, and bookmarks nested more than 256
+  deep, or that loop back on themselves, print `unreadable`. Such files used to overflow the stack, so no approved
+  snapshot changes.
 
 ### Word (`docx-snapshot v1`, unchanged)
 
@@ -41,6 +47,8 @@ Only snapshots of documents that use these change:
   formatting (`paragraph-mark-format`) are recorded and listed by `Revisions()`.
 - A cell lists the content controls around it, each marked `around`.
 - A table-column bookmark prints the columns it covers, counting from 0: `bookmark "Doses" columns=0-2`.
+- A part with a DTD, with elements nested more than 256 deep, or larger than 256 MB is listed as `unreadable`. Word
+  doesn't write such parts.
 
 ## 0.2.0
 

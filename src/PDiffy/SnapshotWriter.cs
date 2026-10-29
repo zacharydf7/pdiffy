@@ -31,7 +31,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         WriteSection(Section.Metadata, () => WriteMetadata(document.Metadata));
         WriteSection(Section.RoleMap, () => WriteRoleMap(document.RoleMap));
         WriteSection(Section.Pages, () => WritePages(document.Pages, document.PageLabels));
-        WriteSection(Section.Bookmarks, () => WriteBookmarks(document.Bookmarks));
+        WriteSection(Section.Bookmarks, () => WriteBookmarks(document.Bookmarks, document.BookmarksUnreadable));
         WriteSection(Section.Structure, () => WriteStructure(document.Structure));
         WriteSection(Section.Artifacts, () => WritePageTexts(document.Artifacts));
         WriteSection(Section.Untagged, () => WriteUntagged(document));
@@ -84,7 +84,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         QuotedKey(xmp, Field.Subject, "xmp-description", metadata.XmpDescription);
         Key(xmp, Field.Language, "xmp-language", metadata.XmpLanguage);
         Key(xmp, "pdfa", metadata.PdfAConformance);
-        Line(1, xmp.ToString());
+        Line(1, metadata.XmpUnreadable ? "xmp=unreadable" : xmp.ToString());
         if (options.Ignores(Field.CustomInfo)) return;
         foreach (var entry in metadata.OtherInfo) Line(1, $"info {entry.Name}={Quote(entry.Value)}");
     }
@@ -136,9 +136,10 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
 
     private static string? BoxText(PageBox? box) => box is null ? null : $"{box.X},{box.Y},{box.Width},{box.Height}";
 
-    private void WriteBookmarks(IReadOnlyList<Bookmark> bookmarks)
+    private void WriteBookmarks(IReadOnlyList<Bookmark> bookmarks, bool unreadable)
     {
-        if (bookmarks.Count == 0) Line(1, None);
+        if (unreadable) Line(1, "unreadable");
+        else if (bookmarks.Count == 0) Line(1, None);
         foreach (var bookmark in bookmarks) WriteBookmark(bookmark, 1);
     }
 
@@ -183,6 +184,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         }
 
         Key(line, "mcids-without-page", element.McidsWithoutPage > 0 ? element.McidsWithoutPage.ToString() : null);
+        Key(line, "unread-children", element.UnreadChildren > 0 ? element.UnreadChildren.ToString() : null);
         if (element.Text is not null) line.Append(' ').Append(Quote(element.Text));
         Line(depth, line.ToString());
         foreach (var child in element.Children) WriteElement(child, depth + 1);

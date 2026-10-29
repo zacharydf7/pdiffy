@@ -2,27 +2,36 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Xml;
 using System.Xml.Linq;
+using PDiffy.Reading;
 
 namespace PDiffy.Docx.Reading;
 
 /// <summary>
 /// The parts of a DOCX file, which is a zip of XML files linked by relationship files (word/_rels/document.xml.rels
-/// and so on). A part that can't be read as XML is noted in <see cref="Unreadable"/> and treated as missing.
+/// and so on). A part that can't be read as XML, or is larger than <see cref="MaxPartSize"/>, is noted in
+/// <see cref="Unreadable"/> and treated as missing.
 /// </summary>
 internal sealed class DocxPackage : IDisposable
 {
+    /// <summary>A part is loaded into memory whole, so a larger one, such as a zip bomb's, isn't read.</summary>
+    public const long MaxPartSize = 256L * 1024 * 1024;
+
     private static readonly XNamespace Relationships = "http://schemas.openxmlformats.org/package/2006/relationships";
 
     private readonly ZipArchive _zip;
     private readonly Dictionary<string, List<XElement>> _relationships = [];
 
-    public DocxPackage(Stream stream)
+    public DocxPackage(Stream stream, int maxDepth)
     {
         _zip = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
+        MaxDepth = maxDepth;
         MainPart = Related("", "/officeDocument") ?? "word/document.xml";
     }
 
     public string MainPart { get; }
+
+    /// <summary>How deep a part's elements may nest; a part nested deeper is unreadable.</summary>
+    public int MaxDepth { get; }
 
     public List<string> Unreadable { get; } = [];
 
@@ -50,9 +59,12 @@ internal sealed class DocxPackage : IDisposable
     }
 
     /// <summary>A part's bytes in a stream of their own, such as a DOCX inserted into this one, or null when there's no such part.</summary>
+    /// <exception cref="InvalidDataException">The part is larger than <see cref="MaxPartSize"/>.</exception>
     public MemoryStream? Open(string? part)
     {
         if (part is null || _zip.GetEntry(part) is not { } entry) return null;
+        if (entry.Length > MaxPartSize) throw new InvalidDataException($"{part} is larger than {MaxPartSize} bytes.");
+
         var copy = new MemoryStream();
         using (var stream = entry.Open()) stream.CopyTo(copy);
         copy.Position = 0;
@@ -62,14 +74,22 @@ internal sealed class DocxPackage : IDisposable
     public XDocument? Xml(string? part)
     {
         if (part is null || _zip.GetEntry(part) is not { } entry) return null;
+
+        // The zip reader stops at the size the entry declares, so a part can't expand past this check.
+        var document = entry.Length <= MaxPartSize ? TryLoad(entry) : null;
+        if (document is null) Unreadable.Add(part);
+        return document;
+    }
+
+    private XDocument? TryLoad(ZipArchiveEntry entry)
+    {
         try
         {
             using var stream = entry.Open();
-            return XDocument.Load(stream, LoadOptions.PreserveWhitespace);
+            return UntrustedXml.Load(stream, preserveWhitespace: true, MaxDepth);
         }
         catch (XmlException)
         {
-            Unreadable.Add(part);
             return null;
         }
     }

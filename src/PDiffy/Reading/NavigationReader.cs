@@ -1,4 +1,5 @@
 using UglyToad.PdfPig;
+using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Outline;
 using UglyToad.PdfPig.Tokens;
 
@@ -7,14 +8,41 @@ namespace PDiffy.Reading;
 /// <summary>Bookmarks and page labels.</summary>
 internal static class NavigationReader
 {
-    public static IReadOnlyList<Bookmark> ReadBookmarks(PdfDocument document)
+    /// <summary>The bookmarks, or none when they nest deeper than <see cref="ReadLimits.MaxDepth"/> or loop back on themselves.</summary>
+    public static (IReadOnlyList<Bookmark> Bookmarks, bool Unreadable) ReadBookmarks(PdfDocument document, PdfObjects objects,
+        DictionaryToken catalog)
     {
-        if (!document.TryGetBookmarks(out var bookmarks))
+        // PdfPig reads the outline recursively and doesn't notice a loop, so either would overflow the stack.
+        if (IsTooDeepOrLooped(objects, objects.Dictionary(catalog, "Outlines")))
         {
-            return [];
+            return ([], true);
         }
 
-        return bookmarks.Roots.Select(ToBookmark).ToList();
+        if (!document.TryGetBookmarks(out var bookmarks))
+        {
+            return ([], false);
+        }
+
+        return (bookmarks.Roots.Select(ToBookmark).ToList(), false);
+    }
+
+    // Each item points to its first child and its next sibling, so an item reached a second time means a loop.
+    private static bool IsTooDeepOrLooped(PdfObjects objects, DictionaryToken? outlines)
+    {
+        var visited = new HashSet<IndirectReference>();
+        var open = new Stack<(IToken? Item, int Depth)>();
+        open.Push((outlines?.Data.GetValueOrDefault("First"), 1));
+        while (open.TryPop(out var next))
+        {
+            if (next.Item is not IndirectReferenceToken reference) continue;
+            if (!visited.Add(reference.Data)) return true;
+            if (objects.Resolve(reference) is not DictionaryToken item) continue;
+            if (next.Depth > ReadLimits.MaxDepth) return true;
+            open.Push((item.Data.GetValueOrDefault("Next"), next.Depth));
+            open.Push((item.Data.GetValueOrDefault("First"), next.Depth + 1));
+        }
+
+        return false;
     }
 
     // Page labels are a number tree of (page index, label) pairs.

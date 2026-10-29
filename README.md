@@ -545,11 +545,11 @@ To build trust before deleting the Verify files, keep both assertions in each te
 |---|---|
 | `document` | Whether the PDF is tagged, its language, whether the viewer shows the title, page count |
 | `settings` | PDF version, page mode and layout, what happens when the file opens, whether it has JavaScript or document actions, encryption and what it permits; viewer preferences, optional-content layers and embedded files |
-| `metadata` | Title, author, subject, keywords; whether dates, producer and creator are present; PDF/UA identifier; XMP title, creator, description, language and PDF/A conformance; every other Info entry (such as a company name or classification label) |
+| `metadata` | Title, author, subject, keywords; whether dates, producer and creator are present; PDF/UA identifier; XMP title, creator, description, language and PDF/A conformance, or `xmp=unreadable`; every other Info entry (such as a company name or classification label) |
 | `role-map` | Each custom tag type and the standard type it maps to |
 | `pages` | Size (named when standard, such as `letter` or `a4`), rotation, tab order; crop, bleed, trim and art boxes, user unit and transparency group when set; pages that couldn't be read; page label ranges |
-| `bookmarks` | The outline tree, with target pages |
-| `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, links, how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), and the element's text |
+| `bookmarks` | The outline tree, with target pages, or `unreadable` when it nests more than 256 deep or loops back on itself |
+| `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, links, how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), how many child elements are nested more than 256 deep and left out (`unread-children`), and the element's text |
 | `artifacts` | Text marked as an artifact (headers, footers, page numbers), per page |
 | `untagged` | Text that is neither tagged nor marked as an artifact (including tagged text that no structure element points to), and a count of such images and paths per page |
 | `fonts` | Each font: name, type, whether it's embedded, whether it has a Unicode map, and the character codes its text uses that don't map to Unicode (that text can't be copied, searched or read aloud) |
@@ -697,12 +697,21 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 | 0.3.0 | `docx-snapshot v1`, unchanged version: tracked changes to a table (`table-format`, `table-grid`), to the table properties a row sets for itself (`row-table-format`), to cells (`cell-insert`, `cell-delete`, `cell-merge`, `cell-format`) and to a paragraph mark's formatting (`paragraph-mark-format`) are recorded and listed by `Revisions()`. Only snapshots of documents with those change |
 | 0.3.0 | `docx-snapshot v1`, unchanged version: a cell lists the content controls around it, as a row does, each marked `around` so it can't be mistaken for a control inside the cell. Only snapshots of documents with content controls around cells change |
 | 0.3.0 | `docx-snapshot v1`, unchanged version: a table-column bookmark (one that sets `w:colFirst` and `w:colLast`) prints the columns it covers, counting from 0: `bookmark "Doses" columns=0-2`. Only snapshots of documents with table-column bookmarks change |
+| 0.3.0 | `pdfua-snapshot v1`, unchanged version: XMP metadata is read as UTF-8, as the XMP standard requires, so a non-ASCII value such as `Café` no longer prints as `CafÃ©`. XMP that isn't well-formed XML, or has a DTD, prints `xmp=unreadable` instead of failing the read. Snapshots with non-ASCII XMP values change |
+| 0.3.0 | `pdfua-snapshot v1`, unchanged version: an element whose children are nested more than 256 deep gets `unread-children=N`, and bookmarks nested more than 256 deep, or that loop back on themselves, print `unreadable`. Such files used to overflow the stack, so no approved snapshot changes |
+| 0.3.0 | `docx-snapshot v1`, unchanged version: a part with a DTD, with elements nested more than 256 deep, or larger than 256 MB is listed as `unreadable`. Word doesn't write such parts, so only documents from other tools can change |
 | 0.2.0 | New format `docx-snapshot v1`, for Word documents |
 | 0.1.0 | New format `pdfua-snapshot v1` |
 
 ## Damaged files
 
-A page that can't be loaded (for example, one with a damaged font) comes back marked unreadable, and its snapshot line says so, instead of the whole read failing. The same goes for an attachment whose contents can't be decoded. A file that can't be opened at all throws.
+A page that can't be loaded (for example, one with a damaged font) comes back marked unreadable, and its snapshot line says so, instead of the whole read failing. The same goes for an attachment whose contents can't be decoded, XMP metadata that isn't well-formed XML (`xmp=unreadable`) and a Word part that isn't (`unreadable word/styles.xml`). A file that can't be opened at all throws.
+
+PDiffy also limits what it reads, so a file built to exhaust the stack or memory can't crash the test run:
+
+- Structure elements and bookmarks are read 256 levels deep. An element whose children are deeper gets `unread-children=N`, and their content counts as untagged. Bookmarks nested deeper, or that loop back on themselves, print `unreadable`.
+- XML with a DTD, or with elements nested more than 256 deep, is unreadable: a Word part or a PDF's XMP. An inserted Word document's nesting counts from where it's inserted.
+- A Word part larger than 256 MB is unreadable instead of being loaded into memory.
 
 ## Development
 

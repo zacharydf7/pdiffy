@@ -12,6 +12,13 @@ public sealed record PdfUaDocument
     public IReadOnlyList<PageInfo> Pages { get; init; } = [];
     public IReadOnlyList<PageLabelRange> PageLabels { get; init; } = [];
     public IReadOnlyList<Bookmark> Bookmarks { get; init; } = [];
+
+    /// <summary>
+    /// Set when the bookmarks nest more than 256 deep or loop back on themselves, so they can't be read safely;
+    /// <see cref="Bookmarks"/> is then empty.
+    /// </summary>
+    public bool BookmarksUnreadable { get; init; }
+
     public IReadOnlyList<StructureElement> Structure { get; init; } = [];
     public IReadOnlyList<PageText> Artifacts { get; init; } = [];
     public IReadOnlyList<PageText> Untagged { get; init; } = [];
@@ -95,6 +102,9 @@ public sealed record Metadata(
 
     /// <summary>The PDF/A part and conformance level the XMP claims, such as "2B".</summary>
     public string? PdfAConformance { get; init; }
+
+    /// <summary>Set when the XMP isn't well-formed XML, has a DTD or nests more than 256 deep; the XMP values are then null.</summary>
+    public bool XmpUnreadable { get; init; }
 }
 
 public sealed record RoleMapping(string Custom, string Standard);
@@ -149,6 +159,12 @@ public sealed record StructureElement
 
     /// <summary>How many of the element's marked-content references name no page, so their text can't be found.</summary>
     public int McidsWithoutPage { get; init; }
+
+    /// <summary>
+    /// How many child elements are left out because they're nested more than 256 deep. Their content then counts as
+    /// untagged.
+    /// </summary>
+    public int UnreadChildren { get; init; }
 
     public string? Text { get; init; }
 }

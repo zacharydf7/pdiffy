@@ -18,13 +18,16 @@ internal sealed class PageTree
     public static PageTree Read(PdfObjects objects, DictionaryToken catalog)
     {
         var tree = new PageTree();
-        tree.Add(objects, catalog.Data["Pages"], inheritedResources: null);
+        var pending = new Stack<(IToken Node, DictionaryToken? InheritedResources)>([(catalog.Data["Pages"], null)]);
+        while (pending.TryPop(out var next)) tree.Add(objects, next.Node, next.InheritedResources, pending);
         return tree;
     }
 
-    // Resources can be set on a Pages node and inherited by every page below it.
-    // A node reached a second time (a malformed loop) is skipped.
-    private void Add(PdfObjects objects, IToken node, DictionaryToken? inheritedResources)
+    // Resources can be set on a Pages node and inherited by every page below it. Kids go on the stack instead of being
+    // read in turn, so a tree nested thousands deep can't overflow it. A node reached a second time (a malformed loop)
+    // is skipped.
+    private void Add(PdfObjects objects, IToken node, DictionaryToken? inheritedResources,
+        Stack<(IToken Node, DictionaryToken? InheritedResources)> pending)
     {
         if (node is IndirectReferenceToken visit && !_visited.Add(visit.Data))
         {
@@ -40,9 +43,10 @@ internal sealed class PageTree
         // Some writers leave out /Type, so a node with /Kids is treated as an intermediate node too.
         if (objects.Name(dictionary, "Type") == "Pages" || dictionary.Data.ContainsKey("Kids"))
         {
-            foreach (var kid in objects.Items(dictionary.Data.GetValueOrDefault("Kids")))
+            // Pushed last to first, so they're read first to last.
+            foreach (var kid in objects.Items(dictionary.Data.GetValueOrDefault("Kids")).Reverse())
             {
-                Add(objects, kid, resources);
+                pending.Push((kid, resources));
             }
 
             return;

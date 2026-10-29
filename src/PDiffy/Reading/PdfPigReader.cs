@@ -18,6 +18,7 @@ internal static class PdfPigReader
         var structure = StructureTreeReader.Read(objects, catalog, pageTree,
             (page, mcid) => readable.TryGetValue(page, out var read) ? read.Content.LettersByMcid.GetValueOrDefault(mcid) : null);
         var loose = CollectLooseContent(readable, structure.ReferencedMcids);
+        var (bookmarks, bookmarksUnreadable) = NavigationReader.ReadBookmarks(document, objects, catalog);
         var layouts = readable.OrderBy(pair => pair.Key)
             .Select(pair => LayoutReader.Read(pair.Key, pair.Value.Page, pair.Value.Content.Owners, structure.ReferencedMcids))
             .ToList();
@@ -30,7 +31,8 @@ internal static class PdfPigReader
             RoleMap = structure.RoleMap,
             Pages = pages,
             PageLabels = NavigationReader.ReadPageLabels(objects, catalog),
-            Bookmarks = NavigationReader.ReadBookmarks(document),
+            Bookmarks = bookmarks,
+            BookmarksUnreadable = bookmarksUnreadable,
             Structure = structure.Elements,
             Artifacts = loose.Artifacts,
             Untagged = loose.Untagged,

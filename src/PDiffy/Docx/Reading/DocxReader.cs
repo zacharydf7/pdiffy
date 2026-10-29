@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+using PDiffy.Reading;
 using static PDiffy.Docx.Reading.DocxXml;
 
 namespace PDiffy.Docx.Reading;
@@ -28,11 +29,11 @@ internal sealed class DocxReader
         _inlines = new InlineReader(styles, package, part, usedStyles, container => Blocks(container).ToList());
     }
 
-    public static DocxDocument Read(Stream stream) => Read(stream, 0);
+    public static DocxDocument Read(Stream stream) => Read(stream, 0, ReadLimits.MaxDepth);
 
-    private static DocxDocument Read(Stream stream, int depth)
+    private static DocxDocument Read(Stream stream, int depth, int maxXmlDepth)
     {
-        using var package = new DocxPackage(stream);
+        using var package = new DocxPackage(stream, maxXmlDepth);
         var main = package.Xml(package.MainPart)?.Root?.Element(W + "body")
             ?? throw new InvalidDataException($"The DOCX has no readable document body ({package.MainPart}).");
         var settings = package.Xml(package.Related(package.MainPart, "/settings"))?.Root;
@@ -328,25 +329,27 @@ internal sealed class DocxReader
 
     // An inserted DOCX (w:altChunk) is read in place as a document of its own, and the parts of it that can't be read
     // are listed with this document's, as "{inserted part}!{its part}". Other formats, such as HTML or RTF, and a DOCX
-    // that can't be opened are recorded by their hash.
+    // that can't be opened or is too large are recorded by their hash.
     private DocxInserted Inserted(XElement chunk)
     {
         var part = (string?)chunk.Attribute(R + "id") is { } id ? _package.Target(_part, id) : null;
         var kind = part is null ? null : NonEmpty(Path.GetExtension(part).TrimStart('.').ToLowerInvariant());
-        if (kind == "docx" && _depth < MaxInsertedDepth && _package.Open(part) is { } stream)
+        if (kind == "docx" && _depth < MaxInsertedDepth)
         {
-            using (stream)
+            try
             {
-                try
+                using var stream = _package.Open(part);
+                if (stream is not null)
                 {
-                    var inserted = Read(stream, _depth + 1);
+                    // It's read on the same stack as this document, so its nesting starts from where it's inserted.
+                    var inserted = Read(stream, _depth + 1, _package.MaxDepth - chunk.Ancestors().Count());
                     _package.Unreadable.AddRange(inserted.Document.UnreadableParts.Select(unreadable => $"{part}!{unreadable}"));
                     return new DocxInserted { Kind = kind, Document = inserted };
                 }
-                catch (InvalidDataException)
-                {
-                    return new DocxInserted { Kind = kind, Unreadable = true, Hash = _package.Hash(part) };
-                }
+            }
+            catch (InvalidDataException)
+            {
+                return new DocxInserted { Kind = kind, Unreadable = true, Hash = _package.Hash(part) };
             }
         }
 

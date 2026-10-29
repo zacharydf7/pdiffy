@@ -53,6 +53,23 @@ public class MalformedPdfTests
     }
 
     [Fact]
+    public void Load_ShouldMarkTheBookmarksUnreadable_WhenAnItemContainsItself()
+    {
+        var document = OnePage("/Outlines 6 0 R", extraObjects: ["<< /Type /Outlines /First 7 0 R /Last 7 0 R /Count 1 >>",
+            "<< /Title (Loop) /Parent 6 0 R /Dest [3 0 R /Fit] /First 7 0 R /Last 7 0 R /Count 1 >>"]);
+
+        Assert.Equal((true, 0), (document.BookmarksUnreadable, document.Bookmarks.Count));
+    }
+
+    [Fact]
+    public void Load_ShouldStopFollowing_WhenAFieldValueContainsItself()
+    {
+        var document = OnePage("/AcroForm << /Fields [6 0 R] >>", extraObjects: ["<< /T (pick) /FT /Ch /V 7 0 R >>", "[(a) 7 0 R]"]);
+
+        Assert.Equal("a, a, a, a, ...", Assert.Single(document.FormFields).Value);
+    }
+
+    [Fact]
     public void Load_ShouldCountEachPageOnce_WhenPageTreeContainsItself()
     {
         var document = OnePage(pagesKids: "3 0 R 2 0 R");

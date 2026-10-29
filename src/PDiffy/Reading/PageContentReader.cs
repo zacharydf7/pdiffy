@@ -28,10 +28,13 @@ internal sealed class PageContentReader
 
     private PageContent ReadPage(Page page)
     {
-        foreach (var markedContent in page.GetMarkedContents())
+        var pending = new Stack<(MarkedContentElement MarkedContent, int? EnclosingMcid)>();
+        foreach (var markedContent in page.GetMarkedContents().Reverse())
         {
-            Visit(markedContent, enclosingMcid: null);
+            pending.Push((markedContent, null));
         }
+
+        while (pending.TryPop(out var next)) Visit(next.MarkedContent, next.EnclosingMcid, pending);
 
         // page.Letters is in content order, so each MCID's letters come out in reading order.
         var lettersByMcid = new Dictionary<int, List<Letter>>();
@@ -58,8 +61,10 @@ internal sealed class PageContentReader
         return new PageContent(lettersByMcid, _artifacts, untaggedText.Length > 0 ? untaggedText : null, _owners);
     }
 
-    // Marked content without its own MCID belongs to the nearest enclosing MCID, if there is one.
-    private void Visit(MarkedContentElement markedContent, int? enclosingMcid)
+    // Marked content without its own MCID belongs to the nearest enclosing MCID, if there is one. Children go on the
+    // stack instead of being visited in turn, so content nested thousands deep can't overflow it.
+    private void Visit(MarkedContentElement markedContent, int? enclosingMcid,
+        Stack<(MarkedContentElement MarkedContent, int? EnclosingMcid)> pending)
     {
         if (markedContent.IsArtifact)
         {
@@ -86,9 +91,10 @@ internal sealed class PageContentReader
             Own(markedContent, new ContentOwner(IsArtifact: false, mcid));
         }
 
-        foreach (var child in markedContent.Children)
+        // Pushed last to first, so they're visited first to last.
+        foreach (var child in markedContent.Children.Reverse())
         {
-            Visit(child, mcid);
+            pending.Push((child, mcid));
         }
     }
 
@@ -111,14 +117,16 @@ internal sealed class PageContentReader
         }
     }
 
+    // In order, walked with a stack for the same reason as Visit.
     private static IEnumerable<MarkedContentElement> SelfAndDescendants(MarkedContentElement markedContent)
     {
-        yield return markedContent;
-        foreach (var child in markedContent.Children)
+        var pending = new Stack<MarkedContentElement>([markedContent]);
+        while (pending.TryPop(out var element))
         {
-            foreach (var descendant in SelfAndDescendants(child))
+            yield return element;
+            foreach (var child in element.Children.Reverse())
             {
-                yield return descendant;
+                pending.Push(child);
             }
         }
     }

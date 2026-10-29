@@ -97,3 +97,10 @@ their line. See [`DocxRevision`](xref:PDiffy.DocxRevision) for every kind.
 - Lengths are in points. Colors are hex.
 - Relationship ids, editing-session ids, the zip's layout and styles nothing uses are left out, so regenerating the
   same document gives the same snapshot.
+
+## Damaged files
+
+A part that can't be read is listed on the `document` section's `unreadable` line, such as `unreadable word/styles.xml`,
+and read as if it were missing. A part is unreadable when it isn't well-formed XML, has a DTD, nests elements more than
+256 deep (an inserted document's nesting counts from where it's inserted) or is larger than 256 MB. A file whose body
+can't be read throws.

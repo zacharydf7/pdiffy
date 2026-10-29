@@ -38,11 +38,11 @@ Sections always appear in this order. Each can be left out with [`Section`](xref
 |---|---|
 | `document` | Whether the PDF is tagged, its language, whether the viewer shows the title, page count |
 | `settings` | PDF version, page mode and layout, what happens when the file opens, whether it has JavaScript or document actions, encryption and what it permits; viewer preferences, optional-content layers and embedded files |
-| `metadata` | Title, author, subject, keywords; whether dates, producer and creator are present; PDF/UA identifier; XMP title, creator, description, language and PDF/A conformance; every other Info entry (such as a company name or classification label) |
+| `metadata` | Title, author, subject, keywords; whether dates, producer and creator are present; PDF/UA identifier; XMP title, creator, description, language and PDF/A conformance, or `xmp=unreadable`; every other Info entry (such as a company name or classification label) |
 | `role-map` | Each custom tag type and the standard type it maps to |
 | `pages` | Size (named when standard, such as `letter` or `a4`), rotation, tab order; crop, bleed, trim and art boxes, user unit and transparency group when set; pages that couldn't be read; page label ranges |
-| `bookmarks` | The outline tree, with target pages |
-| `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, links, how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), and the element's text |
+| `bookmarks` | The outline tree, with target pages, or `unreadable` when it nests more than 256 deep or loops back on itself |
+| `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, links, how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), how many child elements are nested more than 256 deep and left out (`unread-children`), and the element's text |
 | `artifacts` | Text marked as an artifact (headers, footers, page numbers), per page |
 | `untagged` | Text that is neither tagged nor marked as an artifact (including tagged text that no structure element points to), and a count of such images and paths per page |
 | `fonts` | Each font: name, type, whether it's embedded, whether it has a Unicode map, and the character codes its text uses that don't map to Unicode (that text can't be copied, searched or read aloud) |
@@ -106,5 +106,10 @@ These change without changing what anyone reading the document gets:
 ## Damaged files
 
 A page that can't be loaded (for example, one with a damaged font) comes back marked unreadable, and its snapshot line
-says so, instead of the whole read failing. The same goes for an attachment whose contents can't be decoded. A file that
-can't be opened at all throws.
+says so, instead of the whole read failing. The same goes for an attachment whose contents can't be decoded, and for XMP
+metadata that isn't well-formed XML or has a DTD (`xmp=unreadable`). A file that can't be opened at all throws.
+
+PDiffy also reads structure elements and bookmarks only 256 levels deep, so a file built to overflow the stack can't
+crash the test run. An element whose children are deeper gets `unread-children=N`, and their content counts as untagged.
+Bookmarks nested deeper, or that loop back on themselves, print `unreadable`. See [Limitations](limitations.md) for what
+PDiffy can't guard against.

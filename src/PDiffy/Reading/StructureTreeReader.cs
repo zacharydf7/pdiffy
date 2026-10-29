@@ -46,12 +46,13 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
 
         var topLevel = Elements(root, _readElements).ToList();
         NameReferencedHeaders(topLevel);
-        var elements = topLevel.Select(element => ReadElement(element, inheritedPage: null)).ToList();
+        var elements = topLevel.Select(element => ReadElement(element, inheritedPage: null, depth: 1)).ToList();
         var mappings = _roleMap.Select(pair => new RoleMapping(pair.Key, pair.Value)).ToList();
         return new StructureTree(mappings, elements, _referencedMcids, _referencedObjects);
     }
 
-    private StructureElement ReadElement(DictionaryToken element, int? inheritedPage)
+    // Elements nested deeper than ReadLimits.MaxDepth are counted, not read, so a hostile tree can't overflow the stack.
+    private StructureElement ReadElement(DictionaryToken element, int? inheritedPage, int depth)
     {
         var type = objects.Name(element, "S") ?? "(none)";
         var page = pages.NumberOf(element.Data.GetValueOrDefault("Pg")) ?? inheritedPage;
@@ -60,6 +61,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
         var annotations = new List<Annotation>();
         var children = new List<StructureElement>();
         var mcidsWithoutPage = 0;
+        var unreadChildren = 0;
 
         foreach (var kid in objects.Items(element.Data.GetValueOrDefault("K")))
         {
@@ -89,9 +91,13 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
 
                     break;
                 case DictionaryToken child when IsElement(child):
-                    if (IsFirstVisit(kid, _readElements))
+                    if (depth == ReadLimits.MaxDepth)
                     {
-                        children.Add(ReadElement(child, page));
+                        unreadChildren++;
+                    }
+                    else if (IsFirstVisit(kid, _readElements))
+                    {
+                        children.Add(ReadElement(child, page, depth + 1));
                     }
 
                     break;
@@ -129,6 +135,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
             Summary = FirstAttribute(attributes, a => objects.Text(a, "Summary")),
             Annotations = annotations,
             McidsWithoutPage = mcidsWithoutPage,
+            UnreadChildren = unreadChildren,
             Text = Join(pieces),
             Children = children,
         };
@@ -193,7 +200,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
         var visited = new HashSet<IndirectReference>();
         foreach (var element in topLevel)
         {
-            AddWithDescendants(element, allElements, visited);
+            AddWithDescendants(element, allElements, visited, depth: 1);
         }
 
         var referenced = new HashSet<string>();
@@ -227,12 +234,14 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
         return current == type ? null : current;
     }
 
-    private void AddWithDescendants(DictionaryToken element, List<DictionaryToken> allElements, HashSet<IndirectReference> visited)
+    private void AddWithDescendants(DictionaryToken element, List<DictionaryToken> allElements, HashSet<IndirectReference> visited,
+        int depth)
     {
         allElements.Add(element);
+        if (depth == ReadLimits.MaxDepth) return;
         foreach (var child in Elements(element, visited))
         {
-            AddWithDescendants(child, allElements, visited);
+            AddWithDescendants(child, allElements, visited, depth + 1);
         }
     }
 
