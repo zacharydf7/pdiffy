@@ -103,6 +103,9 @@ to see one, built from two versions of a small drug guide. It has:
 - Links to each page that changed.
 - Each section side by side, the verified snapshot on the left and the received one on the right, with edited lines
   paired and the changed words highlighted. Long runs of unchanged lines fold away.
+- A map of each page with a layout change, drawn from the layout lines: unchanged things in gray, a dashed outline
+  where something was and a filled box where it is now. Hover over a box to see its line. It's a sketch of positions, not a
+  picture of the page, so it needs no renderer and works from the snapshots alone.
 
 [`SnapshotDiff.ToHtml`](xref:PDiffy.SnapshotDiff.ToHtml) gives the same page for any comparison.
 

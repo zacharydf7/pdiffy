@@ -38,13 +38,40 @@ internal static class DiffReport
         {
             var changed = rows.Any(row => row.Kind != ' ');
             html.Append($"<details class=\"section\"{(changed ? " open" : "")}><summary>{Encode(name)}");
-            html.Append(changed ? "" : " <span class=\"same\">unchanged</span>").Append("</summary><table>");
+            html.Append(changed ? "" : " <span class=\"same\">unchanged</span>").Append("</summary>");
+            if (!plain && name == SnapshotWriter.Name(Section.Layout))
+            {
+                html.Append(PageMaps(beforeSections, afterSections, diff));
+            }
+
+            html.Append("<table>");
             html.Append("<thead><tr><th>Before</th><th>After</th></tr></thead>");
             WriteRows(html, rows, anchors);
             html.Append("</table></details>");
         }
 
         return html.Append(Tail).ToString();
+    }
+
+    // A map for each page with a layout change, drawn from the lines as compared, so pages renumbered after an inserted
+    // page line up. A removed page keeps its number, so its lines show as gone from the page that took its place.
+    private static string PageMaps(Dictionary<string, List<string>> before, Dictionary<string, List<string>> after,
+        SnapshotDiff diff)
+    {
+        var layout = SnapshotWriter.Name(Section.Layout);
+        var was = PageMap.ByPage(before.GetValueOrDefault(layout) ?? []);
+        var now = PageMap.ByPage(after.GetValueOrDefault(layout) ?? []);
+        var sizes = PageMap.Sizes(after.GetValueOrDefault(SnapshotWriter.Name(Section.Pages)) ?? []);
+        var maps = diff.Changes.Where(change => change.Section == Section.Layout).Select(change => change.Page)
+            .OfType<int>().Distinct().Order()
+            .Select(page => PageMap.Draw(page, was.GetValueOrDefault(page) ?? [], now.GetValueOrDefault(page) ?? [],
+                sizes.GetValueOrDefault(page, PageMap.DefaultSize)))
+            .OfType<string>().ToList();
+        if (maps.Count == 0) return "";
+
+        return "<div class=\"maps\"><p class=\"legend\">Where things are on each page with a layout change: gray is "
+            + "unchanged, a dashed outline is where something was, and a filled box is where it is now. A sketch of "
+            + "positions, not a picture of the page.</p>" + string.Concat(maps) + "</div>";
     }
 
     private static string Summary(SnapshotDiff diff, bool plain) =>
@@ -284,6 +311,17 @@ internal static class DiffReport
         .fold summary { color: var(--muted); cursor: pointer; font: 12px system-ui, sans-serif; }
         .fold td { padding: 0; }
         .fold table td { padding: 1px 8px; }
+        .maps { display: flex; flex-wrap: wrap; gap: 12px; padding: 0 8px 8px; }
+        .maps .legend { flex-basis: 100%; margin: 0; color: var(--muted); }
+        .map { margin: 0; }
+        .map figcaption { color: var(--muted); font-size: 12px; }
+        .map svg { border: 1px solid var(--line); max-width: 100%; height: auto; }
+        .map rect { vector-effect: non-scaling-stroke; stroke-width: 1px; }
+        .map .page { fill: var(--bg); stroke: none; }
+        .map .same rect { fill: none; stroke: var(--muted); }
+        .map .was rect { fill: none; stroke: #cf222e; stroke-dasharray: 4 2; }
+        .map .now rect { fill: var(--mark-added); stroke: #1a7f37; }
+        .map text { fill: var(--text); }
         </style></head><body>
         """;
 

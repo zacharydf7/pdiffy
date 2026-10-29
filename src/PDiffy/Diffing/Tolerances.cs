@@ -47,7 +47,7 @@ internal sealed class Tolerances(IReadOnlyDictionary<Field, double> points)
     public bool Allow(SnapshotLine line, string key, string from, string to)
     {
         if (FieldOf(line, key) is not { } field || !points.TryGetValue(field, out var tolerance)) return false;
-        var (before, after) = (Numbers(from), Numbers(to));
+        var (before, after) = (SnapshotLine.Numbers(from), SnapshotLine.Numbers(to));
         return before is not null && after is not null && before.Length == after.Length
             && before.Zip(after).All(pair => Math.Abs(pair.First - pair.Second) <= tolerance + Slack);
     }
@@ -61,19 +61,6 @@ internal sealed class Tolerances(IReadOnlyDictionary<Field, double> points)
         "width" => Field.LineWidths,
         _ => null,
     };
-
-    // A value is one number, a pair such as 72,700, or a size such as 120x40.
-    private static double[]? Numbers(string value)
-    {
-        var parts = value.Split(',', 'x');
-        var numbers = new double[parts.Length];
-        for (var i = 0; i < parts.Length; i++)
-        {
-            if (!double.TryParse(parts[i], NumberStyles.Float, CultureInfo.InvariantCulture, out numbers[i])) return null;
-        }
-
-        return numbers;
-    }
 
     private static string Number(double value) => value.ToString(CultureInfo.InvariantCulture);
 }

@@ -11,6 +11,94 @@ public class DiffReportTests
     ]);
 
     [Fact]
+    public void ToHtml_ShouldDrawWhereItWasAndWhereItIs_WhenSomethingMovesOnAPage()
+    {
+        var before = Layout("p1 letter rotate=0", "p1 image tagged at=72,600 size=10x10 pixels=1x1 hash=x",
+            "p1 text tagged at=72,720 size=12 \"Title\"");
+
+        var html = SnapshotDiff.Compare(before, before.Replace("at=72,600", "at=72,520")).ToHtml();
+
+        Assert.Contains("<figure class=\"map\"><figcaption>p1</figcaption><svg viewBox=\"0 0 612 792\"", html);
+        Assert.Matches("<g class=\"was\"><title>[^<]*at=72,600[^<]*</title><rect x=\"72\" y=\"182\" width=\"10\" "
+            + "height=\"10\"/>", html);
+        Assert.Matches("<g class=\"now\"><title>[^<]*at=72,520[^<]*</title><rect x=\"72\" y=\"262\" width=\"10\" "
+            + "height=\"10\"/>", html);
+        Assert.Contains("<g class=\"same\"><title>p1 text tagged at=72,720 size=12 &quot;Title&quot;</title>", html);
+    }
+
+    [Theory]
+    [InlineData("p1 a4-landscape rotate=0", "0 0 841.9 595.3")]
+    [InlineData("p1 500x700 rotate=0", "0 0 500 700")]
+    [InlineData("p1 unreadable", "0 0 612 792")]
+    public void ToHtml_ShouldDrawThePageAtItsSize_WhenThePagesSectionGivesOne(string page, string viewBox)
+    {
+        var before = Layout(page, "p1 path artifact at=72,500 size=100x20");
+
+        var html = SnapshotDiff.Compare(before, before.Replace("at=72,500", "at=80,500")).ToHtml();
+
+        Assert.Contains($"<svg viewBox=\"{viewBox}\"", html);
+    }
+
+    [Fact]
+    public void ToHtml_ShouldDrawNoMap_WhenNothingInTheLayoutChanged()
+    {
+        var before = Layout("p1 letter rotate=0", "p1 text tagged at=72,720 size=12 \"Title\"");
+
+        var html = SnapshotDiff.Compare(before, before.Replace("rotate=0", "rotate=90")).ToHtml();
+
+        Assert.DoesNotContain("class=\"maps\"", html);
+    }
+
+    [Fact]
+    public void ToHtml_ShouldDrawOnlyThePagesThatChanged_WhenOneOfTwoPagesChangesInTheLayout()
+    {
+        var before = Layout("p1 letter rotate=0\n  p2 letter rotate=0", "p1 path artifact at=72,500 size=100x20",
+            "p2 path artifact at=72,500 size=100x20");
+
+        var html = SnapshotDiff.Compare(before, before.Replace("p1 path artifact at=72,500", "p1 path artifact at=80,500")).ToHtml();
+
+        Assert.Contains("<figcaption>p1</figcaption>", html);
+        Assert.DoesNotContain("<figcaption>p2</figcaption>", html);
+    }
+
+    [Fact]
+    public void ToHtml_ShouldDrawTheRenumberedPage_WhenAPageIsInsertedBeforeIt()
+    {
+        var before = Layout("p1 letter rotate=0", "p1 text tagged at=72,700 size=12 \"The body of the letter\"");
+        var after = Layout("p1 letter rotate=0\n  p2 letter rotate=0", "p1 text tagged at=72,700 size=12 \"A new cover\"",
+            "p2 text tagged at=72,690 size=12 \"The body of the letter\"");
+
+        var html = SnapshotDiff.Compare(before, after).ToHtml();
+
+        Assert.Matches("<figcaption>p2</figcaption>.*<g class=\"now\"><title>p2 text tagged at=72,690.*"
+            + "<g class=\"was\"><title>p2 text tagged at=72,700", html);
+    }
+
+    [Fact]
+    public void ToHtml_ShouldDrawATextRunAtATypicalSize_WhenItsFontSizeIsLeftOut()
+    {
+        var before = Layout("p1 letter rotate=0", "p1 text tagged at=72,700 \"Title\"");
+
+        var html = SnapshotDiff.Compare(before, before.Replace("at=72,700", "at=72,400")).ToHtml();
+
+        Assert.Contains("<g class=\"now\"><title>p1 text tagged at=72,400 &quot;Title&quot;</title>"
+            + "<rect x=\"72\" y=\"384\" width=\"25\" height=\"10\"/>", html);
+    }
+
+    [Fact]
+    public void ToHtml_ShouldDrawNoMap_WhenTheLayoutLinesHaveNoPositions()
+    {
+        var before = Layout("p1 letter rotate=0", "p1 text tagged size=12 \"Title\"");
+
+        var html = SnapshotDiff.Compare(before, before.Replace("Title", "Title page")).ToHtml();
+
+        Assert.DoesNotContain("class=\"maps\"", html);
+    }
+
+    private static string Layout(string page, params string[] layout) =>
+        string.Join("\n", ["# pdfua-snapshot v1", "pages", "  " + page, "layout", .. layout.Select(line => "  " + line), ""]);
+
+    [Fact]
     public void ToHtml_ShouldShowBothSidesWithTheChangedWordsMarked_WhenALineChanges()
     {
         var html = SnapshotDiff.Compare(Before, Before.Replace("Take with food", "Take after food")).ToHtml();

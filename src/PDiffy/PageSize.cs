@@ -21,6 +21,20 @@ internal static class PageSize
         return $"{Round(width)}x{Round(height)}";
     }
 
+    /// <summary>The size <see cref="Describe"/> printed, read back: a name, a name with "-landscape", or W×H.</summary>
+    public static (double Width, double Height)? Dimensions(string description)
+    {
+        var landscape = description.EndsWith("-landscape", StringComparison.Ordinal);
+        var name = landscape ? description[..^"-landscape".Length] : description;
+        foreach (var (known, width, height) in Known)
+        {
+            if (known == name) return landscape ? (height, width) : (width, height);
+        }
+
+        var parts = description.Split('x');
+        return parts.Length == 2 && int.TryParse(parts[0], out var w) && int.TryParse(parts[1], out var h) ? (w, h) : null;
+    }
+
     private static bool Near(double a, double b) => Math.Abs(a - b) <= 1;
 
     private static int Round(double d) => (int)Math.Round(d, MidpointRounding.AwayFromZero);

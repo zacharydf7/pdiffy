@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace PDiffy.Diffing;
@@ -53,6 +54,21 @@ internal sealed class SnapshotLine(string text, int depth)
         }
 
         return line;
+    }
+
+    /// <summary>
+    /// The numbers in a value: one number, a pair such as 72,700, or a size such as 120x40; null when one isn't a number.
+    /// </summary>
+    internal static double[]? Numbers(string value)
+    {
+        var parts = value.Split(',', 'x');
+        var numbers = new double[parts.Length];
+        for (var i = 0; i < parts.Length; i++)
+        {
+            if (!double.TryParse(parts[i], NumberStyles.Float, CultureInfo.InvariantCulture, out numbers[i])) return null;
+        }
+
+        return numbers;
     }
 
     // Splits on spaces outside quotes; a quoted value keeps its quotes and escapes.
