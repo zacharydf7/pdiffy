@@ -157,7 +157,6 @@ internal static class DiffReport
 
     // Lines align by the longest common run of lines. Between those, a removed and an added line share a row when the
     // change list would call them one edited line.
-    // A before line is matched as given and shown as written; the two lists hold the same lines in the same order.
     private static List<Row> Rows(List<string> before, List<string> written, List<string> after, bool plain,
         string sectionName)
     {

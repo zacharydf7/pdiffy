@@ -512,6 +512,7 @@ public class SnapshotDiffTests
     [InlineData("    P p3 \"See p3 and \\\"p4\\\"\"", "    P p2 \"See p3 and \\\"p4\\\"\"")]
     [InlineData("  info p3=\"x\"", "  info p3=\"x\"")]
     [InlineData("# only pages: 3", "# only pages: 3")]
+    [InlineData("  Note -> ", "  Note -> ")]
     public void Renumber_ShouldChangeOnlyPageWords_WhenAPageWasRemoved(string line, string expected)
     {
         var before = SnapshotTree.Parse(Pages(10, insertedAfter: 1));

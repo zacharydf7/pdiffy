@@ -56,8 +56,13 @@ internal sealed class PageAlignment
     public string Renumber(string snapshot) => string.Join('\n', snapshot.Split('\n').Select(line =>
     {
         if (line.StartsWith('#')) return line;
+        var tokens = SnapshotLine.Tokens(line.Trim()).ToList();
+        var renumbered = tokens.ConvertAll(RenumberWord);
+        if (renumbered.SequenceEqual(tokens)) return line;
+
+        // Only a line with a page to renumber is rebuilt, so every other line keeps its spacing.
         var indent = line.Length - line.TrimStart().Length;
-        return line[..indent] + string.Join(' ', SnapshotLine.Tokens(line.Trim()).Select(RenumberWord));
+        return line[..indent] + string.Join(' ', renumbered);
     }));
 
     private string RenumberWord(string word)
@@ -138,8 +143,7 @@ internal sealed class PageAlignment
         return sections.Values.SelectMany(lines => lines.SelectMany(Flatten));
     }
 
-    // Pages with the same words line up first, blank pages included; between those, pages with mostly the same words
-    // pair in order, as edited lines do.
+    // Identical pages (blank ones too) line up first; between them, pages with mostly the same words pair in order.
     private static List<(int Old, int New)> Align(HashSet<string>[] before, HashSet<string>[] after)
     {
         static string Key(HashSet<string> words) => string.Join(' ', words.Order(StringComparer.Ordinal));

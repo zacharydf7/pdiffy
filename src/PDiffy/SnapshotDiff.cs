@@ -84,8 +84,7 @@ public sealed class SnapshotDiff
         return new SnapshotDiff(before, after, changes, matchedBefore);
     }
 
-    // The earlier snapshot comes back as compared: renumbered to line up with the later one when pages were inserted or
-    // removed.
+    // Also returns the earlier snapshot as compared, its pages renumbered when pages were inserted or removed.
     private static (List<SnapshotChange> Changes, string MatchedBefore) CompareSections(string before, string after)
     {
         var changes = new List<SnapshotChange>();
