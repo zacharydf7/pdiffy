@@ -123,7 +123,8 @@ public class PdfUaDocumentLoadTests
     {
         var pdf = new TestPdf();
         pdf.AddPage().Tagged(0, "Continued");
-        pdf.AddPage().Tagged(0, "overleaf");
+        // In Helvetica 12 pt, "Continued" ends at about x=126.7, so only the change of page can add the space.
+        pdf.AddPage().Raw("/P << /MCID 0 >> BDC BT /F1 12 Tf 127 720 Td (overleaf) Tj ET EMC");
         pdf.Structure(new TestElement("P", 0, new TestMcr(0, Page: 2)));
 
         var paragraph = Assert.Single(pdf.Load().Structure);

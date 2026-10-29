@@ -6,7 +6,10 @@ namespace PDiffy.Reading;
 
 internal static partial class TextJoiner
 {
-    // A space goes between two letters when the baseline changes or the gap is wider than 0.2 em.
+    /// <summary>The widest gap between two letters, as a share of the font size, that still counts as no space.</summary>
+    public const double SpaceGap = 0.2;
+
+    // A space goes between two letters when the baseline changes or the gap is wider than SpaceGap em.
     // Space glyphs in the PDF come through as letters themselves.
     public static string Join(IEnumerable<Letter> letters)
     {
@@ -17,7 +20,7 @@ internal static partial class TextJoiner
             if (previous is not null)
             {
                 var gap = letter.StartBaseLine.X - previous.EndBaseLine.X;
-                if (!OnSameLine(previous, letter) || gap > previous.PointSize * 0.2)
+                if (!OnSameLine(previous, letter) || gap > previous.PointSize * SpaceGap)
                 {
                     sb.Append(' ');
                 }
