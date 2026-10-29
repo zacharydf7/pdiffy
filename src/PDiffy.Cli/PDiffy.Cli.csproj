@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>pdiffy</ToolCommandName>
-    <Description>The pdiffy command: compare two PDFs or snapshot files, print a PDF's snapshot, and accept received snapshots from PDiffy tests.</Description>
+    <Description>The pdiffy command for PDiffy: compare two PDFs, Word files or snapshot files, print a document's snapshot, accept received snapshots, and summarize a test run for CI.</Description>
   </PropertyGroup>
 
   <ItemGroup>

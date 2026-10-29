@@ -1,11 +1,21 @@
 # PDiffy
 
-Snapshot tests for PDFs that compare what a document says, not how its bytes are encoded.
+Document-aware testing for PDF and Word files in .NET. PDiffy reads what a document says (its structure, text,
+accessibility and layout) and gives you semantic snapshots, comparisons and checks that ignore how the file happens to
+be encoded.
 
 **Documentation:** [zacharydf7.github.io/pdiffy](https://zacharydf7.github.io/pdiffy/): guides, the command line, the
 snapshot formats and the full API reference.
 
 PDiffy reads a PDF and writes a plain-text snapshot of everything a reader, a screen reader or a viewer gets from it: the tag structure, text, alt text, reading order, language, tables, links, bookmarks, artifacts, untagged content, fonts, form fields, document settings, and the position and style of everything drawn on each page. A test passes when the snapshot matches the approved one exactly. When it doesn't, the difference reads like a change to the document.
+
+The same reading of the document supports three kinds of test:
+
+- **Snapshot tests.** `PdfSnapshot.VerifyAsync` compares a document with its approved snapshot and explains any
+  difference element by element, on the page where it happened.
+- **Comparisons.** `CompareTo` and `pdiffy before.pdf after.pdf` compare two documents directly, with no snapshot files.
+- **Checks.** Everything in a snapshot is also a property to assert on, such as each figure's alt text, each form
+  field's name or each font's Unicode mapping.
 
 ## Why not compare bytes
 

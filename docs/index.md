@@ -6,7 +6,7 @@ _layout: landing
   <img src="images/logo.svg" alt="" width="96" height="96">
   <div>
     <h1>PDiffy</h1>
-    <p class="lead">Snapshot tests for PDFs and Word documents that compare what a document says, not how its bytes are encoded.</p>
+    <p class="lead">Document-aware testing for PDF and Word files in .NET. Semantic snapshots, comparisons and checks that look at what a document says, not how the file happens to be encoded.</p>
     <p>
       <a class="btn btn-primary" href="guide/getting-started.md">Get started</a>
       <a class="btn btn-outline-secondary" href="api/index.md">API reference</a>
@@ -19,6 +19,12 @@ PDiffy reads a PDF and writes a plain-text snapshot of everything a reader, a sc
 the tag structure, text, alt text, reading order, language, tables, links, bookmarks, fonts, form fields, document
 settings, and the position and style of everything drawn on each page. A test passes when the snapshot matches the
 approved one. When it doesn't, the failure reads like a change to the document.
+
+| Use it for | With | Learn more |
+|---|---|---|
+| **Snapshot tests**: approve a document once, then see exactly what changed in it | `PdfSnapshot.VerifyAsync`, `DocxSnapshot.VerifyAsync` | [PDF snapshots](guide/pdf-snapshots.md) |
+| **Comparisons**: compare two documents directly, with no snapshot files | `CompareTo`, `pdiffy before.pdf after.pdf` | [Compare two documents](guide/comparing.md) |
+| **Checks**: assert on alt text, forms, fonts or settings without knowing PDF internals | `PdfUaDocument`, `DocxDocument` | [Check documents directly](guide/checking-documents.md) |
 
 ```csharp
 [Fact]
