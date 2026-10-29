@@ -813,6 +813,8 @@ dotnet test
 
 The tests build their own small PDFs in code (`tests/PDiffy.Tests.Unit/Pdfs`): `TestPdf` writes tagged documents, and `RawPdf` writes hand-made malformed ones. No real-world PDFs are checked in.
 
+The benchmarks build larger documents the same way and time loading, writing snapshots and comparing them: `dotnet run -c Release --project benchmarks/PDiffy.Benchmarks -- --filter '*'`. The [performance page](https://zacharydf7.github.io/pdiffy/reference/performance.html) has the latest numbers.
+
 Pushes to main and pull requests are built and tested on Windows and Linux. Pushing a version tag such as `v0.1.0` also publishes that version of both packages to nuget.org.
 
 ## License

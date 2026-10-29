@@ -3,6 +3,9 @@
     <Project Path="src/PDiffy/PDiffy.csproj" />
     <Project Path="src/PDiffy.Cli/PDiffy.Cli.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/PDiffy.Benchmarks/PDiffy.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/PDiffy.Tests.Unit/PDiffy.Tests.Unit.csproj" />
   </Folder>

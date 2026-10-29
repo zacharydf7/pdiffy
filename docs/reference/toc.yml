@@ -12,3 +12,5 @@
   href: format-changes.md
 - name: Limitations and guarantees
   href: limitations.md
+- name: Performance
+  href: performance.md

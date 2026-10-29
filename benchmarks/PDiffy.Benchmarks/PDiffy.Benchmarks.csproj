@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PDiffy\PDiffy.csproj" />
+  </ItemGroup>
+
+  <!-- The test project's document builders, so the benchmarks build their documents in code too. -->
+  <ItemGroup>
+    <Compile Include="..\..\tests\PDiffy.Tests.Unit\Pdfs\*.cs" Link="Builders\%(Filename)%(Extension)" />
+    <Compile Include="..\..\tests\PDiffy.Tests.Unit\Docx\TestDocx.cs" Link="Builders\TestDocx.cs" />
+  </ItemGroup>
+
+</Project>
