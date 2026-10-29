@@ -487,6 +487,17 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldNotPairLinesOfKeys_WhenTheyStartWithDifferentKeys()
+    {
+        var before = $"{SnapshotText.Header}metadata\n  creation-date=<present> producer=<present>\n";
+        var after = $"{SnapshotText.Header}metadata\n  pdfuaid-part=1 xmp-title=\"Guide\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Equal([ChangeKind.Removed, ChangeKind.Added], changes.Select(change => change.Kind));
+    }
+
+    [Fact]
     public void Compare_ShouldNotReportAMove_WhenAnEditedLineIsStillInItsPlace()
     {
         var before = "# docx-snapshot v1\nbody\n  Table\n    Row\n      Cell\n        P \"Name\"\n";
