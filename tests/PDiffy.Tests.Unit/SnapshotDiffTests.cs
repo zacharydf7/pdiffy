@@ -424,6 +424,52 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void ToJson_ShouldListEachChangeWithItsSectionAndPage_WhenGivenASnapshot()
+    {
+        var diff = SnapshotDiff.Compare(Before, Before.Replace("H1 p1 \"Drug", "P p1 \"Drug"));
+
+        var json = diff.ToJson();
+
+        Assert.Equal("""
+            {
+              "version": 1,
+              "changes": [
+                {
+                  "kind": "Changed",
+                  "section": "structure",
+                  "path": "structure > Document > P[1]",
+                  "page": 1,
+                  "detail": "type: H1 -> P",
+                  "affectsAccessibility": true
+                }
+              ]
+            }
+
+            """.ReplaceLineEndings("\n"), json);
+    }
+
+    [Fact]
+    public void ToJson_ShouldWriteANullSectionAndPage_WhenTheTextIsNotASnapshot()
+    {
+        var diff = SnapshotDiff.Compare("a\n", "b\n");
+
+        var json = diff.ToJson();
+
+        Assert.Contains("\"kind\": \"TextChanged\",\n      \"section\": null,\n      \"path\": \"line 1\",\n"
+            + "      \"page\": null,", json);
+    }
+
+    [Fact]
+    public void ToJson_ShouldNameTheSectionWhitespace_WhenOnlyBlankLinesDiffer()
+    {
+        var diff = SnapshotDiff.Compare(Before, Before + "\n");
+
+        var json = diff.ToJson();
+
+        Assert.Contains("\"section\": \"whitespace\",\n      \"path\": \"whitespace\",", json);
+    }
+
+    [Fact]
     public void CompareTo_ShouldCompareTheSnapshots_WhenGivenTwoDocuments()
     {
         var paragraph = new StructureElement { Type = "P", FirstPage = 1, Text = "Take with food" };

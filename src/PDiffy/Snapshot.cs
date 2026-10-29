@@ -84,7 +84,7 @@ public static class Snapshot
     }
 
     // The relaxed encoder leaves accents, quotes and symbols readable instead of escaping them as \uXXXX.
-    private static readonly JsonWriterOptions WriterOptions = new()
+    internal static readonly JsonWriterOptions WriterOptions = new()
     {
         Indented = true, IndentSize = 2, NewLine = "\n", Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };

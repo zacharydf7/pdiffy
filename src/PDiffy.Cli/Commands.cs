@@ -13,6 +13,7 @@ public static class Commands
     public const string Usage = """
         Usage:
           pdiffy <before> <after> [--html <report.html>]   Compare two PDFs, two DOCX files or two snapshot files
+                 [--json [<changes.json>]]                  --json prints the changes as JSON instead, or saves them
           pdiffy snapshot <file.pdf|file.docx> [<out>]      Print or save a PDF's or DOCX's snapshot
           pdiffy accept [<files or folders>] [--all]        Accept received snapshots as verified
           pdiffy report [<files or folders>] [--all] [--html <summary.html>] [--markdown <summary.md>]
@@ -33,8 +34,7 @@ public static class Commands
                 ["snapshot", var document, var file] => Snapshot(document, file, output),
                 ["accept", .. var rest] => Accept(rest, output),
                 ["report", .. var rest] => Report(rest, output),
-                [var before, var after] => Compare(before, after, null, output),
-                [var before, var after, "--html", var report] => Compare(before, after, report, output),
+                [var before, var after, .. var options] => Compare(before, after, options, output, error),
                 _ => ShowUsage(error),
             };
         }
@@ -46,14 +46,27 @@ public static class Commands
         }
     }
 
-    private static int Compare(string before, string after, string? report, TextWriter output)
+    // With --json and no file, the output is only JSON, so a script can read it straight from the pipe.
+    private static int Compare(string before, string after, string[] options, TextWriter output, TextWriter error)
     {
+        var (report, json, printJson) = ((string?)null, (string?)null, false);
+        for (var i = 0; i < options.Length; i++)
+        {
+            var hasValue = i + 1 < options.Length && !options[i + 1].StartsWith("--", StringComparison.Ordinal);
+            if (options[i] == "--html" && hasValue) report = options[++i];
+            else if (options[i] == "--json" && hasValue) json = options[++i];
+            else if (options[i] == "--json") printJson = true;
+            else return ShowUsage(error);
+        }
+
         var diff = SnapshotDiff.Compare(SnapshotOf(before), SnapshotOf(after));
-        output.WriteLine(diff.Describe(int.MaxValue));
+        if (printJson) output.Write(diff.ToJson());
+        else output.WriteLine(diff.Describe(int.MaxValue));
+        if (json is not null) File.WriteAllText(json, diff.ToJson());
         if (report is not null)
         {
             File.WriteAllText(report, diff.ToHtml());
-            output.WriteLine($"report: {report}");
+            if (!printJson) output.WriteLine($"report: {report}");
         }
 
         return diff.IsEmpty ? Same : Different;

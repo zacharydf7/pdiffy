@@ -38,6 +38,34 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void Run_ShouldPrintOnlyJson_WhenAskedForJsonWithoutAFile()
+    {
+        var before = Write("before.txt", "structure\n  P p1 \"Take with food\"\n");
+        var after = Write("after.txt", "structure\n  P p1 \"Take after food\"\n");
+        var report = Path.Combine(_folder, "report.html");
+
+        var exitCode = Commands.Run([before, after, "--json", "--html", report], _output, _error);
+
+        Assert.Equal(Commands.Different, exitCode);
+        var diff = SnapshotDiff.Compare(File.ReadAllText(before), File.ReadAllText(after));
+        Assert.Equal(diff.ToJson(), _output.ToString());
+        Assert.True(File.Exists(report));
+    }
+
+    [Fact]
+    public void Run_ShouldSaveTheJsonAndPrintTheSummary_WhenGivenAFileForTheJson()
+    {
+        var before = Write("before.txt", "a\n");
+        var after = Write("after.txt", "b\n");
+        var json = Path.Combine(_folder, "changes.json");
+
+        Commands.Run([before, after, "--json", json], _output, _error);
+
+        Assert.StartsWith("1 change(s)", _output.ToString());
+        Assert.StartsWith("{\n  \"version\": 1,", File.ReadAllText(json));
+    }
+
+    [Fact]
     public void Run_ShouldSaveThePdfsSnapshot_WhenAskedForASnapshot()
     {
         var pdf = WritePdf("letter.pdf", "Hello");
@@ -115,6 +143,8 @@ public sealed class CliTests : IDisposable
     [InlineData]
     [InlineData("--html")]
     [InlineData("snapshot")]
+    [InlineData("before.txt", "after.txt", "--html")]
+    [InlineData("before.txt", "after.txt", "--color")]
     public void Run_ShouldPrintUsageAndReturnTwo_WhenTheArgumentsDontFitACommand(params string[] args)
     {
         var exitCode = Commands.Run(args, _output, _error);

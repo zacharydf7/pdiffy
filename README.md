@@ -319,6 +319,29 @@ Console.WriteLine(diff.Describe());
 
 `SnapshotDiff.Compare(before, after)` does the same for two snapshot texts, such as two `.verified.pdfua.txt` files.
 
+For scripts and tools outside .NET, `diff.ToJson()` (or `pdiffy before.pdf after.pdf --json`) gives the changes as JSON:
+
+```json
+{
+  "version": 1,
+  "changes": [
+    {
+      "kind": "Changed",
+      "section": "structure",
+      "path": "structure > Document > P[1]",
+      "page": 1,
+      "detail": "type: H1 -> P",
+      "affectsAccessibility": true
+    }
+  ]
+}
+```
+
+- `kind` is a `ChangeKind` name.
+- `section` is the section as the snapshot prints it, such as `structure` or `body`: `header` for the snapshot's first lines, `whitespace` when only blank lines or line endings differ, and `null` for text without sections, such as JSON.
+- `page` is `null` when the change isn't on a page.
+- `version` goes up only when a field is renamed, removed or changes meaning. New fields can be added without it.
+
 ### Check accessibility rules directly
 
 You don't need a snapshot to use PDiffy. The document model answers questions such as "does every image have alt text?" without any PDF knowledge: `StructureType` lists every tag type by name.
@@ -434,6 +457,10 @@ pdiffy statement-v1.pdf statement-v2.pdf
 
 # The same, also writing the side-by-side HTML report.
 pdiffy statement-v1.pdf statement-v2.pdf --html report.html
+
+# The changes as JSON for a script: --json alone prints only the JSON, and --json with a file saves it there.
+pdiffy statement-v1.pdf statement-v2.pdf --json
+pdiffy statement-v1.pdf statement-v2.pdf --json changes.json
 
 # Print a PDF's or DOCX's snapshot, or save it to a file.
 pdiffy snapshot statement.pdf

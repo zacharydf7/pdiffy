@@ -146,6 +146,12 @@ public sealed class SnapshotDiff
     /// </summary>
     public string ToHtml() => DiffReport.Write(_before, _after, this);
 
+    /// <summary>
+    /// The changes as JSON, for scripts and tools outside .NET: a version number and, for each change, its kind,
+    /// section, path, page, detail and whether it can affect accessibility. The README describes the shape.
+    /// </summary>
+    public string ToJson() => DiffJson.Write(this);
+
     public override string ToString() => Describe(int.MaxValue);
 
     internal bool IsSectioned => SnapshotTree.IsSectioned(_before) && SnapshotTree.IsSectioned(_after);
@@ -153,9 +159,12 @@ public sealed class SnapshotDiff
     internal IEnumerable<string> CountsByKind() => Changes.GroupBy(change => change.Kind).OrderBy(group => group.Key)
         .Select(group => $"{group.Count()} {Label(group.Key)}");
 
-    // The section is the path's first part, such as "structure" or "body", in the order sections first change.
+    // The section is the path's first part, such as "structure" or "body"; text without sections has none.
+    internal string? SectionOf(SnapshotChange change) => IsSectioned ? change.Path.Split(" > ")[0] : null;
+
+    // In the order sections first change.
     internal IEnumerable<string> CountsBySection() =>
-        Changes.GroupBy(change => change.Path.Split(" > ")[0]).Select(group => $"{group.Key} {group.Count()}");
+        Changes.GroupBy(SectionOf).Select(group => $"{group.Key} {group.Count()}");
 
     // Order is kept within each group, so changes still read in snapshot order.
     internal IEnumerable<SnapshotChange> AccessibilityFirst() => Changes.OrderBy(change => !change.AffectsAccessibility);
