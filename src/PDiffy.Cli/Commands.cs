@@ -18,12 +18,13 @@ public static class Commands
           pdiffy compare <before> <after> [--html <index.html>] [--json [<changes.json>]] [--profile <profile>]
                                                             Compare two folders, file by file
           pdiffy snapshot <file.pdf|file.docx> [<out>]      Print or save a PDF's or DOCX's snapshot
+          pdiffy check <file.pdf>                           Run every built-in check on a PDF
           pdiffy accept [<files or folders>] [--all]        Accept received snapshots as verified
           pdiffy report [<files or folders>] [--all] [--html <summary.html>] [--markdown <summary.md>]
                                                             Summarize received snapshots
 
-        Comparing exits with 0 when nothing changed and 1 when something did; report, with 0 when no snapshot was
-        received and 1 when one was.
+        Comparing exits with 0 when nothing changed and 1 when something did; check, with 0 when it finds nothing and 1
+        when it finds something; report, with 0 when no snapshot was received and 1 when one was.
         accept and report take the current folder by default; --all includes subfolders.
         """;
 
@@ -35,6 +36,7 @@ public static class Commands
             {
                 ["snapshot", var document] => Snapshot(document, null, output),
                 ["snapshot", var document, var file] => Snapshot(document, file, output),
+                ["check", var document] => Check(document, output),
                 ["accept", .. var rest] => Accept(rest, output),
                 ["report", .. var rest] => Report(rest, output),
                 ["compare", var before, var after, .. var options] =>
@@ -92,6 +94,14 @@ public static class Commands
         if (file is null) output.Write(snapshot);
         else File.WriteAllText(file, snapshot);
         return Same;
+    }
+
+    private static int Check(string document, TextWriter output)
+    {
+        var findings = PdfUaDocument.Load(document).Check();
+        output.WriteLine(findings.Count == 0 ? "No findings." : $"{findings.Count} finding(s):");
+        foreach (var finding in findings) output.WriteLine(finding);
+        return findings.Count == 0 ? Same : Different;
     }
 
     // Each received snapshot replaces its verified one, and its report goes, as when a test runs in accept mode.

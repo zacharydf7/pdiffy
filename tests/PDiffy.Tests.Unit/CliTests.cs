@@ -451,6 +451,42 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void Run_ShouldPrintEveryFindingAndReturnOne_WhenCheckingAPdfThatHasFindings()
+    {
+        var pdf = WritePdf("letter.pdf", "Hello");
+
+        var exitCode = Commands.Run(["check", pdf], _output, _error);
+
+        Assert.Equal(Commands.Different, exitCode);
+        var findings = PdfUaDocument.Load(pdf).Check();
+        Assert.Equal([$"{findings.Count} finding(s):", .. findings.Select(finding => finding.ToString()), ""],
+            _output.ToString().Split(Environment.NewLine));
+    }
+
+    [Fact]
+    public void Run_ShouldPrintNoFindingsAndReturnZero_WhenCheckingAPdfThatPassesEveryCheck()
+    {
+        // Written by hand, since TestPdf always adds a font and this file has none to embed.
+        string[] objects =
+        [
+            "<< /Type /Catalog /Pages 2 0 R /Lang (en-US) /MarkInfo << /Marked true >> "
+                + "/ViewerPreferences << /DisplayDocTitle true >> /StructTreeRoot 5 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+            TestPdf.Stream(""),
+            "<< /Type /StructTreeRoot /K [6 0 R] >>",
+            "<< /Type /StructElem /S /Figure /P 5 0 R /Alt (Logo) >>",
+            "<< /Title (Logo) >>",
+        ];
+        var path = Path.Combine(_folder, "logo.pdf");
+        File.WriteAllBytes(path, RawPdf.Build(objects, catalog: 1, "/Info 7 0 R"));
+
+        var exitCode = Commands.Run(["check", path], _output, _error);
+
+        Assert.Equal((Commands.Same, "No findings."), (exitCode, _output.ToString().TrimEnd()));
+    }
+
+    [Fact]
     public void Run_ShouldPrintTheDocxsSnapshot_WhenGivenADocx()
     {
         var docx = WriteDocx("letter.docx", "Hello");

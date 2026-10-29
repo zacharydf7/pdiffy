@@ -57,6 +57,13 @@ public sealed record PdfUaDocument
     public SnapshotDiff CompareTo(PdfUaDocument other, Action<SnapshotOptions>? configure = null) =>
         SnapshotDiff.Compare(ToSnapshot(configure), other.ToSnapshot(configure));
 
+    /// <summary>
+    /// Applies the checks and lists what they find, grouped by check in the order <see cref="PdfCheck"/> declares them;
+    /// an empty list means every check passed. With no checks given, applies every check.
+    /// </summary>
+    public IReadOnlyList<CheckFinding> Check(params PdfCheck[] checks) =>
+        PdfChecker.Run(this, checks.Length == 0 ? Enum.GetValues<PdfCheck>() : checks);
+
     /// <summary>Structure elements of a type, matched on the type or its role-mapped type, in reading order.</summary>
     public IEnumerable<StructureElement> Elements(string type)
     {

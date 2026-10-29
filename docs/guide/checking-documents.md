@@ -14,6 +14,41 @@ once into a model you can assert on, with no PDF knowledge needed: enums and con
 | Fonts, colors, hidden text | [`TextRuns`](xref:PDiffy.PdfUaDocument.TextRuns), [`Images`](xref:PDiffy.PdfUaDocument.Images), [`Paths`](xref:PDiffy.PdfUaDocument.Paths) | [`TextRenderMode`](xref:PDiffy.TextRenderMode) |
 | Language, title, page count | [`Document`](xref:PDiffy.PdfUaDocument.Document), [`Metadata`](xref:PDiffy.PdfUaDocument.Metadata), [`Pages`](xref:PDiffy.PdfUaDocument.Pages) | |
 
+## Built-in checks
+
+[`Check`](xref:PDiffy.PdfUaDocument.Check*) applies the rules generated documents most often break and lists what it
+finds. Each [`CheckFinding`](xref:PDiffy.CheckFinding) has the check, the page, a path and a message, so a failed test
+says which figure on which page. The path names the snapshot section and the item; for a structure element, it's the
+path a snapshot diff shows:
+
+```csharp
+IReadOnlyList<CheckFinding> findings = document.Check(PdfCheck.DocumentLanguage, PdfCheck.FigureAltText);
+
+// On failure: "FigureAltText: Figure on p2 has no alt text (structure > Document > Figure[2])".
+Assert.Empty(findings);
+```
+
+`Check()` with no arguments applies every check. Pick the ones a test guards; every finding counts the same.
+
+| PdfCheck | Finds |
+|---|---|
+| `DocumentLanguage` | A document with no language |
+| `DocumentTitle` | A document with no title, or one whose viewer shows the file name instead |
+| `FigureAltText` | A figure with no alt text or replacement text |
+| `UntaggedContent` | Text, images and paths that are neither tagged nor artifacts, page by page |
+| `LinkDescriptions` | A link with no description: no contents, and no alt text or text on the element that tags it |
+| `FormFieldNames` | A form field with no accessible name (tooltip) |
+| `TableHeaders` | A header with no scope that no cell names, and a cell that names a header that doesn't exist |
+| `HeadingLevels` | A heading that skips a level, or one that comes before any H1 |
+| `FontsEmbedded` | A font that isn't embedded |
+| `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode |
+| `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page |
+| `NoEmbeddedFiles` | Each embedded file |
+
+These are fast regression checks for the mistakes generated documents make, not a PDF/UA validator: for conformance,
+use [veraPDF](https://verapdf.org/) or PAC. On the command line, [`pdiffy check`](../reference/command-line.md#check)
+runs them all. For a rule of your own, assert on the model, as the rest of this page shows.
+
 ## Accessibility
 
 ```csharp

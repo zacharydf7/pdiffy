@@ -12,6 +12,7 @@ dotnet tool install --global PDiffy.Cli
 | [`pdiffy <before> <after>`](#compare) | Compares two PDFs, two DOCX files or two snapshot files |
 | [`pdiffy compare <before> <after>`](#compare-folders) | Compares two folders of documents, file by file |
 | [`pdiffy snapshot <file>`](#snapshot) | Prints or saves a PDF's or DOCX's snapshot |
+| [`pdiffy check <file.pdf>`](#check) | Runs every built-in check on a PDF |
 | [`pdiffy accept [targets]`](#accept) | Accepts received snapshots as verified |
 | [`pdiffy report [targets]`](#report) | Summarizes received snapshots, for review or a CI job page |
 
@@ -19,8 +20,8 @@ dotnet tool install --global PDiffy.Cli
 
 | Code | Meaning |
 |---|---|
-| `0` | Nothing changed (comparing files or folders), nothing is waiting to be accepted (report), or the command succeeded |
-| `1` | Something changed (comparing files or folders), or received snapshots are waiting (report) |
+| `0` | Nothing changed (comparing files or folders), nothing was found (check), nothing is waiting to be accepted (report), or the command succeeded |
+| `1` | Something changed (comparing files or folders), something was found (check), or received snapshots are waiting (report) |
 | `2` | The arguments don't fit a command, or a file or folder is missing or can't be read. The problem is written to standard error. When comparing folders, a file that can't be read is listed as `unreadable` instead, and counts as a change. |
 
 ## Compare
@@ -115,6 +116,22 @@ files.
 ```text
 pdiffy snapshot statement.pdf
 pdiffy snapshot statement.pdf statement.pdfua.txt
+```
+
+## Check
+
+```text
+pdiffy check <file.pdf>
+```
+
+Runs every [built-in check](../guide/checking-documents.md#built-in-checks) on a PDF, prints each finding, and exits with
+`0` when there are none and `1` when there are, so a pipeline can gate on a generated document without writing a test.
+
+```text
+3 finding(s):
+DocumentTitle: The document has no title (metadata)
+FigureAltText: Figure on p2 has no alt text (structure > Document > Figure[2])
+FontsEmbedded: Font Helvetica isn't embedded (fonts > Helvetica)
 ```
 
 ## Accept

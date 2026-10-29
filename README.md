@@ -391,6 +391,43 @@ For scripts and tools outside .NET, `diff.ToJson()` (or `pdiffy before.pdf after
 - `page` is `null` when the change isn't on a page.
 - `version` goes up only when a field is renamed, removed or changes meaning. New fields can be added without it.
 
+### Run the built-in checks
+
+`Check` applies the rules generated documents most often break and lists what it finds, each with the element's path and page, so a failed test says which figure on which page:
+
+```csharp
+[Fact]
+public async Task PatientLetter_ShouldPassTheAccessibilityChecks_WhenGenerated()
+{
+    using Stream pdf = await ReportGenerator.CreatePatientLetterAsync();
+
+    IReadOnlyList<CheckFinding> findings = PdfUaDocument.Load(pdf)
+        .Check(PdfCheck.DocumentLanguage, PdfCheck.FigureAltText, PdfCheck.UntaggedContent);
+
+    // On failure: "FigureAltText: Figure on p2 has no alt text (structure > Document > Figure[2])".
+    Assert.Empty(findings);
+}
+```
+
+`Check()` with no arguments applies every check. Pick the ones a test guards; every finding counts the same. A finding's path names the snapshot section and the item, and for a structure element it's the path a snapshot diff shows.
+
+| PdfCheck | Finds |
+|---|---|
+| `DocumentLanguage` | A document with no language |
+| `DocumentTitle` | A document with no title, or one whose viewer shows the file name instead |
+| `FigureAltText` | A figure with no alt text or replacement text |
+| `UntaggedContent` | Text, images and paths that are neither tagged nor artifacts, page by page |
+| `LinkDescriptions` | A link with no description: no contents, and no alt text or text on the element that tags it |
+| `FormFieldNames` | A form field with no accessible name (tooltip) |
+| `TableHeaders` | A header with no scope that no cell names, and a cell that names a header that doesn't exist |
+| `HeadingLevels` | A heading that skips a level, or one that comes before any H1 |
+| `FontsEmbedded` | A font that isn't embedded |
+| `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode |
+| `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page |
+| `NoEmbeddedFiles` | Each embedded file |
+
+These are fast regression checks, not a PDF/UA validator. To check conformance, use [veraPDF](https://verapdf.org/) or PAC.
+
 ### Check accessibility rules directly
 
 You don't need a snapshot to use PDiffy. The document model answers questions such as "does every image have alt text?" without any PDF knowledge: `StructureType` lists every tag type by name.
@@ -519,6 +556,9 @@ pdiffy statement-v1.pdf statement-v2.pdf --profile content
 # report for each changed file, and --json and --profile work as above.
 pdiffy compare release-1.4/out release-1.5/out
 pdiffy compare release-1.4/out release-1.5/out --html compare/index.html
+
+# Run every built-in check on a PDF: prints each finding, exits with 0 when there are none and 1 when there are.
+pdiffy check statement.pdf
 
 # Print a PDF's or DOCX's snapshot, or save it to a file.
 pdiffy snapshot statement.pdf
