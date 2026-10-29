@@ -144,6 +144,22 @@ public class DocxDocumentTests
     }
 
     [Fact]
+    public void Load_ShouldRecordATrackedChangeToTheSection_WhenItsSettingsChangedWithTrackingOn()
+    {
+        var body = """
+            <w:p/><w:sectPr><w:pgSz w:w="12240" w:h="15840"/>
+              <w:sectPrChange w:id="9" w:author="Di"><w:sectPr><w:pgSz w:w="15840" w:h="12240"/></w:sectPr></w:sectPrChange></w:sectPr>
+            """;
+
+        var document = new TestDocx { Body = body }.Load();
+
+        var revision = Assert.Single(document.Revisions());
+        Assert.Equal(("section-format", "Di"), (revision.Kind, revision.Author));
+        Assert.Single(document.PageSetups);
+        Assert.Contains("\n    section-format author=\"Di\"\n", document.ToSnapshot());
+    }
+
+    [Fact]
     public void Load_ShouldReadTheDocumentsSettings_WhenTheSettingsPartHasThem()
     {
         var docx = new TestDocx
@@ -194,11 +210,11 @@ public class DocxDocumentTests
     }
 
     [Fact]
-    public void ToSnapshot_ShouldStillShowTheMisplacedRun_WhenItHasNoText()
+    public void Load_ShouldKeepTheMisplacedRunsTabsAndBreaks_WhenItHasNoText()
     {
-        var docx = new TestDocx { Body = """<w:p><w:pPr><w:r><w:tab/></w:r></w:pPr></w:p>""" };
+        var docx = new TestDocx { Body = """<w:p><w:pPr><w:r><w:tab/><w:br/><w:br w:type="page"/><w:br w:type="column"/></w:r></w:pPr></w:p>""" };
 
-        Assert.Contains("  P\n    stray-text \"\" at=0\n", docx.Load().ToSnapshot());
+        Assert.Equal("\t\n\f\u000E", docx.Load().Paragraphs().Single().Inlines.OfType<DocxStrayText>().Single().Text);
     }
 
     [Fact]

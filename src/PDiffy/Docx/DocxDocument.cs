@@ -56,26 +56,33 @@ public sealed record DocxDocument
     /// Every paragraph of the body in reading order, including those inside tables, content controls, text boxes and
     /// inserted documents.
     /// </summary>
-    public IEnumerable<DocxParagraph> Paragraphs() => Paragraphs(Body);
+    public IEnumerable<DocxParagraph> Paragraphs() => AllBlocks(Body).OfType<DocxParagraph>();
 
     /// <summary>
     /// Every image and other graphic (chart, diagram, shape) in the body, headers, footers and notes, such as for checking
     /// alt text.
     /// </summary>
-    public IEnumerable<DocxImage> Images() => AllParagraphs().SelectMany(paragraph => paragraph.Inlines.OfType<DocxImage>());
+    public IEnumerable<DocxImage> Images() =>
+        EveryBlock().OfType<DocxParagraph>().SelectMany(paragraph => paragraph.Inlines.OfType<DocxImage>());
 
     /// <summary>
-    /// Every tracked insertion, deletion, move and formatting change of text and paragraphs in the body, headers, footers
-    /// and notes, including inserted documents, such as for checking that none shipped. Changes to table rows and
-    /// sections aren't recorded.
+    /// The tracked changes in the body, headers, footers and notes, including inserted documents, such as for checking
+    /// that none shipped: insertions, deletions, moves and formatting changes of text and paragraphs, table rows inserted,
+    /// deleted or reformatted, and then changes to section settings. Changes to a table's or a cell's own properties,
+    /// cells inserted, deleted or merged, and formatting changes of a paragraph mark aren't recorded yet.
     /// </summary>
-    public IEnumerable<DocxRevision> Revisions() => AllParagraphs().SelectMany(paragraph => paragraph.Inlines.OfType<DocxRevision>());
+    public IEnumerable<DocxRevision> Revisions() => EveryBlock().SelectMany(block => block switch
+    {
+        DocxParagraph paragraph => paragraph.Inlines.OfType<DocxRevision>(),
+        DocxTable table => table.Rows.SelectMany(row => row.Revisions),
+        _ => [],
+    }).Concat(PageSetups.Select(setup => setup.Revision).OfType<DocxRevision>());
 
     // Inserted documents' notes count as this document's, since Word brings them in with the inserted text.
-    private IEnumerable<DocxParagraph> AllParagraphs()
+    private IEnumerable<DocxBlock> EveryBlock()
     {
         var blocks = Body.Concat(Headers.Concat(Footers).SelectMany(item => item.Blocks ?? [])).Concat(Notes.SelectMany(note => note.Blocks));
-        return Paragraphs(blocks.Concat(InsertedDocuments(Body).SelectMany(document => document.Notes.SelectMany(note => note.Blocks))));
+        return AllBlocks(blocks.Concat(InsertedDocuments(Body).SelectMany(document => document.Notes.SelectMany(note => note.Blocks))));
     }
 
     private static IEnumerable<DocxDocument> InsertedDocuments(IEnumerable<DocxBlock> blocks) => blocks.SelectMany(block => block switch
@@ -86,11 +93,12 @@ public sealed record DocxDocument
         _ => [],
     });
 
-    private static IEnumerable<DocxParagraph> Paragraphs(IEnumerable<DocxBlock> blocks)
+    // Each block followed by the blocks inside it, in reading order.
+    private static IEnumerable<DocxBlock> AllBlocks(IEnumerable<DocxBlock> blocks)
     {
         foreach (var block in blocks)
         {
-            if (block is DocxParagraph paragraph) yield return paragraph;
+            yield return block;
             var nestedBlocks = block switch
             {
                 DocxTable table => table.Rows.SelectMany(row => row.Cells).SelectMany(cell => cell.Blocks),
@@ -99,7 +107,7 @@ public sealed record DocxDocument
                 DocxParagraph withTextBoxes => withTextBoxes.Inlines.OfType<DocxImage>().SelectMany(image => image.TextBox),
                 _ => [],
             };
-            foreach (var nested in Paragraphs(nestedBlocks)) yield return nested;
+            foreach (var nested in AllBlocks(nestedBlocks)) yield return nested;
         }
     }
 }
@@ -160,6 +168,9 @@ public sealed record PageSetup
     public IReadOnlyList<string> Headers { get; init; } = [];
 
     public IReadOnlyList<string> Footers { get; init; } = [];
+
+    /// <summary>A tracked change to the section's settings ("section-format"), or null.</summary>
+    public DocxRevision? Revision { get; init; }
 }
 
 /// <summary>A style the document uses. <see cref="Run"/> and <see cref="Paragraph"/> are resolved through its based-on chain.</summary>
@@ -300,7 +311,7 @@ public abstract record DocxInline(int Position);
 public sealed record DocxField(string Code, string Result, int Position) : DocxInline(Position);
 
 /// <summary>
-/// The w:t text of a run where WordprocessingML doesn't allow one: inside the paragraph's properties (w:pPr). Word may
+/// The text, tabs and breaks of a run where WordprocessingML doesn't allow one: inside the paragraph's properties (w:pPr). Word may
 /// drop or move it, so it isn't part of the paragraph's text, but it's recorded so the text isn't lost and the problem
 /// shows. Its <see cref="DocxInline.Position"/> is always 0, before the paragraph's text.
 /// </summary>
@@ -309,7 +320,9 @@ public sealed record DocxStrayText(string Text, int Position) : DocxInline(Posit
 /// <summary>
 /// A tracked change and who made it: "insert", "delete", "move-to" or "move-from" with the text it covers; "format" for a
 /// run whose formatting changed, with its text; or "paragraph-insert", "paragraph-delete", "paragraph-move-to",
-/// "paragraph-move-from" or "paragraph-format" for the paragraph itself, with no text.
+/// "paragraph-move-from" or "paragraph-format" for the paragraph itself, with no text; "row-insert", "row-delete" or
+/// "row-format" for a table row (<see cref="DocxRow.Revisions"/>); "section-format" for a section's settings
+/// (<see cref="PageSetup.Revision"/>). Rows and sections have no text and no position.
 /// </summary>
 public sealed record DocxRevision(string Kind, string Text, string? Author, int Position) : DocxInline(Position);
 
@@ -430,6 +443,11 @@ public sealed record DocxInserted : DocxBlock
     public string? Hash { get; init; }
 }
 
+/// <summary>
+/// A table. <see cref="Width"/> and cell widths are in points, written as "468", or as "50%" of the page or "auto".
+/// Margins are "side:points", such as "left:5.4"; borders are "side:style:points:color", such as
+/// "top:single:0.5:000000", without a color when it's automatic.
+/// </summary>
 public sealed record DocxTable : DocxBlock
 {
     public string? Style { get; init; }
@@ -437,14 +455,34 @@ public sealed record DocxTable : DocxBlock
     /// <summary>The width of each column of the table's grid, in points.</summary>
     public IReadOnlyList<double> Widths { get; init; } = [];
 
+    /// <summary>The width of the whole table.</summary>
+    public string? Width { get; init; }
+
+    /// <summary>The space between each cell's edge and its text, unless a cell sets its own.</summary>
+    public IReadOnlyList<string> CellMargins { get; init; } = [];
+
+    public IReadOnlyList<string> Borders { get; init; } = [];
     public IReadOnlyList<DocxRow> Rows { get; init; } = [];
 }
 
 /// <summary>A table row. A header row repeats at the top of each page the table runs onto.</summary>
-public sealed record DocxRow(IReadOnlyList<DocxCell> Cells, bool IsHeader = false);
+public sealed record DocxRow(IReadOnlyList<DocxCell> Cells, bool IsHeader = false)
+{
+    /// <summary>Tracked changes to the row: "row-insert", "row-delete" or "row-format".</summary>
+    public IReadOnlyList<DocxRevision> Revisions { get; init; } = [];
+
+    /// <summary>The content controls around the row, outermost first, such as a repeating section and its item.</summary>
+    public IReadOnlyList<DocxControl> Controls { get; init; } = [];
+}
 
 /// <summary>
 /// A table cell. <see cref="Span"/> is how many grid columns it covers; <see cref="Merge"/> is "restart" for the top of
-/// cells merged down a column and "continue" for those below it; <see cref="Shading"/> is its fill color in hex.
+/// cells merged down a column and "continue" for those below it; <see cref="Shading"/> is its fill color in hex. Width,
+/// margins and borders are written as for <see cref="DocxTable"/>.
 /// </summary>
-public sealed record DocxCell(IReadOnlyList<DocxBlock> Blocks, int Span = 1, string? Merge = null, string? Shading = null);
+public sealed record DocxCell(IReadOnlyList<DocxBlock> Blocks, int Span = 1, string? Merge = null, string? Shading = null)
+{
+    public string? Width { get; init; }
+    public IReadOnlyList<string> Margins { get; init; } = [];
+    public IReadOnlyList<string> Borders { get; init; } = [];
+}

@@ -88,7 +88,18 @@ internal sealed class DocxSnapshotWriter
             Key(line, "headers", setup.Headers.Count > 0 ? string.Join(",", setup.Headers) : null);
             Key(line, "footers", setup.Footers.Count > 0 ? string.Join(",", setup.Footers) : null);
             Line(1, line.ToString());
+            if (setup.Revision is { } revision) Line(2, RevisionLine(revision));
         }
+    }
+
+    private static string? List(IReadOnlyList<string> items) => items.Count > 0 ? string.Join(",", items) : null;
+
+    // A tracked change to a whole row or section: its kind and who made it.
+    private string RevisionLine(DocxRevision revision)
+    {
+        var line = new StringBuilder(revision.Kind);
+        Key(line, "author", Quote(revision.Author));
+        return line.ToString();
     }
 
     private void WriteStyles(IReadOnlyList<DocxStyle> styles, int depth)
@@ -300,16 +311,24 @@ internal sealed class DocxSnapshotWriter
         var line = new StringBuilder("Table");
         Key(line, "style", table.Style);
         Key(line, "widths", table.Widths.Count > 0 ? string.Join(",", table.Widths.Select(Points)) : null);
+        Key(line, "width", table.Width);
+        Key(line, "cell-margins", List(table.CellMargins));
+        Key(line, "borders", List(table.Borders));
         Line(depth, line.ToString());
         foreach (var row in table.Rows)
         {
             Line(depth + 1, row.IsHeader ? "Row header" : "Row");
+            foreach (var control in row.Controls) WriteControl(control, depth + 2);
+            foreach (var revision in row.Revisions) Line(depth + 2, RevisionLine(revision));
             foreach (var cell in row.Cells)
             {
                 var cellLine = new StringBuilder("Cell");
                 if (cell.Span != 1) Key(cellLine, "span", cell.Span.ToString());
                 Key(cellLine, "merge", cell.Merge);
                 Key(cellLine, "shading", cell.Shading);
+                Key(cellLine, "width", cell.Width);
+                Key(cellLine, "margins", List(cell.Margins));
+                Key(cellLine, "borders", List(cell.Borders));
                 Line(depth + 2, cellLine.ToString());
                 WriteBlocks(cell.Blocks, depth + 3);
             }

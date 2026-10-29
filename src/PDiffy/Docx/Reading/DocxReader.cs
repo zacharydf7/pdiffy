@@ -136,6 +136,9 @@ internal sealed class DocxReader
             TitlePage = IsOn(sectPr.Element(W + "titlePg")),
             Headers = References(sectPr, "headerReference"),
             Footers = References(sectPr, "footerReference"),
+            Revision = sectPr.Element(W + "sectPrChange") is { } change
+                ? new DocxRevision("section-format", "", Attr(change, "author"), 0)
+                : null,
         };
     }
 
@@ -160,17 +163,61 @@ internal sealed class DocxReader
 
     private DocxTable Table(XElement table)
     {
-        var style = Attr(table.Element(W + "tblPr")?.Element(W + "tblStyle"), "val");
+        var properties = table.Element(W + "tblPr");
+        var style = Attr(properties?.Element(W + "tblStyle"), "val");
         if (style is not null) _usedStyles.Add(style);
-        var rows = Unwrapped(table, "tr").Select(row => new DocxRow(Unwrapped(row, "tc").Select(Cell).ToList(),
-            IsOn(row.Element(W + "trPr")?.Element(W + "tblHeader"))));
         return new DocxTable
         {
             Style = style,
             Widths = table.Element(W + "tblGrid")?.Elements(W + "gridCol").Select(column => Twips(column, "w") ?? 0).ToList() ?? [],
-            Rows = rows.ToList(),
+            Width = TableFormat.Width(properties?.Element(W + "tblW")),
+            CellMargins = TableFormat.Margins(properties?.Element(W + "tblCellMar")),
+            Borders = TableFormat.Borders(properties?.Element(W + "tblBorders")),
+            Rows = Rows(table, []).ToList(),
         };
     }
+
+    // The rows of a table, with the content controls they sit in, such as the items of a repeating section.
+    private IEnumerable<DocxRow> Rows(XElement parent, IReadOnlyList<DocxControl> controls)
+    {
+        foreach (var child in parent.Elements())
+        {
+            if (child.Name == W + "tr") yield return Row(child, controls);
+            else if (child.Name == W + "sdt" && child.Element(W + "sdtContent") is { } inner)
+            {
+                var (kind, name, title) = FormReader.Describe(child.Element(W + "sdtPr"));
+                var control = new DocxControl(kind) { Name = name, Title = title };
+                foreach (var row in Rows(inner, [.. controls, control])) yield return row;
+            }
+            else if (IsWrapper(child))
+            {
+                foreach (var row in Rows(child, controls)) yield return row;
+            }
+        }
+    }
+
+    // A row inserted, deleted or reformatted with tracking on keeps who did it in its properties.
+    private DocxRow Row(XElement row, IReadOnlyList<DocxControl> controls)
+    {
+        var properties = row.Element(W + "trPr");
+        var revisions = new List<DocxRevision>();
+        foreach (var (element, kind) in RowChanges)
+        {
+            if (properties?.Element(W + element) is { } change)
+            {
+                revisions.Add(new DocxRevision(kind, "", Attr(change, "author"), 0));
+            }
+        }
+
+        return new DocxRow(Unwrapped(row, "tc").Select(Cell).ToList(), IsOn(properties?.Element(W + "tblHeader")))
+        {
+            Revisions = revisions,
+            Controls = controls,
+        };
+    }
+
+    private static readonly (string Element, string Kind)[] RowChanges =
+        [("ins", "row-insert"), ("del", "row-delete"), ("trPrChange", "row-format")];
 
     // A vMerge with no val continues the merge above it.
     private DocxCell Cell(XElement cell)
@@ -178,7 +225,12 @@ internal sealed class DocxReader
         var properties = cell.Element(W + "tcPr");
         var merge = properties?.Element(W + "vMerge") is { } vMerge ? Attr(vMerge, "val") ?? "continue" : null;
         var shading = NonEmpty(Attr(properties?.Element(W + "shd"), "fill")) is { } fill and not "auto" ? fill.ToUpperInvariant() : null;
-        return new DocxCell(Blocks(cell).ToList(), Integer(properties?.Element(W + "gridSpan"), "val") ?? 1, merge, shading);
+        return new DocxCell(Blocks(cell).ToList(), Integer(properties?.Element(W + "gridSpan"), "val") ?? 1, merge, shading)
+        {
+            Width = TableFormat.Width(properties?.Element(W + "tcW")),
+            Margins = TableFormat.Margins(properties?.Element(W + "tcMar")),
+            Borders = TableFormat.Borders(properties?.Element(W + "tcBorders")),
+        };
     }
 
     // A content control around paragraphs or tables keeps them, with the control's kind, tag and title.

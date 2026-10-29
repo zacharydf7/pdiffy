@@ -36,4 +36,77 @@ public class DocxTableTests
             """.ReplaceLineEndings("\n"), snapshot);
         Assert.Contains("  TableGrid table \"Table Grid\"\n", snapshot);
     }
+
+    [Fact]
+    public void ToSnapshot_ShouldRecordWidthsMarginsAndBorders_WhenATableAndItsCellsSetThem()
+    {
+        var body = """
+            <w:tbl><w:tblPr><w:tblW w:w="2500" w:type="pct"/>
+                <w:tblBorders><w:top w:val="single" w:sz="4" w:color="000000"/><w:insideH w:val="dashed" w:sz="12" w:color="auto"/></w:tblBorders>
+                <w:tblCellMar><w:start w:w="108"/><w:end w:w="108"/></w:tblCellMar></w:tblPr>
+              <w:tr><w:tc><w:tcPr><w:tcW w:w="2880" w:type="dxa"/><w:tcMar><w:top w:w="0"/></w:tcMar>
+                <w:tcBorders><w:bottom w:val="double" w:sz="6"/></w:tcBorders></w:tcPr><w:p/></w:tc>
+                <w:tc><w:tcPr><w:tcW w:w="0" w:type="auto"/></w:tcPr><w:p/></w:tc></w:tr></w:tbl>
+            """;
+
+        var snapshot = new TestDocx { Body = body }.Load().ToSnapshot();
+
+        Assert.Contains("""
+              Table width=50% cell-margins=left:5.4,right:5.4 borders=top:single:0.5:000000,insideH:dashed:1.5
+                Row
+                  Cell width=144 margins=top:0 borders=bottom:double:0.8
+                    P
+                  Cell width=auto
+            """.ReplaceLineEndings("\n"), snapshot);
+    }
+
+    [Theory]
+    [InlineData("w:w=\"2500\" w:type=\"pct\"", "50%")]
+    [InlineData("w:w=\"50%\" w:type=\"pct\"", "50%")]
+    [InlineData("w:w=\"0\" w:type=\"nil\"", "0")]
+    [InlineData("w:w=\"0\" w:type=\"auto\"", "auto")]
+    [InlineData("w:w=\"2880\" w:type=\"dxa\"", "144")]
+    [InlineData("w:w=\"2880\"", "144")]
+    public void Load_ShouldReadTheTablesWidth_WhenGivenEachKindOfWidth(string attributes, string expected)
+    {
+        var body = $"<w:tbl><w:tblPr><w:tblW {attributes}/></w:tblPr><w:tr><w:tc><w:p/></w:tc></w:tr></w:tbl>";
+
+        var table = Assert.IsType<DocxTable>(Assert.Single(new TestDocx { Body = body }.Load().Body));
+
+        Assert.Equal(expected, table.Width);
+    }
+
+    [Fact]
+    public void Load_ShouldRecordTrackedChangesToRows_WhenRowsAreInsertedDeletedOrReformatted()
+    {
+        var body = """
+            <w:tbl><w:tr><w:trPr><w:ins w:id="1" w:author="Ana"/></w:trPr><w:tc><w:p/></w:tc></w:tr>
+              <w:tr><w:trPr><w:del w:id="2" w:author="Bo"/><w:trPrChange w:id="3" w:author="Cy"><w:trPr/></w:trPrChange></w:trPr>
+                <w:tc><w:p/></w:tc></w:tr></w:tbl>
+            """;
+
+        var document = new TestDocx { Body = body }.Load();
+
+        Assert.Equal([("row-insert", "Ana"), ("row-delete", "Bo"), ("row-format", "Cy")],
+            document.Revisions().Select(revision => (revision.Kind, revision.Author)));
+        Assert.Contains("    Row\n      row-insert author=\"Ana\"\n      Cell\n", document.ToSnapshot());
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldNameTheControlsAroundARow_WhenRowsSitInARepeatingSection()
+    {
+        var body = """
+            <w:tbl><w:sdt><w:sdtPr><w:tag w:val="drugs"/><w15:repeatingSection xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml"/></w:sdtPr>
+              <w:sdtContent><w:sdt><w:sdtPr><w15:repeatingSectionItem xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml"/></w:sdtPr>
+                <w:sdtContent><w:tr><w:tc><w:p><w:r><w:t>Warfarin</w:t></w:r></w:p></w:tc></w:tr></w:sdtContent></w:sdt></w:sdtContent></w:sdt></w:tbl>
+            """;
+
+        Assert.Contains("""
+                Row
+                  Control repeating-section name="drugs"
+                  Control repeating-section-item
+                  Cell
+                    P "Warfarin"
+            """.ReplaceLineEndings("\n"), new TestDocx { Body = body }.Load().ToSnapshot());
+    }
 }

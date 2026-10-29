@@ -51,14 +51,30 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
     };
 
     // A run inside the paragraph's properties (w:pPr) isn't allowed there, and Word may drop or move it; every such run
-    // is recorded, with its w:t text, apart from the paragraph's text, so the misplaced run shows.
+    // is recorded, with its text, tabs and breaks, apart from the paragraph's text, so the misplaced run shows.
     private static void StrayText(XElement paragraph, ParagraphContent content)
     {
         foreach (var run in paragraph.Element(W + "pPr")?.Elements(W + "r") ?? [])
         {
-            content.Inlines.Add(new DocxStrayText(string.Concat(run.Elements(W + "t").Select(t => t.Value)), 0));
+            content.Inlines.Add(new DocxStrayText(string.Concat(run.Elements().Select(StrayPiece)), 0));
         }
     }
+
+    // Page and column breaks become the characters Word's own plain text uses for them.
+    private static string StrayPiece(XElement item) =>
+        TextOf(item) ?? (item.Name.LocalName == "br" ? Attr(item, "type") == "page" ? "\f" : "\u000E" : "");
+
+    // The text a run's item stands for (w:ptab is a tab to a fixed place); null for anything else, such as a page break.
+    private static string? TextOf(XElement item) => item.Name.LocalName switch
+    {
+        "t" => item.Value,
+        "tab" or "ptab" => "\t",
+        "cr" => "\n",
+        "br" when Attr(item, "type") is not ("page" or "column") => "\n",
+        "noBreakHyphen" => "\u2011",
+        "softHyphen" => "\u00AD",
+        _ => null,
+    };
 
     // Paragraph content left out on purpose: properties read elsewhere, and markers that only bracket a range.
     private static readonly HashSet<string> SkippedInParagraph =
@@ -227,30 +243,17 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         foreach (var item in RunContent(run))
         {
             var position = content.Text.Length + text.Length;
+            if (TextOf(item) is { } piece)
+            {
+                Append(piece);
+                continue;
+            }
+
             switch (item.Name.LocalName)
             {
-                case "t":
-                    Append(item.Value);
-                    break;
-
-                // An absolute-position tab (w:ptab) is a tab to a fixed place, such as the right margin.
-                case "tab" or "ptab":
-                    Append("\t");
-                    break;
-                case "cr":
-                    Append("\n");
-                    break;
-                case "noBreakHyphen":
-                    Append("\u2011");
-                    break;
-                case "softHyphen":
-                    Append("\u00AD");
-                    break;
-                case "br" when Attr(item, "type") is "page" or "column":
-                    content.Inlines.Add(new DocxBreak(Attr(item, "type")!, position));
-                    break;
+                // What's left of w:br once TextOf has taken line breaks: page and column breaks.
                 case "br":
-                    Append("\n");
+                    content.Inlines.Add(new DocxBreak(Attr(item, "type")!, position));
                     break;
 
                 // A symbol is a character from a symbol font, such as a Wingdings check mark: it's text, and its font
