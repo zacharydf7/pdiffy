@@ -14,16 +14,16 @@ Each page has 30 tagged lines of text, a table of 15 rows, or 10 figures with al
 |---|---|---|---|---|
 | 1 | Text | 0.32 ms | 0.01 ms | 0.8 MB |
 | 10 | Text | 3.7 ms | 0.12 ms | 7.4 MB |
-| 100 | Text | 97 ms | 4.1 ms | 74 MB |
+| 100 | Text | 97 ms | 2.5 ms | 74 MB |
 | 1 | Table | 0.23 ms | 0.01 ms | 0.6 MB |
-| 10 | Table | 2.5 ms | 0.12 ms | 5.3 MB |
-| 100 | Table | 71 ms | 3.3 ms | 53 MB |
+| 10 | Table | 2.5 ms | 0.11 ms | 5.3 MB |
+| 100 | Table | 71 ms | 2.1 ms | 53 MB |
 | 1 | Figures | 0.15 ms | 0.01 ms | 0.3 MB |
 | 10 | Figures | 1.4 ms | 0.04 ms | 2.7 MB |
-| 100 | Figures | 27 ms | 1.2 ms | 26 MB |
+| 100 | Figures | 27 ms | 0.9 ms | 26 MB |
 
 What's allocated grows in step with the number of pages. Time does up to 10 pages, then grows faster: 10 times the
-pages takes about 20 to 30 times as long to load, and about 30 times as long to write the snapshot. That's tracked in
+pages takes about 20 to 30 times as long to load, and about 20 times as long to write the snapshot. That's tracked in
 [issue #46](https://github.com/zacharydf7/pdiffy/issues/46).
 
 ## Reading a Word document

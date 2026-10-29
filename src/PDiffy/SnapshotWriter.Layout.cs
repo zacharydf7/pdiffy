@@ -8,14 +8,17 @@ internal sealed partial class SnapshotWriter
     // Page by page: text runs, then images, then paths, each in content order.
     private void WriteLayout(PdfUaDocument document)
     {
-        var pages = document.TextRuns.Select(run => run.Page).Concat(document.Images.Select(image => image.Page))
-            .Concat(document.Paths.Select(path => path.Page)).Distinct().Order().ToList();
+        var runs = document.TextRuns.ToLookup(run => run.Page);
+        var images = document.Images.ToLookup(image => image.Page);
+        var paths = document.Paths.ToLookup(path => path.Page);
+        var pages = runs.Select(page => page.Key).Concat(images.Select(page => page.Key))
+            .Concat(paths.Select(page => page.Key)).Distinct().Order().ToList();
         if (pages.Count == 0) Line(1, None);
         foreach (var page in pages)
         {
-            foreach (var run in document.TextRuns.Where(run => run.Page == page)) Line(1, FormatTextRun(run));
-            foreach (var image in document.Images.Where(image => image.Page == page)) Line(1, FormatImage(image));
-            foreach (var path in document.Paths.Where(path => path.Page == page)) Line(1, FormatPath(path));
+            foreach (var run in runs[page]) Line(1, FormatTextRun(run));
+            foreach (var image in images[page]) Line(1, FormatImage(image));
+            foreach (var path in paths[page]) Line(1, FormatPath(path));
         }
     }
 

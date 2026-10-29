@@ -202,16 +202,17 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
     // Untagged text, then a count of untagged images and paths, page by page. The layout section lists each graphic.
     private void WriteUntagged(PdfUaDocument document)
     {
-        var images = document.Images.Where(image => image.Role == ContentRole.Untagged).ToList();
-        var paths = document.Paths.Where(path => path.Role == ContentRole.Untagged).ToList();
-        var pages = document.Untagged.Select(text => text.Page).Concat(images.Select(image => image.Page))
-            .Concat(paths.Select(path => path.Page)).Distinct().Order().ToList();
+        var texts = document.Untagged.ToLookup(text => text.Page);
+        var images = document.Images.Where(image => image.Role == ContentRole.Untagged).ToLookup(image => image.Page);
+        var paths = document.Paths.Where(path => path.Role == ContentRole.Untagged).ToLookup(path => path.Page);
+        var pages = texts.Select(page => page.Key).Concat(images.Select(page => page.Key))
+            .Concat(paths.Select(page => page.Key)).Distinct().Order().ToList();
         if (pages.Count == 0) Line(1, None);
         foreach (var page in pages)
         {
-            foreach (var text in document.Untagged.Where(text => text.Page == page)) Line(1, $"p{page} {Quote(text.Text)}");
-            var imageCount = images.Count(image => image.Page == page);
-            var pathCount = paths.Count(path => path.Page == page);
+            foreach (var text in texts[page]) Line(1, $"p{page} {Quote(text.Text)}");
+            var imageCount = images[page].Count();
+            var pathCount = paths[page].Count();
             if (imageCount > 0 || pathCount > 0) Line(1, $"p{page} images={imageCount} paths={pathCount}");
         }
     }
