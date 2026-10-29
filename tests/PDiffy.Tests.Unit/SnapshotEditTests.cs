@@ -20,6 +20,8 @@ public class SnapshotEditTests
             ["the line removed"] = (RemoveLine, [ChangeKind.Removed]),
             ["the line copied"] = (CopyLine, [ChangeKind.Added]),
             ["the line swapped with the next"] = (SwapWithNext, [ChangeKind.Moved]),
+            ["a near copy added before the line, which gained an attribute"] =
+                (AddNearCopyBefore, [ChangeKind.Added, ChangeKind.AttributeChanged]),
         };
 
     [Theory]
@@ -73,8 +75,7 @@ public class SnapshotEditTests
     private static List<string>? ChangeAttribute(List<string> lines, int i)
     {
         var tokens = SnapshotLine.Tokens(lines[i].Trim()).ToList();
-        var index = tokens.FindIndex(token => token.IndexOf('=') is var equals and > 0 && equals < token.Length - 1
-            && token[(equals + 1)..] is var value && !value.StartsWith('"') && IsKey(token[..equals]));
+        var index = tokens.FindIndex(IsPlainValue);
         if (index < 0) return null;
 
         tokens[index] += "9";
@@ -91,6 +92,20 @@ public class SnapshotEditTests
         words[^1] = "Changed";
         var quoted = SnapshotLine.Tokens(lines[i].Trim()).Last(token => token.StartsWith('"'));
         return Replace(lines, i, lines[i].Replace(quoted, $"\"{string.Join(' ', words)}\""));
+    }
+
+    // The copy keeps the leading words and changes every plain value, so it's alike enough to pass for the line, but
+    // the line's own edit, which only gained an attribute, is more alike.
+    private static List<string>? AddNearCopyBefore(List<string> lines, int i)
+    {
+        var tokens = SnapshotLine.Tokens(lines[i].Trim()).ToList();
+        var values = tokens.FindAll(IsPlainValue);
+        if (values.Count == 0) return null;
+
+        var changed = tokens.Select(token => values.Contains(token) ? $"{token}7" : token);
+        var copy = Indent(lines[i]) + string.Join(' ', changed);
+        var end = SubtreeEnd(lines, i);
+        return [.. lines[..i], copy, .. lines[(i + 1)..end], lines[i] + " test-a=1", .. lines[(i + 1)..]];
     }
 
     private static List<string> RemoveLine(List<string> lines, int i) =>
@@ -139,6 +154,10 @@ public class SnapshotEditTests
     private static string Indent(string line) => line[..Depth(line)];
 
     private static bool IsKey(string key) => key.All(c => char.IsAsciiLetterLower(c) || c == '-');
+
+    // A key=value token whose value is neither quoted nor empty.
+    private static bool IsPlainValue(string token) => token.IndexOf('=') is var equals and > 0
+        && equals < token.Length - 1 && !token[(equals + 1)..].StartsWith('"') && IsKey(token[..equals]);
 
     private static List<string> Replace(List<string> lines, int i, string line) =>
         [.. lines[..i], line, .. lines[(i + 1)..]];

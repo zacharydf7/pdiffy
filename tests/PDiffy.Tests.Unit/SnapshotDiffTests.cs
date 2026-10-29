@@ -486,6 +486,51 @@ public class SnapshotDiffTests
         Assert.Equal([ChangeKind.Added, ChangeKind.AttributeChanged], changes.Select(change => change.Kind));
     }
 
+    // The later line is as like, or more like, another added line, so each line keeps its own edit.
+    [Theory]
+    [InlineData("p1 image tagged at=10,20 size=100x50 hash=aaa", "p1 image tagged at=10,80 size=200x50 hash=bbb",
+        "p1 image tagged at=10,80 size=200x50 hash=aaa", "p1 image tagged at=10,80 size=200x60 hash=bbb", 3)]
+    [InlineData("p1 path tagged a=1 b=1 c=1 d=1 e=1 f=1", "p1 path tagged a=1 b=1 c=1 d=1 g=1 h=1",
+        "p1 path tagged a=1 b=1 c=1 d=1 g=1", "p1 path tagged a=1 b=1 c=1 d=1 g=1 h=1 i=1", 4)]
+    public void Compare_ShouldPairEachLineWithItsOwnEdit_WhenTheLaterLineMatchesAnotherAsWell(string first,
+        string second, string firstEdited, string secondEdited, int attributeChanges)
+    {
+        var before = $"{SnapshotText.Header}layout\n  {first}\n  {second}\n";
+        var after = $"{SnapshotText.Header}layout\n  {firstEdited}\n  {secondEdited}\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        var expected = Enumerable.Repeat(ChangeKind.AttributeChanged, attributeChanges);
+        Assert.Equal(expected, changes.Select(change => change.Kind));
+    }
+
+    [Fact]
+    public void Compare_ShouldPairTheLineWithTheSameText_WhenANewLineSharesAsManyWords()
+    {
+        var before = $"{SnapshotText.Header}structure\n  H2 p1 \"Trail map\"\n";
+        var after = $"{SnapshotText.Header}structure\n  H2 p1 \"Trail guide\"\n"
+            + "  H2 p1 lang=en title=Map \"Trail map\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        ChangeKind[] expected = [ChangeKind.Added, ChangeKind.AttributeChanged, ChangeKind.AttributeChanged];
+        Assert.Equal(expected, changes.Select(change => change.Kind));
+    }
+
+    [Fact]
+    public void Compare_ShouldPairTheNextMostAlike_WhenTheMostAlikeIsALaterLinesEdit()
+    {
+        var before = $"{SnapshotText.Header}layout\n  p1 path tagged a=1 b=1 c=1 d=1 e=1 f=1\n"
+            + "  p1 path tagged a=1 b=1 c=1 d=1 g=1 h=1\n";
+        var after = $"{SnapshotText.Header}layout\n  p1 path tagged a=1 b=1 c=1 x=1 y=1 z=1\n"
+            + "  p1 path tagged a=1 b=1 c=1 d=1 g=1 h=1 e=1\n";
+
+        var diff = SnapshotDiff.Compare(before, after);
+
+        Assert.Equal(Enumerable.Repeat(ChangeKind.AttributeChanged, 7), diff.Changes.Select(change => change.Kind));
+        Assert.DoesNotContain("<td></td><td class=\"added\">", diff.ToHtml());
+    }
+
     [Fact]
     public void Compare_ShouldNotPairLinesOfKeys_WhenTheyStartWithDifferentKeys()
     {

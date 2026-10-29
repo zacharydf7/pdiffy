@@ -215,10 +215,12 @@ internal static class DiffReport
         List<string> added, string sectionName)
     {
         var addedLines = added.ConvertAll(line => SnapshotLine.Parse(line, 0));
+        var removedLines = removed.ConvertAll(old => SnapshotLine.Parse(before[old], 0));
         var next = 0;
-        foreach (var old in removed)
+        for (var index = 0; index < removed.Count; index++)
         {
-            var match = TreeMatcher.MatchOf(SnapshotLine.Parse(before[old], 0), addedLines, next, sectionName);
+            var old = removed[index];
+            var match = TreeMatcher.MatchOf(removedLines, index, addedLines, next, sectionName);
             if (match < 0)
             {
                 rows.Add(new Row('-', written[old], null));
