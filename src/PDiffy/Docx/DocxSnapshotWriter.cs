@@ -220,7 +220,12 @@ internal sealed class DocxSnapshotWriter
             Line(depth + 1, spanLine.ToString());
         }
 
-        for (var i = 0; i < positions.Length; i++) Line(depth + 1, InlineLine(paragraph.Inlines[i], positions[i]));
+        for (var i = 0; i < positions.Length; i++)
+        {
+            Line(depth + 1, InlineLine(paragraph.Inlines[i], positions[i]));
+            if (paragraph.Inlines[i] is DocxImage image) WriteBlocks(image.TextBox, depth + 2);
+        }
+
         if (paragraph.EndsSection is int section) Line(depth + 1, $"ends-section s{section}");
     }
 
@@ -275,7 +280,15 @@ internal sealed class DocxSnapshotWriter
                 Key(line, "title", Quote(image.Title));
                 if (image.Decorative) line.Append(" decorative");
                 Key(line, "type", image.Type);
-                if (image.Kind == "image") Key(line, "hash", image.Hash ?? Missing);
+                Key(line, "source", Quote(image.Source));
+                var hasData = image.Kind is "image" or "object" or "control" && image.Source is null;
+                if (hasData) Key(line, "hash", image.Hash ?? Missing);
+                break;
+            case DocxMath math:
+                line.Append($"math {Quote(math.Text)} hash={math.Hash}");
+                break;
+            case DocxUnsupported unsupported:
+                line.Append($"unsupported {unsupported.Element} hash={unsupported.Hash}");
                 break;
         }
 

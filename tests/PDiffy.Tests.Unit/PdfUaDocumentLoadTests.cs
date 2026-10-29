@@ -147,6 +147,19 @@ public class PdfUaDocumentLoadTests
     }
 
     [Fact]
+    public void Load_ShouldCountMcidsWithoutAPage_WhenNoElementAboveThemNamesOne()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Tagged(0, "Lost text");
+        pdf.Structure(new TestElement("Sect", new TestElement("P", 0) { Page = null }) { Page = null });
+
+        var document = pdf.Load();
+
+        Assert.Equal(1, Assert.Single(Assert.Single(document.Structure).Children).McidsWithoutPage);
+        Assert.Contains("    P mcids-without-page=1\n", document.ToSnapshot());
+    }
+
+    [Fact]
     public void Load_ShouldReportTextAsUntagged_WhenNoElementPointsToItsMcid()
     {
         var pdf = new TestPdf();

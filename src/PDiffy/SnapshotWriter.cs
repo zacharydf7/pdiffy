@@ -179,6 +179,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
             AppendAnnotationDetails(line, annotation);
         }
 
+        Key(line, "mcids-without-page", element.McidsWithoutPage > 0 ? element.McidsWithoutPage.ToString() : null);
         if (element.Text is not null) line.Append(' ').Append(Quote(element.Text));
         Line(depth, line.ToString());
         foreach (var child in element.Children) WriteElement(child, depth + 1);

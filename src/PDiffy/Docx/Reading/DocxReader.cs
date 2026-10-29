@@ -25,7 +25,7 @@ internal sealed class DocxReader
         int depth)
     {
         (_styles, _numbering, _package, _part, _usedStyles, _depth) = (styles, numbering, package, part, usedStyles, depth);
-        _inlines = new InlineReader(styles, package, part, usedStyles);
+        _inlines = new InlineReader(styles, package, part, usedStyles, container => Blocks(container).ToList());
     }
 
     public static DocxDocument Read(Stream stream) => Read(stream, 0);
@@ -236,12 +236,14 @@ internal sealed class DocxReader
         if (style is not null) _usedStyles.Add(style);
         var paragraphRun = _styles.ParagraphRun(style);
 
+        // The paragraph is numbered before a text box in it, whose list items come after it in reading order.
+        var list = ListItem(pPr?.Element(W + "numPr"), style);
         var content = _inlines.Read(paragraph, paragraphRun);
 
         return new DocxParagraph
         {
             Style = style,
-            List = ListItem(pPr?.Element(W + "numPr"), style),
+            List = list,
             Layout = _styles.Layout(style, pPr),
             Run = paragraphRun,
             Text = content.Text.ToString(),

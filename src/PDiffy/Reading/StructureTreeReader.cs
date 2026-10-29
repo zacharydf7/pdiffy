@@ -59,6 +59,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
         var pagesUsed = new SortedSet<int>();
         var annotations = new List<Annotation>();
         var children = new List<StructureElement>();
+        var mcidsWithoutPage = 0;
 
         foreach (var kid in objects.Items(element.Data.GetValueOrDefault("K")))
         {
@@ -67,13 +68,13 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
                 case NumericToken mcid when page is int mcidPage:
                     AddText(mcidPage, mcid.Int);
                     break;
+                case NumericToken:
+                    mcidsWithoutPage++;
+                    break;
                 case DictionaryToken reference when objects.Name(reference, "Type") == "MCR":
                     var referencePage = pages.NumberOf(reference.Data.GetValueOrDefault("Pg")) ?? page;
-                    if (referencePage is int mcrPage && objects.Integer(reference, "MCID") is int mcrMcid)
-                    {
-                        AddText(mcrPage, mcrMcid);
-                    }
-
+                    if (referencePage is null) mcidsWithoutPage++;
+                    else if (objects.Integer(reference, "MCID") is int mcrMcid) AddText(referencePage.Value, mcrMcid);
                     break;
                 case DictionaryToken reference when objects.Name(reference, "Type") == "OBJR":
                     if (ReadAnnotation(reference, page) is { } annotation)
@@ -127,6 +128,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
             ListNumbering = FirstAttribute(attributes, a => objects.Name(a, "ListNumbering")),
             Summary = FirstAttribute(attributes, a => objects.Text(a, "Summary")),
             Annotations = annotations,
+            McidsWithoutPage = mcidsWithoutPage,
             Text = Join(pieces),
             Children = children,
         };

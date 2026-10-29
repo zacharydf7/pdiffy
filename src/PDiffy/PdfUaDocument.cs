@@ -146,6 +146,10 @@ public sealed record StructureElement
     public string? ListNumbering { get; init; }
     public string? Summary { get; init; }
     public IReadOnlyList<Annotation> Annotations { get; init; } = [];
+
+    /// <summary>How many of the element's marked-content references name no page, so their text can't be found.</summary>
+    public int McidsWithoutPage { get; init; }
+
     public string? Text { get; init; }
 }
 

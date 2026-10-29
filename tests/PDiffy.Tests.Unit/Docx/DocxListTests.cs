@@ -155,6 +155,15 @@ public class DocxListTests
         Assert.Equal(new DocxListItem(70, 0, null), paragraph.List);
     }
 
+    [Fact]
+    public void Load_ShouldNumberAParagraphBeforeTheItemsInItsTextBox_WhenBothAreInOneList()
+    {
+        var textBox = $"""<w:pict xmlns:v="urn:schemas-microsoft-com:vml"><v:shape><v:textbox><w:txbxContent>{Item(1, 0)}</w:txbxContent></v:textbox></v:shape></w:pict>""";
+        var withTextBox = Item(1, 0).Replace("<w:t>Item</w:t>", "<w:t>Item</w:t>" + textBox);
+
+        Assert.Equal(["A.", "B.", "C.", "D."], Labels(Item(1, 0), withTextBox, Item(1, 0)));
+    }
+
     private static string Item(int list, int level) =>
         $"""<w:p><w:pPr><w:numPr><w:ilvl w:val="{level}"/><w:numId w:val="{list}"/></w:numPr></w:pPr><w:r><w:t>Item</w:t></w:r></w:p>""";
 

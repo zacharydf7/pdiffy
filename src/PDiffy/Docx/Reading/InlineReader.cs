@@ -11,9 +11,12 @@ namespace PDiffy.Docx.Reading;
 /// text (images, links, bookmarks, symbols, fields, form controls, note and comment references, tracked changes and page
 /// or column breaks), each at its position.
 /// </summary>
-internal sealed partial class InlineReader(StyleResolver styles, DocxPackage package, string part, HashSet<string> usedStyles)
+internal sealed partial class InlineReader(StyleResolver styles, DocxPackage package, string part, HashSet<string> usedStyles,
+    Func<XElement, IReadOnlyList<DocxBlock>> readBlocks)
 {
-    private readonly DrawingReader _drawings = new(package, part);
+    private static readonly XNamespace M = "http://schemas.openxmlformats.org/officeDocument/2006/math";
+
+    private readonly DrawingReader _drawings = new(package, part, readBlocks);
 
     public ParagraphContent Read(XElement paragraph, RunFormat paragraphRun)
     {
@@ -57,22 +60,68 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         }
     }
 
+    // Paragraph content left out on purpose: properties read elsewhere, and markers that only bracket a range.
+    private static readonly HashSet<string> SkippedInParagraph =
+    [
+        "pPr", "customXmlPr", "smartTagPr", "bookmarkEnd", "proofErr", "permStart", "permEnd", "commentRangeStart",
+        "commentRangeEnd", "moveFromRangeStart", "moveFromRangeEnd", "moveToRangeStart", "moveToRangeEnd",
+        "customXmlInsRangeStart", "customXmlInsRangeEnd", "customXmlDelRangeStart", "customXmlDelRangeEnd",
+        "customXmlMoveFromRangeStart", "customXmlMoveFromRangeEnd", "customXmlMoveToRangeStart", "customXmlMoveToRangeEnd",
+    ];
+
     private void ReadContent(XElement container, ParagraphContent content)
     {
-        foreach (var element in container.Elements().Where(element => element.Name.Namespace == W))
+        foreach (var element in container.Elements())
         {
-            if (element.Name.LocalName == "r") ReadRun(element, content);
-            else if (element.Name.LocalName == "hyperlink") ReadLink(element, content);
-            else if (element.Name.LocalName == "fldSimple") ReadSimpleField(element, content);
-            else if (element.Name.LocalName is "ins" or "moveTo") ReadInsertion(element, content);
-            else if (element.Name.LocalName is "del" or "moveFrom") ReadDeletion(element, content);
-            else if (element.Name.LocalName == "sdt") ReadControl(element, content);
-            else if (element.Name.LocalName == "bookmarkStart" && Attr(element, "name") is { } name and not "_GoBack")
+            var name = element.Name.LocalName;
+            if (element.Name == Mc + "AlternateContent")
             {
-                content.Inlines.Add(new DocxBookmark(name, content.Text.Length));
+                if (Chosen(element) is { } choice) ReadContent(choice, content);
+            }
+            else if (element.Name.Namespace == M && name is "oMath" or "oMathPara") ReadMath(element, content);
+            else if (element.Name.Namespace != W) content.Inlines.Add(Unsupported(element, content.Text.Length));
+            else if (name == "r") ReadRun(element, content);
+            else if (name == "hyperlink") ReadLink(element, content);
+            else if (name == "fldSimple") ReadSimpleField(element, content);
+            else if (name is "ins" or "moveTo") ReadInsertion(element, content);
+            else if (name is "del" or "moveFrom") ReadDeletion(element, content);
+            else if (name == "sdt") ReadControl(element, content);
+            else if (name == "bookmarkStart")
+            {
+                if (Attr(element, "name") is { } bookmark and not "_GoBack")
+                {
+                    content.Inlines.Add(new DocxBookmark(bookmark, content.Text.Length));
+                }
             }
             else if (IsWrapper(element)) ReadContent(element, content);
+            else if (!SkippedInParagraph.Contains(name)) content.Inlines.Add(Unsupported(element, content.Text.Length));
         }
+    }
+
+    // Left out on purpose: formatting read elsewhere, Word's layout cache, note marks and separators, and deleted text.
+    private static readonly HashSet<string> SkippedInRun =
+    [
+        "rPr", "lastRenderedPageBreak", "annotationRef", "footnoteRef", "endnoteRef", "separator", "continuationSeparator",
+        "delText", "delInstrText",
+    ];
+
+    // A run's items, with each mc:AlternateContent replaced by what its first choice holds.
+    private static IEnumerable<XElement> RunContent(XElement container) => container.Elements().SelectMany(item =>
+        item.Name != Mc + "AlternateContent" ? [item] : Chosen(item) is { } choice ? RunContent(choice) : []);
+
+    // An equation's text is the m:t of its runs; how it's built (fractions, powers, roots) goes into its hash.
+    private static void ReadMath(XElement math, ParagraphContent content)
+    {
+        var text = string.Concat(math.Descendants(M + "t").Select(t => t.Value));
+        content.Inlines.Add(new DocxMath(text, Hash(math), content.Text.Length));
+    }
+
+    // The element's name with its usual prefix, such as "w:ruby", whatever prefix the file uses; other namespaces in full.
+    private static DocxUnsupported Unsupported(XElement element, int position)
+    {
+        var prefix = element.Name.Namespace == W ? "w" : element.Name.Namespace == M ? "m" : null;
+        var name = prefix is null ? element.Name.ToString() : $"{prefix}:{element.Name.LocalName}";
+        return new DocxUnsupported(name, Hash(element), position);
     }
 
     // A link's text is the text of the runs inside it, so it's read first and the link placed before what it contains.
@@ -175,7 +224,7 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
             foreach (var field in content.Fields) field.Result.Append(piece);
         }
 
-        foreach (var item in run.Elements())
+        foreach (var item in RunContent(run))
         {
             var position = content.Text.Length + text.Length;
             switch (item.Name.LocalName)
@@ -183,7 +232,9 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
                 case "t":
                     Append(item.Value);
                     break;
-                case "tab":
+
+                // An absolute-position tab (w:ptab) is a tab to a fixed place, such as the right margin.
+                case "tab" or "ptab":
                     Append("\t");
                     break;
                 case "cr":
@@ -208,6 +259,9 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
                     Append(((char)value).ToString());
                     content.Inlines.Add(new DocxSymbol(Attr(item, "font"), code.ToUpperInvariant(), position));
                     break;
+                case "sym":
+                    content.Inlines.Add(new DocxSymbol(Attr(item, "font"), Attr(item, "char") ?? "", position));
+                    break;
                 case "fldChar":
                     ReadFieldCharacter(item, position, content);
                     break;
@@ -225,6 +279,12 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
                     break;
                 case "pict" when _drawings.Picture(item, position) is { } picture:
                     content.Inlines.Add(picture);
+                    break;
+                case "object":
+                    content.Inlines.Add(_drawings.Object(item, position));
+                    break;
+                default:
+                    if (!SkippedInRun.Contains(item.Name.LocalName)) content.Inlines.Add(Unsupported(item, position));
                     break;
             }
         }

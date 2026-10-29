@@ -53,7 +53,8 @@ public sealed record DocxDocument
         SnapshotDiff.Compare(ToSnapshot(configure), other.ToSnapshot(configure));
 
     /// <summary>
-    /// Every paragraph of the body in reading order, including those inside tables, content controls and inserted documents.
+    /// Every paragraph of the body in reading order, including those inside tables, content controls, text boxes and
+    /// inserted documents.
     /// </summary>
     public IEnumerable<DocxParagraph> Paragraphs() => Paragraphs(Body);
 
@@ -95,6 +96,7 @@ public sealed record DocxDocument
                 DocxTable table => table.Rows.SelectMany(row => row.Cells).SelectMany(cell => cell.Blocks),
                 DocxInserted inserted => inserted.Document?.Body ?? [],
                 DocxControl control => control.Blocks,
+                DocxParagraph withTextBoxes => withTextBoxes.Inlines.OfType<DocxImage>().SelectMany(image => image.TextBox),
                 _ => [],
             };
             foreach (var nested in Paragraphs(nestedBlocks)) yield return nested;
@@ -350,11 +352,22 @@ public sealed record DocxSymbol(string? Font, string Code, int Position) : DocxI
 /// <summary>
 /// An image or other graphic. Width and height are in points. For a picture, <see cref="Hash"/> is the first 16 hex
 /// digits of the image's SHA-256, which catches a swapped image, and <see cref="Type"/> its file type, such as "png".
+/// For an embedded object, Type is the program it belongs to, such as "Excel.Sheet.12", and Hash is of what it holds;
+/// for an ActiveX control, Type is the control's name.
 /// </summary>
 public sealed record DocxImage(int Position) : DocxInline(Position)
 {
-    /// <summary>"image" for a picture; otherwise what the graphic is, such as "chart", "diagram" or "shape".</summary>
+    /// <summary>
+    /// "image" for a picture, "object" for an embedded or linked object such as a spreadsheet, "control" for an ActiveX
+    /// control; otherwise what the graphic is, such as "chart", "diagram" or "shape".
+    /// </summary>
     public string Kind { get; init; } = "image";
+
+    /// <summary>The file a linked object shows, which the document doesn't contain; null when it's embedded.</summary>
+    public string? Source { get; init; }
+
+    /// <summary>What a text box, or a shape with text in it, says.</summary>
+    public IReadOnlyList<DocxBlock> TextBox { get; init; } = [];
 
     /// <summary>Whether text flows around the image rather than the image sitting in the line.</summary>
     public bool Floating { get; init; }
@@ -373,6 +386,18 @@ public sealed record DocxImage(int Position) : DocxInline(Position)
     public string? Type { get; init; }
     public string? Hash { get; init; }
 }
+
+/// <summary>
+/// An equation: the characters of its text in order, such as "x=a+b", and a hash of how it's built, which changes when,
+/// for example, a fraction becomes a division even though the characters stay the same.
+/// </summary>
+public sealed record DocxMath(string Text, string Hash, int Position) : DocxInline(Position);
+
+/// <summary>
+/// Something in a paragraph PDiffy doesn't read yet, such as a phonetic guide (w:ruby): the element's name and a hash of
+/// its contents, so a change to it still shows.
+/// </summary>
+public sealed record DocxUnsupported(string Element, string Hash, int Position) : DocxInline(Position);
 
 /// <summary>A footnote, endnote or comment: its kind, id, a comment's author and what it says.</summary>
 public sealed record DocxNote(string Kind, int Id, string? Author, IReadOnlyList<DocxBlock> Blocks);

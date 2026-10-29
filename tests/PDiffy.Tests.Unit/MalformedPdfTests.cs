@@ -61,6 +61,17 @@ public class MalformedPdfTests
         Assert.Single(document.Fonts);
     }
 
+    [Fact]
+    public void Load_ShouldCountAMarkedContentReferenceWithoutAPage_WhenNeitherItNorItsElementNamesOne()
+    {
+        var document = OnePage(catalogEntries: "/StructTreeRoot 6 0 R",
+            extraObjects: ["<< /Type /StructTreeRoot /K [7 0 R] >>", "<< /Type /StructElem /S /P /P 6 0 R /K [<< /Type /MCR /MCID 0 >>] >>"]);
+
+        var paragraph = Assert.Single(document.Structure);
+
+        Assert.Equal((1, null), (paragraph.McidsWithoutPage, paragraph.Text));
+    }
+
     // Objects 1-5 are a one-page document whose page shows "Loop" as MCID 0; extra objects are numbered from 6.
     private static PdfUaDocument OnePage(string catalogEntries = "", string pagesKids = "3 0 R", string[]? extraObjects = null)
     {
