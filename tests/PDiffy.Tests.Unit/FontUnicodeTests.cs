@@ -74,6 +74,26 @@ public class FontUnicodeTests
         Assert.Equal([[0x41], []], document.Fonts.Select(font => font.UnmappedCodes));
     }
 
+    // Each font leaves a different code unmapped, so counting the form under only one of them fails.
+    [Fact]
+    public void Load_ShouldCountAFormsTextUnderEachFontItIsDrawnWith_WhenTheFormSetsNoFontOfItsOwn()
+    {
+        var content = "BT 72 700 Td (AB) Tj ET";
+        var form = $"<< /Type /XObject /Subtype /Form /BBox [0 0 612 792] /Length {content.Length} >>\n"
+            + $"stream\n{content}\nendstream";
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+                + "/Resources << /Font << /F1 4 0 R /F2 5 0 R >> /XObject << /X1 6 0 R >> >> /Contents 7 0 R >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding << /Differences [66 /g66] >> >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding << /Differences [65 /g65] >> >>",
+            form,
+            TestPdf.Stream("/F1 12 Tf /X1 Do /F2 12 Tf /X1 Do"));
+
+        Assert.Equal([[0x42], [0x41]], document.Fonts.Select(font => font.UnmappedCodes));
+    }
+
     [Fact]
     public void Load_ShouldReadStringAndHexItems_WhenTextIsShownWithTJ()
     {
