@@ -9,41 +9,41 @@ public sealed class SnapshotTests : SnapshotFolderTests
     [Fact]
     public async Task VerifyAsync_ShouldWriteTheTextExactlyAndFail_WhenThereIsNoVerifiedFile()
     {
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync(" a  \r\n\tb ", "Braille"));
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync(" a  \r\n\tb ", "Export"));
 
         Assert.StartsWith("New text snapshot.", error.Message);
-        Assert.Equal(" a  \n\tb ", File.ReadAllText(Path.Combine(Folder, "Braille.received.txt")));
+        Assert.Equal(" a  \n\tb ", File.ReadAllText(Path.Combine(Folder, "Export.received.txt")));
     }
 
     [Fact]
     public async Task VerifyAsync_ShouldPass_WhenTheVerifiedFileHasAByteOrderMarkAndCrlfLineEndings()
     {
         Directory.CreateDirectory(Folder);
-        File.WriteAllText(Path.Combine(Folder, "Braille.verified.txt"), "one\r\ntwo\r\n", new UTF8Encoding(true));
+        File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "one\r\ntwo\r\n", new UTF8Encoding(true));
 
-        await Snapshot.VerifyAsync("one\ntwo\n", "Braille");
+        await Snapshot.VerifyAsync("one\ntwo\n", "Export");
     }
 
     [Fact]
     public async Task VerifyAsync_ShouldFailWithTheChangedLines_WhenTheTextDiffers()
     {
         Directory.CreateDirectory(Folder);
-        File.WriteAllText(Path.Combine(Folder, "Braille.verified.txt"), "one\ntwo\nthree\n");
+        File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "one\ntwo\nthree\n");
 
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("one\n2\nthree\n", "Braille"));
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("one\n2\nthree\n", "Export"));
 
         Assert.StartsWith("The text's snapshot differs from the verified one.", error.Message);
         Assert.Contains("~ text line 2\n    [-two-] {+2+}", error.Message);
-        Assert.Contains("<mark>", File.ReadAllText(Path.Combine(Folder, "Braille.diff.html")));
+        Assert.Contains("<mark>", File.ReadAllText(Path.Combine(Folder, "Export.diff.html")));
     }
 
     [Fact]
     public async Task VerifyAsync_ShouldFailShowingBothLines_WhenOnlySpacesDiffer()
     {
         Directory.CreateDirectory(Folder);
-        File.WriteAllText(Path.Combine(Folder, "Braille.verified.txt"), "a b\n");
+        File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "a b\n");
 
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("a b  \n", "Braille"));
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("a b  \n", "Export"));
 
         Assert.Contains("~ text line 1\n    - \"a b\"\n    + \"a b  \"", error.Message);
     }
@@ -69,9 +69,9 @@ public sealed class SnapshotTests : SnapshotFolderTests
     {
         var other = Path.Combine(Folder, "other");
 
-        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("text", "Braille", extension: "brf", directory: other));
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("text", "Export", extension: "csv", directory: other));
 
-        Assert.True(File.Exists(Path.Combine(other, "Braille.received.brf")));
+        Assert.True(File.Exists(Path.Combine(other, "Export.received.csv")));
     }
 
     [Fact]
@@ -99,9 +99,9 @@ public sealed class SnapshotTests : SnapshotFolderTests
     {
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, "1");
 
-        await Snapshot.VerifyAsync("accepted\n", "Braille");
+        await Snapshot.VerifyAsync("accepted\n", "Export");
 
-        Assert.Equal("accepted\n", File.ReadAllText(Path.Combine(Folder, "Braille.verified.txt")));
+        Assert.Equal("accepted\n", File.ReadAllText(Path.Combine(Folder, "Export.verified.txt")));
     }
 
     [Fact]

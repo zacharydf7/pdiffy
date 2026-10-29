@@ -16,7 +16,7 @@ public class DocumentSettingsTests
             "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
             "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
             TestPdf.Stream(""),
-            "<< /Type /OCG /Name (Braille) >>",
+            "<< /Type /OCG /Name (Watermark) >>",
             "<< /Type /OCG /Name (Draft) >>",
             "<< /Type /Filespec /F (data.xml) /UF (data.xml) /Desc (Lab data) /AFRelationship /Data /EF << /F 8 0 R >> >>",
             TestPdf.Stream("hello"));
@@ -28,7 +28,7 @@ public class DocumentSettingsTests
         Assert.Equal((true, true, false), (settings.HasJavaScript, settings.HasAdditionalActions, settings.IsEncrypted));
         Assert.Null(settings.Permissions);
         Assert.Equal([new Setting("CenterWindow", "true"), new Setting("Direction", "R2L")], settings.ViewerPreferences);
-        Assert.Equal([new Layer("Braille", true), new Layer("Draft", false)], settings.Layers);
+        Assert.Equal([new Layer("Watermark", true), new Layer("Draft", false)], settings.Layers);
         Assert.Equal([new EmbeddedFile("data.xml", "data.xml", "Lab data", "Data", 5, "2cf24dba5fb0a30e")], settings.EmbeddedFiles);
     }
 
@@ -41,7 +41,7 @@ public class DocumentSettingsTests
             "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
             "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
             TestPdf.Stream(""),
-            "<< /Type /OCG /Name (Braille) >>",
+            "<< /Type /OCG /Name (Watermark) >>",
             "<< /Type /OCG /Name (Draft) >>",
             "<< /S /GoTo /D 8 0 R >>",
             "[3 0 R /XYZ 0 792 0.5]");
@@ -49,7 +49,7 @@ public class DocumentSettingsTests
         var settings = document.Settings;
 
         Assert.Equal(("1.7", null, "GoTo p1 XYZ 0 792 0.5"), (settings.PdfVersion, settings.CatalogVersion, settings.OpenAction));
-        Assert.Equal([new Layer("Braille", true), new Layer("Draft", false)], settings.Layers);
+        Assert.Equal([new Layer("Watermark", true), new Layer("Draft", false)], settings.Layers);
     }
 
     [Fact]

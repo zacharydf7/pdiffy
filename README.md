@@ -104,7 +104,7 @@ A test whose snapshots belong somewhere else passes the folder: `await PdfSnapsh
 
 Pass a name when one test makes several snapshots, as a theory does: `await PdfSnapshot.VerifyAsync(pdf, $"Invoice.{customer}")`.
 
-Snapshots use LF line endings. If Git converts line endings on checkout, add `*.verified.txt text eol=lf` and `*.verified.json text eol=lf` (plus a line for any custom extension, such as `*.verified.brf`) to `.gitattributes`; PDiffy also compares a CRLF verified file as LF. Add `*.received.*` and `*.diff.html` to `.gitignore` and to your build server's artifacts, so a failed CI run keeps what it received and the report.
+Snapshots use LF line endings. If Git converts line endings on checkout, add `*.verified.txt text eol=lf` and `*.verified.json text eol=lf` (plus a line for any custom extension, such as `*.verified.csv`) to `.gitattributes`; PDiffy also compares a CRLF verified file as LF. Add `*.received.*` and `*.diff.html` to `.gitignore` and to your build server's artifacts, so a failed CI run keeps what it received and the report.
 
 The report is one HTML file with nothing to download, so it opens straight from a build artifact. It lists every change, accessibility changes first (filterable by kind, or to only those that affect accessibility), links to each page, and shows each section with the verified snapshot on the left and the received one on the right, edited lines side by side with the changed words highlighted. For each page with a layout change, it also draws a map of where things are, from the layout lines alone: a dashed outline where something was and a filled box where it is now (a sketch of positions, not a picture of the page). `diff.ToHtml()` gives the same page for any `SnapshotDiff`. See a [sample report](https://zacharydf7.github.io/pdiffy/samples/DrugGuide.diff.html).
 
@@ -114,12 +114,12 @@ The report is one HTML file with nothing to download, so it opens straight from 
 
 ```csharp
 [Fact]
-public async Task Braille_ShouldMatchApprovedSnapshot_WhenGenerated()
+public async Task Export_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
-    string braille = await BrailleGenerator.CreateAsync();
+    string csv = await OrderExporter.CreateCsvAsync();
 
     // Compared exactly, spaces included; only CRLF line endings are read as LF. Saved as {name}.verified.txt.
-    await Snapshot.VerifyAsync(braille);
+    await Snapshot.VerifyAsync(csv);
 }
 
 [Fact]
@@ -143,7 +143,7 @@ A text failure lists each changed line by number, with the changed words marked:
       "c": 3
 ```
 
-Text options scrub the whole text: `o => o.ScrubText(new Regex(@"Order \d+"), "Order N").ScrubDates()`. JSON scrubs strings (values or keys) that are a GUID or an ISO 8601 timestamp (`"2026-10-28T09:15:00Z"`), but leaves dates written for people, such as a letter's "November 14, 2020", and anything inside longer text, because that is content. Turn either off with `o => o.KeepGuids()` or `o => o.KeepDates()`; to scrub ids or dates inside text too, add `o => o.ScrubGuids()` or `o => o.ScrubDates()`. Pass `extension: "brf"` to name text files something other than `.txt`. A verified file that starts with a UTF-8 byte-order mark matches as if it didn't, so files approved by other tools carry over.
+Text options scrub the whole text: `o => o.ScrubText(new Regex(@"Order \d+"), "Order N").ScrubDates()`. JSON scrubs strings (values or keys) that are a GUID or an ISO 8601 timestamp (`"2026-10-28T09:15:00Z"`), but leaves dates written for people, such as a letter's "November 14, 2020", and anything inside longer text, because that is content. Turn either off with `o => o.KeepGuids()` or `o => o.KeepDates()`; to scrub ids or dates inside text too, add `o => o.ScrubGuids()` or `o => o.ScrubDates()`. Pass `extension: "csv"` to name text files something other than `.txt`. A verified file that starts with a UTF-8 byte-order mark matches as if it didn't, so files approved by other tools carry over.
 
 ### Snapshot Word documents
 
@@ -164,7 +164,7 @@ A DOCX snapshot reads like the document: one line per paragraph with its runs me
 ```
 # docx-snapshot v1
 document
-  title="Cheese list" lang=en-US compat=15 track-changes=no protection=none even-odd-headers=no created=<present> modified=<present>
+  title="Welcome letter" lang=en-US compat=15 track-changes=no protection=none even-odd-headers=no created=<present> modified=<present>
 sections
   s1 letter margins=72,72,72,72 header=36 footer=36 columns=1 break=nextPage headers=default
 styles
@@ -172,10 +172,10 @@ styles
   TableGrid table "Table Grid"
 numbering
   list 1 definition=3
-    level 0 format=upperLetter text="%1." start=1 indent=36 hanging=18
+    level 0 format=decimal text="%1." start=1 indent=36 hanging=18
 body
-  P style=ListParagraph list=1:0 label="A." "Cheese has a long history"
-    span "long" bold
+  P style=ListParagraph list=1:0 label="1." "Bring your appointment card"
+    span "appointment" bold
   Table style=TableGrid widths=144,216
     Row header
       Cell

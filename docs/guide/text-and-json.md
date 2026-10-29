@@ -8,16 +8,16 @@ same received and verified files, accept mode and report. A test project can kee
 
 ```csharp
 [Fact]
-public async Task Braille_ShouldMatchApprovedSnapshot_WhenGenerated()
+public async Task Export_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
-    string braille = await BrailleGenerator.CreateAsync();
+    string csv = await OrderExporter.CreateCsvAsync();
 
-    await Snapshot.VerifyAsync(braille);
+    await Snapshot.VerifyAsync(csv);
 }
 ```
 
 - Compared exactly, spaces included. Only CRLF line endings are read as LF.
-- Saved as `{name}.verified.txt`. Pass `extension: "brf"` to save as `{name}.verified.brf` instead.
+- Saved as `{name}.verified.txt`. Pass `extension: "csv"` to save as `{name}.verified.csv` instead.
 - A verified file that starts with a UTF-8 byte-order mark matches as if it didn't, so files approved by other tools
   carry over.
 

@@ -523,7 +523,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldNotLineUpPages_WhenNoPageHasTheSameText()
     {
-        var after = Pages(10, insertedAfter: 1).Replace("Paragraph", "Chapter").Replace("of the guide", "about cheese");
+        var after = Pages(10, insertedAfter: 1).Replace("Paragraph", "Chapter").Replace("of the guide", "about gardening");
 
         var changes = SnapshotDiff.Compare(Pages(10), after).Changes;
 

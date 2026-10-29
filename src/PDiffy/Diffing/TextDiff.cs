@@ -1,7 +1,7 @@
 namespace PDiffy.Diffing;
 
 /// <summary>
-/// A line-by-line diff for text without PDiffy's sections, such as JSON or braille. Each changed line is one change,
+/// A line-by-line diff for text without PDiffy's sections, such as JSON or CSV. Each changed line is one change,
 /// located by its line number: in the new text, or in the old one for a removed line.
 /// </summary>
 internal static class TextDiff

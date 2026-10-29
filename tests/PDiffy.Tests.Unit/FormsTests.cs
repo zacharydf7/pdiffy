@@ -43,7 +43,7 @@ public class FormsTests
             .FormField("size", "/FT /Btn /Ff 32768 /V /Small")
             .FormField("submit", "/FT /Btn /Ff 65536")
             .FormField("color", "/FT /Ch /Ff 131072 /Opt [(Red) [(g) (Green)]] /V (Green)")
-            .FormField("toppings", "/FT /Ch /Ff 2097152 /Opt [(Cheese) (Olives)] /V [(Cheese) (Olives)]")
+            .FormField("toppings", "/FT /Ch /Ff 2097152 /Opt [(Mushrooms) (Olives)] /V [(Mushrooms) (Olives)]")
             .FormField("signature", "/FT /Sig");
         pdf.AddPage();
 
@@ -55,7 +55,7 @@ public class FormsTests
             FormFieldType.ListBox, FormFieldType.Signature,
         ];
         Assert.Equal(types, fields.Select(field => field.Type));
-        Assert.Equal(["Yes", "Small", null, "Green", "Cheese, Olives", null], fields.Select(field => field.Value));
+        Assert.Equal(["Yes", "Small", null, "Green", "Mushrooms, Olives", null], fields.Select(field => field.Value));
         Assert.Equal(["Red", "Green"], fields[3].Options);
         Assert.Equal(FormFieldFlags.MultiSelect, fields[4].Flags);
     }

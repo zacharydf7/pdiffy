@@ -6,7 +6,7 @@ one line per paragraph with its runs merged, and only what differs from its styl
 ```text
 # docx-snapshot v1
 document
-  title="Cheese list" lang=en-US compat=15 track-changes=no protection=none even-odd-headers=no created=<present> modified=<present>
+  title="Welcome letter" lang=en-US compat=15 track-changes=no protection=none even-odd-headers=no created=<present> modified=<present>
 sections
   s1 letter margins=72,72,72,72 header=36 footer=36 columns=1 break=nextPage headers=default
 styles
@@ -14,10 +14,10 @@ styles
   TableGrid table "Table Grid"
 numbering
   list 1 definition=3
-    level 0 format=upperLetter text="%1." start=1 indent=36 hanging=18
+    level 0 format=decimal text="%1." start=1 indent=36 hanging=18
 body
-  P style=ListParagraph list=1:0 label="A." "Cheese has a long history"
-    span "long" bold
+  P style=ListParagraph list=1:0 label="1." "Bring your appointment card"
+    span "appointment" bold
   Table style=TableGrid widths=144,216
     Row header
       Cell

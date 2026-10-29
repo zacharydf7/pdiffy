@@ -14,9 +14,9 @@ public class DocxDocumentTests
         {
             Styles = NormalStyle,
             Settings = """<w:compat><w:compatSetting w:name="compatibilityMode" w:val="15"/></w:compat>""",
-            Core = "<dc:title>Cheese</dc:title><dcterms:created>2026-10-28T00:00:00Z</dcterms:created>",
+            Core = "<dc:title>Letter</dc:title><dcterms:created>2026-10-28T00:00:00Z</dcterms:created>",
             Body = """
-                <w:p><w:r><w:t>Cheese </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>has</w:t></w:r><w:r><w:t> history</w:t></w:r></w:p>
+                <w:p><w:r><w:t>Bring </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>your</w:t></w:r><w:r><w:t> card</w:t></w:r></w:p>
                 <w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720"/></w:sectPr>
                 """,
         };
@@ -26,7 +26,7 @@ public class DocxDocumentTests
         var expected = """
             # docx-snapshot v1
             document
-              title="Cheese" lang=(missing) compat=15 track-changes=no protection=none even-odd-headers=no created=<present> modified=<missing>
+              title="Letter" lang=(missing) compat=15 track-changes=no protection=none even-odd-headers=no created=<present> modified=<missing>
             sections
               s1 letter margins=72,72,72,72 header=36 footer=36 columns=1 break=nextPage
             styles
@@ -34,8 +34,8 @@ public class DocxDocumentTests
             numbering
               (none)
             body
-              P style=Normal "Cheese has history"
-                span "has" bold
+              P style=Normal "Bring your card"
+                span "your" bold
             headers
               (none)
             footers
@@ -50,11 +50,11 @@ public class DocxDocumentTests
     [Fact]
     public void Load_ShouldMergeRunsIntoOneText_WhenTheyLookTheSame()
     {
-        var docx = new TestDocx { Styles = NormalStyle, Body = "<w:p><w:r><w:t>Chee</w:t></w:r><w:r><w:t xml:space=\"preserve\">se </w:t></w:r></w:p>" };
+        var docx = new TestDocx { Styles = NormalStyle, Body = "<w:p><w:r><w:t>Welc</w:t></w:r><w:r><w:t xml:space=\"preserve\">ome </w:t></w:r></w:p>" };
 
         var paragraph = Assert.Single(docx.Load().Paragraphs());
 
-        Assert.Equal("Cheese ", paragraph.Text);
+        Assert.Equal("Welcome ", paragraph.Text);
         Assert.Equal(paragraph.Run, Assert.Single(paragraph.Spans).Format);
     }
 
