@@ -8,7 +8,7 @@ internal sealed class DocxSnapshotWriter
 {
     public const string FormatHeader = "# docx-snapshot v1";
 
-    private const string None = "(none)";
+    private const string None = SnapshotWriter.None;
     private const string Missing = "(missing)";
 
     private readonly StringBuilder _snapshot;
@@ -48,7 +48,7 @@ internal sealed class DocxSnapshotWriter
     private void WriteSection(DocxSection section, Action write)
     {
         Line(0, SnapshotWriter.Name(section));
-        if (_options.Ignores(section)) Line(1, "(ignored)");
+        if (_options.Ignores(section)) Line(1, SnapshotWriter.Ignored);
         else write();
     }
 
@@ -208,16 +208,16 @@ internal sealed class DocxSnapshotWriter
 
         var writer = new DocxSnapshotWriter(document, _snapshot, _options, _scrubbing);
         writer.Line(depth + 1, "styles");
-        if (_options.Ignores(DocxSection.Styles)) writer.Line(depth + 2, "(ignored)");
+        if (_options.Ignores(DocxSection.Styles)) writer.Line(depth + 2, SnapshotWriter.Ignored);
         else writer.WriteStyles(document.Styles, depth + 2);
         writer.Line(depth + 1, "numbering");
-        if (_options.Ignores(DocxSection.Numbering)) writer.Line(depth + 2, "(ignored)");
+        if (_options.Ignores(DocxSection.Numbering)) writer.Line(depth + 2, SnapshotWriter.Ignored);
         else writer.WriteLists(document.Lists, depth + 2);
         writer.Line(depth + 1, "body");
         if (document.Body.Count == 0) writer.Line(depth + 2, None);
         writer.WriteBlocks(document.Body, depth + 2);
         writer.Line(depth + 1, "notes");
-        if (_options.Ignores(DocxSection.Notes)) writer.Line(depth + 2, "(ignored)");
+        if (_options.Ignores(DocxSection.Notes)) writer.Line(depth + 2, SnapshotWriter.Ignored);
         else writer.WriteNotes(document.Notes, depth + 2);
     }
 

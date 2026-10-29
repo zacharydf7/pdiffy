@@ -10,7 +10,8 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
 
     public const string FormatHeader = FormatPrefix + "1";
 
-    private const string None = "(none)";
+    internal const string None = "(none)";
+    internal const string Ignored = "(ignored)";
     private const string Missing = "(missing)";
 
     private readonly StringBuilder _snapshot = new();
@@ -52,7 +53,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
     private void WriteSection(Section section, Action write)
     {
         Line(0, Name(section));
-        if (options.Ignores(section)) Line(1, "(ignored)");
+        if (options.Ignores(section)) Line(1, Ignored);
         else write();
     }
 

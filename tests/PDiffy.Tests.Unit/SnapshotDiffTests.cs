@@ -339,6 +339,31 @@ public class SnapshotDiffTests
         Assert.Equal(expected, text);
     }
 
+    [Theory]
+    [InlineData("(none)", "p1 \"Draft\"", ChangeKind.Added)]
+    [InlineData("p1 \"Draft\"", "(none)", ChangeKind.Removed)]
+    [InlineData("(ignored)", "p1 \"Draft\"", ChangeKind.Added)]
+    public void Compare_ShouldReportOnlyTheContent_WhenItTakesThePlaceOfASectionsPlaceholder(string before, string after,
+        ChangeKind kind)
+    {
+        var diff = SnapshotDiff.Compare(SnapshotText.Header + $"untagged\n  {before}\n",
+            SnapshotText.Header + $"untagged\n  {after}\n");
+
+        var change = Assert.Single(diff.Changes);
+        Assert.Equal((kind, "untagged > p1"), (change.Kind, change.Path));
+    }
+
+    [Fact]
+    public void Compare_ShouldCompareTheChildren_WhenAnElementWithNoTypePrintsAsNone()
+    {
+        var before = SnapshotText.Header + "structure\n  Document\n    (none)\n      Figure p1 alt=\"Logo\"\n";
+        var after = SnapshotText.Header + "structure\n  Document\n    (none)\n      Figure p1\n";
+
+        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+
+        Assert.Equal((ChangeKind.AttributeChanged, "structure > Document > (none) > Figure"), (change.Kind, change.Path));
+    }
+
     [Fact]
     public void Describe_ShouldListAccessibilityChangesFirst_WhenTheyComeLaterInTheSnapshot()
     {
@@ -347,7 +372,7 @@ public class SnapshotDiffTests
 
         var lines = SnapshotDiff.Compare(before, after).Describe().Split('\n');
 
-        Assert.Equal("by section: structure 1, untagged 2", lines[1]);
+        Assert.Equal("by section: structure 1, untagged 1", lines[1]);
         Assert.Equal("+ added untagged > p1 (p1) [accessibility]", lines[3]);
         Assert.Contains("~ text structure > P (p1)", lines);
     }

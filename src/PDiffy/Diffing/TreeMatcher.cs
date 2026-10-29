@@ -30,6 +30,8 @@ internal sealed class TreeMatcher(string name, Section? section,
 
     private void CompareChildren(List<SnapshotLine> before, List<SnapshotLine> after, string parentPath)
     {
+        // An empty or ignored section's placeholder isn't an element, so content taking its place is only added or removed.
+        (before, after) = (WithoutPlaceholder(before), WithoutPlaceholder(after));
         var steps = LineDiff.Compare(before.ConvertAll(line => line.Signature), after.ConvertAll(line => line.Signature));
         var (b, a) = (0, 0);
         var removed = new List<SnapshotLine>();
@@ -73,6 +75,13 @@ internal sealed class TreeMatcher(string name, Section? section,
 
         foreach (var line in added.Skip(next)) AddAdded(line, afterSiblings, parentPath);
     }
+
+    // A placeholder is the only line under its header and has nothing under it; an element with no type also prints as
+    // "(none)", but among other lines or with children of its own.
+    private static List<SnapshotLine> WithoutPlaceholder(List<SnapshotLine> lines) =>
+        lines is [{ Children.Count: 0 } only] && only.Text.Trim() is SnapshotWriter.None or SnapshotWriter.Ignored
+            ? []
+            : lines;
 
     private void AddAdded(SnapshotLine line, List<SnapshotLine> siblings, string parentPath) =>
         _entries.Add(new Entry(Added: line, Path: PathOf(line, siblings, parentPath)));
