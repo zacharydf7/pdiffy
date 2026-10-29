@@ -197,7 +197,7 @@ The snapshot records the document settings, each section's page setup, the style
 
 Anything in a paragraph, or between paragraphs and tables, that PDiffy doesn't read yet, such as a phonetic guide (`w:ruby`), a date or page-number element (`w:dayShort`, `w:pgNum`) or a VML shape that isn't a `v:shape` (such as `v:rect` or `v:oval`), prints as `unsupported <element> hash=...`, so a change to it still fails the test.
 
-`DocxDocument.Load` gives the same content as properties, and `CompareTo` compares two documents. Options leave out sections or scrub text: `o => o.Ignore(DocxSection.Styles).ScrubDates()`.
+`DocxDocument.Load` gives the same content as properties, and `CompareTo` compares two documents. Options leave out sections, leave out one detail everywhere (see [What you can ignore](#what-you-can-ignore)) or scrub text: `o => o.Ignore(DocxSection.Styles).Ignore(DocxDetail.FieldResults).ScrubDates()`.
 
 ```csharp
 DocxDocument letter = DocxDocument.Load("letter.docx");
@@ -499,6 +499,20 @@ The options can also change what's printed:
 | `ScrubText(regex, replacement)` | Replaces your own pattern in quoted text |
 | `ShowProducerAndCreator()` | Prints the producer and creator values instead of only whether they're present |
 | `OnlyPages(3, 4)` | Keeps only what is on those pages |
+
+For Word documents, each `DocxSection` value leaves out one section, and each `DocxDetail` value leaves out one detail wherever it appears:
+
+| DocxDetail | Leaves out |
+|---|---|
+| `ImageHashes` | The hash of each image, embedded object and control's data |
+| `FieldResults` | Each field's `result=` and the result's text in the paragraph, also inside links, formatted text and tracked changes, so a PAGE or DATE field or a table of contents that shows something new doesn't fail the test. Positions after the result move back |
+| `Fonts` | The font of styles and of text that differs from its style. A symbol's or a bullet's font stays, since it decides which character shows |
+| `FontSizes` | The font size of styles and of text that differs from its style |
+| `Colors` | Text color, highlight, cell shading and border colors |
+| `Spacing` | Space before and after paragraphs, and line spacing |
+| `Indents` | Left, right, first-line and hanging indents of paragraphs, styles and list levels |
+| `RevisionAuthors` | Who made each tracked change |
+| `CommentAuthors` | Who wrote each comment |
 
 ## Changes that affect accessibility
 

@@ -29,6 +29,7 @@ internal sealed class DocxSnapshotWriter
     {
         Line(0, FormatHeader);
         if (_options.IgnoredSections.Any()) Line(0, $"# ignored sections: {string.Join(", ", _options.IgnoredSections.Select(SnapshotWriter.Name))}");
+        if (_options.IgnoredDetails.Any()) Line(0, $"# ignored fields: {string.Join(", ", _options.IgnoredDetails.Select(SnapshotWriter.Name))}");
         WriteSection(DocxSection.Document, () => WriteDocument(document.Document));
         WriteSection(DocxSection.Sections, () => WriteSections(document.PageSetups));
         WriteSection(DocxSection.Styles, () => WriteStyles(document.Styles, 1));
@@ -98,7 +99,7 @@ internal sealed class DocxSnapshotWriter
     private string RevisionLine(DocxRevision revision)
     {
         var line = new StringBuilder(revision.Kind);
-        Key(line, "author", Quote(revision.Author));
+        if (Shows(DocxDetail.RevisionAuthors)) Key(line, "author", Quote(revision.Author));
         return line.ToString();
     }
 
@@ -134,8 +135,12 @@ internal sealed class DocxSnapshotWriter
                 var line = new StringBuilder($"level {level.Level} format={level.Format}");
                 Key(line, "text", Quote(level.Text));
                 Key(line, "start", level.Start?.ToString());
-                Key(line, "indent", Length(level.Indent));
-                Key(line, "hanging", Length(level.Hanging));
+                if (Shows(DocxDetail.Indents))
+                {
+                    Key(line, "indent", Length(level.Indent));
+                    Key(line, "hanging", Length(level.Hanging));
+                }
+
                 Key(line, "font", Quote(level.Font));
                 Line(depth + 1, line.ToString());
             }
@@ -161,7 +166,7 @@ internal sealed class DocxSnapshotWriter
         foreach (var note in notes)
         {
             var line = new StringBuilder($"{note.Kind} {note.Id}");
-            Key(line, "author", Quote(note.Author));
+            if (Shows(DocxDetail.CommentAuthors)) Key(line, "author", Quote(note.Author));
             Line(depth, line.ToString());
             WriteBlocks(note.Blocks, depth + 1);
         }
@@ -221,21 +226,29 @@ internal sealed class DocxSnapshotWriter
         var styleLayout = paragraph.Style is null ? null : _styleLayouts.GetValueOrDefault(paragraph.Style);
         WriteLayout(line, paragraph.Layout, styleLayout ?? new ParagraphFormat());
         // The text is scrubbed once, with the positions of what sits in it, so those still point into the printed text.
-        var positions = paragraph.Inlines.Select(inline => inline.Position).ToArray();
-        var text = _scrubbing.Scrub(paragraph.Text, positions);
+        var results = Shows(DocxDetail.FieldResults) ? [] : FieldResults(paragraph);
+        var positions = paragraph.Inlines.Select(inline => Moved(inline.Position, results)).ToArray();
+        var text = _scrubbing.Scrub(WithoutResults(paragraph.Text, 0, results), positions);
         if (text.Length > 0) line.Append(' ').Append(Escaped(text));
         Line(depth, line.ToString());
 
-        foreach (var span in paragraph.Spans.Where(span => span.Format != paragraph.Run))
+        // The spans together are the paragraph's text, so each one starts where the one before it ended.
+        var spanStart = 0;
+        foreach (var span in paragraph.Spans)
         {
-            var spanLine = new StringBuilder($"span {Quote(span.Text)}");
+            var spanText = WithoutResults(span.Text, spanStart, results);
+            spanStart += span.Text.Length;
+            if (span.Format == paragraph.Run || spanText.Length == 0) continue;
+
+            var spanLine = new StringBuilder($"span {Quote(spanText)}");
+            var keysStart = spanLine.Length;
             WriteRun(spanLine, span.Format, paragraph.Run);
-            Line(depth + 1, spanLine.ToString());
+            if (spanLine.Length > keysStart) Line(depth + 1, spanLine.ToString());
         }
 
         for (var i = 0; i < positions.Length; i++)
         {
-            Line(depth + 1, InlineLine(paragraph.Inlines[i], positions[i]));
+            Line(depth + 1, InlineLine(paragraph.Inlines[i], positions[i], results));
             if (paragraph.Inlines[i] is DocxImage image) WriteBlocks(image.TextBox, depth + 2);
         }
 
@@ -243,7 +256,7 @@ internal sealed class DocxSnapshotWriter
     }
 
     // An image always says whether it has alt text, since a missing description is what an accessibility check looks for.
-    private string InlineLine(DocxInline inline, int position)
+    private string InlineLine(DocxInline inline, int position, List<(int Start, int End)> results)
     {
         var line = new StringBuilder();
         switch (inline)
@@ -252,15 +265,19 @@ internal sealed class DocxSnapshotWriter
                 line.Append($"break {pageBreak.Kind}");
                 break;
             case DocxLink link:
-                line.Append($"link {Quote(link.Text)} -> {(link.Target is null ? Missing : _scrubbing.Scrub(link.Target))}");
+                var linkText = WithoutResults(link.Text, link.Position, results);
+                line.Append($"link {Quote(linkText)} -> {(link.Target is null ? Missing : _scrubbing.Scrub(link.Target))}");
                 break;
             case DocxField field:
                 line.Append($"field {Quote(field.Code)}");
-                Key(line, "result", Quote(field.Result));
+                if (Shows(DocxDetail.FieldResults)) Key(line, "result", Quote(field.Result));
                 break;
             case DocxRevision revision:
-                line.Append($"{revision.Kind} {Quote(revision.Text)}");
-                Key(line, "author", Quote(revision.Author));
+                // Deleted and moved-away text isn't in the paragraph's text, so no result sits in it.
+                var shown = revision.Kind is "insert" or "move-to" or "format";
+                var revisionText = shown ? WithoutResults(revision.Text, revision.Position, results) : revision.Text;
+                line.Append($"{revision.Kind} {Quote(revisionText)}");
+                if (Shows(DocxDetail.RevisionAuthors)) Key(line, "author", Quote(revision.Author));
                 break;
             case DocxNoteReference note:
                 line.Append($"note {note.Kind} {note.Id}");
@@ -295,7 +312,7 @@ internal sealed class DocxSnapshotWriter
                 Key(line, "type", image.Type);
                 Key(line, "source", Quote(image.Source));
                 var hasData = image.Kind is "image" or "object" or "control" && image.Source is null;
-                if (hasData) Key(line, "hash", image.Hash ?? Missing);
+                if (hasData && Shows(DocxDetail.ImageHashes)) Key(line, "hash", image.Hash ?? Missing);
                 break;
             case DocxMath math:
                 line.Append($"math {Quote(math.Text)} hash={math.Hash}");
@@ -315,7 +332,7 @@ internal sealed class DocxSnapshotWriter
         Key(line, "widths", table.Widths.Count > 0 ? string.Join(",", table.Widths.Select(Points)) : null);
         Key(line, "width", table.Width);
         Key(line, "cell-margins", List(table.CellMargins));
-        Key(line, "borders", List(table.Borders));
+        Key(line, "borders", List(Borders(table.Borders)));
         Line(depth, line.ToString());
         foreach (var row in table.Rows)
         {
@@ -327,10 +344,10 @@ internal sealed class DocxSnapshotWriter
                 var cellLine = new StringBuilder("Cell");
                 if (cell.Span != 1) Key(cellLine, "span", cell.Span.ToString());
                 Key(cellLine, "merge", cell.Merge);
-                Key(cellLine, "shading", cell.Shading);
+                if (Shows(DocxDetail.Colors)) Key(cellLine, "shading", cell.Shading);
                 Key(cellLine, "width", cell.Width);
                 Key(cellLine, "margins", List(cell.Margins));
-                Key(cellLine, "borders", List(cell.Borders));
+                Key(cellLine, "borders", List(Borders(cell.Borders)));
                 Line(depth + 2, cellLine.ToString());
                 WriteBlocks(cell.Blocks, depth + 3);
             }
@@ -340,35 +357,99 @@ internal sealed class DocxSnapshotWriter
     private void WriteRun(StringBuilder line, RunFormat format, RunFormat baseFormat)
     {
         Changed(line, "char-style", format.Style, baseFormat.Style, Missing);
-        if (format.Font != baseFormat.Font) Key(line, "font", Quote(format.Font) ?? Missing);
-        Changed(line, "size", Length(format.Size), Length(baseFormat.Size), Missing);
+        if (Shows(DocxDetail.Fonts) && format.Font != baseFormat.Font) Key(line, "font", Quote(format.Font) ?? Missing);
+        if (Shows(DocxDetail.FontSizes)) Changed(line, "size", Length(format.Size), Length(baseFormat.Size), Missing);
         Flag(line, "bold", format.Bold, baseFormat.Bold);
         Flag(line, "italic", format.Italic, baseFormat.Italic);
         Changed(line, "underline", format.Underline, baseFormat.Underline, "none");
-        Changed(line, "color", format.Color, baseFormat.Color, "auto");
-        Changed(line, "highlight", format.Highlight, baseFormat.Highlight, "none");
+        if (Shows(DocxDetail.Colors))
+        {
+            Changed(line, "color", format.Color, baseFormat.Color, "auto");
+            Changed(line, "highlight", format.Highlight, baseFormat.Highlight, "none");
+        }
+
         Flag(line, "caps", format.Caps, baseFormat.Caps);
         Flag(line, "small-caps", format.SmallCaps, baseFormat.SmallCaps);
         Flag(line, "strike", format.Strike, baseFormat.Strike);
         Changed(line, "vertical", format.VerticalAlign, baseFormat.VerticalAlign, "baseline");
     }
 
-    private static void WriteLayout(StringBuilder line, ParagraphFormat format, ParagraphFormat baseFormat)
+    private void WriteLayout(StringBuilder line, ParagraphFormat format, ParagraphFormat baseFormat)
     {
         Changed(line, "heading", format.HeadingLevel?.ToString(), baseFormat.HeadingLevel?.ToString(), "none");
         Changed(line, "align", format.Align, baseFormat.Align, Missing);
-        Changed(line, "indent-left", Length(format.IndentLeft), Length(baseFormat.IndentLeft), Missing);
-        Changed(line, "indent-right", Length(format.IndentRight), Length(baseFormat.IndentRight), Missing);
-        Changed(line, "first-line", Length(format.FirstLine), Length(baseFormat.FirstLine), "none");
-        Changed(line, "hanging", Length(format.Hanging), Length(baseFormat.Hanging), "none");
-        Changed(line, "spacing-before", Length(format.SpacingBefore), Length(baseFormat.SpacingBefore), Missing);
-        Changed(line, "spacing-after", Length(format.SpacingAfter), Length(baseFormat.SpacingAfter), Missing);
-        Changed(line, "line", format.LineSpacing?.Replace(' ', '-'), baseFormat.LineSpacing?.Replace(' ', '-'), Missing);
+        if (Shows(DocxDetail.Indents))
+        {
+            Changed(line, "indent-left", Length(format.IndentLeft), Length(baseFormat.IndentLeft), Missing);
+            Changed(line, "indent-right", Length(format.IndentRight), Length(baseFormat.IndentRight), Missing);
+            Changed(line, "first-line", Length(format.FirstLine), Length(baseFormat.FirstLine), "none");
+            Changed(line, "hanging", Length(format.Hanging), Length(baseFormat.Hanging), "none");
+        }
+
+        if (Shows(DocxDetail.Spacing))
+        {
+            Changed(line, "spacing-before", Length(format.SpacingBefore), Length(baseFormat.SpacingBefore), Missing);
+            Changed(line, "spacing-after", Length(format.SpacingAfter), Length(baseFormat.SpacingAfter), Missing);
+            Changed(line, "line", format.LineSpacing?.Replace(' ', '-'), baseFormat.LineSpacing?.Replace(' ', '-'), Missing);
+        }
+
         Flag(line, "keep-next", format.KeepNext, baseFormat.KeepNext);
         Flag(line, "keep-lines", format.KeepLines, baseFormat.KeepLines);
         Flag(line, "page-break-before", format.PageBreakBefore, baseFormat.PageBreakBefore);
         if (!format.Tabs.SequenceEqual(baseFormat.Tabs)) Key(line, "tabs", format.Tabs.Count > 0 ? string.Join(",", format.Tabs) : "none");
     }
+
+    private bool Shows(DocxDetail detail) => !_options.Ignores(detail);
+
+    // Where field results sit in the paragraph's text. A field nested in another's code has its result there instead,
+    // so only results found in the text count, and one nested in another's result is taken out with it.
+    private static List<(int Start, int End)> FieldResults(DocxParagraph paragraph)
+    {
+        var text = paragraph.Text;
+        var results = paragraph.Inlines.OfType<DocxField>()
+            .Where(field => field.Result.Length > 0 && field.Position + field.Result.Length <= text.Length
+                && string.CompareOrdinal(text, field.Position, field.Result, 0, field.Result.Length) == 0)
+            .Select(field => (Start: field.Position, End: field.Position + field.Result.Length))
+            .OrderBy(result => result.Start);
+
+        var merged = new List<(int Start, int End)>();
+        foreach (var result in results)
+        {
+            if (merged.Count == 0 || result.Start > merged[^1].End) merged.Add(result);
+            else merged[^1] = (merged[^1].Start, Math.Max(merged[^1].End, result.End));
+        }
+
+        return merged;
+    }
+
+    // A piece of the paragraph's text that starts at start, without the field results in it.
+    private static string WithoutResults(string piece, int start, List<(int Start, int End)> results)
+    {
+        for (var i = results.Count - 1; i >= 0; i--)
+        {
+            var (from, to) = (Math.Max(results[i].Start, start), Math.Min(results[i].End, start + piece.Length));
+            if (from < to) piece = piece.Remove(from - start, to - from);
+        }
+
+        return piece;
+    }
+
+    // A position after a result moves back by its length; one inside a result moves to where the result was.
+    private static int Moved(int position, List<(int Start, int End)> results)
+    {
+        var moved = position;
+        foreach (var (start, end) in results)
+        {
+            if (position >= end) moved -= end - start;
+            else if (position > start) moved -= position - start;
+        }
+
+        return moved;
+    }
+
+    // A border is side:style:width, then its color when it has one.
+    private IReadOnlyList<string> Borders(IReadOnlyList<string> borders) =>
+        Shows(DocxDetail.Colors) ? borders : borders.Select(side => string.Join(':', side.Split(':').Take(3))).ToList();
 
     // A value prints when it differs from the base's; one that was cleared prints what clearing means, such as "none".
     private static void Changed(StringBuilder line, string key, string? value, string? baseValue, string cleared)
