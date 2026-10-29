@@ -23,7 +23,9 @@ Each page has 30 tagged lines of text, a table of 15 rows, or 10 figures with al
 | 100 | Figures | 27 ms | 0.9 ms | 26 MB |
 
 What's allocated grows in step with the number of pages. Time does up to 10 pages, then grows faster: 10 times the
-pages takes about 20 to 30 times as long to load, and about 20 times as long to write the snapshot. That's tracked in
+pages takes about 20 to 30 times as long to load, and about 20 times as long to write the snapshot. Most of the extra
+load time is garbage collection: a load keeps every page's content in memory until it's done, so a large document's
+objects live long enough to be collected the slow way. That's tracked in
 [issue #46](https://github.com/zacharydf7/pdiffy/issues/46).
 
 ## Reading a Word document
