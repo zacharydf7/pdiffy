@@ -1,14 +1,11 @@
 using PDiffy.Tests.Unit.Pdfs;
+using static PDiffy.Tests.Unit.Pdfs.TestFonts;
 using static PDiffy.Tests.Unit.SnapshotText;
 
 namespace PDiffy.Tests.Unit;
 
 public class FontUnicodeTests
 {
-    private const string CidFont = "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /Cid /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) "
-        + "/Supplement 0 >> /FontDescriptor << /Type /FontDescriptor /FontName /Cid /Flags 4 /FontBBox [0 0 1000 1000] /ItalicAngle 0 "
-        + "/Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 >> >>";
-
     private const string NoNamesFont = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding << /Differences [65 /g65 /g66] >> >>";
 
     [Fact]
@@ -42,7 +39,7 @@ public class FontUnicodeTests
     [Fact]
     public void Load_ShouldReportCodesMissingFromToUnicode_WhenACidFontUsesThem()
     {
-        var font = "<< /Type /Font /Subtype /Type0 /BaseFont /Cid /Encoding /Identity-H /DescendantFonts [7 0 R] /ToUnicode 6 0 R >>";
+        var font = Type0;
         var cmap = CMap("1 beginbfchar <0041> <0041> endbfchar 1 beginbfrange <0050> <0052> <0050> endbfrange "
             + "1 beginbfrange <0060> <0061> [<0060> <0000>] endbfrange");
 
@@ -54,7 +51,7 @@ public class FontUnicodeTests
     [Fact]
     public void Load_ShouldCountEntriesBeforeTheCut_WhenToUnicodeIsTruncated()
     {
-        var font = "<< /Type /Font /Subtype /Type0 /BaseFont /Cid /Encoding /Identity-H /DescendantFonts [7 0 R] /ToUnicode 6 0 R >>";
+        var font = Type0;
         var truncated = TestPdf.Stream("/CIDInit /ProcSet findresource begin 2 beginbfchar <0041> <0041> <0042> <00");
 
         var document = OneFont(font, "<00410042> Tj", truncated, CidFont);
@@ -170,19 +167,4 @@ public class FontUnicodeTests
         ];
         Assert.Equal(expected, SectionLines(snapshot, "fonts"));
     }
-
-    // Objects 1-5 are a one-page document whose page shows the content with font F1 (object 4); extras are numbered from 6.
-    private static PdfUaDocument OneFont(string font, string text, params string[] extraObjects) => RawPdf.Load(
-    [
-        "<< /Type /Catalog /Pages 2 0 R >>",
-        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-        font,
-        TestPdf.Stream($"BT /F1 12 Tf 72 700 Td {text} ET"),
-        .. extraObjects,
-    ]);
-
-    private static string CMap(string mappings) => TestPdf.Stream(
-        $"/CIDInit /ProcSet findresource begin 12 dict begin begincmap 1 begincodespacerange <00> <FFFF> endcodespacerange {mappings} "
-        + "endcmap CMapName currentdict /CMap defineresource pop end end");
 }

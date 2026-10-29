@@ -1,4 +1,7 @@
 
+using System.IO.Compression;
+using System.Text;
+
 namespace PDiffy.Tests.Unit.Pdfs;
 
 /// <summary>Builds small tagged PDFs for tests by writing the PDF objects directly.</summary>
@@ -27,6 +30,15 @@ internal sealed class TestPdf
 
     /// <summary>Puts the font resources on the Pages node, so every page inherits them instead of having its own.</summary>
     public bool ResourcesOnPagesNode { get; init; }
+
+    /// <summary>Flate-compresses page content, images and XMP, as most PDF writers do, instead of writing them as text.</summary>
+    public bool CompressStreams { get; init; }
+
+    /// <summary>Raw entries added to the trailer, such as "/ID [&lt;01&gt; &lt;02&gt;]".</summary>
+    public string TrailerEntries { get; init; } = "";
+
+    /// <summary>How the file's objects and cross-reference section are laid out.</summary>
+    public PdfLayout Layout { get; init; } = new();
 
     public TestPage AddPage(double width = 612, double height = 792, int rotate = 0, string? tabs = "S")
     {
@@ -118,7 +130,7 @@ internal sealed class TestPdf
 
         for (var i = 0; i < _pages.Count; i++)
         {
-            var content = Add(Stream(_pages[i].Content));
+            var content = Add(StreamObject("", _pages[i].Content));
             Set(pageObjects[i], _pages[i].ToDictionary(pagesNode, ResourcesOnPagesNode ? null : font, content, annotations[i], this));
         }
 
@@ -128,20 +140,32 @@ internal sealed class TestPdf
         Set(catalog, $"<< {catalogEntries} >>");
         var titleEntry = Title is null ? "" : $"/Title ({Title}) ";
         var info = Add($"<< {titleEntry}{InfoEntries} >>");
-        return RawPdf.Build(_objects, catalog, $"/Info {info} 0 R");
+        return RawPdf.Build(_objects, catalog, $"/Info {info} 0 R {TrailerEntries}", Layout);
     }
 
+    /// <summary>A stream object with the given dictionary entries; compressed when <see cref="CompressStreams"/> is set.</summary>
+    internal string StreamObject(string entries, string data)
+    {
+        if (!CompressStreams) return $"<< {entries} /Length {data.Length} >>\nstream\n{data}\nendstream";
+
+        var compressed = new MemoryStream();
+        using (var zlib = new ZLibStream(compressed, CompressionLevel.Optimal)) zlib.Write(Encoding.Latin1.GetBytes(data));
+        var packed = Encoding.Latin1.GetString(compressed.ToArray());
+        return $"<< {entries} /Filter /FlateDecode /Length {packed.Length} >>\nstream\n{packed}\nendstream";
+    }
+
+    // Objects are numbered from the layout's first number, so a test can change every number without rewriting references.
     internal int Add(string body)
     {
         _objects.Add(body);
-        return _objects.Count;
+        return _objects.Count + Layout.FirstNumber - 1;
     }
 
     internal static string Stream(string content) => $"<< /Length {content.Length} >>\nstream\n{content}\nendstream";
 
     private int Reserve() => Add("");
 
-    private void Set(int number, string body) => _objects[number - 1] = body;
+    private void Set(int number, string body) => _objects[number - Layout.FirstNumber] = body;
 
     private int AddElement(TestElement element, int parent, List<int> pageObjects, List<List<int>> annotations)
     {
@@ -199,7 +223,7 @@ internal sealed class TestPdf
         var xml = "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">"
             + "<rdf:Description xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\" xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\" "
             + $"xmlns:dc=\"http://purl.org/dc/elements/1.1/\">{properties}</rdf:Description></rdf:RDF></x:xmpmeta>";
-        return Add($"<< /Type /Metadata /Subtype /XML /Length {xml.Length} >>\nstream\n{xml}\nendstream");
+        return Add(StreamObject("/Type /Metadata /Subtype /XML", xml));
     }
 
 }

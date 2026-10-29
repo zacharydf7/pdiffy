@@ -107,8 +107,13 @@ internal sealed class TestPage(double width, double height, int rotate, string? 
         return $"q 10 0 0 10 72 600 cm /Im{_imagePixels.Count} Do Q";
     }
 
-    private static int AddImage(TestPdf pdf, string gray) => pdf.Add("<< /Type /XObject /Subtype /Image /Width 1 /Height 1 "
-        + $"/ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /ASCIIHexDecode /Length 3 >>\nstream\n{gray}>\nendstream");
+    // Uncompressed, the pixel is written as hex text; compressed, as one Flate-compressed byte. Both decode to the same pixel.
+    private static int AddImage(TestPdf pdf, string gray)
+    {
+        const string Image = "/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8";
+        return pdf.Add(pdf.CompressStreams ? pdf.StreamObject(Image, ((char)Convert.ToByte(gray, 16)).ToString())
+            : $"<< {Image} /Filter /ASCIIHexDecode /Length 3 >>\nstream\n{gray}>\nendstream");
+    }
 
     private static int AddDamagedFont(TestPdf pdf)
     {

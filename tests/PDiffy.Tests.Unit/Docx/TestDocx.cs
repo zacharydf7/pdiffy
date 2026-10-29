@@ -33,6 +33,12 @@ internal sealed class TestDocx
     /// <summary>Replaces a part's whole content, for writing broken files.</summary>
     public Dictionary<string, string> RawParts { get; } = [];
 
+    /// <summary>Writes the zip's entries last to first, as another tool might.</summary>
+    public bool ReverseZipOrder { get; init; }
+
+    /// <summary>How hard the zip's entries are compressed.</summary>
+    public CompressionLevel ZipCompression { get; init; } = CompressionLevel.Optimal;
+
     private readonly Dictionary<string, byte[]> _files = [];
     private readonly StringBuilder _relationships = new();
 
@@ -113,19 +119,20 @@ internal sealed class TestDocx
             + "<Default Extension=\"xml\" ContentType=\"application/xml\"/></Types>";
         foreach (var (name, content) in RawParts) parts[name] = content;
 
+        var entries = parts.Select(part => (part.Key, Bytes: new UTF8Encoding(false).GetBytes(part.Value)))
+            .Concat(_files.Select(file => (file.Key, Bytes: file.Value))).ToList();
+        if (ReverseZipOrder) entries.Reverse();
+
         var stream = new MemoryStream();
         using (var zip = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
         {
-            foreach (var (name, content) in parts)
+            // A fixed time, so two builds of the same document give the same bytes.
+            foreach (var (name, bytes) in entries)
             {
-                using var writer = new StreamWriter(zip.CreateEntry(name).Open(), new UTF8Encoding(false));
-                writer.Write(content);
-            }
-
-            foreach (var (name, bytes) in _files)
-            {
-                using var entry = zip.CreateEntry(name).Open();
-                entry.Write(bytes);
+                var entry = zip.CreateEntry(name, ZipCompression);
+                entry.LastWriteTime = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+                using var content = entry.Open();
+                content.Write(bytes);
             }
         }
 
