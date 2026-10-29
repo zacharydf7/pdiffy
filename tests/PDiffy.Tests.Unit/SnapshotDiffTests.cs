@@ -150,6 +150,38 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldReportOneTypeChange_WhenAStructureElementsTypeChangesButItsTextDoesNot()
+    {
+        var after = Before.Replace("H1 p1 \"Drug Interaction Table\"", "H2 p1 \"Drug Interaction Table\"");
+
+        var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
+
+        Assert.Equal(new SnapshotChange(ChangeKind.Changed, Section.Structure, "structure > Document > H2", 1, "type: H1 -> H2"), change);
+    }
+
+    [Fact]
+    public void Compare_ShouldPairALineWithOneOfItsOwnType_WhenAnotherTypeHasTheSameTextFirst()
+    {
+        var before = SnapshotText.Header + "structure\n  P p1 lang=en \"Take\"\n";
+        var after = SnapshotText.Header + "structure\n  H3 p1 \"Take\"\n  P p1 lang=fr \"Take\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Equal([(ChangeKind.Added, "structure > H3"), (ChangeKind.AttributeChanged, "structure > P")],
+            changes.Select(change => (change.Kind, change.Path)));
+    }
+
+    [Fact]
+    public void Compare_ShouldReportRemovedAndAdded_WhenALineOutsideTheStructureChangesItsFirstWord()
+    {
+        var after = Before.Replace("  p1 text tagged at=72,720", "  p2 text tagged at=72,720");
+
+        var changes = SnapshotDiff.Compare(Before, after).Changes;
+
+        Assert.Equal([ChangeKind.Removed, ChangeKind.Added], changes.Select(change => change.Kind));
+    }
+
+    [Fact]
     public void Compare_ShouldReportATextChange_WhenAOneWordValueIsReplaced()
     {
         var after = Before.Replace("\"Warfarin\"", "\"Aspirin\"");

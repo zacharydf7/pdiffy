@@ -62,7 +62,7 @@ public async Task DrugGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
 }
 ```
 
-A failure explains itself. Elements are matched one to one, so an edited paragraph is one change, not a removed line and an added one, and an element that moved in reading order is reported as moved, along with anything that changed on it. A paragraph replaced by one with entirely different words is reported as removed and added, but a one-word value replaced on an otherwise unchanged line, such as a number in a table cell, is reported as changed:
+A failure explains itself. Elements are matched one to one, so an edited paragraph is one change, not a removed line and an added one, and an element that moved in reading order is reported as moved, along with anything that changed on it. A structure element whose type changed but whose text didn't, such as a heading going from H2 to H3 or to P, is one change (`type: H2 -> H3`). A paragraph replaced by one with entirely different words is reported as removed and added, but a one-word value replaced on an otherwise unchanged line, such as a number in a table cell, is reported as changed:
 
 ```
 3 change(s): 1 moved, 1 attribute, 1 text

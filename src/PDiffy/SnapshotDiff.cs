@@ -21,7 +21,7 @@ public enum ChangeKind
     /// </summary>
     TextChanged,
 
-    /// <summary>Anything else about the line changed, such as its pages.</summary>
+    /// <summary>Anything else about the line changed, such as its pages or a structure element's type ("type: H2 -> H3").</summary>
     Changed,
 }
 

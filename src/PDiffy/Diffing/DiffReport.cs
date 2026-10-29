@@ -27,7 +27,7 @@ internal static class DiffReport
         var afterSections = Sections(after, plain);
         var sections = beforeSections.Keys.Union(afterSections.Keys)
             .Select(name => (Name: name, Rows: Rows(beforeSections.GetValueOrDefault(name) ?? [],
-                afterSections.GetValueOrDefault(name) ?? [], plain)))
+                afterSections.GetValueOrDefault(name) ?? [], plain, TreeMatcher.RetypesIn(name))))
             .ToList();
         var anchors = Anchors(sections.SelectMany(section => section.Rows).ToList(), changes);
         foreach (var (name, rows) in sections)
@@ -134,7 +134,7 @@ internal static class DiffReport
 
     // Lines align by the longest common run of lines. Between those, a removed and an added line share a row when the
     // change list would call them one edited line.
-    private static List<Row> Rows(List<string> before, List<string> after, bool plain)
+    private static List<Row> Rows(List<string> before, List<string> after, bool plain, bool retypes)
     {
         var rows = new List<Row>();
         var removed = new List<string>();
@@ -146,7 +146,7 @@ internal static class DiffReport
             else
             {
                 if (plain) PairInOrder(rows, removed, added);
-                else PairGap(rows, removed, added);
+                else PairGap(rows, removed, added, retypes);
 
                 removed.Clear();
                 added.Clear();
@@ -158,14 +158,14 @@ internal static class DiffReport
         return rows;
     }
 
-    private static void PairGap(List<Row> rows, List<string> removed, List<string> added)
+    private static void PairGap(List<Row> rows, List<string> removed, List<string> added, bool retypes)
     {
         var addedLines = added.ConvertAll(line => SnapshotLine.Parse(line, 0));
         var next = 0;
         foreach (var old in removed)
         {
             var oldLine = SnapshotLine.Parse(old, 0);
-            var match = addedLines.FindIndex(next, line => TreeMatcher.IsSameLine(oldLine, line));
+            var match = TreeMatcher.MatchOf(oldLine, addedLines, next, retypes);
             if (match < 0)
             {
                 rows.Add(new Row('-', old, null));

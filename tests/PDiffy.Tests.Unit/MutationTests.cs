@@ -8,8 +8,8 @@ public class MutationTests
 {
     public static TheoryData<string, Sample, Section, ChangeKind> Mutations => new()
     {
-        { "heading level", new Sample { Heading = "H3" }, Section.Structure, ChangeKind.Added },
-        { "heading made a paragraph", new Sample { Heading = "P" }, Section.Structure, ChangeKind.Added },
+        { "heading level", new Sample { Heading = "H3" }, Section.Structure, ChangeKind.Changed },
+        { "heading made a paragraph", new Sample { Heading = "P" }, Section.Structure, ChangeKind.Changed },
         { "alt text removed", new Sample { Alt = null }, Section.Structure, ChangeKind.AttributeChanged },
         { "alt text emptied", new Sample { Alt = "" }, Section.Structure, ChangeKind.AttributeChanged },
         { "alt text edited", new Sample { Alt = "Store logo" }, Section.Structure, ChangeKind.AttributeChanged },

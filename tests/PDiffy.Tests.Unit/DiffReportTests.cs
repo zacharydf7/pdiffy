@@ -21,6 +21,15 @@ public class DiffReportTests
     }
 
     [Fact]
+    public void ToHtml_ShouldShowARetypedElementOnOneRow_WhenOnlyItsTypeChanges()
+    {
+        var html = SnapshotDiff.Compare(Before, Before.Replace("  P p3 \"Take with food\"", "  H2 p3 \"Take with food\"")).ToHtml();
+
+        Assert.Contains("<td class=\"removed\">  <mark>P </mark>p3 &quot;Take with food&quot;</td>"
+            + "<td class=\"added\">  <mark>H2 </mark>p3 &quot;Take with food&quot;</td>", html);
+    }
+
+    [Fact]
     public void ToHtml_ShouldPairLinesLikeTheChangeList_WhenALineIsInsertedBeforeAnEditedOne()
     {
         var after = Before.Replace("  P p3 \"Take with food\"", "  P p3 \"New warning\"\n  P p3 \"Take after food\"");

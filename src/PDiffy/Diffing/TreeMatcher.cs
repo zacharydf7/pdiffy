@@ -4,8 +4,9 @@ namespace PDiffy.Diffing;
 
 /// <summary>
 /// Compares one section of two snapshots. Siblings that didn't change at all are matched first. Between them, a removed
-/// and an added line with the same key and mostly the same words are treated as one edited line. Whatever is left is
-/// removed or added, unless it turns up elsewhere on the other side, unchanged or edited, which makes it a move.
+/// and an added line with the same key and mostly the same words are treated as one edited line, and so, in the
+/// structure, are two with the same text and a different type. Whatever is left is removed or added, unless it turns
+/// up elsewhere on the other side, unchanged or edited, which makes it a move.
 /// </summary>
 internal sealed class TreeMatcher(string name, Section? section)
 {
@@ -52,7 +53,7 @@ internal sealed class TreeMatcher(string name, Section? section)
         var next = 0;
         foreach (var old in removed)
         {
-            var match = added.FindIndex(next, line => IsSameLine(old, line));
+            var match = MatchOf(old, added, next, RetypesIn(name));
             if (match < 0)
             {
                 _entries.Add(new Entry(Removed: old, Path: PathOf(old, beforeSiblings, parentPath)));
@@ -80,6 +81,8 @@ internal sealed class TreeMatcher(string name, Section? section)
 
         var page = edited.Page ?? old.Page;
         var found = _entries.Count;
+        var retyped = old.Key != edited.Key;
+        if (retyped) Add(ChangeKind.Changed, path, page, $"type: {old.Key} -> {edited.Key}");
         // A key can repeat, as annot= does once per annotation, so values are compared occurrence by occurrence.
         foreach (var key in old.Attributes.Select(pair => pair.Key).Union(edited.Attributes.Select(pair => pair.Key)))
         {
@@ -98,8 +101,9 @@ internal sealed class TreeMatcher(string name, Section? section)
             Add(ChangeKind.TextChanged, path, page, $"\"{WordDiff.Show(old.QuotedText ?? "", edited.QuotedText ?? "")}\"");
         }
 
-        // Other words (such as the pages) changed, or something no part above covers, such as keys in a new order.
-        if (!old.Words.SequenceEqual(edited.Words) || _entries.Count == found)
+        // Other words (such as pages) changed, or nothing above caught it; a retyped line's first word is its type.
+        var skip = retyped ? 1 : 0;
+        if (!old.Words.Skip(skip).SequenceEqual(edited.Words.Skip(skip)) || _entries.Count == found)
         {
             Add(ChangeKind.Changed, path, page, $"{old.Text.TrimStart()} -> {edited.Text.TrimStart()}");
         }
@@ -156,6 +160,20 @@ internal sealed class TreeMatcher(string name, Section? section)
     internal static bool IsSameLine(SnapshotLine old, SnapshotLine line) =>
         line.Key == old.Key && (old.QuotedText is not null && line.QuotedText == old.QuotedText
             || Similarity(old, line) >= SameLineSimilarity || IsValueChange(old, line));
+
+    // A structure element whose type changed but whose text didn't, such as H2 to H3; tried after same-type lines.
+    internal static bool IsRetyped(SnapshotLine old, SnapshotLine line) =>
+        line.Key != old.Key && !string.IsNullOrEmpty(old.QuotedText) && line.QuotedText == old.QuotedText;
+
+    // The added line a removed one was edited into: one of the same type if any, else, where types can change, a retype.
+    internal static int MatchOf(SnapshotLine old, List<SnapshotLine> added, int start, bool retypes)
+    {
+        var match = added.FindIndex(start, line => IsSameLine(old, line));
+        return match >= 0 || !retypes ? match : added.FindIndex(start, line => IsRetyped(old, line));
+    }
+
+    // Only structure elements have a type that can change while they stay the same element.
+    internal static bool RetypesIn(string sectionName) => sectionName == SnapshotWriter.Name(Section.Structure);
 
     // Only text words count when both lines have text, so type, page and style alone never make two lines the same.
     private static double Similarity(SnapshotLine first, SnapshotLine second) =>
