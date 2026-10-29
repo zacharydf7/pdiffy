@@ -82,6 +82,21 @@ public class PdfUaDocumentLoadTests
         Assert.Equal("Section 1 Intro", paragraph.Text);
     }
 
+    // PDFsharp writes tagged text this way.
+    [Fact]
+    public void Load_ShouldReadTheTaggedText_WhenMarkedContentOpensInOneTextObjectAndClosesInAnother()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage()
+            .Raw("q BT /P << /MCID 0 >> BDC ET")
+            .Raw("q BT /F1 12 Tf 72 720 Td (Num) Tj 25.33 0 Td (ber) Tj EMC ET Q Q");
+        pdf.Structure(new TestElement("P", 0));
+
+        var document = pdf.Load();
+
+        Assert.Equal(("Number", 0), (Assert.Single(document.Structure).Text, document.Untagged.Count));
+    }
+
     [Fact]
     public void Load_ShouldReadNestingAttributesAndRoleMap_WhenStructureHasThem()
     {

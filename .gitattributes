@@ -5,3 +5,4 @@
 *.received.* text eol=lf
 
 *.pdf binary
+*.ttf binary

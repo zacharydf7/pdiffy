@@ -801,7 +801,7 @@ dotnet build
 dotnet test
 ```
 
-The tests build their own small PDFs in code (`tests/PDiffy.Tests.Unit/Pdfs`): `TestPdf` writes tagged documents, and `RawPdf` writes hand-made malformed ones. No real-world PDFs are checked in.
+The tests build their own small PDFs in code (`tests/PDiffy.Tests.Unit/Pdfs`): `TestPdf` writes tagged documents, and `RawPdf` writes hand-made malformed ones. No real-world PDFs are checked in. Some tests also have PDFsharp write a tagged PDF (`tests/PDiffy.Tests.Unit/Producers`) and check that PDiffy reads back what was written, using the bundled Liberation Sans font (SIL Open Font License) so they run the same on Linux.
 
 The benchmarks build larger documents the same way and time loading, writing snapshots and comparing them: `dotnet run -c Release --project benchmarks/PDiffy.Benchmarks -- --filter '*'`. The [performance page](https://zacharydf7.github.io/pdiffy/reference/performance.html) has the latest numbers.
 
