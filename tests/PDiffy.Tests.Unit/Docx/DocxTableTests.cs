@@ -93,6 +93,45 @@ public class DocxTableTests
     }
 
     [Fact]
+    public void Load_ShouldRecordTrackedChangesToTheTableAndItsCells_WhenTheirPropertiesChangeWithTrackingOn()
+    {
+        var body = """
+            <w:tbl><w:tblPr><w:tblPrChange w:id="1" w:author="Ana"><w:tblPr/></w:tblPrChange></w:tblPr>
+              <w:tblGrid><w:gridCol w:w="2880"/><w:tblGridChange w:id="2" w:author="Bo"><w:tblGrid/></w:tblGridChange></w:tblGrid>
+              <w:tr><w:tblPrEx><w:tblPrExChange w:id="3" w:author="Cy"><w:tblPrEx/></w:tblPrExChange></w:tblPrEx>
+                <w:tc><w:tcPr><w:cellIns w:id="4" w:author="Di"/><w:tcPrChange w:id="5" w:author="Ed"><w:tcPr/></w:tcPrChange></w:tcPr>
+                  <w:p/></w:tc>
+                <w:tc><w:tcPr><w:cellDel w:id="6" w:author="Fay"/></w:tcPr><w:p/></w:tc>
+                <w:tc><w:tcPr><w:cellMerge w:id="7" w:author="Gus" w:vMerge="cont"/></w:tcPr><w:p/></w:tc></w:tr></w:tbl>
+            """;
+
+        var document = new TestDocx { Body = body }.Load();
+
+        (string, string?)[] expected =
+        [
+            ("table-format", "Ana"), ("table-grid", "Bo"), ("row-table-format", "Cy"), ("cell-insert", "Di"),
+            ("cell-format", "Ed"), ("cell-delete", "Fay"), ("cell-merge", "Gus"),
+        ];
+        Assert.Equal(expected, document.Revisions().Select(revision => (revision.Kind, revision.Author)));
+        Assert.Contains("  Table widths=144\n    table-format author=\"Ana\"\n    table-grid author=\"Bo\"\n    Row\n"
+            + "      row-table-format author=\"Cy\"\n      Cell\n        cell-insert author=\"Di\"\n"
+            + "        cell-format author=\"Ed\"\n        P\n", document.ToSnapshot());
+    }
+
+    [Fact]
+    public void Revisions_ShouldListChangesInReadingOrder_WhenAnEarlierCellsTextChangedAndALaterCellWasDeleted()
+    {
+        var body = """
+            <w:tbl><w:tr><w:tc><w:p><w:ins w:id="1" w:author="Ana"><w:r><w:t>New</w:t></w:r></w:ins></w:p></w:tc>
+              <w:tc><w:tcPr><w:cellDel w:id="2" w:author="Bo"/></w:tcPr><w:p/></w:tc></w:tr></w:tbl>
+            """;
+
+        var revisions = new TestDocx { Body = body }.Load().Revisions();
+
+        Assert.Equal(["insert", "cell-delete"], revisions.Select(revision => revision.Kind));
+    }
+
+    [Fact]
     public void ToSnapshot_ShouldNameTheControlsAroundARow_WhenRowsSitInARepeatingSection()
     {
         var body = """

@@ -185,6 +185,11 @@ internal sealed class DocxReader
             Borders = TableFormat.Borders(properties?.Element(W + "tblBorders")),
             Rows = rows,
             Between = between,
+            Revisions =
+            [
+                .. Changes(properties, [("tblPrChange", "table-format")]),
+                .. Changes(table.Element(W + "tblGrid"), [("tblGridChange", "table-grid")]),
+            ],
         };
     }
 
@@ -244,12 +249,28 @@ internal sealed class DocxReader
         return new DocxUnsupportedBlock(NameOf(element), Hash(element));
     }
 
-    // A row inserted, deleted or reformatted with tracking on keeps who did it in its properties.
     private DocxRow Row(XElement row, IReadOnlyList<DocxControl> controls)
     {
         var properties = row.Element(W + "trPr");
+        var (cells, between) = (new List<DocxCell>(), new List<DocxBetween>());
+        ReadCells(row, cells, between);
+        return new DocxRow(cells, IsOn(properties?.Element(W + "tblHeader")))
+        {
+            Revisions =
+            [
+                .. Changes(properties, RowChanges),
+                .. Changes(row.Element(W + "tblPrEx"), [("tblPrExChange", "row-table-format")]),
+            ],
+            Controls = controls,
+            Between = between,
+        };
+    }
+
+    // A table, row or cell changed with tracking on keeps who did it in its properties.
+    private static List<DocxRevision> Changes(XElement? properties, (string Element, string Kind)[] kinds)
+    {
         var revisions = new List<DocxRevision>();
-        foreach (var (element, kind) in RowChanges)
+        foreach (var (element, kind) in kinds)
         {
             if (properties?.Element(W + element) is { } change)
             {
@@ -257,18 +278,16 @@ internal sealed class DocxReader
             }
         }
 
-        var (cells, between) = (new List<DocxCell>(), new List<DocxBetween>());
-        ReadCells(row, cells, between);
-        return new DocxRow(cells, IsOn(properties?.Element(W + "tblHeader")))
-        {
-            Revisions = revisions,
-            Controls = controls,
-            Between = between,
-        };
+        return revisions;
     }
 
     private static readonly (string Element, string Kind)[] RowChanges =
         [("ins", "row-insert"), ("del", "row-delete"), ("trPrChange", "row-format")];
+
+    private static readonly (string Element, string Kind)[] CellChanges =
+    [
+        ("cellIns", "cell-insert"), ("cellDel", "cell-delete"), ("cellMerge", "cell-merge"), ("tcPrChange", "cell-format"),
+    ];
 
     // A vMerge with no val continues the merge above it.
     private DocxCell Cell(XElement cell)
@@ -281,6 +300,7 @@ internal sealed class DocxReader
             Width = TableFormat.Width(properties?.Element(W + "tcW")),
             Margins = TableFormat.Margins(properties?.Element(W + "tcMar")),
             Borders = TableFormat.Borders(properties?.Element(W + "tcBorders")),
+            Revisions = Changes(properties, CellChanges),
         };
     }
 

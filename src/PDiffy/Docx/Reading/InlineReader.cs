@@ -28,8 +28,8 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         return content;
     }
 
-    // Changes to the paragraph itself: its mark inserted, deleted or moved (pressing Enter, or joining two paragraphs,
-    // with tracking on), recorded at its end, and its formatting changed.
+    // Changes to the paragraph itself: its mark inserted, deleted, moved (pressing Enter, or joining two paragraphs, with
+    // tracking on) or reformatted, recorded at its end, and its formatting changed.
     private static void ParagraphChanges(XElement? pPr, ParagraphContent content)
     {
         foreach (var mark in pPr?.Element(W + "rPr")?.Elements() ?? [])
@@ -46,6 +46,7 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
     private static readonly Dictionary<string, string> MarkKinds = new()
     {
         ["ins"] = "paragraph-insert", ["del"] = "paragraph-delete", ["moveTo"] = "paragraph-move-to", ["moveFrom"] = "paragraph-move-from",
+        ["rPrChange"] = "paragraph-mark-format",
     };
 
     // A run inside the paragraph's properties (w:pPr) isn't allowed there, and Word may drop or move it; every such run

@@ -95,7 +95,7 @@ internal sealed class DocxSnapshotWriter
 
     private static string? List(IReadOnlyList<string> items) => items.Count > 0 ? string.Join(",", items) : null;
 
-    // A tracked change to a whole row or section: its kind and who made it.
+    // A tracked change to a whole table, row, cell or section: its kind and who made it.
     private string RevisionLine(DocxRevision revision)
     {
         var line = new StringBuilder(revision.Kind);
@@ -334,6 +334,7 @@ internal sealed class DocxSnapshotWriter
         Key(line, "cell-margins", List(table.CellMargins));
         Key(line, "borders", List(Borders(table.Borders)));
         Line(depth, line.ToString());
+        foreach (var revision in table.Revisions) Line(depth + 1, RevisionLine(revision));
         for (var i = 0; i < table.Rows.Count; i++)
         {
             var row = table.Rows[i];
@@ -353,6 +354,7 @@ internal sealed class DocxSnapshotWriter
                 Key(cellLine, "margins", List(cell.Margins));
                 Key(cellLine, "borders", List(Borders(cell.Borders)));
                 Line(depth + 2, cellLine.ToString());
+                foreach (var revision in cell.Revisions) Line(depth + 3, RevisionLine(revision));
                 WriteBlocks(cell.Blocks, depth + 3);
             }
 

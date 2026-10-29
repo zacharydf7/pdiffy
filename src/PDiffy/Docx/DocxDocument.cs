@@ -70,22 +70,29 @@ public sealed record DocxDocument
 
     /// <summary>
     /// The tracked changes in the body, headers, footers and notes, including inserted documents, such as for checking
-    /// that none shipped: insertions, deletions, moves and formatting changes of text and paragraphs, table rows inserted,
-    /// deleted or reformatted, and then changes to section settings. Changes to a table's or a cell's own properties,
-    /// cells inserted, deleted or merged, and formatting changes of a paragraph mark aren't recorded yet.
+    /// that none shipped: insertions, deletions, moves and formatting changes of text and paragraphs (their marks too),
+    /// changes to tables and their rows and cells, and then changes to section settings.
     /// </summary>
-    public IEnumerable<DocxRevision> Revisions() => EveryBlock().SelectMany(block => block switch
-    {
-        DocxParagraph paragraph => paragraph.Inlines.OfType<DocxRevision>(),
-        DocxTable table => table.Rows.SelectMany(row => row.Revisions),
-        _ => [],
-    }).Concat(PageSetups.Select(setup => setup.Revision).OfType<DocxRevision>());
+    public IEnumerable<DocxRevision> Revisions() =>
+        RevisionsIn(OuterBlocks()).Concat(PageSetups.Select(setup => setup.Revision).OfType<DocxRevision>());
+
+    // In reading order: a table's changes, then each row's, then each cell's followed by those of what the cell holds.
+    private static IEnumerable<DocxRevision> RevisionsIn(IEnumerable<DocxBlock> blocks) =>
+        AllBlocks(blocks, intoTables: false).SelectMany(block => block switch
+        {
+            DocxParagraph paragraph => paragraph.Inlines.OfType<DocxRevision>(),
+            DocxTable table => table.Revisions.Concat(table.Rows.SelectMany(row => row.Revisions.Concat(
+                row.Cells.SelectMany(cell => cell.Revisions.Concat(RevisionsIn(cell.Blocks)))))),
+            _ => [],
+        });
+
+    private IEnumerable<DocxBlock> EveryBlock() => AllBlocks(OuterBlocks());
 
     // Inserted documents' notes count as this document's, since Word brings them in with the inserted text.
-    private IEnumerable<DocxBlock> EveryBlock()
+    private IEnumerable<DocxBlock> OuterBlocks()
     {
         var blocks = Body.Concat(Headers.Concat(Footers).SelectMany(item => item.Blocks ?? [])).Concat(Notes.SelectMany(note => note.Blocks));
-        return AllBlocks(blocks.Concat(InsertedDocuments(Body).SelectMany(document => document.Notes.SelectMany(note => note.Blocks))));
+        return blocks.Concat(InsertedDocuments(Body).SelectMany(document => document.Notes.SelectMany(note => note.Blocks)));
     }
 
     private static IEnumerable<DocxDocument> InsertedDocuments(IEnumerable<DocxBlock> blocks) => blocks.SelectMany(block => block switch
@@ -96,21 +103,22 @@ public sealed record DocxDocument
         _ => [],
     });
 
-    // Each block followed by the blocks inside it, in reading order.
-    private static IEnumerable<DocxBlock> AllBlocks(IEnumerable<DocxBlock> blocks)
+    // Each block followed by the blocks inside it, in reading order; without intoTables, a table's cells are left to
+    // the caller.
+    private static IEnumerable<DocxBlock> AllBlocks(IEnumerable<DocxBlock> blocks, bool intoTables = true)
     {
         foreach (var block in blocks)
         {
             yield return block;
             var nestedBlocks = block switch
             {
-                DocxTable table => table.Rows.SelectMany(row => row.Cells).SelectMany(cell => cell.Blocks),
+                DocxTable table when intoTables => table.Rows.SelectMany(row => row.Cells).SelectMany(cell => cell.Blocks),
                 DocxInserted inserted => inserted.Document?.Body ?? [],
                 DocxControl control => control.Blocks,
                 DocxParagraph withTextBoxes => withTextBoxes.Inlines.OfType<DocxImage>().SelectMany(image => image.TextBox),
                 _ => [],
             };
-            foreach (var nested in AllBlocks(nestedBlocks)) yield return nested;
+            foreach (var nested in AllBlocks(nestedBlocks, intoTables)) yield return nested;
         }
     }
 }
@@ -326,9 +334,11 @@ public sealed record DocxStrayText(string Text, int Position) : DocxInline(Posit
 /// <summary>
 /// A tracked change and who made it: "insert", "delete", "move-to" or "move-from" with the text it covers; "format" for a
 /// run whose formatting changed, with its text; or "paragraph-insert", "paragraph-delete", "paragraph-move-to",
-/// "paragraph-move-from" or "paragraph-format" for the paragraph itself, with no text; "row-insert", "row-delete" or
-/// "row-format" for a table row (<see cref="DocxRow.Revisions"/>); "section-format" for a section's settings
-/// (<see cref="PageSetup.Revision"/>). Rows and sections have no text and no position.
+/// "paragraph-move-from", "paragraph-format" or "paragraph-mark-format" for the paragraph itself, with no text;
+/// "table-format" or "table-grid" for a table (<see cref="DocxTable.Revisions"/>); "row-insert", "row-delete",
+/// "row-format" or "row-table-format" for a row (<see cref="DocxRow.Revisions"/>); "cell-insert", "cell-delete",
+/// "cell-merge" or "cell-format" for a cell (<see cref="DocxCell.Revisions"/>); "section-format" for a section's
+/// settings (<see cref="PageSetup.Revision"/>). Tables, rows, cells and sections have no text and no position.
 /// </summary>
 public sealed record DocxRevision(string Kind, string Text, string? Author, int Position) : DocxInline(Position);
 
@@ -483,12 +493,18 @@ public sealed record DocxTable : DocxBlock
 
     /// <summary>Bookmarks and content PDiffy can't read between the rows.</summary>
     public IReadOnlyList<DocxBetween> Between { get; init; } = [];
+
+    /// <summary>Tracked changes to the table's properties ("table-format") or its columns ("table-grid").</summary>
+    public IReadOnlyList<DocxRevision> Revisions { get; init; } = [];
 }
 
 /// <summary>A table row. A header row repeats at the top of each page the table runs onto.</summary>
 public sealed record DocxRow(IReadOnlyList<DocxCell> Cells, bool IsHeader = false)
 {
-    /// <summary>Tracked changes to the row: "row-insert", "row-delete" or "row-format".</summary>
+    /// <summary>
+    /// Tracked changes to the row: "row-insert", "row-delete", "row-format", or "row-table-format" for the table
+    /// properties the row sets for itself.
+    /// </summary>
     public IReadOnlyList<DocxRevision> Revisions { get; init; } = [];
 
     /// <summary>The content controls around the row, outermost first, such as a repeating section and its item.</summary>
@@ -514,4 +530,7 @@ public sealed record DocxCell(IReadOnlyList<DocxBlock> Blocks, int Span = 1, str
     public string? Width { get; init; }
     public IReadOnlyList<string> Margins { get; init; } = [];
     public IReadOnlyList<string> Borders { get; init; } = [];
+
+    /// <summary>Tracked changes to the cell: "cell-insert", "cell-delete", "cell-merge" or "cell-format".</summary>
+    public IReadOnlyList<DocxRevision> Revisions { get; init; } = [];
 }

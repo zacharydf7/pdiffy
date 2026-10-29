@@ -64,6 +64,19 @@ public class DocxNotesAndFormsTests
     }
 
     [Fact]
+    public void Load_ShouldRecordAFormattingChangeToTheParagraphMark_WhenItChangedWithTrackingOn()
+    {
+        var docx = new TestDocx
+        {
+            Body = """<w:p><w:pPr><w:rPr><w:b/><w:rPrChange w:id="1" w:author="Ana"><w:rPr/></w:rPrChange></w:rPr></w:pPr></w:p>""",
+        };
+
+        var revision = Assert.Single(docx.Load().Revisions());
+
+        Assert.Equal(new DocxRevision("paragraph-mark-format", "", "Ana", 0), revision);
+    }
+
+    [Fact]
     public void Load_ShouldFindTrackedChangesInsideControlsNotesAndInsertedDocuments_WhenListingRevisions()
     {
         var change = """<w:p><w:ins w:author="Ann"><w:r><w:t>new</w:t></w:r></w:ins></w:p>""";
