@@ -20,8 +20,10 @@ public enum DocxSection
     /// <summary>Paragraphs, tables and inserted documents, with everything inside them.</summary>
     Body,
 
+    /// <summary>Each section's headers, with everything inside them.</summary>
     Headers,
 
+    /// <summary>Each section's footers, with everything inside them.</summary>
     Footers,
 
     /// <summary>Footnotes, endnotes and comments.</summary>

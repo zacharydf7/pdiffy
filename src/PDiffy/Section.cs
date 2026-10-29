@@ -18,6 +18,7 @@ public enum Section
     /// <summary>Page sizes, rotation, tab order, page boxes and page labels.</summary>
     Pages,
 
+    /// <summary>The bookmark tree and the page each bookmark goes to.</summary>
     Bookmarks,
 
     /// <summary>The tag tree: every structure element with its attributes and text.</summary>
@@ -29,6 +30,7 @@ public enum Section
     /// <summary>Text and graphics that are neither tagged nor marked as decoration.</summary>
     Untagged,
 
+    /// <summary>Each font, whether it's embedded, and the character codes its text uses that don't map to Unicode.</summary>
     Fonts,
 
     /// <summary>Links, comments, form widgets and other annotations.</summary>

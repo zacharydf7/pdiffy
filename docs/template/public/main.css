@@ -1,0 +1,34 @@
+/* The logo is drawn at 256px for the package icon; in the navbar it sits beside the name at text height. */
+#logo {
+  width: 2rem;
+  height: 2rem;
+  margin-right: 0.5rem;
+}
+
+/* The landing page's title block: the logo beside the name, the tagline and the main links. */
+.hero {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  margin: 2rem 0 2.5rem;
+}
+
+.hero h1 {
+  margin: 0 0 0.25rem;
+  font-size: 2.75rem;
+}
+
+.hero .lead {
+  margin-bottom: 1rem;
+}
+
+.hero .btn {
+  margin: 0 0.5rem 0.5rem 0;
+}
+
+@media (max-width: 576px) {
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

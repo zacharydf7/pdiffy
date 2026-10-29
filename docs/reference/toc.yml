@@ -1,0 +1,12 @@
+- name: Command line
+  href: command-line.md
+- name: Options at a glance
+  href: options.md
+- name: PDF snapshot format
+  href: pdf-snapshot-format.md
+- name: Word snapshot format
+  href: docx-snapshot-format.md
+- name: Changes that affect accessibility
+  href: accessibility-changes.md
+- name: Format changes
+  href: format-changes.md

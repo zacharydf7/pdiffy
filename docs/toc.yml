@@ -1,0 +1,8 @@
+- name: Guide
+  href: guide/
+- name: Reference
+  href: reference/
+- name: API
+  href: api/
+- name: GitHub
+  href: https://github.com/zacharydf7/pdiffy

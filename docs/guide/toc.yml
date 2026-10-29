@@ -1,0 +1,26 @@
+- name: Getting started
+  href: getting-started.md
+- name: Snapshot tests
+  items:
+    - name: PDF snapshots
+      href: pdf-snapshots.md
+    - name: Word documents
+      href: word-documents.md
+    - name: Text and JSON
+      href: text-and-json.md
+    - name: Ignore and scrub
+      href: options.md
+- name: Beyond snapshots
+  items:
+    - name: Compare two documents
+      href: comparing.md
+    - name: Check documents directly
+      href: checking-documents.md
+- name: In your pipeline
+  items:
+    - name: Continuous integration
+      href: ci.md
+    - name: Moving from Verify
+      href: migrating-from-verify.md
+    - name: Troubleshooting
+      href: troubleshooting.md

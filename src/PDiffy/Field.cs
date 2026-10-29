@@ -27,6 +27,7 @@ public enum Field
     /// <summary>The subject, from the Info dictionary and the XMP description.</summary>
     Subject,
 
+    /// <summary>The keywords, from the Info dictionary.</summary>
     Keywords,
 
     /// <summary>Whether the creation and modification dates are present.</summary>

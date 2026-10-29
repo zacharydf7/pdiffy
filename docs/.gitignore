@@ -1,0 +1,5 @@
+# Built by docfx: the site, and the API pages it generates from the XML docs.
+_site/
+obj/
+api/*.yml
+api/.manifest

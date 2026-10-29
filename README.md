@@ -2,6 +2,9 @@
 
 Snapshot tests for PDFs that compare what a document says, not how its bytes are encoded.
 
+**Documentation:** [zacharydf7.github.io/pdiffy](https://zacharydf7.github.io/pdiffy/): guides, the command line, the
+snapshot formats and the full API reference.
+
 PDiffy reads a PDF and writes a plain-text snapshot of everything a reader, a screen reader or a viewer gets from it: the tag structure, text, alt text, reading order, language, tables, links, bookmarks, artifacts, untagged content, fonts, form fields, document settings, and the position and style of everything drawn on each page. A test passes when the snapshot matches the approved one exactly. When it doesn't, the difference reads like a change to the document.
 
 ## Why not compare bytes
