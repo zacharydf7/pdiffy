@@ -542,7 +542,7 @@ These change without changing what anyone reading the document gets:
 - Font subset prefixes (`ABCDEF+Arial` is recorded as `Arial`)
 - Dates, document IDs and the producer string (only whether they're present; `ShowProducerAndCreator()` prints the producer and creator)
 
-Text is normalized to Unicode NFC, with whitespace runs collapsed to one space and trimmed. A space is added between two pieces of text when the baseline changes or the gap is wider than 0.2 em.
+Text is normalized to Unicode NFC, with whitespace runs collapsed to one space and trimmed. A space is added between two pieces of text when the baseline changes or the gap is wider than 0.2 em. The same rule joins the pieces of an element's text, so a word a PDF splits across two tagged pieces stays one word. Pieces on different pages, and a piece that starts well to the left of where the last one ended on the same line, are always separated by a space.
 
 ## Format changes
 
@@ -555,6 +555,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | `pdfua-snapshot v1`, unchanged version: when an element's text is split into tagged pieces, a space now goes between two pieces on the same page only where the page shows a gap (`"Num ber:"` becomes `"Number:"`). Snapshots with such elements change in `structure` |
 | 0.2.0 | New format `docx-snapshot v1`, for Word documents |
 | 0.1.0 | New format `pdfua-snapshot v1` |
 

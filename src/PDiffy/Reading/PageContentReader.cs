@@ -15,9 +15,9 @@ internal sealed class ContentOwners
     public List<(IPdfImage Image, ContentOwner Owner)> Images { get; } = [];
 }
 
-/// <summary>What one page's content stream says: the text behind each MCID, the artifacts, untagged text, and who owns what.</summary>
-internal sealed record PageContent(
-    IReadOnlyDictionary<int, string> TextByMcid, IReadOnlyList<string> Artifacts, string? UntaggedText, ContentOwners Owners);
+/// <summary>What one page's content stream says: the letters behind each MCID, the artifacts, untagged text, and who owns what.</summary>
+internal sealed record PageContent(IReadOnlyDictionary<int, List<Letter>> LettersByMcid, IReadOnlyList<string> Artifacts,
+    string? UntaggedText, ContentOwners Owners);
 
 internal sealed class PageContentReader
 {
@@ -54,9 +54,8 @@ internal sealed class PageContentReader
             }
         }
 
-        var textByMcid = lettersByMcid.ToDictionary(pair => pair.Key, pair => TextJoiner.Join(pair.Value));
         var untaggedText = TextJoiner.Join(untagged);
-        return new PageContent(textByMcid, _artifacts, untaggedText.Length > 0 ? untaggedText : null, _owners);
+        return new PageContent(lettersByMcid, _artifacts, untaggedText.Length > 0 ? untaggedText : null, _owners);
     }
 
     // Marked content without its own MCID belongs to the nearest enclosing MCID, if there is one.

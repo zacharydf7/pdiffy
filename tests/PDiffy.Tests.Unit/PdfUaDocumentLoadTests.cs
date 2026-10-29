@@ -41,6 +41,34 @@ public class PdfUaDocumentLoadTests
         Assert.Equal(1, paragraph.FirstPage);
     }
 
+    [Theory]
+    [InlineData("ber:", "Number:")]
+    [InlineData(" ber:", "Num ber:")]
+    public void Load_ShouldJoinMcidsByPosition_WhenAWordIsSplitAcrossThem(string secondPiece, string expected)
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("BT /F1 12 Tf 72 400 Td /Span << /MCID 0 >> BDC (Num) Tj EMC "
+            + $"/Span << /MCID 1 >> BDC ({secondPiece}) Tj EMC ET");
+        pdf.Structure(new TestElement("P", 0, 1));
+
+        var paragraph = Assert.Single(pdf.Load().Structure);
+
+        Assert.Equal(expected, paragraph.Text);
+    }
+
+    [Fact]
+    public void Load_ShouldSeparateMcids_WhenTheStructureListsThemOutOfOrderOnALine()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("BT /F1 12 Tf 72 400 Td /Span << /MCID 0 >> BDC (Hello) Tj EMC ET")
+            .Raw("BT /F1 12 Tf 200 400 Td /Span << /MCID 1 >> BDC (World) Tj EMC ET");
+        pdf.Structure(new TestElement("P", 1, 0));
+
+        var paragraph = Assert.Single(pdf.Load().Structure);
+
+        Assert.Equal("World Hello", paragraph.Text);
+    }
+
     [Fact]
     public void Load_ShouldKeepTextInContentOrder_WhenUntaggedMarkedContentIsNestedInsideAnMcid()
     {

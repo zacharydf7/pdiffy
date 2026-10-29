@@ -1,3 +1,4 @@
+using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Tokens;
 
@@ -10,7 +11,8 @@ internal sealed record StructureTree(
     IReadOnlySet<IndirectReference> ReferencedObjects);
 
 /// <summary>Turns the structure tree into <see cref="StructureElement"/>s, joining each element to its marked-content text.</summary>
-internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, Func<int, int, string?> textOf)
+internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
+    Func<int, int, IReadOnlyList<Letter>?> lettersOf)
 {
     private readonly Dictionary<string, string> _roleMap = [];
     private readonly Dictionary<string, string> _namesById = [];
@@ -18,8 +20,9 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, Fu
     private readonly HashSet<IndirectReference> _referencedObjects = [];
     private readonly HashSet<IndirectReference> _readElements = [];
 
-    /// <param name="textOf">The text behind an MCID, given (page number, MCID).</param>
-    public static StructureTree Read(PdfObjects objects, DictionaryToken catalog, PageTree pages, Func<int, int, string?> textOf)
+    /// <param name="lettersOf">The letters behind an MCID, given (page number, MCID).</param>
+    public static StructureTree Read(PdfObjects objects, DictionaryToken catalog, PageTree pages,
+        Func<int, int, IReadOnlyList<Letter>?> lettersOf)
     {
         var root = objects.Dictionary(catalog, "StructTreeRoot");
         if (root is null)
@@ -27,7 +30,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, Fu
             return new StructureTree([], [], new HashSet<(int, int)>(), new HashSet<IndirectReference>());
         }
 
-        return new StructureTreeReader(objects, pages, textOf).ReadRoot(root);
+        return new StructureTreeReader(objects, pages, lettersOf).ReadRoot(root);
     }
 
     private StructureTree ReadRoot(DictionaryToken root)
@@ -52,7 +55,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, Fu
     {
         var type = objects.Name(element, "S") ?? "(none)";
         var page = pages.NumberOf(element.Data.GetValueOrDefault("Pg")) ?? inheritedPage;
-        var texts = new List<string>();
+        var pieces = new List<(int Page, IReadOnlyList<Letter> Letters)>();
         var pagesUsed = new SortedSet<int>();
         var annotations = new List<Annotation>();
         var children = new List<StructureElement>();
@@ -98,9 +101,9 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, Fu
         {
             _referencedMcids.Add((textPage, mcid));
             pagesUsed.Add(textPage);
-            if (textOf(textPage, mcid) is { Length: > 0 } text)
+            if (lettersOf(textPage, mcid) is { Count: > 0 } letters)
             {
-                texts.Add(text);
+                pieces.Add((textPage, letters));
             }
         }
 
@@ -124,9 +127,33 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, Fu
             ListNumbering = FirstAttribute(attributes, a => objects.Name(a, "ListNumbering")),
             Summary = FirstAttribute(attributes, a => objects.Text(a, "Summary")),
             Annotations = annotations,
-            Text = texts.Count > 0 ? TextJoiner.Normalize(string.Join(" ", texts)) : null,
+            Text = Join(pieces),
             Children = children,
         };
+    }
+
+    // Join pieces that follow on from each other by position, so a word split across MCIDs stays one word.
+    private static string? Join(List<(int Page, IReadOnlyList<Letter> Letters)> pieces)
+    {
+        var texts = new List<string>();
+        for (var i = 0; i < pieces.Count;)
+        {
+            var letters = new List<Letter>(pieces[i++].Letters);
+            while (i < pieces.Count && FollowsOn(pieces[i - 1], pieces[i])) letters.AddRange(pieces[i++].Letters);
+            texts.Add(TextJoiner.Join(letters));
+        }
+
+        var text = TextJoiner.Normalize(string.Join(" ", texts));
+        return text.Length > 0 ? text : null;
+    }
+
+    // Different pages can't be compared, and a piece starting well before the last one ended was drawn elsewhere.
+    private static bool FollowsOn((int Page, IReadOnlyList<Letter> Letters) previous,
+        (int Page, IReadOnlyList<Letter> Letters) next)
+    {
+        var (last, first) = (previous.Letters[^1], next.Letters[0]);
+        return next.Page == previous.Page
+            && (!TextJoiner.OnSameLine(last, first) || first.StartBaseLine.X >= last.EndBaseLine.X - last.PointSize * 0.2);
     }
 
     private Annotation? ReadAnnotation(DictionaryToken objectReference, int? elementPage)

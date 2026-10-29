@@ -16,7 +16,7 @@ internal static class PdfPigReader
 
         var (pages, readable) = ReadPages(document, objects);
         var structure = StructureTreeReader.Read(objects, catalog, pageTree,
-            (page, mcid) => readable.TryGetValue(page, out var read) ? read.Content.TextByMcid.GetValueOrDefault(mcid) : null);
+            (page, mcid) => readable.TryGetValue(page, out var read) ? read.Content.LettersByMcid.GetValueOrDefault(mcid) : null);
         var loose = CollectLooseContent(readable, structure.ReferencedMcids);
         var layouts = readable.OrderBy(pair => pair.Key)
             .Select(pair => LayoutReader.Read(pair.Key, pair.Value.Page, pair.Value.Content.Owners, structure.ReferencedMcids))
@@ -121,9 +121,9 @@ internal static class PdfPigReader
                 loose.Untagged.Add(new PageText(number, content.UntaggedText));
             }
 
-            foreach (var (mcid, text) in content.TextByMcid.OrderBy(pair => pair.Key))
+            foreach (var (mcid, letters) in content.LettersByMcid.OrderBy(pair => pair.Key))
             {
-                if (text.Length > 0 && !referenced.Contains((number, mcid)))
+                if (!referenced.Contains((number, mcid)) && TextJoiner.Join(letters) is { Length: > 0 } text)
                 {
                     loose.Untagged.Add(new PageText(number, text));
                 }
