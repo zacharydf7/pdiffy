@@ -11,6 +11,19 @@ internal static class DocxXml
     public static readonly XNamespace W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
     public static readonly XNamespace R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     public static readonly XNamespace Mc = "http://schemas.openxmlformats.org/markup-compatibility/2006";
+    public static readonly XNamespace M = "http://schemas.openxmlformats.org/officeDocument/2006/math";
+
+    // Word's own bookmark for where the document was last edited, which changes without the content changing.
+    public const string LastEditBookmark = "_GoBack";
+
+    // Markers that only bracket a range, read nowhere: bookmark ends, comment and move ranges, permissions, spelling.
+    public static readonly HashSet<string> RangeMarkers =
+    [
+        "bookmarkEnd", "proofErr", "permStart", "permEnd", "commentRangeStart", "commentRangeEnd", "moveFromRangeStart",
+        "moveFromRangeEnd", "moveToRangeStart", "moveToRangeEnd", "customXmlInsRangeStart", "customXmlInsRangeEnd",
+        "customXmlDelRangeStart", "customXmlDelRangeEnd", "customXmlMoveFromRangeStart", "customXmlMoveFromRangeEnd",
+        "customXmlMoveToRangeStart", "customXmlMoveToRangeEnd",
+    ];
 
     // Elements that only wrap content: content controls, custom XML, smart tags and right-to-left text.
     private static readonly HashSet<string> Wrappers = ["sdt", "sdtContent", "customXml", "smartTag", "dir", "bdo"];
@@ -33,6 +46,13 @@ internal static class DocxXml
     public static bool IsWrapper(XElement element) => element.Name.Namespace == W && Wrappers.Contains(element.Name.LocalName);
 
     public static string Points(double value) => Math.Round(value, 1).ToString("0.#", CultureInfo.InvariantCulture);
+
+    // The element's name with its usual prefix, such as "w:ruby", whatever prefix the file uses; other namespaces in full.
+    public static string NameOf(XElement element)
+    {
+        var prefix = element.Name.Namespace == W ? "w" : element.Name.Namespace == M ? "m" : null;
+        return prefix is null ? element.Name.ToString() : $"{prefix}:{element.Name.LocalName}";
+    }
 
     // mc:AlternateContent offers the same content in several forms, newest first; the first choice is the one read.
     public static XElement? Chosen(XElement alternateContent) =>

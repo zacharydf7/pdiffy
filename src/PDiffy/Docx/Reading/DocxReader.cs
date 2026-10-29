@@ -146,6 +146,9 @@ internal sealed class DocxReader
         sectPr.Elements(W + name).Select(reference => Attr(reference, "type") ?? "default")
             .Distinct().Order(StringComparer.Ordinal).ToList();
 
+    // Left out on purpose: section and cell properties read elsewhere, wrappers' own properties, and range markers.
+    private static readonly HashSet<string> SkippedInBlocks = [.. RangeMarkers, "sectPr", "tcPr", "customXmlPr", "smartTagPr"];
+
     private IEnumerable<DocxBlock> Blocks(XElement container)
     {
         foreach (var element in container.Elements())
@@ -154,9 +157,21 @@ internal sealed class DocxReader
             else if (element.Name == W + "tbl") yield return Table(element);
             else if (element.Name == W + "altChunk") yield return Inserted(element);
             else if (element.Name == W + "sdt") yield return Control(element);
+            else if (element.Name == Mc + "AlternateContent")
+            {
+                foreach (var block in Chosen(element) is { } choice ? Blocks(choice) : []) yield return block;
+            }
+            else if (element.Name == W + "bookmarkStart")
+            {
+                if (Attr(element, "name") is { } name and not LastEditBookmark) yield return new DocxBookmarkBlock(name);
+            }
             else if (IsWrapper(element))
             {
                 foreach (var block in Blocks(element)) yield return block;
+            }
+            else if (element.Name.Namespace != W || !SkippedInBlocks.Contains(element.Name.LocalName))
+            {
+                yield return new DocxUnsupportedBlock(NameOf(element), Hash(element));
             }
         }
     }

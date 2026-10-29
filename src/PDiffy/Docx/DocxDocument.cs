@@ -16,7 +16,10 @@ public sealed record DocxDocument
     /// <summary>The lists the document uses, each with the levels it uses.</summary>
     public IReadOnlyList<DocxList> Lists { get; init; } = [];
 
-    /// <summary>Paragraphs, tables, content controls and inserted documents in reading order.</summary>
+    /// <summary>
+    /// Paragraphs, tables, content controls, inserted documents, bookmarks between them and content PDiffy can't read,
+    /// in reading order.
+    /// </summary>
     public IReadOnlyList<DocxBlock> Body { get; init; } = [];
 
     /// <summary>Each section's headers, by kind.</summary>
@@ -246,7 +249,10 @@ public sealed record ParagraphFormat
     public IReadOnlyList<string> Tabs { get; init; } = [];
 }
 
-/// <summary>A paragraph or a table in the body, a table cell or a header.</summary>
+/// <summary>
+/// Something in the body, a table cell, a header or footer, a note or a text box: a paragraph, a table, a content
+/// control, an inserted document, a bookmark between them, or content PDiffy can't read.
+/// </summary>
 public abstract record DocxBlock;
 
 public sealed record DocxParagraph : DocxBlock
@@ -411,6 +417,15 @@ public sealed record DocxMath(string Text, string Hash, int Position) : DocxInli
 /// its contents, so a change to it still shows.
 /// </summary>
 public sealed record DocxUnsupported(string Element, string Hash, int Position) : DocxInline(Position);
+
+/// <summary>A bookmark between paragraphs or tables, such as one that starts at a table; links can point to it.</summary>
+public sealed record DocxBookmarkBlock(string Name) : DocxBlock;
+
+/// <summary>
+/// Something between paragraphs or tables that PDiffy doesn't read yet: the element's name and a hash of its contents,
+/// so a change to it still shows.
+/// </summary>
+public sealed record DocxUnsupportedBlock(string Element, string Hash) : DocxBlock;
 
 /// <summary>A footnote, endnote or comment: its kind, id, a comment's author and what it says.</summary>
 public sealed record DocxNote(string Kind, int Id, string? Author, IReadOnlyList<DocxBlock> Blocks);

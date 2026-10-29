@@ -14,8 +14,6 @@ namespace PDiffy.Docx.Reading;
 internal sealed partial class InlineReader(StyleResolver styles, DocxPackage package, string part, HashSet<string> usedStyles,
     Func<XElement, IReadOnlyList<DocxBlock>> readBlocks)
 {
-    private static readonly XNamespace M = "http://schemas.openxmlformats.org/officeDocument/2006/math";
-
     private readonly DrawingReader _drawings = new(package, part, readBlocks);
 
     public ParagraphContent Read(XElement paragraph, RunFormat paragraphRun)
@@ -77,13 +75,7 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
     };
 
     // Paragraph content left out on purpose: properties read elsewhere, and markers that only bracket a range.
-    private static readonly HashSet<string> SkippedInParagraph =
-    [
-        "pPr", "customXmlPr", "smartTagPr", "bookmarkEnd", "proofErr", "permStart", "permEnd", "commentRangeStart",
-        "commentRangeEnd", "moveFromRangeStart", "moveFromRangeEnd", "moveToRangeStart", "moveToRangeEnd",
-        "customXmlInsRangeStart", "customXmlInsRangeEnd", "customXmlDelRangeStart", "customXmlDelRangeEnd",
-        "customXmlMoveFromRangeStart", "customXmlMoveFromRangeEnd", "customXmlMoveToRangeStart", "customXmlMoveToRangeEnd",
-    ];
+    private static readonly HashSet<string> SkippedInParagraph = [.. RangeMarkers, "pPr", "customXmlPr", "smartTagPr"];
 
     private void ReadContent(XElement container, ParagraphContent content)
     {
@@ -104,7 +96,7 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
             else if (name == "sdt") ReadControl(element, content);
             else if (name == "bookmarkStart")
             {
-                if (Attr(element, "name") is { } bookmark and not "_GoBack")
+                if (Attr(element, "name") is { } bookmark and not LastEditBookmark)
                 {
                     content.Inlines.Add(new DocxBookmark(bookmark, content.Text.Length));
                 }
@@ -132,13 +124,7 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         content.Inlines.Add(new DocxMath(text, Hash(math), content.Text.Length));
     }
 
-    // The element's name with its usual prefix, such as "w:ruby", whatever prefix the file uses; other namespaces in full.
-    private static DocxUnsupported Unsupported(XElement element, int position)
-    {
-        var prefix = element.Name.Namespace == W ? "w" : element.Name.Namespace == M ? "m" : null;
-        var name = prefix is null ? element.Name.ToString() : $"{prefix}:{element.Name.LocalName}";
-        return new DocxUnsupported(name, Hash(element), position);
-    }
+    private static DocxUnsupported Unsupported(XElement element, int position) => new(NameOf(element), Hash(element), position);
 
     // A link's text is the text of the runs inside it, so it's read first and the link placed before what it contains.
     // A link whose address can't be found has no target, even when it also names a bookmark.

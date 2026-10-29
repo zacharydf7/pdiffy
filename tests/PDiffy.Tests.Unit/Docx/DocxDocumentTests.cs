@@ -144,6 +144,53 @@ public class DocxDocumentTests
     }
 
     [Fact]
+    public void ToSnapshot_ShouldRecordABookmarkBetweenBlocks_WhenOneStartsAtATable()
+    {
+        var body = """
+            <w:bookmarkStart w:id="1" w:name="Doses"/><w:tbl><w:tr><w:tc><w:p><w:r><w:t>Warfarin</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
+            <w:bookmarkEnd w:id="1"/>
+            """;
+
+        Assert.Contains("body\n  bookmark \"Doses\"\n  Table\n", new TestDocx { Body = body }.Load().ToSnapshot());
+    }
+
+    [Fact]
+    public void Load_ShouldReadTheFirstChoice_WhenParagraphsAreOfferedAsAlternateContent()
+    {
+        var body = """
+            <mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+              <mc:Choice Requires="w14"><w:p><w:r><w:t>New</w:t></w:r></w:p></mc:Choice>
+              <mc:Fallback><w:p><w:r><w:t>Old</w:t></w:r></w:p></mc:Fallback></mc:AlternateContent>
+            """;
+
+        Assert.Equal("New", new TestDocx { Body = body }.Load().Paragraphs().Single().Text);
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldRecordUnknownContentBetweenBlocksByHash_WhenPDiffyCannotReadIt()
+    {
+        var body = """<w:p/><x:chart xmlns:x="urn:example" x:kind="pie"/><w:newBlock/>""";
+
+        var snapshot = new TestDocx { Body = body }.Load().ToSnapshot();
+
+        Assert.Matches("\n  unsupported \\{urn:example\\}chart hash=[0-9a-f]{16}\n", snapshot);
+        Assert.Matches("\n  unsupported w:newBlock hash=[0-9a-f]{16}\n", snapshot);
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldPrintNoUnsupportedBlocks_WhenTheBodyHasOnlyPropertiesAndMarkers()
+    {
+        var body = """
+            <w:bookmarkStart w:id="0" w:name="_GoBack"/><w:permStart w:id="5"/><w:commentRangeStart w:id="1"/>
+            <w:tbl><w:tr><w:tc><w:tcPr><w:tcW w:w="2880" w:type="dxa"/></w:tcPr><w:p/></w:tc></w:tr></w:tbl>
+            <w:commentRangeEnd w:id="1"/><w:permEnd w:id="5"/><w:bookmarkEnd w:id="0"/>
+            <w:sectPr><w:pgSz w:w="12240" w:h="15840"/></w:sectPr>
+            """;
+
+        Assert.DoesNotContain("unsupported", new TestDocx { Body = body }.Load().ToSnapshot());
+    }
+
+    [Fact]
     public void Load_ShouldRecordATrackedChangeToTheSection_WhenItsSettingsChangedWithTrackingOn()
     {
         var body = """

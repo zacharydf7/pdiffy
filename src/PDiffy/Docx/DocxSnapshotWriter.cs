@@ -150,6 +150,8 @@ internal sealed class DocxSnapshotWriter
             else if (block is DocxTable table) WriteTable(table, depth);
             else if (block is DocxInserted inserted) WriteInserted(inserted, depth);
             else if (block is DocxControl control) WriteControl(control, depth);
+            else if (block is DocxBookmarkBlock bookmark) Line(depth, $"bookmark {Quote(bookmark.Name)}");
+            else if (block is DocxUnsupportedBlock unsupported) Line(depth, $"unsupported {unsupported.Element} hash={unsupported.Hash}");
         }
     }
 
