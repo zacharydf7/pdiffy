@@ -243,24 +243,30 @@ internal sealed class TreeMatcher(string name, Section? section,
                 if (candidates[i].Likeness.CompareTo(candidates[best].Likeness) > 0) best = i;
             }
 
+            // Pairs keep their order, so once a line is left to a later one, taking a line after it would put it out of
+            // that line's reach.
             var (candidate, likeness) = candidates[best];
-            if (!IsLaterLinesEdit(removed, index, added, start, candidate, likeness)) return candidate;
-            candidates.RemoveAt(best);
+            var hasEarlier = candidates.Exists(other => other.Index < candidate);
+            if (!IsLaterLinesEdit(removed, index, added, candidate, likeness, hasEarlier)) return candidate;
+            candidates.RemoveAll(other => other.Index >= candidate);
         }
 
         return -1;
     }
 
-    // A later removed line is more like the added line than this one is, and more than anything else nearby.
-    private static bool IsLaterLinesEdit(List<SnapshotLine> removed, int index, List<SnapshotLine> added, int start,
-        int candidate, (double, double) likeness)
+    // A later removed line is more like the added line than this one is. With an earlier line for this one to take
+    // instead, that's enough when the later line likes nothing after it as much; without one, only when the later line
+    // has nothing after it at all, so leaving it never leaves more lines unpaired.
+    private static bool IsLaterLinesEdit(List<SnapshotLine> removed, int index, List<SnapshotLine> added,
+        int candidate, (double, double) likeness, bool hasEarlier)
     {
         for (var i = index + 1; i < Math.Min(removed.Count, index + 1 + Nearby); i++)
         {
             var later = removed[i];
             var laterLikeness = Likeness(later, added[candidate]);
+            var alternative = hasEarlier ? laterLikeness : (0.0, 0.0); // Zero: any later match counts.
             if (Matches(later, added[candidate]) && laterLikeness.CompareTo(likeness) > 0
-                && !LikesAnotherAsMuch(later, added, start, candidate, laterLikeness))
+                && !LikesALaterLineAsMuch(later, added, candidate, alternative))
             {
                 return true;
             }
@@ -269,13 +275,12 @@ internal sealed class TreeMatcher(string name, Section? section,
         return false;
     }
 
-    private static bool LikesAnotherAsMuch(SnapshotLine later, List<SnapshotLine> added, int start, int candidate,
+    private static bool LikesALaterLineAsMuch(SnapshotLine later, List<SnapshotLine> added, int candidate,
         (double, double) likeness)
     {
-        for (var i = start; i < Math.Min(added.Count, candidate + 1 + Nearby); i++)
+        for (var i = candidate + 1; i < Math.Min(added.Count, candidate + 1 + Nearby); i++)
         {
-            if (i == candidate || !Matches(later, added[i])) continue;
-            if (Likeness(later, added[i]).CompareTo(likeness) >= 0) return true;
+            if (Matches(later, added[i]) && Likeness(later, added[i]).CompareTo(likeness) >= 0) return true;
         }
 
         return false;

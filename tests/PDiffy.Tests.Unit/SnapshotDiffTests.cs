@@ -492,16 +492,38 @@ public class SnapshotDiffTests
         "p1 image tagged at=10,80 size=200x50 hash=aaa", "p1 image tagged at=10,80 size=200x60 hash=bbb", 3)]
     [InlineData("p1 path tagged a=1 b=1 c=1 d=1 e=1 f=1", "p1 path tagged a=1 b=1 c=1 d=1 g=1 h=1",
         "p1 path tagged a=1 b=1 c=1 d=1 g=1", "p1 path tagged a=1 b=1 c=1 d=1 g=1 h=1 i=1", 4)]
+    [InlineData("p1 path tagged a=1 e=1 f=1 g=1 h=1", "p1 path tagged a=1 b=2 c=2 d=2 i=2",
+        "p1 path tagged a=1 b=2 c=2 p=1 r=1", "p1 path tagged a=1 e=1 b=2 c=2 q=1", 12)]
     public void Compare_ShouldPairEachLineWithItsOwnEdit_WhenTheLaterLineMatchesAnotherAsWell(string first,
         string second, string firstEdited, string secondEdited, int attributeChanges)
     {
         var before = $"{SnapshotText.Header}layout\n  {first}\n  {second}\n";
         var after = $"{SnapshotText.Header}layout\n  {firstEdited}\n  {secondEdited}\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var diff = SnapshotDiff.Compare(before, after);
 
         var expected = Enumerable.Repeat(ChangeKind.AttributeChanged, attributeChanges);
-        Assert.Equal(expected, changes.Select(change => change.Kind));
+        Assert.Equal(expected, diff.Changes.Select(change => change.Kind));
+        Assert.DoesNotContain("<td></td><td class=\"added\">", diff.ToHtml());
+    }
+
+    // Three added lines for two removed ones: at best one added line is left over.
+    [Theory]
+    [InlineData("a=1 b=1 c=1 d=1 x=1", "a=1 b=1 c=1 d=1 e=1",
+        "a=1 x=1 p=1 q=1 r=1", "a=1 b=1 c=1 d=1 e=1 f=1", "a=1 b=1 x=1 y=1 z=1")]
+    [InlineData("a=1 b=1 c=1 d=1 y=1", "a=1 b=1 c=1 d=1 e=1 f=1",
+        "a=1 b=1 c=1 d=1 e=1", "a=1 b=1 y=1 q=1", "c=1 d=1 e=1 f=1 g=1")]
+    public void Compare_ShouldLeaveOneAddedLineUnpaired_WhenThreeLinesReplaceTwo(string first, string second,
+        string firstAdded, string secondAdded, string thirdAdded)
+    {
+        string Layout(params string[] lines) =>
+            $"{SnapshotText.Header}layout\n" + string.Concat(lines.Select(line => $"  p1 path tagged {line}\n"));
+
+        var diff = SnapshotDiff.Compare(Layout(first, second), Layout(firstAdded, secondAdded, thirdAdded));
+
+        Assert.Equal(1, diff.Changes.Count(change => change.Kind == ChangeKind.Added));
+        Assert.DoesNotContain(diff.Changes, change => change.Kind is ChangeKind.Removed or ChangeKind.Moved);
+        Assert.Single(Regex.Matches(diff.ToHtml(), Regex.Escape("<td></td><td class=\"added\">")));
     }
 
     [Fact]
