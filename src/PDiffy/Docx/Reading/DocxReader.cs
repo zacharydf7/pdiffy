@@ -161,18 +161,11 @@ internal sealed class DocxReader
             {
                 foreach (var block in Chosen(element) is { } choice ? Blocks(choice) : []) yield return block;
             }
-            else if (element.Name == W + "bookmarkStart")
-            {
-                if (Attr(element, "name") is { } name and not LastEditBookmark) yield return new DocxBookmarkBlock(name);
-            }
             else if (IsWrapper(element))
             {
                 foreach (var block in Blocks(element)) yield return block;
             }
-            else if (element.Name.Namespace != W || !SkippedInBlocks.Contains(element.Name.LocalName))
-            {
-                yield return new DocxUnsupportedBlock(NameOf(element), Hash(element));
-            }
+            else if (Stray(element, SkippedInBlocks) is { } stray) yield return stray;
         }
     }
 
@@ -181,6 +174,8 @@ internal sealed class DocxReader
         var properties = table.Element(W + "tblPr");
         var style = Attr(properties?.Element(W + "tblStyle"), "val");
         if (style is not null) _usedStyles.Add(style);
+        var (rows, between) = (new List<DocxRow>(), new List<DocxBetween>());
+        ReadRows(table, [], rows, between);
         return new DocxTable
         {
             Style = style,
@@ -188,27 +183,65 @@ internal sealed class DocxReader
             Width = TableFormat.Width(properties?.Element(W + "tblW")),
             CellMargins = TableFormat.Margins(properties?.Element(W + "tblCellMar")),
             Borders = TableFormat.Borders(properties?.Element(W + "tblBorders")),
-            Rows = Rows(table, []).ToList(),
+            Rows = rows,
+            Between = between,
         };
     }
 
-    // The rows of a table, with the content controls they sit in, such as the items of a repeating section.
-    private IEnumerable<DocxRow> Rows(XElement parent, IReadOnlyList<DocxControl> controls)
+    // Left out on purpose among rows and cells: properties read elsewhere, wrappers' own properties, and range markers.
+    private static readonly HashSet<string> SkippedInRows =
+        [.. RangeMarkers, "tblPr", "tblGrid", "sdtPr", "sdtEndPr", "customXmlPr", "smartTagPr"];
+
+    private static readonly HashSet<string> SkippedInCells =
+        [.. RangeMarkers, "trPr", "tblPrEx", "sdtPr", "sdtEndPr", "customXmlPr", "smartTagPr"];
+
+    // The rows of a table, with the content controls they sit in (such as a repeating section's items), and what's
+    // between them.
+    private void ReadRows(XElement parent, IReadOnlyList<DocxControl> controls, List<DocxRow> rows,
+        List<DocxBetween> between)
     {
         foreach (var child in parent.Elements())
         {
-            if (child.Name == W + "tr") yield return Row(child, controls);
+            if (child.Name == W + "tr") rows.Add(Row(child, controls));
             else if (child.Name == W + "sdt" && child.Element(W + "sdtContent") is { } inner)
             {
                 var (kind, name, title) = FormReader.Describe(child.Element(W + "sdtPr"));
                 var control = new DocxControl(kind) { Name = name, Title = title };
-                foreach (var row in Rows(inner, [.. controls, control])) yield return row;
+                ReadRows(inner, [.. controls, control], rows, between);
             }
-            else if (IsWrapper(child))
+            else if (child.Name == Mc + "AlternateContent")
             {
-                foreach (var row in Rows(child, controls)) yield return row;
+                if (Chosen(child) is { } choice) ReadRows(choice, controls, rows, between);
             }
+            else if (IsWrapper(child)) ReadRows(child, controls, rows, between);
+            else if (Stray(child, SkippedInRows) is { } stray) between.Add(new DocxBetween(rows.Count, stray));
         }
+    }
+
+    private void ReadCells(XElement parent, List<DocxCell> cells, List<DocxBetween> between)
+    {
+        foreach (var child in parent.Elements())
+        {
+            if (child.Name == W + "tc") cells.Add(Cell(child));
+            else if (child.Name == Mc + "AlternateContent")
+            {
+                if (Chosen(child) is { } choice) ReadCells(choice, cells, between);
+            }
+            else if (IsWrapper(child)) ReadCells(child, cells, between);
+            else if (Stray(child, SkippedInCells) is { } stray) between.Add(new DocxBetween(cells.Count, stray));
+        }
+    }
+
+    // A bookmark, or anything else not left out on purpose, which is kept by its hash so a change to it still shows.
+    private static DocxBlock? Stray(XElement element, HashSet<string> skipped)
+    {
+        if (element.Name == W + "bookmarkStart")
+        {
+            return Attr(element, "name") is { } name and not LastEditBookmark ? new DocxBookmarkBlock(name) : null;
+        }
+
+        if (element.Name.Namespace == W && skipped.Contains(element.Name.LocalName)) return null;
+        return new DocxUnsupportedBlock(NameOf(element), Hash(element));
     }
 
     // A row inserted, deleted or reformatted with tracking on keeps who did it in its properties.
@@ -224,10 +257,13 @@ internal sealed class DocxReader
             }
         }
 
-        return new DocxRow(Unwrapped(row, "tc").Select(Cell).ToList(), IsOn(properties?.Element(W + "tblHeader")))
+        var (cells, between) = (new List<DocxCell>(), new List<DocxBetween>());
+        ReadCells(row, cells, between);
+        return new DocxRow(cells, IsOn(properties?.Element(W + "tblHeader")))
         {
             Revisions = revisions,
             Controls = controls,
+            Between = between,
         };
     }
 
@@ -281,19 +317,6 @@ internal sealed class DocxReader
         }
 
         return new DocxInserted { Kind = kind, Hash = _package.Hash(part) };
-    }
-
-    // Children with a name, looking through content controls and custom XML around them.
-    private static IEnumerable<XElement> Unwrapped(XElement parent, string name)
-    {
-        foreach (var child in parent.Elements())
-        {
-            if (child.Name == W + name) yield return child;
-            else if (IsWrapper(child))
-            {
-                foreach (var nested in Unwrapped(child, name)) yield return nested;
-            }
-        }
     }
 
     private DocxParagraph Paragraph(XElement paragraph)

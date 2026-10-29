@@ -109,4 +109,48 @@ public class DocxTableTests
                     P "Warfarin"
             """.ReplaceLineEndings("\n"), new TestDocx { Body = body }.Load().ToSnapshot());
     }
+
+    [Fact]
+    public void ToSnapshot_ShouldRecordBookmarksAndUnknownContentInPlace_WhenTheyComeBetweenRowsAndCells()
+    {
+        var body = """
+            <w:tbl><w:tblPr/><w:tblGrid/><w:bookmarkStart w:id="1" w:name="Doses"/>
+              <w:tr><w:trPr/><w:tblPrEx/><w:tc><w:p/></w:tc><w:bookmarkStart w:id="2" w:colFirst="1" w:colLast="1" w:name="Food"/>
+                <w:tc><w:p/></w:tc><w:newCellThing/></w:tr>
+              <w:bookmarkEnd w:id="1"/><w:bookmarkEnd w:id="2"/><w:newRowThing/></w:tbl>
+            """;
+
+        var snapshot = new TestDocx { Body = body }.Load().ToSnapshot();
+
+        Assert.Matches("""
+              Table
+                bookmark "Doses"
+                Row
+                  Cell
+                    P
+                  bookmark "Food"
+                  Cell
+                    P
+                  unsupported w:newCellThing hash=[0-9a-f]{16}
+                unsupported w:newRowThing hash=[0-9a-f]{16}
+
+            """.ReplaceLineEndings("\n"), snapshot);
+    }
+
+    [Fact]
+    public void Load_ShouldReadTheFirstChoice_WhenRowsOrCellsAreOfferedAsAlternateContent()
+    {
+        var body = """
+            <w:tbl xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+              <mc:AlternateContent><mc:Choice Requires="w14"><w:tr><w:tc><w:p><w:r><w:t>New</w:t></w:r></w:p></w:tc>
+                <mc:AlternateContent><mc:Choice Requires="w14"><w:tc><w:p><w:r><w:t>Cell</w:t></w:r></w:p></w:tc></mc:Choice>
+                  <mc:Fallback/></mc:AlternateContent></w:tr></mc:Choice>
+                <mc:Fallback><w:tr><w:tc><w:p><w:r><w:t>Old</w:t></w:r></w:p></w:tc></w:tr></mc:Fallback></mc:AlternateContent></w:tbl>
+            """;
+
+        var row = Assert.Single(Assert.IsType<DocxTable>(Assert.Single(new TestDocx { Body = body }.Load().Body)).Rows);
+
+        var texts = row.Cells.Select(cell => Assert.IsType<DocxParagraph>(Assert.Single(cell.Blocks)).Text);
+        Assert.Equal(["New", "Cell"], texts);
+    }
 }

@@ -227,7 +227,8 @@ public class DocxDocumentTests
         {
             Body = """
                 <w:tbl><w:tr><w:tc><w:p><w:r><w:t>Drug</w:t></w:r></w:p></w:tc>
-                  <w:sdt><w:sdtContent><w:tc><w:p><w:r><w:t>Food</w:t></w:r></w:p></w:tc></w:sdtContent></w:sdt></w:tr></w:tbl>
+                  <w:sdt><w:sdtPr><w:tag w:val="food"/></w:sdtPr><w:sdtContent><w:tc><w:p><w:r><w:t>Food</w:t></w:r></w:p></w:tc>
+                  </w:sdtContent></w:sdt></w:tr></w:tbl>
                 """,
         };
 

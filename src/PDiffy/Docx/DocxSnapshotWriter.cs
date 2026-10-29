@@ -334,13 +334,17 @@ internal sealed class DocxSnapshotWriter
         Key(line, "cell-margins", List(table.CellMargins));
         Key(line, "borders", List(Borders(table.Borders)));
         Line(depth, line.ToString());
-        foreach (var row in table.Rows)
+        for (var i = 0; i < table.Rows.Count; i++)
         {
+            var row = table.Rows[i];
+            WriteBetween(table.Between, i, depth + 1);
             Line(depth + 1, row.IsHeader ? "Row header" : "Row");
             foreach (var control in row.Controls) WriteControl(control, depth + 2);
             foreach (var revision in row.Revisions) Line(depth + 2, RevisionLine(revision));
-            foreach (var cell in row.Cells)
+            for (var j = 0; j < row.Cells.Count; j++)
             {
+                var cell = row.Cells[j];
+                WriteBetween(row.Between, j, depth + 2);
                 var cellLine = new StringBuilder("Cell");
                 if (cell.Span != 1) Key(cellLine, "span", cell.Span.ToString());
                 Key(cellLine, "merge", cell.Merge);
@@ -351,8 +355,16 @@ internal sealed class DocxSnapshotWriter
                 Line(depth + 2, cellLine.ToString());
                 WriteBlocks(cell.Blocks, depth + 3);
             }
+
+            WriteBetween(row.Between, row.Cells.Count, depth + 2);
         }
+
+        WriteBetween(table.Between, table.Rows.Count, depth + 1);
     }
+
+    // Bookmarks and content PDiffy can't read print in reading order, among the rows or cells they came between.
+    private void WriteBetween(IReadOnlyList<DocxBetween> between, int before, int depth) =>
+        WriteBlocks(between.Where(item => item.Before == before).Select(item => item.Block).ToList(), depth);
 
     private void WriteRun(StringBuilder line, RunFormat format, RunFormat baseFormat)
     {

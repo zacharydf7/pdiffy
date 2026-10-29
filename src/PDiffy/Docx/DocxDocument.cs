@@ -418,12 +418,14 @@ public sealed record DocxMath(string Text, string Hash, int Position) : DocxInli
 /// </summary>
 public sealed record DocxUnsupported(string Element, string Hash, int Position) : DocxInline(Position);
 
-/// <summary>A bookmark between paragraphs or tables, such as one that starts at a table; links can point to it.</summary>
+/// <summary>
+/// A bookmark between paragraphs, tables, rows or cells, such as one that starts at a table; links can point to it.
+/// </summary>
 public sealed record DocxBookmarkBlock(string Name) : DocxBlock;
 
 /// <summary>
-/// Something between paragraphs or tables that PDiffy doesn't read yet: the element's name and a hash of its contents,
-/// so a change to it still shows.
+/// Something between paragraphs, tables, rows or cells that PDiffy doesn't read yet: the element's name and a hash of
+/// its contents, so a change to it still shows.
 /// </summary>
 public sealed record DocxUnsupportedBlock(string Element, string Hash) : DocxBlock;
 
@@ -478,6 +480,9 @@ public sealed record DocxTable : DocxBlock
 
     public IReadOnlyList<string> Borders { get; init; } = [];
     public IReadOnlyList<DocxRow> Rows { get; init; } = [];
+
+    /// <summary>Bookmarks and content PDiffy can't read between the rows.</summary>
+    public IReadOnlyList<DocxBetween> Between { get; init; } = [];
 }
 
 /// <summary>A table row. A header row repeats at the top of each page the table runs onto.</summary>
@@ -488,7 +493,16 @@ public sealed record DocxRow(IReadOnlyList<DocxCell> Cells, bool IsHeader = fals
 
     /// <summary>The content controls around the row, outermost first, such as a repeating section and its item.</summary>
     public IReadOnlyList<DocxControl> Controls { get; init; } = [];
+
+    /// <summary>Bookmarks and content PDiffy can't read between the cells.</summary>
+    public IReadOnlyList<DocxBetween> Between { get; init; } = [];
 }
+
+/// <summary>
+/// A <see cref="DocxBookmarkBlock"/> or <see cref="DocxUnsupportedBlock"/> between a table's rows or a row's cells.
+/// <see cref="Before"/> is the index of the row or cell that comes after it, or the count when it comes last.
+/// </summary>
+public sealed record DocxBetween(int Before, DocxBlock Block);
 
 /// <summary>
 /// A table cell. <see cref="Span"/> is how many grid columns it covers; <see cref="Merge"/> is "restart" for the top of
