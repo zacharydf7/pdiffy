@@ -210,9 +210,7 @@ internal sealed class DocxReader
             if (child.Name == W + "tr") rows.Add(Row(child, controls));
             else if (child.Name == W + "sdt" && child.Element(W + "sdtContent") is { } inner)
             {
-                var (kind, name, title) = FormReader.Describe(child.Element(W + "sdtPr"));
-                var control = new DocxControl(kind) { Name = name, Title = title };
-                ReadRows(inner, [.. controls, control], rows, between);
+                ReadRows(inner, [.. controls, ControlAround(child)], rows, between);
             }
             else if (child.Name == Mc + "AlternateContent")
             {
@@ -223,18 +221,31 @@ internal sealed class DocxReader
         }
     }
 
-    private void ReadCells(XElement parent, List<DocxCell> cells, List<DocxBetween> between)
+    // The cells of a row, with the content controls they sit in, and what's between them.
+    private void ReadCells(XElement parent, IReadOnlyList<DocxControl> controls, List<DocxCell> cells,
+        List<DocxBetween> between)
     {
         foreach (var child in parent.Elements())
         {
-            if (child.Name == W + "tc") cells.Add(Cell(child));
+            if (child.Name == W + "tc") cells.Add(Cell(child, controls));
+            else if (child.Name == W + "sdt" && child.Element(W + "sdtContent") is { } inner)
+            {
+                ReadCells(inner, [.. controls, ControlAround(child)], cells, between);
+            }
             else if (child.Name == Mc + "AlternateContent")
             {
-                if (Chosen(child) is { } choice) ReadCells(choice, cells, between);
+                if (Chosen(child) is { } choice) ReadCells(choice, controls, cells, between);
             }
-            else if (IsWrapper(child)) ReadCells(child, cells, between);
+            else if (IsWrapper(child)) ReadCells(child, controls, cells, between);
             else if (Stray(child, SkippedInCells) is { } stray) between.Add(new DocxBetween(cells.Count, stray));
         }
+    }
+
+    // A content control around rows or cells, with its kind, tag and title; what it holds is read with them.
+    private static DocxControl ControlAround(XElement sdt)
+    {
+        var (kind, name, title) = FormReader.Describe(sdt.Element(W + "sdtPr"));
+        return new DocxControl(kind) { Name = name, Title = title };
     }
 
     // A bookmark, or anything else not left out on purpose, which is kept by its hash so a change to it still shows.
@@ -253,7 +264,7 @@ internal sealed class DocxReader
     {
         var properties = row.Element(W + "trPr");
         var (cells, between) = (new List<DocxCell>(), new List<DocxBetween>());
-        ReadCells(row, cells, between);
+        ReadCells(row, [], cells, between);
         return new DocxRow(cells, IsOn(properties?.Element(W + "tblHeader")))
         {
             Revisions =
@@ -290,7 +301,7 @@ internal sealed class DocxReader
     ];
 
     // A vMerge with no val continues the merge above it.
-    private DocxCell Cell(XElement cell)
+    private DocxCell Cell(XElement cell, IReadOnlyList<DocxControl> controls)
     {
         var properties = cell.Element(W + "tcPr");
         var merge = properties?.Element(W + "vMerge") is { } vMerge ? Attr(vMerge, "val") ?? "continue" : null;
@@ -301,6 +312,7 @@ internal sealed class DocxReader
             Margins = TableFormat.Margins(properties?.Element(W + "tcMar")),
             Borders = TableFormat.Borders(properties?.Element(W + "tcBorders")),
             Revisions = Changes(properties, CellChanges),
+            Controls = controls,
         };
     }
 

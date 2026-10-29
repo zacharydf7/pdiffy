@@ -232,7 +232,8 @@ public class DocxDocumentTests
                 """,
         };
 
-        Assert.Contains("  Table\n    Row\n      Cell\n        P \"Drug\"\n      Cell\n        P \"Food\"\n", docx.Load().ToSnapshot());
+        Assert.Contains("  Table\n    Row\n      Cell\n        P \"Drug\"\n      Cell\n        Control rich-text name=\"food\" "
+            + "around\n        P \"Food\"\n", docx.Load().ToSnapshot());
     }
 
     [Fact]

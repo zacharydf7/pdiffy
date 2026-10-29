@@ -533,4 +533,7 @@ public sealed record DocxCell(IReadOnlyList<DocxBlock> Blocks, int Span = 1, str
 
     /// <summary>Tracked changes to the cell: "cell-insert", "cell-delete", "cell-merge" or "cell-format".</summary>
     public IReadOnlyList<DocxRevision> Revisions { get; init; } = [];
+
+    /// <summary>The content controls around the cell, outermost first.</summary>
+    public IReadOnlyList<DocxControl> Controls { get; init; } = [];
 }

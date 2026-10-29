@@ -172,11 +172,13 @@ internal sealed class DocxSnapshotWriter
         }
     }
 
-    private void WriteControl(DocxControl control, int depth)
+    // A control around a cell is marked "around", since one inside the cell prints at the same depth.
+    private void WriteControl(DocxControl control, int depth, bool around = false)
     {
         var line = new StringBuilder($"Control {control.Kind}");
         Key(line, "name", Quote(control.Name));
         Key(line, "title", Quote(control.Title));
+        if (around) line.Append(" around");
         Line(depth, line.ToString());
         WriteBlocks(control.Blocks, depth + 1);
     }
@@ -357,6 +359,7 @@ internal sealed class DocxSnapshotWriter
                 Key(cellLine, "margins", List(cell.Margins));
                 Key(cellLine, "borders", List(Borders(cell.Borders)));
                 Line(depth + 2, cellLine.ToString());
+                foreach (var control in cell.Controls) WriteControl(control, depth + 3, around: true);
                 foreach (var revision in cell.Revisions) Line(depth + 3, RevisionLine(revision));
                 WriteBlocks(cell.Blocks, depth + 3);
             }

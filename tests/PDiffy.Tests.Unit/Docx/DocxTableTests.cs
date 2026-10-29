@@ -150,6 +150,37 @@ public class DocxTableTests
     }
 
     [Fact]
+    public void ToSnapshot_ShouldNameTheControlsAroundACell_WhenACellSitsInContentControls()
+    {
+        var body = """
+            <w:tbl><w:tr><w:sdt><w:sdtPr><w:tag w:val="dose"/><w:alias w:val="Dose"/></w:sdtPr><w:sdtContent>
+              <w:sdt><w:sdtPr><w:text/></w:sdtPr><w:sdtContent><w:tc><w:p><w:r><w:t>5 mg</w:t></w:r></w:p></w:tc>
+              </w:sdtContent></w:sdt></w:sdtContent></w:sdt></w:tr></w:tbl>
+            """;
+
+        Assert.Contains("""
+                Row
+                  Cell
+                    Control rich-text name="dose" title="Dose" around
+                    Control text around
+                    P "5 mg"
+            """.ReplaceLineEndings("\n"), new TestDocx { Body = body }.Load().ToSnapshot());
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldTellAControlAroundACellFromOneInside_WhenBothHoldTheSameTag()
+    {
+        var control = """<w:sdt><w:sdtPr><w:tag w:val="food"/></w:sdtPr><w:sdtContent>""";
+        var around = $"<w:tbl><w:tr>{control}<w:tc><w:p/></w:tc></w:sdtContent></w:sdt></w:tr></w:tbl>";
+        var inside = $"<w:tbl><w:tr><w:tc>{control}</w:sdtContent></w:sdt><w:p/></w:tc></w:tr></w:tbl>";
+
+        var (aroundSnapshot, insideSnapshot) = (new TestDocx { Body = around }.Load().ToSnapshot(),
+            new TestDocx { Body = inside }.Load().ToSnapshot());
+
+        Assert.NotEqual(aroundSnapshot, insideSnapshot);
+    }
+
+    [Fact]
     public void ToSnapshot_ShouldRecordBookmarksAndUnknownContentInPlace_WhenTheyComeBetweenRowsAndCells()
     {
         var body = """
