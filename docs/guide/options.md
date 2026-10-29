@@ -16,6 +16,7 @@ await PdfSnapshot.VerifyAsync(pdf, configure: options => options
 
 | To... | Use | Example |
 |---|---|---|
+| Compare only what a test guards | `Use(SnapshotProfile...)` | Only what assistive technology uses |
 | Leave out a whole section | `Ignore(Section...)` | Layout the design team changes freely |
 | Leave out one detail everywhere | `Ignore(Field...)` | Positions, colors, the title |
 | Replace values that change on every run | `ScrubDates()`, `ScrubGuids()`, `ScrubText(...)` | Print dates, order numbers, transaction ids |
@@ -23,6 +24,24 @@ await PdfSnapshot.VerifyAsync(pdf, configure: options => options
 
 The snapshot's first lines always list what was ignored, so nobody reading it mistakes a missing section for an empty
 one.
+
+## Use a profile
+
+Most tests guard one thing: the content, its accessibility or how the page looks. A
+[`SnapshotProfile`](xref:PDiffy.SnapshotProfile) leaves out everything else in one call, and further `Ignore` calls leave
+out more:
+
+```csharp
+await PdfSnapshot.VerifyAsync(pdf, configure: options => options
+    .Use(SnapshotProfile.Accessibility)
+    .Ignore(Field.Language));
+```
+
+The snapshot's header lists the sections and fields a profile leaves out, not the profile's name. If a later release
+changes what a profile leaves out, the header changes too, so the test fails and says so instead of quietly checking
+less.
+
+[Every profile](../reference/options.md#pdf-profiles), and what it leaves out, is listed in the reference.
 
 ## Leave out sections
 
@@ -150,6 +169,8 @@ await DocxSnapshot.VerifyAsync(docx, configure: options => options
     .ScrubDates());
 ```
 
+- [`DocxProfile`](xref:PDiffy.DocxProfile): `Use(DocxProfile.Content)` compares the text and its structure without
+  page setup, styles or formatting details. See [Word profiles](../reference/options.md#word-profiles).
 - [`DocxSection`](xref:PDiffy.DocxSection): `Document`, `Sections`, `Styles`, `Numbering`, `Body`, `Headers`,
   `Footers`, `Notes`.
 - [`DocxDetail`](xref:PDiffy.DocxDetail): image hashes, field results, fonts, font sizes, colors, spacing, indents,

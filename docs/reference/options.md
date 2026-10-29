@@ -2,6 +2,18 @@
 
 Every option, in one place. The [Ignore and scrub](../guide/options.md) guide shows them in use.
 
+## PDF profiles
+
+[`SnapshotOptions.Use(SnapshotProfile)`](xref:PDiffy.SnapshotOptions.Use*) leaves out what a test doesn't guard, in one
+call. Further `Ignore` calls leave out more, and everything a profile doesn't leave out is compared.
+
+| SnapshotProfile | For tests that guard | Leaves out |
+|---|---|---|
+| `Strict` | Everything | Nothing, the same as no profile |
+| `Content` | The text and its structure: tags, reading order, bookmarks, annotations and forms | The `Settings`, `Metadata`, `Fonts` and `Layout` sections, `PageBoxes` and `Positions` |
+| `Accessibility` | What assistive technology uses: tags, alt text, language, reading order, untagged content, artifacts, annotations, forms, whether fonts map to Unicode, and permissions, which can stop a screen reader from reading the text | How content looks (`PageBoxes`, `Positions`, `Colors`, `FontNames`, `FontSizes`, `LineWidths`, `ImageContents`), settings that don't change what's read out (`PdfVersion`, `OpenAction`, `EmbeddedFileContents`) and metadata other than the title (`Author`, `Subject`, `Keywords`, `Dates`, `Producer`, `Creator`, `CustomInfo`) |
+| `Layout` | Everything on the page, including where it's drawn and how it looks | The `Settings` and `Metadata` sections |
+
 ## PDF sections
 
 [`SnapshotOptions.Ignore(params Section[])`](xref:PDiffy.SnapshotOptions.Ignore*) leaves whole sections out. Each prints
@@ -60,6 +72,19 @@ appears; the rest of each line is still compared.
 | [`ScrubText(regex, replacement)`](xref:PDiffy.SnapshotOptions.ScrubText*) | Replaces your own pattern in quoted text. The replacement can refer to groups, such as `$1` |
 | [`ShowProducerAndCreator()`](xref:PDiffy.SnapshotOptions.ShowProducerAndCreator) | Prints the producer and creator values instead of only whether they're present |
 | [`OnlyPages(3, 4)`](xref:PDiffy.SnapshotOptions.OnlyPages*) | Keeps only what is on those pages |
+
+## Word profiles
+
+[`DocxSnapshotOptions.Use(DocxProfile)`](xref:PDiffy.DocxSnapshotOptions.Use*):
+
+| DocxProfile | For tests that guard | Leaves out |
+|---|---|---|
+| `Strict` | Everything | Nothing, the same as no profile |
+| `Content` | The text and its structure: paragraphs, tables, lists, headers, footers, notes and inline formatting such as bold | The `Sections` and `Styles` sections, and `Fonts`, `FontSizes`, `Colors`, `Spacing` and `Indents` |
+
+The snapshot's header lists the sections and fields a profile leaves out, not the profile's name. If a later release
+changes what a profile leaves out, the header changes too, so the test fails and says so instead of quietly checking
+less.
 
 ## Word sections
 

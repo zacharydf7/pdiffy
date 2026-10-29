@@ -218,6 +218,30 @@ Assert.All(letter.Images(), image => Assert.NotNull(image.AltText));
 Assert.Empty(letter.Revisions());
 ```
 
+### Use a profile for what a test guards
+
+Most tests guard one thing: the content, its accessibility or how the page looks. A profile leaves out everything else in one call, and further `Ignore` calls leave out more:
+
+```csharp
+await PdfSnapshot.VerifyAsync(pdf, configure: options => options.Use(SnapshotProfile.Accessibility));
+```
+
+| SnapshotProfile | For tests that guard | Leaves out |
+|---|---|---|
+| `Strict` | Everything | Nothing, the same as no profile |
+| `Content` | The text and its structure: tags, reading order, bookmarks, annotations and forms | The `Settings`, `Metadata`, `Fonts` and `Layout` sections, `PageBoxes` and `Positions` |
+| `Accessibility` | What assistive technology uses: tags, alt text, language, reading order, untagged content, artifacts, annotations, forms, whether fonts map to Unicode, and permissions, which can stop a screen reader from reading the text | How content looks (`PageBoxes`, `Positions`, `Colors`, `FontNames`, `FontSizes`, `LineWidths`, `ImageContents`), settings that don't change what's read out (`PdfVersion`, `OpenAction`, `EmbeddedFileContents`) and metadata other than the title (`Author`, `Subject`, `Keywords`, `Dates`, `Producer`, `Creator`, `CustomInfo`) |
+| `Layout` | Everything on the page, including where it's drawn and how it looks | The `Settings` and `Metadata` sections |
+
+For Word documents, use `DocxProfile`:
+
+| DocxProfile | For tests that guard | Leaves out |
+|---|---|---|
+| `Strict` | Everything | Nothing, the same as no profile |
+| `Content` | The text and its structure: paragraphs, tables, lists, headers, footers, notes and inline formatting such as bold | The `Sections` and `Styles` sections, and `Fonts`, `FontSizes`, `Colors`, `Spacing` and `Indents` |
+
+Everything a profile doesn't leave out is compared. The snapshot's header lists the sections and fields a profile leaves out, not the profile's name. If a later release changes what a profile leaves out, the header changes too, so the test fails and says so instead of quietly checking less.
+
 ### Leave out sections a test doesn't care about
 
 Some tests only care about part of the document. Pass the sections to leave out, and they print as `(ignored)` instead of their contents. The snapshot's second line lists what was ignored, so nobody reading it mistakes a missing section for an empty one.

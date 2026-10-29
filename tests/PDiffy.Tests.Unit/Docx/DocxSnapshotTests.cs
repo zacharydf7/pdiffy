@@ -50,6 +50,38 @@ public sealed class DocxSnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public void ToSnapshot_ShouldListWhatTheProfileLeavesOut_WhenTheContentProfileIsUsed()
+    {
+        var snapshot = DocxDocument.Load(Docx("Text")).ToSnapshot(o => o.Use(DocxProfile.Content));
+
+        Assert.StartsWith("# docx-snapshot v1\n# ignored sections: sections, styles\n"
+            + "# ignored fields: fonts, font-sizes, colors, spacing, indents\n", snapshot);
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldLeaveOutNothing_WhenTheStrictProfileIsUsed()
+    {
+        var document = DocxDocument.Load(Docx("Text"));
+
+        Assert.Equal(document.ToSnapshot(), document.ToSnapshot(o => o.Use(DocxProfile.Strict)));
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldLeaveOutWhatIgnoreAdds_WhenAProfileIsUsedWithIgnore()
+    {
+        var snapshot = DocxDocument.Load(Docx("Text")).ToSnapshot(o => o.Use(DocxProfile.Content).Ignore(DocxDetail.ImageHashes));
+
+        Assert.StartsWith("# docx-snapshot v1\n# ignored sections: sections, styles\n"
+            + "# ignored fields: image-hashes, fonts, font-sizes, colors, spacing, indents\n", snapshot);
+    }
+
+    [Fact]
+    public void Use_ShouldThrow_WhenGivenAValueThatIsNotAProfile()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new DocxSnapshotOptions().Use((DocxProfile)99));
+    }
+
+    [Fact]
     public void CompareTo_ShouldFindNoChanges_WhenOnlyAnIgnoredSectionDiffers()
     {
         var before = DocxDocument.Load(Docx("Before"));

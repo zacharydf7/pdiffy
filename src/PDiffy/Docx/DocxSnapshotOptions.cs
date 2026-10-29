@@ -71,6 +71,23 @@ public enum DocxDetail
 }
 
 /// <summary>
+/// A ready-made set of sections and details to leave out of a DOCX snapshot, named after what a test guards. Apply one
+/// with <see cref="DocxSnapshotOptions.Use(DocxProfile)"/>. The snapshot's header lists what it leaves out, so a profile
+/// that leaves out more in a later release shows up as a changed snapshot rather than a test that quietly checks less.
+/// </summary>
+public enum DocxProfile
+{
+    /// <summary>Compares everything, the same as using no profile.</summary>
+    Strict,
+
+    /// <summary>
+    /// The text and its structure: paragraphs, tables, lists, headers, footers, notes and inline formatting such as bold.
+    /// Leaves out the sections and styles sections, and fonts, font sizes, colors, spacing and indents.
+    /// </summary>
+    Content,
+}
+
+/// <summary>
 /// What to leave out of a DOCX snapshot, or change in it, for content a test doesn't care about. Ignored sections still
 /// print their header with "(ignored)" under it, and the snapshot's first lines list what was ignored.
 /// </summary>
@@ -96,6 +113,18 @@ public sealed class DocxSnapshotOptions
         _ignoredDetails.UnionWith(details);
         return this;
     }
+
+    /// <summary>
+    /// Leaves out what a profile leaves out, such as <see cref="DocxProfile.Content"/>. Further <c>Ignore</c> calls
+    /// leave out more.
+    /// </summary>
+    public DocxSnapshotOptions Use(DocxProfile profile) => profile switch
+    {
+        DocxProfile.Strict => this,
+        DocxProfile.Content => Ignore(DocxSection.Sections, DocxSection.Styles)
+            .Ignore(DocxDetail.Fonts, DocxDetail.FontSizes, DocxDetail.Colors, DocxDetail.Spacing, DocxDetail.Indents),
+        _ => throw new ArgumentOutOfRangeException(nameof(profile), profile, "Not a DocxProfile value."),
+    };
 
     /// <summary>
     /// Replaces matches in quoted text (paragraph text, alt text, titles, field results and so on) and link addresses.

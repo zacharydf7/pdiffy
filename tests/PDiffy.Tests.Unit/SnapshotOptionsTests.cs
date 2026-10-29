@@ -19,6 +19,42 @@ public class SnapshotOptionsTests
         Assert.NotEmpty(SectionLines(snapshot, "document"));
     }
 
+    [Theory]
+    [InlineData(SnapshotProfile.Content, "# ignored sections: settings, metadata, fonts, layout",
+        "# ignored fields: page-boxes, positions")]
+    [InlineData(SnapshotProfile.Accessibility, "# ignored fields: pdf-version, open-action, embedded-file-contents, author, "
+        + "subject, keywords, dates, producer, creator, custom-info, page-boxes, positions, colors, font-names, font-sizes, "
+        + "line-widths, image-contents")]
+    [InlineData(SnapshotProfile.Layout, "# ignored sections: settings, metadata")]
+    public void ToSnapshot_ShouldListWhatTheProfileLeavesOut_WhenAProfileIsUsed(SnapshotProfile profile, params string[] header)
+    {
+        var snapshot = Full().ToSnapshot(o => o.Use(profile));
+
+        Assert.Equal(["# pdfua-snapshot v1", .. header], snapshot.Split('\n').TakeWhile(line => line.StartsWith('#')));
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldLeaveOutNothing_WhenTheStrictProfileIsUsed()
+    {
+        var snapshot = Full().ToSnapshot(o => o.Use(SnapshotProfile.Strict));
+
+        Assert.Equal(Full().ToSnapshot(), snapshot);
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldLeaveOutWhatIgnoreAdds_WhenAProfileIsUsedWithIgnore()
+    {
+        var snapshot = Full().ToSnapshot(o => o.Use(SnapshotProfile.Layout).Ignore(Field.AltText));
+
+        Assert.StartsWith("# pdfua-snapshot v1\n# ignored sections: settings, metadata\n# ignored fields: alt-text\n", snapshot);
+    }
+
+    [Fact]
+    public void Use_ShouldThrow_WhenGivenAValueThatIsNotAProfile()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SnapshotOptions().Use((SnapshotProfile)99));
+    }
+
     [Fact]
     public void ToSnapshot_ShouldLeaveOutOnlyThoseKeys_WhenFieldsAreIgnored()
     {

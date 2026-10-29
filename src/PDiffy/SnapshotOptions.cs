@@ -28,6 +28,23 @@ public sealed class SnapshotOptions
     }
 
     /// <summary>
+    /// Leaves out what a profile leaves out, such as <see cref="SnapshotProfile.Accessibility"/>. Further
+    /// <c>Ignore</c> calls leave out more.
+    /// </summary>
+    public SnapshotOptions Use(SnapshotProfile profile) => profile switch
+    {
+        SnapshotProfile.Strict => this,
+        SnapshotProfile.Content => Ignore(Section.Settings, Section.Metadata, Section.Fonts, Section.Layout)
+            .Ignore(Field.PageBoxes, Field.Positions),
+        SnapshotProfile.Accessibility => Ignore(Field.PdfVersion, Field.OpenAction, Field.EmbeddedFileContents,
+            Field.Author, Field.Subject, Field.Keywords, Field.Dates, Field.Producer, Field.Creator, Field.CustomInfo,
+            Field.PageBoxes, Field.Positions, Field.Colors, Field.FontNames, Field.FontSizes, Field.LineWidths,
+            Field.ImageContents),
+        SnapshotProfile.Layout => Ignore(Section.Settings, Section.Metadata),
+        _ => throw new ArgumentOutOfRangeException(nameof(profile), profile, "Not a SnapshotProfile value."),
+    };
+
+    /// <summary>
     /// Replaces matches in quoted text (element text, alt text, titles, link addresses, form values and so on).
     /// The replacement can refer to groups, such as "Order $1".
     /// </summary>
