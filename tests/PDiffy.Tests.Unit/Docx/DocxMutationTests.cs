@@ -80,7 +80,7 @@ public class DocxMutationTests
 
     // A styled paragraph with a formatted word, a footnote and a page field; a two-item list; a table; an image; and
     // a section with a header.
-    private static DocxDocument Build(Sample sample)
+    internal static DocxDocument Build(Sample sample)
     {
         var insert = sample.TrackedInsert ? """<w:ins w:id="10" w:author="Ann"><w:r><w:t xml:space="preserve"> daily</w:t></w:r></w:ins>""" : "";
         var comment = sample.Comment ? """<w:r><w:commentReference w:id="0"/></w:r>""" : "";

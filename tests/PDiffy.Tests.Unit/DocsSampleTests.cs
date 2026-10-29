@@ -19,7 +19,7 @@ public class DocsSampleTests
 
     // The revision edits a cell, moves the logo after the text in reading order and further down the page, drops its alt
     // text, removes a header's scope, swaps one paragraph for another and stamps untagged "Draft" text on the table page.
-    private static TestPdf Guide(bool revised)
+    internal static TestPdf Guide(bool revised)
     {
         var pdf = new TestPdf { Title = "Trail Guide" };
         var first = pdf.AddPage().Tagged(0, "Trail Guide", "H1");

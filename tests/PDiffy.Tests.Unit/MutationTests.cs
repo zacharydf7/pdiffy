@@ -69,7 +69,7 @@ public class MutationTests
 
     // Page 1 has a heading, two paragraphs, a figure, a note, a footer, a styled line, a table, a link and a form field;
     // page 2 has the paragraph the bookmark points to.
-    private static PdfUaDocument Build(Sample sample)
+    internal static PdfUaDocument Build(Sample sample)
     {
         var pdf = new TestPdf { Lang = sample.DocumentLang };
         var page = pdf.AddPage().Tagged(0, "Elevation", sample.Heading).Tagged(1, "Go with a guide").Tagged(2, "Avoid shortcuts")
