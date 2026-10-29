@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text;
 using PDiffy.Tests.Unit.Docx;
 using PDiffy.Tests.Unit.Pdfs;
@@ -106,13 +107,15 @@ public class ResourceLimitTests
 
         var image = Assert.Single(document.Images);
 
-        Assert.Equal((false, 16), (document.Pages[0].Unreadable, image.Hash.Length));
+        var stored = Convert.ToHexStringLower(SHA256.HashData(Encoding.Latin1.GetBytes(bomb)))[..16];
+        Assert.Equal((false, stored), (document.Pages[0].Unreadable, image.Hash));
     }
 
     [Fact]
     public void Load_ShouldMarkTheXmpUnreadable_WhenItDecompressesToMoreThan256Megabytes()
     {
-        var bomb = Bomb();
+        // A root element, so the XMP would parse if the cap didn't stop it.
+        var bomb = Bomb(start: "<x/>");
 
         var document = OnePage("/Metadata 6 0 R",
             [$"<< /Type /Metadata /Subtype /XML /Filter /FlateDecode /Length {bomb.Length} >>\nstream\n{bomb}\nendstream"]);
@@ -209,12 +212,13 @@ public class ResourceLimitTests
         .. extraObjects,
     ]);
 
-    // 256 MB and one byte of spaces, Flate-compressed to a few hundred KB: the shape of a decompression bomb.
-    private static string Bomb()
+    // The start, then 256 MB and one byte of spaces, Flate-compressed to a few hundred KB: a decompression bomb.
+    private static string Bomb(string start = "")
     {
         var compressed = new MemoryStream();
         using (var zlib = new ZLibStream(compressed, CompressionLevel.Fastest))
         {
+            zlib.Write(Encoding.Latin1.GetBytes(start));
             var spaces = Enumerable.Repeat((byte)' ', 1024 * 1024).ToArray();
             for (var i = 0; i < 256; i++) zlib.Write(spaces);
             zlib.WriteByte((byte)' ');

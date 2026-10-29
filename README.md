@@ -802,7 +802,7 @@ PDiffy also limits what it reads, so a file built to exhaust the stack or memory
 
 - Structure elements and bookmarks are read 256 levels deep. An element whose children are deeper gets `unread-children=N`, and their content counts as untagged. Bookmarks nested deeper, or that loop back on themselves, print `unreadable`.
 - XML with a DTD, or with elements nested more than 256 deep, is unreadable: a Word part or a PDF's XMP. An inserted Word document's nesting counts from where it's inserted.
-- A PDF stream that would decompress to more than 256 MB isn't decompressed: its page is unreadable, an image is hashed as stored, and XMP prints `xmp=unreadable`. A Word part larger than 256 MB is unreadable too, instead of being loaded into memory. An inserted Word document that can't be read isn't listed as unreadable; it's marked where it's inserted: `Inserted docx unreadable`.
+- A Flate-compressed PDF stream that would decompress to more than 256 MB isn't decompressed: its page is unreadable, an image is hashed as stored, and XMP prints `xmp=unreadable`. A Word part larger than 256 MB is unreadable too, instead of being loaded into memory. An inserted Word document that can't be read isn't listed as unreadable; it's marked where it's inserted: `Inserted docx unreadable`.
 
 ## Development
 
