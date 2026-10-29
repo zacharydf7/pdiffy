@@ -683,6 +683,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 | Next | `docx-snapshot v1`, unchanged version: a bookmark between table rows or cells prints as `bookmark "Name"` in place, rows and cells offered as `mc:AlternateContent` are read through the first choice, and anything else there PDiffy can't read prints as `unsupported`. Only snapshots of documents with those change |
 | Next | `docx-snapshot v1`, unchanged version: tracked changes to a table (`table-format`, `table-grid`), to the table properties a row sets for itself (`row-table-format`), to cells (`cell-insert`, `cell-delete`, `cell-merge`, `cell-format`) and to a paragraph mark's formatting (`paragraph-mark-format`) are recorded and listed by `Revisions()`. Only snapshots of documents with those change |
 | Next | `docx-snapshot v1`, unchanged version: a cell lists the content controls around it, as a row does, each marked `around` so it can't be mistaken for a control inside the cell. Only snapshots of documents with content controls around cells change |
+| Next | `docx-snapshot v1`, unchanged version: a table-column bookmark (one that sets `w:colFirst` and `w:colLast`) prints the columns it covers, counting from 0: `bookmark "Doses" columns=0-2`. Only snapshots of documents with table-column bookmarks change |
 | 0.2.0 | New format `docx-snapshot v1`, for Word documents |
 | 0.1.0 | New format `pdfua-snapshot v1` |
 

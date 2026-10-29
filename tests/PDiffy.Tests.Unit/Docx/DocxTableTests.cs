@@ -198,13 +198,25 @@ public class DocxTableTests
                 Row
                   Cell
                     P
-                  bookmark "Food"
+                  bookmark "Food" columns=1-1
                   Cell
                     P
                   unsupported w:newCellThing hash=[0-9a-f]{16}
                 unsupported w:newRowThing hash=[0-9a-f]{16}
 
             """.ReplaceLineEndings("\n"), snapshot);
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldRecordTheColumnsABookmarkCovers_WhenItStartsInACellsParagraph()
+    {
+        var body = """
+            <w:tbl><w:tr><w:tc><w:p><w:bookmarkStart w:id="1" w:colFirst="0" w:colLast="2" w:name="Doses"/>
+              <w:r><w:t>Drug</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
+            """;
+
+        Assert.Contains("        P \"Drug\"\n          bookmark \"Doses\" columns=0-2 at=0\n",
+            new TestDocx { Body = body }.Load().ToSnapshot());
     }
 
     [Fact]

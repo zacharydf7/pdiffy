@@ -99,7 +99,8 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
             {
                 if (Attr(element, "name") is { } bookmark and not LastEditBookmark)
                 {
-                    content.Inlines.Add(new DocxBookmark(bookmark, content.Text.Length));
+                    var columns = BookmarkColumns(element);
+                    content.Inlines.Add(new DocxBookmark(bookmark, content.Text.Length) { Columns = columns });
                 }
             }
             else if (IsWrapper(element)) ReadContent(element, content);

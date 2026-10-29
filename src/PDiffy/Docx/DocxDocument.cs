@@ -372,8 +372,14 @@ public sealed record DocxBreak(string Kind, int Position) : DocxInline(Position)
 /// <summary>A link: the text it covers and where it goes, a URL or "#bookmark" for a place in the document.</summary>
 public sealed record DocxLink(string Text, string? Target, int Position) : DocxInline(Position);
 
-/// <summary>A named place in the document that links and cross-references can point to.</summary>
-public sealed record DocxBookmark(string Name, int Position) : DocxInline(Position);
+/// <summary>
+/// A named place in the document that links and cross-references can point to. A bookmark in a table can cover only
+/// some columns: <see cref="Columns"/> is then the first and last, counting from 0, such as "1-2".
+/// </summary>
+public sealed record DocxBookmark(string Name, int Position) : DocxInline(Position)
+{
+    public string? Columns { get; init; }
+}
 
 /// <summary>A character from a symbol font, such as Wingdings: the font and the character's code in hex.</summary>
 public sealed record DocxSymbol(string? Font, string Code, int Position) : DocxInline(Position);
@@ -431,7 +437,11 @@ public sealed record DocxUnsupported(string Element, string Hash, int Position) 
 /// <summary>
 /// A bookmark between paragraphs, tables, rows or cells, such as one that starts at a table; links can point to it.
 /// </summary>
-public sealed record DocxBookmarkBlock(string Name) : DocxBlock;
+public sealed record DocxBookmarkBlock(string Name) : DocxBlock
+{
+    /// <summary>The columns a table-column bookmark covers, as for <see cref="DocxBookmark.Columns"/>.</summary>
+    public string? Columns { get; init; }
+}
 
 /// <summary>
 /// Something between paragraphs, tables, rows or cells that PDiffy doesn't read yet: the element's name and a hash of

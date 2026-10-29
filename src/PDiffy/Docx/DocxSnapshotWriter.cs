@@ -155,7 +155,7 @@ internal sealed class DocxSnapshotWriter
             else if (block is DocxTable table) WriteTable(table, depth);
             else if (block is DocxInserted inserted) WriteInserted(inserted, depth);
             else if (block is DocxControl control) WriteControl(control, depth);
-            else if (block is DocxBookmarkBlock bookmark) Line(depth, $"bookmark {Quote(bookmark.Name)}");
+            else if (block is DocxBookmarkBlock bookmark) Line(depth, BookmarkLine(bookmark.Name, bookmark.Columns));
             else if (block is DocxUnsupportedBlock unsupported) Line(depth, $"unsupported {unsupported.Element} hash={unsupported.Hash}");
         }
     }
@@ -171,6 +171,9 @@ internal sealed class DocxSnapshotWriter
             WriteBlocks(note.Blocks, depth + 1);
         }
     }
+
+    private string BookmarkLine(string name, string? columns) =>
+        columns is null ? $"bookmark {Quote(name)}" : $"bookmark {Quote(name)} columns={columns}";
 
     // A control around a cell is marked "around", since one inside the cell prints at the same depth.
     private void WriteControl(DocxControl control, int depth, bool around = false)
@@ -301,7 +304,7 @@ internal sealed class DocxSnapshotWriter
                 line.Append($"stray-text {Quote(stray.Text)}");
                 break;
             case DocxBookmark bookmark:
-                line.Append($"bookmark {Quote(bookmark.Name)}");
+                line.Append(BookmarkLine(bookmark.Name, bookmark.Columns));
                 break;
             case DocxSymbol symbol:
                 line.Append("symbol");

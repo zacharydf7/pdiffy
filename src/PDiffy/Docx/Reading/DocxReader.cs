@@ -253,7 +253,9 @@ internal sealed class DocxReader
     {
         if (element.Name == W + "bookmarkStart")
         {
-            return Attr(element, "name") is { } name and not LastEditBookmark ? new DocxBookmarkBlock(name) : null;
+            return Attr(element, "name") is { } name and not LastEditBookmark
+                ? new DocxBookmarkBlock(name) { Columns = BookmarkColumns(element) }
+                : null;
         }
 
         if (element.Name.Namespace == W && skipped.Contains(element.Name.LocalName)) return null;
