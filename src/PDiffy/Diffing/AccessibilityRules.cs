@@ -10,9 +10,9 @@ internal static class AccessibilityRules
     {
         // Only PDF changes have a section; DOCX keys can mean other things, such as a section's headers.
         if (change.Section is null) return false;
-        if (change.Section == Section.Untagged) return change.Kind != ChangeKind.Removed;
-
         var (before, after) = Sides(change.Detail);
+        if (change.Section == Section.Untagged) return AddsUntagged(change.Kind, change.Detail, before, after);
+
         return change.Kind switch
         {
             ChangeKind.Moved => change.Section == Section.Structure,
@@ -27,18 +27,30 @@ internal static class AccessibilityRules
     private static bool TakesAway(string key, string after) =>
         RemovableKeys.Contains(key) && after is "(missing)" or "\"\"" || key == "headers" && after.Contains('?');
 
-    // A header cell's generated name (TH1, TH2) can change alone; headings are the only types ending in a number.
+    // Something new a screen reader can't reach: a line, words added to one, or more images or paths. Less isn't.
+    private static bool AddsUntagged(ChangeKind kind, string detail, string before, string after) => kind switch
+    {
+        ChangeKind.Added => true,
+        ChangeKind.TextChanged => detail.Contains("{+", StringComparison.Ordinal),
+        ChangeKind.AttributeChanged => int.TryParse(ValueOf(before), out var from) && int.TryParse(after, out var to)
+            && to > from,
+        _ => false,
+    };
+
+    // A header cell's generated name (TH1, TH2) can change alone; only headings, mapped or not, end in a number.
     private static bool IsTypeChange(string before, string after)
     {
         if (!before.StartsWith("type: ", StringComparison.Ordinal)) return false;
         var (from, to) = (before["type: ".Length..].TrimEnd(Digits), after.TrimEnd(Digits));
-        return from != to || from == "H";
+        return from != to || from == "H" || from.EndsWith("->H", StringComparison.Ordinal);
     }
 
     private static readonly char[] Digits = "0123456789".ToCharArray();
 
     // An attribute change's before side reads "key: value".
     private static string KeyOf(string before) => before[..Math.Max(0, before.IndexOf(": ", StringComparison.Ordinal))];
+
+    private static string ValueOf(string before) => before[(before.IndexOf(": ", StringComparison.Ordinal) + 2)..];
 
     // An annotation line reads "p1 Link tagged ...": its third word is its role.
     private static string? Role(string line) => SnapshotLine.Parse(line, 0).Words.ElementAtOrDefault(2);

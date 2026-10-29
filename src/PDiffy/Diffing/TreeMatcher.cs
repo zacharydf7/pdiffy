@@ -53,7 +53,7 @@ internal sealed class TreeMatcher(string name, Section? section)
         var next = 0;
         foreach (var old in removed)
         {
-            var match = MatchOf(old, added, next, RetypesIn(name));
+            var match = MatchOf(old, added, next, name);
             if (match < 0)
             {
                 _entries.Add(new Entry(Removed: old, Path: PathOf(old, beforeSiblings, parentPath)));
@@ -165,15 +165,19 @@ internal sealed class TreeMatcher(string name, Section? section)
     internal static bool IsRetyped(SnapshotLine old, SnapshotLine line) =>
         line.Key != old.Key && !string.IsNullOrEmpty(old.QuotedText) && line.QuotedText == old.QuotedText;
 
-    // The added line a removed one was edited into: one of the same type if any, else, where types can change, a retype.
-    internal static int MatchOf(SnapshotLine old, List<SnapshotLine> added, int start, bool retypes)
-    {
-        var match = added.FindIndex(start, line => IsSameLine(old, line));
-        return match >= 0 || !retypes ? match : added.FindIndex(start, line => IsRetyped(old, line));
-    }
+    // A page's counts of untagged images and paths ("p1 images=2 paths=3"), however much they changed.
+    private static bool IsSameCounts(SnapshotLine old, SnapshotLine line) =>
+        old.QuotedText is null && line.QuotedText is null && old.Words.SequenceEqual(line.Words)
+        && old.Attributes.Select(pair => pair.Key).SequenceEqual(line.Attributes.Select(pair => pair.Key));
 
-    // Only structure elements have a type that can change while they stay the same element.
-    internal static bool RetypesIn(string sectionName) => sectionName == SnapshotWriter.Name(Section.Structure);
+    // One of the same type, else a retype in the structure; untagged counts always pair, so a drop isn't new content.
+    internal static int MatchOf(SnapshotLine old, List<SnapshotLine> added, int start, string sectionName)
+    {
+        var counts = sectionName == SnapshotWriter.Name(Section.Untagged);
+        var match = added.FindIndex(start, line => IsSameLine(old, line) || counts && IsSameCounts(old, line));
+        return match >= 0 || sectionName != SnapshotWriter.Name(Section.Structure) ? match
+            : added.FindIndex(start, line => IsRetyped(old, line));
+    }
 
     // Only text words count when both lines have text, so type, page and style alone never make two lines the same.
     private static double Similarity(SnapshotLine first, SnapshotLine second) =>
