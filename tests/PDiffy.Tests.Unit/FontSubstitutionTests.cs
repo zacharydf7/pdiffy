@@ -27,7 +27,7 @@ public sealed class FontSubstitutionTests : SnapshotFolderTests
     [Fact]
     public void Hint_ShouldNameBothFontsAndTheLinesThatSwitched_WhenOneFontReplacedAnotherEverywhere()
     {
-        var hint = FontSubstitution.Hint(SnapshotDiff.Compare(Before, Substituted));
+        var hint = FontSubstitution.Hint(SnapshotDiff.CompareSnapshots(Before, Substituted));
 
         Assert.Equal("Arial was replaced by DejaVuSans in 3 line(s): the machine running this test probably doesn't have "
             + "Arial. Embed the font in the PDF, or install it on the build agent.", hint);
@@ -38,7 +38,7 @@ public sealed class FontSubstitutionTests : SnapshotFolderTests
     {
         var edited = Substituted.Replace("\"Trail one\"", "\"Lake one\"").Replace("\"Trail two\"", "\"Lake two\"");
 
-        var hint = FontSubstitution.Hint(SnapshotDiff.Compare(Before, edited));
+        var hint = FontSubstitution.Hint(SnapshotDiff.CompareSnapshots(Before, edited));
 
         Assert.Null(hint);
     }
@@ -48,7 +48,7 @@ public sealed class FontSubstitutionTests : SnapshotFolderTests
     {
         var restyled = Substituted.Replace("size=12", "size=14");
 
-        var hint = FontSubstitution.Hint(SnapshotDiff.Compare(Before, restyled));
+        var hint = FontSubstitution.Hint(SnapshotDiff.CompareSnapshots(Before, restyled));
 
         Assert.Null(hint);
     }
@@ -58,18 +58,19 @@ public sealed class FontSubstitutionTests : SnapshotFolderTests
     {
         var after = Before.Replace("fonts\n", "fonts\n  Verdana TrueType embedded=yes to-unicode=yes\n");
 
-        var hint = FontSubstitution.Hint(SnapshotDiff.Compare(Before, after));
+        var hint = FontSubstitution.Hint(SnapshotDiff.CompareSnapshots(Before, after));
 
         Assert.Null(hint);
     }
 
     [Fact]
-    public void Verify_ShouldPutTheHintRightAfterTheFirstLine_WhenAFontWasSubstituted()
+    public void VerifyText_ShouldPutTheHintRightAfterTheFirstLine_WhenAFontWasSubstituted()
     {
         Directory.CreateDirectory(Folder);
         File.WriteAllText(Path.Combine(Folder, "Guide.verified.pdfua.txt"), Before);
 
-        var error = Assert.Throws<SnapshotException>(() => Snapshot.Verify(Substituted, "Guide", extension: "pdfua.txt"));
+        var error = Assert.Throws<SnapshotException>(() => Snapshot.VerifyText(Substituted, "Guide",
+            extension: "pdfua.txt"));
 
         var lines = error.Message.Split(Environment.NewLine);
         Assert.StartsWith("Arial was replaced by DejaVuSans in 3 line(s)", lines[1]);

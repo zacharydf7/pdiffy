@@ -47,7 +47,7 @@ public sealed class CliTests : IDisposable
         var exitCode = Commands.Run([before, after, "--json", "--html", report], _output, _error);
 
         Assert.Equal(Commands.Different, exitCode);
-        var diff = SnapshotDiff.Compare(File.ReadAllText(before), File.ReadAllText(after));
+        var diff = SnapshotDiff.CompareSnapshots(File.ReadAllText(before), File.ReadAllText(after));
         Assert.Equal(diff.ToJson(), _output.ToString());
         Assert.True(File.Exists(report));
     }

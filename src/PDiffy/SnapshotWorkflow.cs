@@ -31,7 +31,7 @@ internal static class SnapshotWorkflow
         CheckNotVerifiedBefore(received, files);
         LogRun(files);
         var verified = File.Exists(files.Verified) ? Normalize(File.ReadAllText(files.Verified)) : null;
-        var diff = verified is null || received == verified ? null : SnapshotDiff.Compare(verified, received);
+        var diff = verified is null || received == verified ? null : SnapshotDiff.CompareSnapshots(verified, received);
 
         // A difference the snapshot's tolerances allow passes too, and leaves the verified file as it is, even in accept
         // mode, so the baseline doesn't creep a point at a time.

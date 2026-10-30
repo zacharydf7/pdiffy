@@ -27,7 +27,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldFindNoChanges_WhenSnapshotsAreEqual()
     {
-        var diff = SnapshotDiff.Compare(Before, Before.ReplaceLineEndings("\r\n"));
+        var diff = SnapshotDiff.CompareSnapshots(Before, Before.ReplaceLineEndings("\r\n"));
 
         Assert.True(diff.IsEmpty);
         Assert.Equal("No changes.", diff.Describe());
@@ -38,7 +38,7 @@ public class SnapshotDiffTests
     {
         var after = Before.Replace("Go with a guide", "Go without a guide");
 
-        var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(Before, after).Changes);
 
         var path = "structure > Document > Table > TR[2] > TD[2]";
         Assert.Equal(new SnapshotChange
@@ -54,7 +54,7 @@ public class SnapshotDiffTests
     {
         var after = Before.Replace("TH2 p2 scope=Column", "TH2 p2").Replace("color=gray:0", "color=#ff0000");
 
-        var changes = SnapshotDiff.Compare(Before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(Before, after).Changes;
 
         SnapshotChange[] expected =
         [
@@ -78,7 +78,7 @@ public class SnapshotDiffTests
     {
         var after = Before.Replace("TD p2 headers=[TH1]", "TD p3 headers=[TH1]");
 
-        var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(Before, after).Changes);
 
         var detail = "TD p2 headers=[TH1] \"Ridgeline\" -> TD p3 headers=[TH1] \"Ridgeline\"";
         Assert.Equal((ChangeKind.Changed, detail), (change.Kind, change.Detail));
@@ -90,7 +90,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "structure\n  Link p1 annot=Link uri=\"https://a\" annot=Link uri=\"https://b\" \"here\"\n";
         var after = before.Replace("https://b", "https://c");
 
-        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(before, after).Changes);
 
         Assert.Equal((ChangeKind.AttributeChanged, "uri: \"https://b\" -> \"https://c\""), (change.Kind, change.Detail));
     }
@@ -101,7 +101,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "layout\n  p1 path tagged fill=gray:0 stroke=gray:1\n";
         var after = SnapshotText.Header + "layout\n  p1 path tagged stroke=gray:1 fill=gray:0\n";
 
-        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(before, after).Changes);
 
         Assert.Equal(ChangeKind.Changed, change.Kind);
     }
@@ -111,7 +111,7 @@ public class SnapshotDiffTests
     {
         var after = Before.Replace(SnapshotText.Header, SnapshotText.Header + "# ignored fields: positions\n");
 
-        var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(Before, after).Changes);
 
         Assert.Equal(new SnapshotChange
         {
@@ -124,7 +124,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldReportWhitespace_WhenOnlyBlankLinesDiffer()
     {
-        var change = Assert.Single(SnapshotDiff.Compare(Before, Before + "\n").Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(Before, Before + "\n").Changes);
 
         Assert.Equal(("whitespace", null), (change.Path, change.PdfSection));
     }
@@ -135,7 +135,7 @@ public class SnapshotDiffTests
         var figure = "    Figure p1 alt=\"Park logo\"\n";
         var after = Before.Replace(figure, "").Replace("    P p3", figure + "    P p3");
 
-        var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(Before, after).Changes);
 
         var expected = new SnapshotChange
         {
@@ -151,7 +151,7 @@ public class SnapshotDiffTests
     {
         var after = Before.Replace("P p3 \"Call your ranger\"", "P p3 \"Ask questions\"");
 
-        var changes = SnapshotDiff.Compare(Before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(Before, after).Changes;
 
         SnapshotChange[] expected =
         [
@@ -179,7 +179,8 @@ public class SnapshotDiffTests
         "p1 text tagged at=400,300 font=Arial size=12 color=gray:0 \"Summit\"")]
     public void Compare_ShouldReportRemovedAndAdded_WhenTheTextSharesNoWords(string section, string before, string after)
     {
-        var changes = SnapshotDiff.Compare($"{SnapshotText.Header}{section}\n  {before}\n", $"{SnapshotText.Header}{section}\n  {after}\n").Changes;
+        var changes = SnapshotDiff.CompareSnapshots($"{SnapshotText.Header}{section}\n  {before}\n",
+            $"{SnapshotText.Header}{section}\n  {after}\n").Changes;
 
         Assert.Equal([ChangeKind.Removed, ChangeKind.Added], changes.Select(change => change.Kind));
     }
@@ -189,7 +190,7 @@ public class SnapshotDiffTests
     {
         var after = Before.Replace("H1 p1 \"Trail Table\"", "H2 p1 \"Trail Table\"");
 
-        var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(Before, after).Changes);
 
         Assert.Equal(new SnapshotChange
         {
@@ -205,7 +206,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "structure\n  P p1 lang=en \"Walk\"\n";
         var after = SnapshotText.Header + "structure\n  H3 p1 \"Walk\"\n  P p1 lang=fr \"Walk\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Equal([(ChangeKind.Added, "structure > H3"), (ChangeKind.AttributeChanged, "structure > P")],
             changes.Select(change => (change.Kind, change.Path)));
@@ -216,7 +217,7 @@ public class SnapshotDiffTests
     {
         var after = Before.Replace("  p1 text tagged at=72,720", "  p2 text tagged at=72,720");
 
-        var changes = SnapshotDiff.Compare(Before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(Before, after).Changes;
 
         Assert.Equal([ChangeKind.Removed, ChangeKind.Added], changes.Select(change => change.Kind));
     }
@@ -226,7 +227,7 @@ public class SnapshotDiffTests
     {
         var after = Before.Replace("\"Ridgeline\"", "\"Cedars\"");
 
-        var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(Before, after).Changes);
 
         Assert.Equal((ChangeKind.TextChanged, "\"[-Ridgeline-] {+Cedars+}\""), (change.Kind, change.Detail));
     }
@@ -238,7 +239,7 @@ public class SnapshotDiffTests
         var after = Before.Replace(figure, "").Replace("    P p3 \"Call your ranger\"",
             "    Figure p1 alt=\"Store logo\"\n    P p3 \"Call your warden\"");
 
-        var changes = SnapshotDiff.Compare(Before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(Before, after).Changes;
 
         SnapshotChange[] expected =
         [
@@ -279,7 +280,7 @@ public class SnapshotDiffTests
                 Link p1 "park map"
             """.ReplaceLineEndings("\n");
 
-        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(before, after).Changes);
 
         Assert.Equal((ChangeKind.Moved, "structure > Document > Link", "parent: Document > P -> Document"),
             (change.Kind, change.Path, change.Detail));
@@ -302,7 +303,7 @@ public class SnapshotDiffTests
                 P p1 "other"
             """.ReplaceLineEndings("\n");
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.DoesNotContain(changes, change => change.Kind == ChangeKind.Moved);
         Assert.Contains(changes, change => change is { Kind: ChangeKind.TextChanged, Path: "structure > Document > P[1]" });
@@ -328,7 +329,7 @@ public class SnapshotDiffTests
               LI p1 "Pears are green"
             """.ReplaceLineEndings("\n");
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         SnapshotChange[] expected =
         [
@@ -372,7 +373,7 @@ public class SnapshotDiffTests
                   TD p2 "Avoid shortcuts"
             """.ReplaceLineEndings("\n");
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Equal([(ChangeKind.Removed, "structure > Table[1] > TR"), (ChangeKind.Added, "structure > Table[2] > TR[2]")],
             changes.Select(change => (change.Kind, change.Path)));
@@ -384,7 +385,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "structure\n" + string.Concat("ABCSDE".Select(name => $"  P p1 \"{name}\"\n"));
         var after = SnapshotText.Header + "structure\n" + string.Concat("SABCDSE".Select(name => $"  P p1 \"{name}\"\n"));
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         SnapshotChange[] expected =
         [
@@ -410,7 +411,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "bookmarks\n  \"Safety\" -> p3\n    \"Gear\"\n";
         var after = before.Replace("\"Gear\"", "\"Gear\" -> p4");
 
-        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(before, after).Changes);
 
         Assert.Equal((ChangeKind.Changed, "bookmarks > Safety > Gear", 4), (change.Kind, change.Path, change.Page));
     }
@@ -420,7 +421,8 @@ public class SnapshotDiffTests
     [InlineData("Figure p1", "Figure p1 \"Logo\"", "\"{+Logo+}\"")]
     public void Compare_ShouldShowReadableText_WhenTextHasQuotesOrStartsEmpty(string before, string after, string detail)
     {
-        var change = Assert.Single(SnapshotDiff.Compare($"{SnapshotText.Header}structure\n  {before}\n", $"{SnapshotText.Header}structure\n  {after}\n").Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots($"{SnapshotText.Header}structure\n  {before}\n",
+            $"{SnapshotText.Header}structure\n  {after}\n").Changes);
 
         Assert.Equal((ChangeKind.TextChanged, detail), (change.Kind, change.Detail));
     }
@@ -434,7 +436,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "layout\n" + string.Join("\n", lines) + "\n";
         var after = SnapshotText.Header + "layout\n" + string.Join("\n", lines.Where((_, i) => i != 100 && i != 2900)) + "\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         string[] expected = [lines[100].TrimStart(), lines[2900].TrimStart()];
         Assert.Equal([ChangeKind.Removed, ChangeKind.Removed], changes.Select(change => change.Kind));
@@ -446,7 +448,7 @@ public class SnapshotDiffTests
     {
         var after = Before.Replace("Go with a guide", "Go without a guide").Replace("TH2 p2 scope=Column", "TH2 p2");
 
-        var text = SnapshotDiff.Compare(Before, after).Describe(maxChanges: 1);
+        var text = SnapshotDiff.CompareSnapshots(Before, after).Describe(maxChanges: 1);
 
         var expected = "2 change(s): 1 attribute, 1 text\nby section: structure 2\n1 can affect accessibility, listed first\n"
             + "~ attribute structure > Document > Table > TR[1] > TH2 (p2) [accessibility]\n    scope: Column -> (missing)\n"
@@ -461,7 +463,7 @@ public class SnapshotDiffTests
     public void Compare_ShouldReportOnlyTheContent_WhenItTakesThePlaceOfASectionsPlaceholder(string before, string after,
         ChangeKind kind)
     {
-        var diff = SnapshotDiff.Compare(SnapshotText.Header + $"untagged\n  {before}\n",
+        var diff = SnapshotDiff.CompareSnapshots(SnapshotText.Header + $"untagged\n  {before}\n",
             SnapshotText.Header + $"untagged\n  {after}\n");
 
         var change = Assert.Single(diff.Changes);
@@ -475,7 +477,7 @@ public class SnapshotDiffTests
     {
         var header = "# pdfua-snapshot v1\n# tolerances: positions 1pt\n";
 
-        var diff = SnapshotDiff.Compare(header + before, header + after);
+        var diff = SnapshotDiff.CompareSnapshots(header + before, header + after);
 
         Assert.False(diff.IsEmpty);
     }
@@ -486,7 +488,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "structure\n  Document\n    (none)\n      Figure p1 alt=\"Logo\"\n";
         var after = SnapshotText.Header + "structure\n  Document\n    (none)\n      Figure p1\n";
 
-        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(before, after).Changes);
 
         Assert.Equal((ChangeKind.AttributeChanged, "structure > Document > (none) > Figure"), (change.Kind, change.Path));
     }
@@ -513,7 +515,7 @@ public class SnapshotDiffTests
     {
         var header = $"# pdfua-snapshot v1\n# tolerances: {tolerance}\nlayout\n  ";
 
-        var diff = SnapshotDiff.Compare(header + before + "\n", header + after + "\n");
+        var diff = SnapshotDiff.CompareSnapshots(header + before + "\n", header + after + "\n");
 
         Assert.Equal(changes, diff.Changes.Count);
     }
@@ -526,7 +528,7 @@ public class SnapshotDiffTests
         var after = SnapshotText.Header + "bookmarks\n  \"Safety\" -> p2 view=Fit\n"
             + "annotations\n  p1 Link untagged at=72,200 size=100x20 dest=p2 view=XYZ view-at=72,720 contents=\"Safety\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
         Assert.Equal(["view: (missing) -> Fit", "dest: yes -> p2", "view: (missing) -> XYZ", "view-at: (missing) -> 72,720"],
@@ -540,7 +542,7 @@ public class SnapshotDiffTests
         var after = "# docx-snapshot v1\nstyles\n  French paragraph lang=fr-FR\nbody\n  P \"Walk with care\"\n"
             + "    span \"care\" hidden\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Equal(["AttributeChanged lang: (missing) -> fr-FR", "Added span \"care\" hidden"],
             changes.Select(change => $"{change.Kind} {change.Detail}"));
@@ -552,7 +554,7 @@ public class SnapshotDiffTests
         var before = "# docx-snapshot v1\nbody\n  P style=Note \"Walk with care\"\n";
         var after = "# docx-snapshot v1\nbody\n  P style=Note rtl-paragraph borders=top:single:0.5 shading=FFFF00 \"Walk with care\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.All(changes, change => Assert.Equal("body > P", change.Path));
         Assert.Equal(["AttributeChanged borders: (missing) -> top:single:0.5", "AttributeChanged shading: (missing) -> FFFF00",
@@ -568,7 +570,7 @@ public class SnapshotDiffTests
         var after = "# docx-snapshot v1\nbody\n  Table widths=144 caption=\"Trails\"\n    Row height=20 split=no\n      Cell valign=center\n"
             + "        P \"Trail\"\n    Row height=20\n      Cell\n        P \"Length\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Equal(["caption: (missing) -> \"Trails\"", "height: (missing) -> 20", "split: (missing) -> no",
             "valign: (missing) -> center", "height: (missing) -> 20"], changes.Select(change => change.Detail));
@@ -583,7 +585,7 @@ public class SnapshotDiffTests
         var after = SnapshotText.Header + "structure\n  Table p2-4 summary=\"Trail details\"\n    TR\n      TD p2 \"Lakeshore walk\"\n"
             + "    TR\n      TD p4 \"Meadows path\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Contains(changes, change => change.Kind == ChangeKind.Changed && change.Path == "structure > Table");
         Assert.DoesNotContain(changes, change => change.Kind is ChangeKind.Removed or ChangeKind.Added && change.Path == "structure > Table");
@@ -596,7 +598,7 @@ public class SnapshotDiffTests
             + "  Table p5-6\n    TR\n      TD p5 \"Lakeshore walk north shore trail\"\n";
         var after = SnapshotText.Header + "structure\n  Table p5-7\n    TR\n      TD p5 \"Lakeshore path south bay ford\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Contains(changes, change => change.Kind == ChangeKind.Removed && change.Detail.StartsWith("Table p2-3"));
         Assert.Contains(changes, change => change.Kind == ChangeKind.Changed && change.Detail == "Table p5-6 -> Table p5-7");
@@ -608,7 +610,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "layout\n  p1 text tagged at=300,400 font=Helvetica size=12 \"Hello world\"\n";
         var after = SnapshotText.Header + "layout\n  p1 text tagged at=300,400 font=Helvetica size=12 angle=90 \"Hello world\"\n";
 
-        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(before, after).Changes);
 
         Assert.Equal((ChangeKind.AttributeChanged, "angle: (missing) -> 90"), (change.Kind, change.Detail));
     }
@@ -620,7 +622,7 @@ public class SnapshotDiffTests
         var after = SnapshotText.Header + "structure\n  P p1 span-lang=[fr-FR:\"bonjour\"] \"Say bonjour\"\n"
             + "artifacts\n  p1 type=Pagination subtype=Footer \"Page 1\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
         Assert.Equal(["span-lang: (missing) -> [fr-FR:\"bonjour\"]", "type: (missing) -> Pagination",
@@ -635,7 +637,7 @@ public class SnapshotDiffTests
         var after = SnapshotText.Header + "settings\n  javascript=yes additional-actions=no\nforms\n  form need-appearances=yes\n"
             + "  text \"total\" p1 scripts=calculate:3f9c0a1b2d4e5f60\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Equal(["AttributeChanged javascript: no -> yes", "Added form need-appearances=yes",
             "AttributeChanged scripts: (missing) -> calculate:3f9c0a1b2d4e5f60"], changes.Select(change => $"{change.Kind} {change.Detail}"));
@@ -648,7 +650,7 @@ public class SnapshotDiffTests
         var after = SnapshotText.Header + "forms\n  text \"total\" p1 flags=read-only default=\"0\" align=right "
             + "text-font=Helvetica text-size=auto text-color=gray:0 scripts=calculate:3f9c0a1b2d4e5f60\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
         Assert.Equal(["default: (missing) -> \"0\"", "align: (missing) -> right", "text-font: (missing) -> Helvetica",
@@ -663,7 +665,7 @@ public class SnapshotDiffTests
         var after = SnapshotText.Header + "forms\n  signature \"approval\" p1 signed=yes subfilter=adbe.pkcs7.detached "
             + "covers-file=yes certification=form-filling\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
         Assert.Equal(["signed: (missing) -> yes", "subfilter: (missing) -> adbe.pkcs7.detached", "covers-file: (missing) -> yes",
@@ -677,7 +679,7 @@ public class SnapshotDiffTests
         var after = SnapshotText.Header
             + "layout\n  p1 path untagged at=72,500 size=100x20 fill=gray:0 layers=[\"Draft\"]\n";
 
-        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(before, after).Changes);
 
         Assert.Equal((ChangeKind.AttributeChanged, "layers: (missing) -> [\"Draft\"]"), (change.Kind, change.Detail));
     }
@@ -691,7 +693,7 @@ public class SnapshotDiffTests
             + "  p1 text untagged at=72,400 font=Helvetica size=12 color=gray:0 \"Trail open\"\n"
             + "  p1 text untagged at=140,400 font=Helvetica size=12 color=gray:0 layers=[\"Draft\"] \"until May\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Equal([ChangeKind.TextChanged, ChangeKind.Added], changes.Select(change => change.Kind));
         Assert.Equal("\"Trail open [-until May-]\"", changes[0].Detail);
@@ -703,7 +705,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "untagged\n  p1 \"Trail closed Bring water Ranger on duty\"\n";
         var after = SnapshotText.Header + "untagged\n  p1 \"Trail closed\"\n  p1 \"Bring water\"\n  p1 \"Ranger on duty\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Equal([ChangeKind.Removed, ChangeKind.Added, ChangeKind.Added, ChangeKind.Added],
             changes.Select(change => change.Kind));
@@ -716,7 +718,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "settings\n  version=1.7 javascript=no additional-actions=no\n";
         var after = SnapshotText.Header + "settings\n  version=1.7 javascript=yes additional-actions=no\n";
 
-        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(before, after).Changes);
 
         Assert.Equal((ChangeKind.AttributeChanged, "javascript: no -> yes"), (change.Kind, change.Detail));
     }
@@ -727,7 +729,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "settings\n  version=1.7 open-action=\"GoTo named intro\" javascript=no\n";
         var after = SnapshotText.Header + "settings\n  version=1.7 open-action=\"GoTo p2 Fit\" javascript=no\n";
 
-        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(before, after).Changes);
 
         Assert.Equal((ChangeKind.AttributeChanged, "open-action: \"GoTo named intro\" -> \"GoTo p2 Fit\""),
             (change.Kind, change.Detail));
@@ -740,7 +742,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "artifacts\n  p1 \"page 1Trail Guide\"\n";
         var after = SnapshotText.Header + "artifacts\n  p1 \"Trail Guide page 1\"\n";
 
-        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(before, after).Changes);
 
         Assert.Equal((ChangeKind.TextChanged, PdfSection.Artifacts), (change.Kind, change.PdfSection));
     }
@@ -751,7 +753,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "structure\n  Figure p1 alt=\"Logo\"\n";
         var after = SnapshotText.Header + "structure\n  Figure p1 alt=\"Logo\" images=[76be8b528d0075f7]\n";
 
-        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(before, after).Changes);
 
         Assert.Equal((ChangeKind.AttributeChanged, "images: (missing) -> [76be8b528d0075f7]"), (change.Kind, change.Detail));
     }
@@ -762,7 +764,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "structure\n  P p1 \"Stamp\"\n";
         var after = SnapshotText.Header + "structure\n  P p1 mcids-in-xobject=1 \"Stamp\"\n";
 
-        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(before, after).Changes);
 
         Assert.Equal((ChangeKind.AttributeChanged, "mcids-in-xobject: (missing) -> 1"), (change.Kind, change.Detail));
     }
@@ -773,7 +775,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "bookmarks\n  \"Atlas\" -> p1\n";
         var after = SnapshotText.Header + "bookmarks\n  \"Atlas\" file=\"atlas.pdf\" dest=p1 view=Fit\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.All(changes, change => Assert.Equal("bookmarks > Atlas", change.Path));
         Assert.Equal(["AttributeChanged file: (missing) -> \"atlas.pdf\"", "AttributeChanged dest: (missing) -> p1",
@@ -787,7 +789,7 @@ public class SnapshotDiffTests
         var before = SnapshotText.Header + "structure\n  P p1 \"Go with a guide\"\nuntagged\n  (none)\n";
         var after = SnapshotText.Header + "structure\n  P p1 \"Go without a guide\"\nuntagged\n  p1 \"Stray text\"\n";
 
-        var lines = SnapshotDiff.Compare(before, after).Describe().Split('\n');
+        var lines = SnapshotDiff.CompareSnapshots(before, after).Describe().Split('\n');
 
         Assert.Equal("by section: structure 1, untagged 1", lines[1]);
         Assert.Equal("+ added untagged > p1 (p1) [accessibility]", lines[3]);
@@ -851,7 +853,8 @@ public class SnapshotDiffTests
     public void AffectsAccessibility_ShouldFollowTheFixedRules_WhenGivenAChange(string section, string before, string after,
         bool affects)
     {
-        var changes = SnapshotDiff.Compare($"{SnapshotText.Header}{section}\n  {before}\n", $"{SnapshotText.Header}{section}\n  {after}\n").Changes;
+        var changes = SnapshotDiff.CompareSnapshots($"{SnapshotText.Header}{section}\n  {before}\n",
+            $"{SnapshotText.Header}{section}\n  {after}\n").Changes;
 
         Assert.NotEmpty(changes);
         Assert.Equal(affects, changes.Any(change => change.AffectsAccessibility == true));
@@ -863,7 +866,7 @@ public class SnapshotDiffTests
         var before = "# docx-snapshot v1\nsections\n  s1 letter headers=default\nbody\n  P lang=en-US \"Walk\"\n";
         var after = "# docx-snapshot v1\nsections\n  s1 letter\nbody\n  P lang=fr-FR \"Walk\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Equal(2, changes.Count);
         Assert.All(changes, change => Assert.Null(change.AffectsAccessibility));
@@ -875,7 +878,7 @@ public class SnapshotDiffTests
         var before = "# docx-snapshot v1\nsections\n  s1 letter headers=default\nbody\n  P lang=en-US \"Walk\"\n";
         var after = "# docx-snapshot v1\nsections\n  s1 letter\nbody\n  P lang=fr-FR \"Walk\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Equal(["sections", "body"], changes.Select(change => change.SectionName));
         Assert.Equal([DocxSection.Sections, DocxSection.Body], changes.Select(change => change.DocxSection));
@@ -885,7 +888,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldLeaveTheSectionsEmpty_WhenTheTextsAreNotSnapshots()
     {
-        var change = Assert.Single(SnapshotDiff.Compare("a\nb\n", "a\nc\n").Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots("a\nb\n", "a\nc\n").Changes);
 
         Assert.Null(change.SectionName);
         Assert.Null(change.PdfSection);
@@ -900,7 +903,7 @@ public class SnapshotDiffTests
         var cell = "Cell margins=top:2 borders=top:none:0";
         var after = $"# docx-snapshot v1\nbody\n  Table\n    Row\n      {cell}\n        P \"Name\"\n      {cell}\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         (ChangeKind, string)[] expected =
         [
@@ -920,7 +923,7 @@ public class SnapshotDiffTests
         var before = $"{SnapshotText.Header}layout\n  {image}\n";
         var after = $"{SnapshotText.Header}layout\n  {added}\n  {image.Replace("aaa", "ccc")}\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Equal([ChangeKind.Added, ChangeKind.AttributeChanged], changes.Select(change => change.Kind));
     }
@@ -939,7 +942,7 @@ public class SnapshotDiffTests
         var before = $"{SnapshotText.Header}layout\n  {first}\n  {second}\n";
         var after = $"{SnapshotText.Header}layout\n  {firstEdited}\n  {secondEdited}\n";
 
-        var diff = SnapshotDiff.Compare(before, after);
+        var diff = SnapshotDiff.CompareSnapshots(before, after);
 
         var expected = Enumerable.Repeat(ChangeKind.AttributeChanged, attributeChanges);
         Assert.Equal(expected, diff.Changes.Select(change => change.Kind));
@@ -958,7 +961,7 @@ public class SnapshotDiffTests
         string Layout(params string[] lines) =>
             $"{SnapshotText.Header}layout\n" + string.Concat(lines.Select(line => $"  p1 path tagged {line}\n"));
 
-        var diff = SnapshotDiff.Compare(Layout(first, second), Layout(firstAdded, secondAdded, thirdAdded));
+        var diff = SnapshotDiff.CompareSnapshots(Layout(first, second), Layout(firstAdded, secondAdded, thirdAdded));
 
         Assert.Equal(1, diff.Changes.Count(change => change.Kind == ChangeKind.Added));
         Assert.DoesNotContain(diff.Changes, change => change.Kind is ChangeKind.Removed or ChangeKind.Moved);
@@ -972,7 +975,7 @@ public class SnapshotDiffTests
         var after = $"{SnapshotText.Header}structure\n  H2 p1 \"Trail guide\"\n"
             + "  H2 p1 lang=en title=Map \"Trail map\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         ChangeKind[] expected = [ChangeKind.Added, ChangeKind.AttributeChanged, ChangeKind.AttributeChanged];
         Assert.Equal(expected, changes.Select(change => change.Kind));
@@ -986,7 +989,7 @@ public class SnapshotDiffTests
         var after = $"{SnapshotText.Header}layout\n  p1 path tagged a=1 b=1 c=1 x=1 y=1 z=1\n"
             + "  p1 path tagged a=1 b=1 c=1 d=1 g=1 h=1 e=1\n";
 
-        var diff = SnapshotDiff.Compare(before, after);
+        var diff = SnapshotDiff.CompareSnapshots(before, after);
 
         Assert.Equal(Enumerable.Repeat(ChangeKind.AttributeChanged, 7), diff.Changes.Select(change => change.Kind));
         Assert.DoesNotContain("<td></td><td class=\"added\">", diff.ToHtml());
@@ -998,7 +1001,7 @@ public class SnapshotDiffTests
         var before = $"{SnapshotText.Header}metadata\n  creation-date=<present> producer=<present>\n";
         var after = $"{SnapshotText.Header}metadata\n  pdfuaid-part=1 xmp-title=\"Guide\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Equal([ChangeKind.Removed, ChangeKind.Added], changes.Select(change => change.Kind));
     }
@@ -1009,7 +1012,7 @@ public class SnapshotDiffTests
         var before = "# docx-snapshot v1\nbody\n  Table\n    Row\n      Cell\n        P \"Name\"\n";
         var after = "# docx-snapshot v1\nbody\n  Table\n    Row header height=20\n      Cell\n        P \"Name\"\n";
 
-        var changes = SnapshotDiff.Compare(before, after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
 
         Assert.Equal([ChangeKind.AttributeChanged, ChangeKind.Changed], changes.Select(change => change.Kind));
     }
@@ -1020,13 +1023,14 @@ public class SnapshotDiffTests
         var figure = "    Figure p1 alt=\"Park logo\"\n";
         var after = Before.Replace(figure, "").Replace("    P p3", figure + "    P p3");
 
-        Assert.True(Assert.Single(SnapshotDiff.Compare(Before, after).Changes).AffectsAccessibility);
+        Assert.True(Assert.Single(SnapshotDiff.CompareSnapshots(Before, after).Changes).AffectsAccessibility);
     }
 
     [Fact]
     public void Compare_ShouldReportEachChangedLineByNumber_WhenTheTextIsNotASnapshot()
     {
-        var changes = SnapshotDiff.Compare("{\n  \"a\": 1,\n  \"b\": 2,\n  \"c\": 3\n}\n", "{\n  \"a\": 1,\n  \"c\": 4\n}\n").Changes;
+        var changes = SnapshotDiff.CompareSnapshots("{\n  \"a\": 1,\n  \"b\": 2,\n  \"c\": 3\n}\n",
+            "{\n  \"a\": 1,\n  \"c\": 4\n}\n").Changes;
 
         SnapshotChange[] expected =
         [
@@ -1046,7 +1050,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldShowBothLinesInQuotes_WhenAPlainLineChangesOnlyInSpaces()
     {
-        var change = Assert.Single(SnapshotDiff.Compare("a\n", " a\n").Changes);
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots("a\n", " a\n").Changes);
 
         Assert.Equal((ChangeKind.TextChanged, "- \"a\"\n+ \" a\""), (change.Kind, change.Detail));
     }
@@ -1056,7 +1060,8 @@ public class SnapshotDiffTests
     {
         var older = Before.Replace("# pdfua-snapshot v1", "# pdfua-snapshot v0");
 
-        var changes = SnapshotDiff.Compare(older, Before.Replace("Go with a guide", "Go without a guide")).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(older, Before.Replace("Go with a guide",
+            "Go without a guide")).Changes;
 
         Assert.Equal([null, PdfSection.Structure], changes.Select(change => change.PdfSection));
         Assert.Equal("header", changes[0].Path);
@@ -1065,7 +1070,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldReportTheShiftOnceAndOnlyTheNewPagesContent_WhenAPageIsInserted()
     {
-        var changes = SnapshotDiff.Compare(Pages(10), Pages(10, insertedAfter: 1)).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(Pages(10), Pages(10, insertedAfter: 1)).Changes;
 
         SnapshotChange[] expected =
         [
@@ -1099,7 +1104,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldReportTheShiftOnceAndOnlyTheRemovedPagesContent_WhenAPageIsRemoved()
     {
-        var changes = SnapshotDiff.Compare(Pages(10, insertedAfter: 1), Pages(10)).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(Pages(10, insertedAfter: 1), Pages(10)).Changes;
 
         Assert.Equal("p2 removed; p3-11 -> p2-10", changes[0].Detail);
         Assert.Equal([ChangeKind.Changed, ChangeKind.AttributeChanged, ChangeKind.Removed, ChangeKind.Removed],
@@ -1111,7 +1116,7 @@ public class SnapshotDiffTests
     {
         var after = Pages(10, insertedAfter: 1).Replace("Paragraph", "Chapter").Replace("of the guide", "about gardening");
 
-        var changes = SnapshotDiff.Compare(Pages(10), after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(Pages(10), after).Changes;
 
         Assert.DoesNotContain(changes, change => change.Path == "pages");
     }
@@ -1119,7 +1124,7 @@ public class SnapshotDiffTests
     [Fact]
     public void Compare_ShouldCarryTheShiftPastABlankPage_WhenAPageIsInsertedBeforeIt()
     {
-        var changes = SnapshotDiff.Compare(Pages(10, blank: 5), Pages(10, insertedAfter: 1, blank: 5)).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(Pages(10, blank: 5), Pages(10, insertedAfter: 1, blank: 5)).Changes;
 
         Assert.Equal("p2 inserted; p2-10 -> p3-11", changes[0].Detail);
         Assert.Equal(4, changes.Count);
@@ -1130,7 +1135,7 @@ public class SnapshotDiffTests
     {
         var after = Pages(10, insertedAfter: 1).Replace("Paragraph 5 of the guide", "Entirely rewritten text");
 
-        var changes = SnapshotDiff.Compare(Pages(10), after).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(Pages(10), after).Changes;
 
         Assert.DoesNotContain(changes, change => change.Path == "pages");
     }
@@ -1141,7 +1146,7 @@ public class SnapshotDiffTests
         var note = "    P p8 \"Paragraph 7 of the guide\"\n";
         var before = Pages(10, insertedAfter: 1).Replace(note, note + "    P p8 \"A note\"\n");
 
-        var changes = SnapshotDiff.Compare(before, Pages(10)).Changes;
+        var changes = SnapshotDiff.CompareSnapshots(before, Pages(10)).Changes;
 
         var removed = Assert.Single(changes, change => change.Detail == "P p8 \"A note\"");
         Assert.Equal(8, removed.Page);
@@ -1170,7 +1175,7 @@ public class SnapshotDiffTests
     [Fact]
     public void ToHtml_ShouldNotMarkShiftedLinesAsChanged_WhenAPageIsInserted()
     {
-        var html = SnapshotDiff.Compare(Pages(10), Pages(10, insertedAfter: 1)).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(Pages(10), Pages(10, insertedAfter: 1)).ToHtml();
 
         // Only the document line's page count is an edited row; everything else is unchanged or the new page's lines.
         Assert.Single(Regex.Matches(html, "<td class=\"removed\">"));
@@ -1193,7 +1198,7 @@ public class SnapshotDiffTests
     [Fact]
     public void ToJson_ShouldListEachChangeWithItsSectionAndPage_WhenGivenASnapshot()
     {
-        var diff = SnapshotDiff.Compare(Before, Before.Replace("H1 p1 \"Trail", "P p1 \"Trail"));
+        var diff = SnapshotDiff.CompareSnapshots(Before, Before.Replace("H1 p1 \"Trail", "P p1 \"Trail"));
 
         var json = diff.ToJson();
 
@@ -1218,7 +1223,7 @@ public class SnapshotDiffTests
     [Fact]
     public void ToJson_ShouldWriteANullSectionPageAndFlag_WhenTheTextIsNotASnapshot()
     {
-        var diff = SnapshotDiff.Compare("a\n", "b\n");
+        var diff = SnapshotDiff.CompareSnapshots("a\n", "b\n");
 
         var json = diff.ToJson();
 
@@ -1230,7 +1235,7 @@ public class SnapshotDiffTests
     [Fact]
     public void ToJson_ShouldNameTheSectionWhitespace_WhenOnlyBlankLinesDiffer()
     {
-        var diff = SnapshotDiff.Compare(Before, Before + "\n");
+        var diff = SnapshotDiff.CompareSnapshots(Before, Before + "\n");
 
         var json = diff.ToJson();
 

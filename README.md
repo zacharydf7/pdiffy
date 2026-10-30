@@ -11,7 +11,7 @@ PDiffy reads a PDF and writes a plain-text snapshot of everything a reader, a sc
 
 The same reading of the document supports three kinds of test:
 
-- **Snapshot tests.** `PdfSnapshot.VerifyAsync` compares a document with its approved snapshot and explains any
+- **Snapshot tests.** `Snapshot.VerifyPdfAsync` compares a document with its approved snapshot and explains any
   difference element by element, on the page where it happened.
 - **Comparisons.** `CompareTo` and `pdiffy before.pdf after.pdf` compare two documents directly, with no snapshot files.
 - **Checks.** Everything in a snapshot is also a property to assert on, such as each figure's alt text, each form
@@ -50,7 +50,7 @@ Enums and constant classes list every option, so no PDF knowledge is needed to f
 
 ### Approve a snapshot and compare against it
 
-The core workflow is one call. `PdfSnapshot.VerifyAsync` prints the snapshot and compares it with the approved one, a `.verified.pdfua.txt` file you check in. The first run has nothing to compare with, so it fails and writes what it got to a `.received.pdfua.txt` file for you to review.
+The core workflow is one call. `Snapshot.VerifyPdfAsync` prints the snapshot and compares it with the approved one, a `.verified.pdfua.txt` file you check in. The first run has nothing to compare with, so it fails and writes what it got to a `.received.pdfua.txt` file for you to review.
 
 ```csharp
 [Fact]
@@ -61,11 +61,11 @@ public async Task TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
 
     // Compare it with TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.verified.pdfua.txt,
     // named after this test file and method. A difference throws SnapshotException saying what changed.
-    await PdfSnapshot.VerifyAsync(pdf);
+    await Snapshot.VerifyPdfAsync(pdf);
 }
 ```
 
-Every `VerifyAsync` and `VerifyJsonAsync` has a synchronous `Verify` and `VerifyJson` with the same parameters, for a test that isn't async. `VerifyAsync` does its work before it returns, so a failure throws at the call even if a `void` test forgets the `await`.
+`VerifyPdfAsync`, `VerifyDocxAsync`, `VerifyTextAsync` and `VerifyJsonAsync` each have a synchronous `VerifyPdf`, `VerifyDocx`, `VerifyText` and `VerifyJson` with the same parameters, for a test that isn't async. Each async one does its work before it returns, so a failure throws at the call even if a `void` test forgets the `await`.
 
 A failure explains itself. Elements are matched one to one, so an edited paragraph is one change, not a removed line and an added one, and an element that moved in reading order, or to another parent, is reported as moved, along with anything that changed on it. A structure element whose type changed but whose text didn't, such as a heading going from H2 to H3 or to P, is one change (`type: H2 -> H3`). A paragraph replaced by one with entirely different words is reported as removed and added, but a one-word value replaced on an otherwise unchanged line, such as a number in a table cell, is reported as changed:
 
@@ -105,22 +105,22 @@ Snapshot.Directory = Snapshot.ProjectFolder("Snapshots");
 
 If your build maps source paths (deterministic builds, common on CI), the path the compiler records for a test file, such as `/_/tests/...`, isn't on disk. PDiffy then finds the test file's folder in the test project it recorded, so snapshots next to test files still work. A new snapshot on a build server (`CI` or `TF_BUILD` set) asks whether the verified file was committed, since it was probably expected.
 
-A suite whose tests share options, such as a profile or scrubbers, can set them once beside the folder, with `PdfSnapshot.DefaultOptions`, `DocxSnapshot.DefaultOptions` or `Snapshot.DefaultOptions` for text and JSON. Each call's own `configure` runs after them and adds to them. A PDF or Word call can leave out more but can't bring back what the defaults leave out (its `Strict` profile doesn't undo a default one), so keep the defaults to what every test agrees on and set the rest in each test. A text or JSON call's `KeepDates()` or `KeepGuids()` does undo a default scrub. A PDF or Word snapshot's first lines list what's ignored, but not what's scrubbed.
+A suite whose tests share options, such as a profile or scrubbers, can set them once beside the folder, with `Snapshot.DefaultPdfOptions`, `Snapshot.DefaultDocxOptions` or `Snapshot.DefaultTextOptions` for text and JSON. Each call's own `configure` runs after them and adds to them. A PDF or Word call can leave out more but can't bring back what the defaults leave out (its `Strict` profile doesn't undo a default one), so keep the defaults to what every test agrees on and set the rest in each test. A text or JSON call's `KeepDates()` or `KeepGuids()` does undo a default scrub. A PDF or Word snapshot's first lines list what's ignored, but not what's scrubbed.
 
 ```csharp
-PdfSnapshot.DefaultOptions = options => options.Use(PdfProfile.Accessibility).ScrubDates();
+Snapshot.DefaultPdfOptions = options => options.Use(PdfProfile.Accessibility).ScrubDates();
 ```
 
-`VerifyAsync` also takes the document as a `byte[]`, or one you've already loaded with `PdfUaDocument.Load`, so a test that asserts on the document and snapshots it reads it once. A stream is read from its start wherever the generator left it, and its position is put back afterwards. A stream that isn't already a `MemoryStream`, such as a file or a network response, is read into memory first, so a stream that fails part way throws its own exception rather than looking like a damaged document. An empty stream, a Word document passed as a PDF, or a web page (a generator's error page, say) fails with an `InvalidDataException` that says so.
+`VerifyPdfAsync` also takes the document as a `byte[]`, or one you've already loaded with `PdfUaDocument.Load`, so a test that asserts on the document and snapshots it reads it once. A stream is read from its start wherever the generator left it, and its position is put back afterwards. A stream that isn't already a `MemoryStream`, such as a file or a network response, is read into memory first, so a stream that fails part way throws its own exception rather than looking like a damaged document. An empty stream, a Word document passed as a PDF, or a web page (a generator's error page, say) fails with an `InvalidDataException` that says so.
 
-A test whose snapshots belong somewhere else passes the folder: `await PdfSnapshot.VerifyAsync(pdf, directory: otherFolder)`.
+A test whose snapshots belong somewhere else passes the folder: `await Snapshot.VerifyPdfAsync(pdf, directory: otherFolder)`.
 
-When one test makes several snapshots, as a theory does, give each a variant, which is added to the default name (`TrailMapTests.TrailMap_ShouldMatch.ridgeline`): `await PdfSnapshot.VerifyAsync(pdf, variant: trail)`. Or pass a whole name: `await PdfSnapshot.VerifyAsync(pdf, $"TrailMap.{trail}")`. Two calls in one run that give the same snapshot different content fail, saying the name is taken, instead of overwriting each other's file. A helper that verifies for many tests takes the caller's details and passes them on, so each test keeps its own name:
+When one test makes several snapshots, as a theory does, give each a variant, which is added to the default name (`TrailMapTests.TrailMap_ShouldMatch.ridgeline`): `await Snapshot.VerifyPdfAsync(pdf, variant: trail)`. Or pass a whole name: `await Snapshot.VerifyPdfAsync(pdf, $"TrailMap.{trail}")`. Two calls in one run that give the same snapshot different content fail, saying the name is taken, instead of overwriting each other's file. A helper that verifies for many tests takes the caller's details and passes them on, so each test keeps its own name:
 
 ```csharp
 public static Task VerifyTrailMapAsync(string trail, [CallerFilePath] string testFile = "",
     [CallerMemberName] string testName = "") =>
-    PdfSnapshot.VerifyAsync(TrailMaps.Create(trail), testFile: testFile, testName: testName, variant: trail);
+    Snapshot.VerifyPdfAsync(TrailMaps.Create(trail), testFile: testFile, testName: testName, variant: trail);
 ```
 
 Snapshots use LF line endings. If Git converts line endings on checkout, add `*.verified.txt text eol=lf` and `*.verified.json text eol=lf` (plus a line for any custom extension, such as `*.verified.csv`) to `.gitattributes`; PDiffy also compares a CRLF verified file as LF. Add `*.received.*` and `*.diff.html` to `.gitignore` and to your build server's artifacts, so a failed CI run keeps what it received and the report.
@@ -129,7 +129,7 @@ The report is one HTML file with nothing to download, so it opens straight from 
 
 ### Snapshot text and JSON
 
-`Snapshot.VerifyAsync` and `Snapshot.VerifyJsonAsync` check other output the same way, with the same received and verified files, accept mode and report.
+`Snapshot.VerifyTextAsync` and `Snapshot.VerifyJsonAsync` check other output the same way, with the same received and verified files, accept mode and report.
 
 ```csharp
 [Fact]
@@ -138,7 +138,7 @@ public async Task Export_ShouldMatchApprovedSnapshot_WhenGenerated()
     string csv = await TrailExporter.CreateCsvAsync();
 
     // Compared exactly, spaces included; only CRLF line endings are read as LF. Saved as {name}.verified.txt.
-    await Snapshot.VerifyAsync(csv);
+    await Snapshot.VerifyTextAsync(csv);
 }
 
 [Fact]
@@ -166,7 +166,7 @@ Text options scrub the whole text: `o => o.ScrubText(new Regex(@"Permit \d+"), "
 
 ### Snapshot Word documents
 
-`DocxSnapshot.VerifyAsync` does the same for DOCX files, with snapshots in `.verified.docx.txt` files. It reads the file directly, with no Word or Open XML SDK needed.
+`Snapshot.VerifyDocxAsync` does the same for DOCX files, with snapshots in `.verified.docx.txt` files. It reads the file directly, with no Word or Open XML SDK needed.
 
 ```csharp
 [Fact]
@@ -174,7 +174,7 @@ public async Task Notes_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
     using Stream docx = await NotesGenerator.CreateAsync();
 
-    await DocxSnapshot.VerifyAsync(docx);
+    await Snapshot.VerifyDocxAsync(docx);
 }
 ```
 
@@ -234,7 +234,7 @@ Kinds PDiffy decides are enums: `DocxRevisionKind`, `DocxFormKind` and `DocxNote
 Most tests guard one thing: the content, its accessibility or how the page looks. A profile leaves out everything else in one call, and further `Ignore` calls leave out more:
 
 ```csharp
-await PdfSnapshot.VerifyAsync(pdf, configure: options => options.Use(PdfProfile.Accessibility));
+await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Use(PdfProfile.Accessibility));
 ```
 
 | PdfProfile | For tests that guard | Leaves out |
@@ -265,7 +265,7 @@ public async Task TrailMapTemplate_ShouldKeepItsTagStructure_WhenStylingChanges(
 
     // This test guards the tag tree and the text, so leave out the metadata, the document settings
     // and the layout (positions, fonts and colors), which the design team changes freely.
-    await PdfSnapshot.VerifyAsync(pdf, configure: options => options
+    await Snapshot.VerifyPdfAsync(pdf, configure: options => options
         .Ignore(PdfSection.Metadata, PdfSection.Settings, PdfSection.Layout));
 }
 ```
@@ -294,7 +294,7 @@ public async Task SeasonalGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
     using Stream pdf = await ReportGenerator.CreateSeasonalGuideAsync(month: 6);
 
-    await PdfSnapshot.VerifyAsync(pdf, configure: options => options
+    await Snapshot.VerifyPdfAsync(pdf, configure: options => options
         // The title includes the month, so it changes every time.
         .Ignore(PdfDetail.Title)
         // Text reflows when the guide has more rows, so where things land doesn't matter here.
@@ -310,7 +310,7 @@ With `PdfDetail.Positions` ignored, a layout line such as `p1 text tagged at=72,
 Positions are rounded to whole points, and font sizes and line widths to 0.1 pt. A value close to a rounding boundary can flip after a font or library update: text at 72.49 pt prints `at=72,...`, and moved by 0.02 pt it prints `at=73,...`. Ignoring `PdfDetail.Positions` would also hide a heading that moved 40 pt, so tolerate the noise instead:
 
 ```csharp
-await PdfSnapshot.VerifyAsync(pdf, configure: options => options
+await Snapshot.VerifyPdfAsync(pdf, configure: options => options
     .Tolerate(PdfTolerance.Positions, points: 1)
     .Tolerate(PdfTolerance.FontSizes, points: 0.5));
 ```
@@ -327,7 +327,7 @@ public async Task TrailPass_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
     using Stream pdf = await ReportGenerator.CreateTrailPassAsync();
 
-    await PdfSnapshot.VerifyAsync(pdf, configure: options => options
+    await Snapshot.VerifyPdfAsync(pdf, configure: options => options
         // "Printed 10/27/2026" becomes "Printed Date_1". The same text always gets the same number,
         // so the snapshot still shows that the print date and the issue date match.
         .ScrubDates()
@@ -351,7 +351,7 @@ public async Task AnnualReport_ShouldKeepTheSummaryTable_WhenGenerated()
     using Stream pdf = await ReportGenerator.CreateAnnualReportAsync();
 
     // The summary table is on pages 3 and 4; the other 120 pages have their own tests.
-    await PdfSnapshot.VerifyAsync(pdf, configure: options => options.OnlyPages(3, 4));
+    await Snapshot.VerifyPdfAsync(pdf, configure: options => options.OnlyPages(3, 4));
 }
 ```
 
@@ -373,11 +373,11 @@ Assert.DoesNotContain(diff.Changes, change => change.Kind == ChangeKind.Moved);
 // Or allow any change except those that can affect what a screen reader gets.
 Assert.DoesNotContain(diff.Changes, change => change.AffectsAccessibility == true);
 
-// Or print the summary a failing VerifyAsync shows.
+// Or print the summary a failing VerifyPdfAsync shows.
 Console.WriteLine(diff.Describe());
 ```
 
-`SnapshotDiff.Compare(before, after)` does the same for two snapshot texts, such as two `.verified.pdfua.txt` files.
+`SnapshotDiff.Compare(before, after)` does the same with the earlier document first, for PDFs or Word documents. `SnapshotDiff.CompareSnapshots(before, after)` compares two snapshot texts, such as the contents of two `.verified.pdfua.txt` files, and `SnapshotDiff.CompareFiles(beforePath, afterPath)` compares two files the way `pdiffy before after` does.
 
 For scripts and tools outside .NET, `diff.ToJson()` (or `pdiffy before.pdf after.pdf --json`) gives the changes as JSON:
 

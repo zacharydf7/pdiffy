@@ -6,67 +6,68 @@ namespace PDiffy.Tests.Unit.Docx;
 public sealed class DocxSnapshotTests : SnapshotFolderTests
 {
     [Fact]
-    public async Task VerifyAsync_ShouldWriteTheReceivedSnapshotAndFail_WhenThereIsNoVerifiedFile()
+    public async Task VerifyDocxAsync_ShouldWriteTheReceivedSnapshotAndFail_WhenThereIsNoVerifiedFile()
     {
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => DocxSnapshot.VerifyAsync(Docx("Hello"), "Guide"));
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyDocxAsync(Docx("Hello"), "Guide"));
 
         Assert.StartsWith("New DOCX snapshot.", error.Message);
         Assert.Equal(DocxDocument.Load(Docx("Hello")).ToSnapshot(), File.ReadAllText(Path.Combine(Folder, "Guide.received.docx.txt")));
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldFailWithTheChangedWords_WhenTheDocumentChanged()
+    public async Task VerifyDocxAsync_ShouldFailWithTheChangedWords_WhenTheDocumentChanged()
     {
         Directory.CreateDirectory(Folder);
         File.WriteAllText(Path.Combine(Folder, "Guide.verified.docx.txt"), DocxDocument.Load(Docx("Go with a guide")).ToSnapshot());
 
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => DocxSnapshot.VerifyAsync(Docx("Go without a guide"), "Guide"));
+        var error = await Assert.ThrowsAsync<SnapshotException>(
+            () => Snapshot.VerifyDocxAsync(Docx("Go without a guide"), "Guide"));
 
         Assert.StartsWith("The DOCX's snapshot differs from the verified one.", error.Message);
         Assert.Contains("\"Go [-with-] {+without+} a guide\"", error.Message);
     }
 
     [Fact]
-    public void Verify_ShouldThrowRightAway_WhenThereIsNoVerifiedFile()
+    public void VerifyDocx_ShouldThrowRightAway_WhenThereIsNoVerifiedFile()
     {
-        var error = Assert.Throws<SnapshotException>(() => DocxSnapshot.Verify(Docx("Hello"), "Guide"));
+        var error = Assert.Throws<SnapshotException>(() => Snapshot.VerifyDocx(Docx("Hello"), "Guide"));
 
         Assert.StartsWith("New DOCX snapshot.", error.Message);
     }
 
     [Fact]
-    public void Verify_ShouldPass_WhenGivenTheStreamBytesOrLoadedDocumentOfAMatchingDocx()
+    public void VerifyDocx_ShouldPass_WhenGivenTheStreamBytesOrLoadedDocumentOfAMatchingDocx()
     {
         Directory.CreateDirectory(Folder);
         var verified = DocxDocument.Load(Docx("Hello")).ToSnapshot();
         File.WriteAllText(Path.Combine(Folder, "Guide.verified.docx.txt"), verified);
 
-        DocxSnapshot.Verify(Docx("Hello"), "Guide");
-        DocxSnapshot.Verify(Docx("Hello").ToArray(), "Guide");
-        DocxSnapshot.Verify(DocxDocument.Load(Docx("Hello")), "Guide");
+        Snapshot.VerifyDocx(Docx("Hello"), "Guide");
+        Snapshot.VerifyDocx(Docx("Hello").ToArray(), "Guide");
+        Snapshot.VerifyDocx(DocxDocument.Load(Docx("Hello")), "Guide");
 
         Assert.False(File.Exists(Path.Combine(Folder, "Guide.received.docx.txt")));
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldPass_WhenGivenTheBytesOrTheLoadedDocumentOfAMatchingDocx()
+    public async Task VerifyDocxAsync_ShouldPass_WhenGivenTheBytesOrTheLoadedDocumentOfAMatchingDocx()
     {
         Directory.CreateDirectory(Folder);
         File.WriteAllText(Path.Combine(Folder, "Guide.verified.docx.txt"), DocxDocument.Load(Docx("Hello")).ToSnapshot());
 
-        await DocxSnapshot.VerifyAsync(Docx("Hello").ToArray(), "Guide");
-        await DocxSnapshot.VerifyAsync(DocxDocument.Load(Docx("Hello")), "Guide");
+        await Snapshot.VerifyDocxAsync(Docx("Hello").ToArray(), "Guide");
+        await Snapshot.VerifyDocxAsync(DocxDocument.Load(Docx("Hello")), "Guide");
 
         Assert.False(File.Exists(Path.Combine(Folder, "Guide.received.docx.txt")));
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldApplyTheDefaultsAndTheCallsOwnOptions_WhenDefaultOptionsAreSet()
+    public async Task VerifyDocxAsync_ShouldApplyTheDefaultsAndTheCallsOwnOptions_WhenDefaultOptionsAreSet()
     {
-        DocxSnapshot.DefaultOptions = options => options.Use(DocxProfile.Content);
+        Snapshot.DefaultDocxOptions = options => options.Use(DocxProfile.Content);
 
         await Assert.ThrowsAsync<SnapshotException>(
-            () => DocxSnapshot.VerifyAsync(Docx("Hello"), "Guide", o => o.Ignore(DocxSection.Headers)));
+            () => Snapshot.VerifyDocxAsync(Docx("Hello"), "Guide", o => o.Ignore(DocxSection.Headers)));
 
         var expected = DocxDocument.Load(Docx("Hello"))
             .ToSnapshot(o => o.Use(DocxProfile.Content).Ignore(DocxSection.Headers));
@@ -74,13 +75,13 @@ public sealed class DocxSnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldPass_WhenTheDocumentMatchesItsAcceptedSnapshot()
+    public async Task VerifyDocxAsync_ShouldPass_WhenTheDocumentMatchesItsAcceptedSnapshot()
     {
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, "1");
-        await DocxSnapshot.VerifyAsync(Docx("Hello"), "Guide", directory: Path.Combine(Folder, "other"));
+        await Snapshot.VerifyDocxAsync(Docx("Hello"), "Guide", directory: Path.Combine(Folder, "other"));
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, null);
 
-        await DocxSnapshot.VerifyAsync(Docx("Hello"), "Guide", directory: Path.Combine(Folder, "other"));
+        await Snapshot.VerifyDocxAsync(Docx("Hello"), "Guide", directory: Path.Combine(Folder, "other"));
 
         Assert.True(File.Exists(Path.Combine(Folder, "other", "Guide.verified.docx.txt")));
     }

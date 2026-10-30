@@ -58,6 +58,15 @@ library does.
   cell widths `DocxWidth` and row heights `DocxRowHeight`, and a table bookmark's `Columns` is now `FirstColumn` and
   `LastColumn`. Snapshots print them as before, except a percentage width written in an unusual way: `50.0%` now
   prints as `50%`, and one that isn't a number is left out.
+- Every snapshot test starts from `Snapshot`: `VerifyPdfAsync`, `VerifyDocxAsync`, `VerifyTextAsync` and
+  `VerifyJsonAsync`, their synchronous versions (`VerifyPdf` and so on), and `DefaultPdfOptions`,
+  `DefaultDocxOptions` and `DefaultTextOptions`, next to the settings that apply to every kind, such as `Directory`.
+  `PdfSnapshot`, `DocxSnapshot`, `Snapshot.VerifyAsync`, `Snapshot.Verify` and `Snapshot.DefaultOptions` still work
+  in this release, marked obsolete ([#95](https://github.com/zacharydf7/pdiffy/issues/95)).
+- `SnapshotDiff.Compare(string, string)` is now `CompareSnapshots`, so two file paths passed by mistake no longer
+  compile. `SnapshotDiff.Compare(before, after)` compares two PDFs or two Word documents, with the earlier one
+  first, and `SnapshotDiff.CompareFiles(beforePath, afterPath)` compares two files the way `pdiffy before after`
+  does. `CompareTo` names its parameter `after`.
 
 ## 0.4.0 (2026-10-30)
 

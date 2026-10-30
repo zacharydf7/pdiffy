@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
@@ -6,11 +7,13 @@ using System.Text.Json;
 namespace PDiffy;
 
 /// <summary>
-/// Snapshot tests for text and JSON, with the same files and workflow as <see cref="PdfSnapshot"/>: the approved text
-/// lives in <c>{name}.verified.{extension}</c>, and a mismatch writes <c>{name}.received.{extension}</c> and an HTML
-/// report, then throws <see cref="SnapshotException"/>.
+/// Snapshot tests for PDFs, Word documents, text and JSON: <c>VerifyPdfAsync</c>, <c>VerifyDocxAsync</c>,
+/// <c>VerifyTextAsync</c> and <c>VerifyJsonAsync</c>. The approved snapshot lives in
+/// <c>{name}.verified.{extension}</c>, and a mismatch writes <c>{name}.received.{extension}</c> and an HTML report,
+/// then throws <see cref="SnapshotException"/>, so it works with any test framework. The settings here apply to every
+/// kind.
 /// </summary>
-public static class Snapshot
+public static partial class Snapshot
 {
     /// <summary>Set PDIFFY_ACCEPT=1 to accept every received snapshot as the new verified one. Ignored on CI.</summary>
     public const string AcceptVariable = "PDIFFY_ACCEPT";
@@ -60,7 +63,7 @@ public static class Snapshot
     /// timestamps runs first, so these can keep them with <see cref="TextSnapshotOptions.KeepGuids"/> or <see
     /// cref="TextSnapshotOptions.KeepDates"/>.
     /// </summary>
-    public static Action<TextSnapshotOptions>? DefaultOptions { get; set; }
+    public static Action<TextSnapshotOptions>? DefaultTextOptions { get; set; }
 
     /// <summary>
     /// Compares text with the verified file exactly: whitespace counts, and only CRLF line endings are read as LF.
@@ -78,26 +81,26 @@ public static class Snapshot
     /// <param name="variant">Added to the name, default or not, as <c>{name}.{variant}</c>, so each row of a theory gets
     /// its own snapshot and keeps the test's name: <c>variant: trail</c>.</param>
     // The work is done before returning, so a failure throws at the call even when the caller forgets await.
-    public static Task VerifyAsync(string text, string? name = null, Action<TextSnapshotOptions>? configure = null,
+    public static Task VerifyTextAsync(string text, string? name = null, Action<TextSnapshotOptions>? configure = null,
         string extension = "txt", string? directory = null, [CallerFilePath] string testFile = "",
         [CallerMemberName] string testName = "", string? variant = null)
     {
-        Verify(text, name, configure, extension, directory, testFile, testName, variant);
+        VerifyText(text, name, configure, extension, directory, testFile, testName, variant);
         return Task.CompletedTask;
     }
 
     /// <summary>
-    /// The synchronous version of <c>VerifyAsync</c>, for a test that isn't async: on a mismatch it writes the received
-    /// file and the report, and throws.
+    /// The synchronous version of <c>VerifyTextAsync</c>, for a test that isn't async: on a mismatch it writes the
+    /// received file and the report, and throws.
     /// </summary>
-    /// <inheritdoc cref="VerifyAsync(string, string?, Action{TextSnapshotOptions}?, string, string?, string, string, string?)"
+    /// <inheritdoc cref="VerifyTextAsync(string, string?, Action{TextSnapshotOptions}?, string, string?, string, string, string?)"
     ///     path="/param"/>
-    public static void Verify(string text, string? name = null, Action<TextSnapshotOptions>? configure = null,
+    public static void VerifyText(string text, string? name = null, Action<TextSnapshotOptions>? configure = null,
         string extension = "txt", string? directory = null, [CallerFilePath] string testFile = "",
         [CallerMemberName] string testName = "", string? variant = null)
     {
         var options = new TextSnapshotOptions();
-        DefaultOptions?.Invoke(options);
+        DefaultTextOptions?.Invoke(options);
         configure?.Invoke(options);
         var files = SnapshotWorkflow.Files(name, variant, extension, directory, testFile, testName);
         SnapshotWorkflow.Verify(Scrub(text, options), files, "text");
@@ -140,11 +143,36 @@ public static class Snapshot
         string? variant = null)
     {
         var options = new TextSnapshotOptions().ScrubJsonValues();
-        DefaultOptions?.Invoke(options);
+        DefaultTextOptions?.Invoke(options);
         configure?.Invoke(options);
         var files = SnapshotWorkflow.Files(name, variant, "json", directory, testFile, testName);
         SnapshotWorkflow.Verify(Scrub(Indent(json, files.Name), options), files, "JSON");
     }
+
+    /// <inheritdoc cref="DefaultTextOptions"/>
+    [Obsolete("Use Snapshot.DefaultTextOptions.")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static Action<TextSnapshotOptions>? DefaultOptions
+    {
+        get => DefaultTextOptions;
+        set => DefaultTextOptions = value;
+    }
+
+    /// <inheritdoc cref="VerifyTextAsync(string, string?, Action{TextSnapshotOptions}?, string, string?, string, string, string?)"/>
+    [Obsolete("Use Snapshot.VerifyTextAsync.")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static Task VerifyAsync(string text, string? name = null, Action<TextSnapshotOptions>? configure = null,
+        string extension = "txt", string? directory = null, [CallerFilePath] string testFile = "",
+        [CallerMemberName] string testName = "", string? variant = null) =>
+        VerifyTextAsync(text, name, configure, extension, directory, testFile, testName, variant);
+
+    /// <inheritdoc cref="VerifyText(string, string?, Action{TextSnapshotOptions}?, string, string?, string, string, string?)"/>
+    [Obsolete("Use Snapshot.VerifyText.")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static void Verify(string text, string? name = null, Action<TextSnapshotOptions>? configure = null,
+        string extension = "txt", string? directory = null, [CallerFilePath] string testFile = "",
+        [CallerMemberName] string testName = "", string? variant = null) =>
+        VerifyText(text, name, configure, extension, directory, testFile, testName, variant);
 
     private static string Scrub(string text, TextSnapshotOptions options) =>
         new Scrubbing(options.Scrubbers).Scrub(text.Replace("\r\n", "\n"));

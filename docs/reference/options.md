@@ -135,9 +135,9 @@ less.
 
 | Property | Applies to | Combines with a call's `configure` |
 |---|---|---|
-| [`PdfSnapshot.DefaultOptions`](xref:PDiffy.PdfSnapshot.DefaultOptions) | `PdfSnapshot.VerifyAsync` and `Verify` | Runs first; the call adds to it and can't bring back what it leaves out |
-| [`DocxSnapshot.DefaultOptions`](xref:PDiffy.DocxSnapshot.DefaultOptions) | `DocxSnapshot.VerifyAsync` and `Verify` | Runs first; the call adds to it and can't bring back what it leaves out |
-| [`Snapshot.DefaultOptions`](xref:PDiffy.Snapshot.DefaultOptions) | `Snapshot.VerifyAsync`, `VerifyJsonAsync`, `Verify` and `VerifyJson` | Runs first (after JSON's own scrubbing); a call's `KeepDates()` or `KeepGuids()` undoes a default scrub |
+| [`Snapshot.DefaultPdfOptions`](xref:PDiffy.Snapshot.DefaultPdfOptions) | `Snapshot.VerifyPdfAsync` and `VerifyPdf` | Runs first; the call adds to it and can't bring back what it leaves out |
+| [`Snapshot.DefaultDocxOptions`](xref:PDiffy.Snapshot.DefaultDocxOptions) | `Snapshot.VerifyDocxAsync` and `VerifyDocx` | Runs first; the call adds to it and can't bring back what it leaves out |
+| [`Snapshot.DefaultTextOptions`](xref:PDiffy.Snapshot.DefaultTextOptions) | `Snapshot.VerifyTextAsync`, `VerifyJsonAsync`, `VerifyText` and `VerifyJson` | Runs first (after JSON's own scrubbing); a call's `KeepDates()` or `KeepGuids()` undoes a default scrub |
 
 Profiles and ignores add up: a default `Use(PdfProfile.Accessibility)` and a call's `Ignore(PdfSection.Fonts)` leave
 out both, and a call's `Use(PdfProfile.Strict)` leaves out nothing more, so it doesn't undo the default.

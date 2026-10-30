@@ -1,9 +1,9 @@
 # Text and JSON
 
-[`Snapshot.VerifyAsync`](xref:PDiffy.Snapshot.VerifyAsync*) and
+[`Snapshot.VerifyTextAsync`](xref:PDiffy.Snapshot.VerifyTextAsync*) and
 [`Snapshot.VerifyJsonAsync`](xref:PDiffy.Snapshot.VerifyJsonAsync*) check other output the same way as PDFs, with the
 same received and verified files, accept mode and report. A test project can keep every kind of snapshot in one place.
-`Snapshot.Verify` and `Snapshot.VerifyJson` are the synchronous versions, for a test that isn't async.
+`Snapshot.VerifyText` and `Snapshot.VerifyJson` are the synchronous versions, for a test that isn't async.
 
 ## Text
 
@@ -13,7 +13,7 @@ public async Task Export_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
     string csv = await TrailExporter.CreateCsvAsync();
 
-    await Snapshot.VerifyAsync(csv);
+    await Snapshot.VerifyTextAsync(csv);
 }
 ```
 
@@ -56,7 +56,7 @@ Saved as `{name}.verified.json`.
 | [`KeepGuids()`](xref:PDiffy.TextSnapshotOptions.KeepGuids) | Undoes an earlier `ScrubGuids()` | Keeps GUID strings as they are |
 
 ```csharp
-await Snapshot.VerifyAsync(csv, configure: options => options
+await Snapshot.VerifyTextAsync(csv, configure: options => options
     .ScrubText(new Regex(@"Permit \d+"), "Permit N")
     .ScrubDates());
 

@@ -38,8 +38,8 @@ public class SnapshotEditTests
                 if (!IsContent(lines, i) || apply(lines, i) is not { } edited) continue;
 
                 var after = string.Join('\n', edited);
-                var changes = SnapshotDiff.Compare(snapshot, after).Changes;
-                var reversed = SnapshotDiff.Compare(after, snapshot).Changes;
+                var changes = SnapshotDiff.CompareSnapshots(snapshot, after).Changes;
+                var reversed = SnapshotDiff.CompareSnapshots(after, snapshot).Changes;
                 var problem = Problem(changes, expected) ?? Problem(reversed, [.. expected.Select(Mirror)], "undone, ");
                 if (problem is not null) failures.Add($"{name} line {i + 1} `{lines[i].Trim()}`: {problem}");
             }

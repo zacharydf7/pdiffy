@@ -131,10 +131,51 @@ public sealed class SnapshotDiff
     public bool IsEmpty => Changes.Count == 0;
 
     /// <summary>
-    /// Compares two snapshot texts, such as a verified file and a received one. PDF snapshots are matched element by
-    /// element; any other text, such as JSON, line by line.
+    /// The differences between two PDFs' snapshots, element by element: what was added, removed, moved or changed, and
+    /// where, such as before and after a library upgrade.
     /// </summary>
-    public static SnapshotDiff Compare(string before, string after)
+    /// <param name="before">The earlier PDF, whose content counts as removed when it's missing from the other.</param>
+    /// <param name="after">The later PDF, whose new content counts as added.</param>
+    /// <param name="configure">
+    /// What to leave out or scrub from both, as for <see cref="PdfUaDocument.ToSnapshot"/>.
+    /// </param>
+    public static SnapshotDiff Compare(PdfUaDocument before, PdfUaDocument after,
+        Action<PdfSnapshotOptions>? configure = null) =>
+        CompareSnapshots(before.ToSnapshot(configure), after.ToSnapshot(configure));
+
+    /// <summary>The differences between two Word documents' snapshots, element by element.</summary>
+    /// <param name="before">
+    /// The earlier document, whose content counts as removed when it's missing from the other.
+    /// </param>
+    /// <param name="after">The later document, whose new content counts as added.</param>
+    /// <param name="configure">
+    /// What to leave out or scrub from both, as for <see cref="DocxDocument.ToSnapshot"/>.
+    /// </param>
+    public static SnapshotDiff Compare(DocxDocument before, DocxDocument after,
+        Action<DocxSnapshotOptions>? configure = null) =>
+        CompareSnapshots(before.ToSnapshot(configure), after.ToSnapshot(configure));
+
+    /// <summary>
+    /// Compares two files the way <c>pdiffy before after</c> does: a PDF or a Word document is read and snapshotted,
+    /// and anything else, such as a <c>.verified.pdfua.txt</c> file or JSON, is compared as a snapshot already.
+    /// </summary>
+    /// <param name="beforePath">The earlier file.</param>
+    /// <param name="afterPath">The later file.</param>
+    /// <param name="configurePdf">What to leave out or scrub from a PDF.</param>
+    /// <param name="configureDocx">What to leave out or scrub from a Word document.</param>
+    public static SnapshotDiff CompareFiles(string beforePath, string afterPath,
+        Action<PdfSnapshotOptions>? configurePdf = null, Action<DocxSnapshotOptions>? configureDocx = null) =>
+        CompareSnapshots(SnapshotOf(beforePath, configurePdf, configureDocx), SnapshotOf(afterPath, configurePdf,
+            configureDocx));
+
+    /// <summary>
+    /// Compares two snapshot texts, such as a verified file's contents and a received one's. PDF and Word snapshots are
+    /// matched element by element; any other text, such as JSON, line by line. To compare files, use
+    /// <see cref="CompareFiles"/>.
+    /// </summary>
+    /// <param name="before">The earlier snapshot text.</param>
+    /// <param name="after">The later snapshot text.</param>
+    public static SnapshotDiff CompareSnapshots(string before, string after)
     {
         before = before.Replace("\r\n", "\n");
         after = after.Replace("\r\n", "\n");
@@ -217,6 +258,12 @@ public sealed class SnapshotDiff
                 .Zip(written[section.Key].SelectMany(Flatten)))
             .ToDictionary(pair => pair.First, pair => pair.Second);
     }
+
+    private static string SnapshotOf(string path, Action<PdfSnapshotOptions>? configurePdf,
+        Action<DocxSnapshotOptions>? configureDocx) =>
+        DocumentFiles.IsPdf(path) ? PdfUaDocument.Load(path).ToSnapshot(configurePdf)
+        : DocumentFiles.IsDocx(path) ? DocxDocument.Load(path).ToSnapshot(configureDocx)
+        : File.ReadAllText(path);
 
     // Both texts must be the same kind of snapshot for their section names to mean that kind's sections.
     private static SnapshotFormat FormatOf(string before, string after)

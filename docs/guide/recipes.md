@@ -22,7 +22,7 @@ public async Task TrailGuide_ShouldMatchApprovedSnapshot_WhenPrintedFromHtml()
 
     var pdf = await page.PdfAsync(new PagePdfOptions { Format = "Letter", Tagged = true, Outline = true });
 
-    await PdfSnapshot.VerifyAsync(pdf);
+    await Snapshot.VerifyPdfAsync(pdf);
 }
 ```
 
@@ -73,7 +73,7 @@ public async Task TrailGuide_ShouldMatchApprovedSnapshot_WhenDrawnWithPdfSharp()
     using var pdf = new MemoryStream();
     document.Save(pdf);
 
-    await PdfSnapshot.VerifyAsync(pdf);
+    await Snapshot.VerifyPdfAsync(pdf);
 }
 ```
 
@@ -102,7 +102,7 @@ public async Task TrailGuide_ShouldMatchApprovedSnapshot_WhenWrittenWithOpenXml(
             new Paragraph(new Run(new Text("Start at the lodge.")))));
     }
 
-    await DocxSnapshot.VerifyAsync(docx);
+    await Snapshot.VerifyDocxAsync(docx);
 }
 ```
 

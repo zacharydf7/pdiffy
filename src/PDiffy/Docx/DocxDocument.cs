@@ -93,9 +93,14 @@ public sealed record DocxDocument
         return DocxSnapshotWriter.Write(this, options);
     }
 
-    /// <summary>The differences between this document's snapshot and another's, element by element.</summary>
-    public SnapshotDiff CompareTo(DocxDocument other, Action<DocxSnapshotOptions>? configure = null) =>
-        SnapshotDiff.Compare(ToSnapshot(configure), other.ToSnapshot(configure));
+    /// <summary>
+    /// The differences between this document's snapshot and a later one's, element by element, as
+    /// <see cref="SnapshotDiff.Compare(DocxDocument, DocxDocument, Action{DocxSnapshotOptions}?)"/> gives them.
+    /// </summary>
+    /// <param name="after">The later document, whose new content counts as added.</param>
+    /// <param name="configure">What to leave out or scrub from both, as for <see cref="ToSnapshot"/>.</param>
+    public SnapshotDiff CompareTo(DocxDocument after, Action<DocxSnapshotOptions>? configure = null) =>
+        SnapshotDiff.Compare(this, after, configure);
 
     /// <summary>
     /// Every paragraph of the body in reading order, including those inside tables, content controls, text boxes and

@@ -7,22 +7,23 @@ namespace PDiffy.Tests.Unit;
 public sealed class SnapshotTests : SnapshotFolderTests
 {
     [Fact]
-    public async Task VerifyAsync_ShouldWriteTheTextExactlyAndFail_WhenThereIsNoVerifiedFile()
+    public async Task VerifyTextAsync_ShouldWriteTheTextExactlyAndFail_WhenThereIsNoVerifiedFile()
     {
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync(" a  \r\n\tb ", "Export"));
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyTextAsync(" a  \r\n\tb ",
+            "Export"));
 
         Assert.StartsWith("New text snapshot.", error.Message);
         Assert.Equal(" a  \n\tb ", File.ReadAllText(Path.Combine(Folder, "Export.received.txt")));
     }
 
     [Fact]
-    public void Verify_ShouldThrowRightAway_WhenTheTextOrJsonDiffers()
+    public void VerifyText_ShouldThrowRightAway_WhenTheTextOrJsonDiffers()
     {
         Directory.CreateDirectory(Folder);
         File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "one\n");
         File.WriteAllText(Path.Combine(Folder, "Job.verified.json"), "{\n  \"a\": 1\n}");
 
-        var text = Assert.Throws<SnapshotException>(() => Snapshot.Verify("two\n", "Export"));
+        var text = Assert.Throws<SnapshotException>(() => Snapshot.VerifyText("two\n", "Export"));
         var json = Assert.Throws<SnapshotException>(() => Snapshot.VerifyJson("""{"a":2}""", "Job"));
 
         Assert.StartsWith("The text's snapshot differs from the verified one.", text.Message);
@@ -30,15 +31,15 @@ public sealed class SnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
-    public void Verify_ShouldLogEachVerifiedFileItUses_WhenTheRunLogIsSet()
+    public void VerifyText_ShouldLogEachVerifiedFileItUses_WhenTheRunLogIsSet()
     {
         var runLog = Path.Combine(Folder, "run-log");
         Environment.SetEnvironmentVariable(Snapshot.RunLogVariable, runLog);
         Directory.CreateDirectory(Folder);
         File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "one\n");
 
-        Snapshot.Verify("one\n", "Export");
-        Assert.Throws<SnapshotException>(() => Snapshot.Verify("two\n", "Report"));
+        Snapshot.VerifyText("one\n", "Export");
+        Assert.Throws<SnapshotException>(() => Snapshot.VerifyText("two\n", "Report"));
 
         var log = Assert.Single(Directory.GetFiles(runLog));
         Assert.Equal($"pdiffy-run-{Environment.ProcessId}.log", Path.GetFileName(log));
@@ -51,7 +52,8 @@ public sealed class SnapshotTests : SnapshotFolderTests
     [InlineData(null, null, true, false)]
     [InlineData("1", "true", true, false)]
     [InlineData("1", null, false, false)]
-    public void Verify_ShouldOpenTheReportOnlyWhenAskedToLocally_WhenTheSnapshotFails(string? openReport, string? ci,
+    public void VerifyText_ShouldOpenTheReportOnlyWhenAskedToLocally_WhenTheSnapshotFails(string? openReport,
+        string? ci,
         bool hasVerified, bool opens)
     {
         var opened = new List<string>();
@@ -61,41 +63,42 @@ public sealed class SnapshotTests : SnapshotFolderTests
         Directory.CreateDirectory(Folder);
         if (hasVerified) File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "one\n");
 
-        Assert.Throws<SnapshotException>(() => Snapshot.Verify("two\n", "Export"));
+        Assert.Throws<SnapshotException>(() => Snapshot.VerifyText("two\n", "Export"));
 
         Assert.Equal(opens ? [Path.Combine(Folder, "Export.diff.html")] : [], opened);
     }
 
     [Fact]
-    public void Verify_ShouldFailWithItsMessageAndSayWhy_WhenTheReportCannotBeOpened()
+    public void VerifyText_ShouldFailWithItsMessageAndSayWhy_WhenTheReportCannotBeOpened()
     {
         SnapshotWorkflow.OpenReport = _ => throw new System.ComponentModel.Win32Exception("No browser");
         Environment.SetEnvironmentVariable(Snapshot.OpenReportVariable, "1");
         Directory.CreateDirectory(Folder);
         File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "one\n");
 
-        var error = Assert.Throws<SnapshotException>(() => Snapshot.Verify("two\n", "Export"));
+        var error = Assert.Throws<SnapshotException>(() => Snapshot.VerifyText("two\n", "Export"));
 
         Assert.StartsWith("The text's snapshot differs from the verified one.", error.Message);
         Assert.EndsWith($"{Environment.NewLine}Couldn't open the report: No browser", error.Message);
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldPass_WhenTheVerifiedFileHasAByteOrderMarkAndCrlfLineEndings()
+    public async Task VerifyTextAsync_ShouldPass_WhenTheVerifiedFileHasAByteOrderMarkAndCrlfLineEndings()
     {
         Directory.CreateDirectory(Folder);
         File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "one\r\ntwo\r\n", new UTF8Encoding(true));
 
-        await Snapshot.VerifyAsync("one\ntwo\n", "Export");
+        await Snapshot.VerifyTextAsync("one\ntwo\n", "Export");
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldFailWithTheChangedLines_WhenTheTextDiffers()
+    public async Task VerifyTextAsync_ShouldFailWithTheChangedLines_WhenTheTextDiffers()
     {
         Directory.CreateDirectory(Folder);
         File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "one\ntwo\nthree\n");
 
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("one\n2\nthree\n", "Export"));
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyTextAsync("one\n2\nthree\n",
+            "Export"));
 
         Assert.StartsWith("The text's snapshot differs from the verified one.", error.Message);
         Assert.Contains("~ text line 2\n    [-two-] {+2+}", error.Message);
@@ -103,12 +106,12 @@ public sealed class SnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldFailShowingBothLines_WhenOnlySpacesDiffer()
+    public async Task VerifyTextAsync_ShouldFailShowingBothLines_WhenOnlySpacesDiffer()
     {
         Directory.CreateDirectory(Folder);
         File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "a b\n");
 
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("a b  \n", "Export"));
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyTextAsync("a b  \n", "Export"));
 
         Assert.Contains("~ text line 1\n    - \"a b\"\n    + \"a b  \"", error.Message);
     }
@@ -116,45 +119,47 @@ public sealed class SnapshotTests : SnapshotFolderTests
     [Theory]
     [InlineData(null)]
     [InlineData("1")]
-    public async Task VerifyAsync_ShouldPassAndKeepTheVerifiedFile_WhenNumbersDifferWithinTheTolerance(string? accept)
+    public async Task VerifyTextAsync_ShouldPassAndKeepTheVerifiedFile_WhenNumbersDifferWithinTheTolerance(
+        string? accept)
     {
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, accept);
         const string Verified = "# pdfua-snapshot v1\n# tolerances: positions 1pt\nlayout\n  p1 text tagged at=72,700 \"Hi\"\n";
         Directory.CreateDirectory(Folder);
         File.WriteAllText(Path.Combine(Folder, "Layout.verified.txt"), Verified);
 
-        await Snapshot.VerifyAsync(Verified.Replace("72,700", "73,700"), "Layout");
+        await Snapshot.VerifyTextAsync(Verified.Replace("72,700", "73,700"), "Layout");
 
         Assert.Equal(Verified, File.ReadAllText(Path.Combine(Folder, "Layout.verified.txt")));
         Assert.False(File.Exists(Path.Combine(Folder, "Layout.received.txt")));
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldUseTheExtensionAndFolder_WhenGivenThem()
+    public async Task VerifyTextAsync_ShouldUseTheExtensionAndFolder_WhenGivenThem()
     {
         var other = Path.Combine(Folder, "other");
 
-        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("text", "Export", extension: "csv", directory: other));
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyTextAsync("text", "Export", extension: "csv",
+            directory: other));
 
         Assert.True(File.Exists(Path.Combine(other, "Export.received.csv")));
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldNameTheSnapshotAfterTheTestFileAndMethod_WhenNoNameIsGiven()
+    public async Task VerifyTextAsync_ShouldNameTheSnapshotAfterTheTestFileAndMethod_WhenNoNameIsGiven()
     {
-        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("text"));
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyTextAsync("text"));
 
-        var method = nameof(VerifyAsync_ShouldNameTheSnapshotAfterTheTestFileAndMethod_WhenNoNameIsGiven);
+        var method = nameof(VerifyTextAsync_ShouldNameTheSnapshotAfterTheTestFileAndMethod_WhenNoNameIsGiven);
         Assert.True(File.Exists(Path.Combine(Folder, $"{nameof(SnapshotTests)}.{method}.received.txt")));
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldApplyTheDefaultsThenTheCallsOwnOptions_WhenDefaultOptionsAreSet()
+    public async Task VerifyTextAsync_ShouldApplyTheDefaultsThenTheCallsOwnOptions_WhenDefaultOptionsAreSet()
     {
-        Snapshot.DefaultOptions = options => options.ScrubText(new Regex("trail"), "path");
+        Snapshot.DefaultTextOptions = options => options.ScrubText(new Regex("trail"), "path");
 
         await Assert.ThrowsAsync<SnapshotException>(
-            () => Snapshot.VerifyAsync("trail 12", "Export", o => o.ScrubText(new Regex("path"), "route")));
+            () => Snapshot.VerifyTextAsync("trail 12", "Export", o => o.ScrubText(new Regex("path"), "route")));
 
         Assert.Equal("route 12", File.ReadAllText(Path.Combine(Folder, "Export.received.txt")));
     }
@@ -162,7 +167,7 @@ public sealed class SnapshotTests : SnapshotFolderTests
     [Fact]
     public async Task VerifyJsonAsync_ShouldLetTheDefaultsKeepGuids_WhenDefaultOptionsSayTo()
     {
-        Snapshot.DefaultOptions = options => options.KeepGuids();
+        Snapshot.DefaultTextOptions = options => options.KeepGuids();
 
         await Assert.ThrowsAsync<SnapshotException>(
             () => Snapshot.VerifyJsonAsync("""{"id":"0f8fad5b-d9cb-469f-a165-70867728950e"}""", "Export"));
@@ -172,12 +177,12 @@ public sealed class SnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldAddTheVariantToTheName_WhenGivenOne()
+    public async Task VerifyTextAsync_ShouldAddTheVariantToTheName_WhenGivenOne()
     {
-        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("one", variant: "Ridgeline"));
-        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("two", "Export", variant: "Cedars"));
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyTextAsync("one", variant: "Ridgeline"));
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyTextAsync("two", "Export", variant: "Cedars"));
 
-        var method = nameof(VerifyAsync_ShouldAddTheVariantToTheName_WhenGivenOne);
+        var method = nameof(VerifyTextAsync_ShouldAddTheVariantToTheName_WhenGivenOne);
         Assert.True(File.Exists(Path.Combine(Folder, $"{nameof(SnapshotTests)}.{method}.Ridgeline.received.txt")));
         Assert.True(File.Exists(Path.Combine(Folder, "Export.Cedars.received.txt")));
     }
@@ -185,44 +190,45 @@ public sealed class SnapshotTests : SnapshotFolderTests
     [Theory]
     [InlineData("Export")]
     [InlineData("export")]
-    public async Task VerifyAsync_ShouldSayTheNameIsTaken_WhenAnotherCallInThisRunGaveItDifferentContent(string secondName)
+    public async Task VerifyTextAsync_ShouldSayTheNameIsTaken_WhenAnotherCallInThisRunGaveItDifferentContent(
+        string secondName)
     {
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, "1");
-        await Snapshot.VerifyAsync("first", "Export");
+        await Snapshot.VerifyTextAsync("first", "Export");
 
-        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("second", secondName));
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyTextAsync("second", secondName));
 
         Assert.StartsWith($"Snapshot '{secondName}' was already verified in this run with different content", error.Message);
         Assert.Equal("first", File.ReadAllText(Path.Combine(Folder, "Export.verified.txt")));
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldPass_WhenAnotherCallInThisRunGaveTheNameTheSameContent()
+    public async Task VerifyTextAsync_ShouldPass_WhenAnotherCallInThisRunGaveTheNameTheSameContent()
     {
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, "1");
-        await Snapshot.VerifyAsync("same", "Export");
+        await Snapshot.VerifyTextAsync("same", "Export");
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, null);
 
-        await Snapshot.VerifyAsync("same", "Export");
+        await Snapshot.VerifyTextAsync("same", "Export");
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldScrubTheWholeText_WhenAskedTo()
+    public async Task VerifyTextAsync_ShouldScrubTheWholeText_WhenAskedTo()
     {
         var text = "Permit 1234 for 0f8fad5b-d9cb-469f-a165-70867728950e on 2026-10-28\n";
 
-        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync(text, "Permit",
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyTextAsync(text, "Permit",
             o => o.ScrubText(new Regex(@"Permit \d+"), "Permit N").ScrubGuids().ScrubDates()));
 
         Assert.Equal("Permit N for Guid_1 on Date_1\n", File.ReadAllText(Path.Combine(Folder, "Permit.received.txt")));
     }
 
     [Fact]
-    public async Task VerifyAsync_ShouldOverwriteTheVerifiedFile_WhenAcceptModeIsOn()
+    public async Task VerifyTextAsync_ShouldOverwriteTheVerifiedFile_WhenAcceptModeIsOn()
     {
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, "1");
 
-        await Snapshot.VerifyAsync("accepted\n", "Export");
+        await Snapshot.VerifyTextAsync("accepted\n", "Export");
 
         Assert.Equal("accepted\n", File.ReadAllText(Path.Combine(Folder, "Export.verified.txt")));
     }

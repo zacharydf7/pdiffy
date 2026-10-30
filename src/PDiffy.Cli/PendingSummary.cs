@@ -45,7 +45,8 @@ internal sealed class PendingSummary
         var name = Path.GetRelativePath(Directory.GetCurrentDirectory(), snapshot.Received);
         if (!File.Exists(snapshot.Verified)) return new Row(snapshot, name, null);
 
-        var diff = SnapshotDiff.Compare(File.ReadAllText(snapshot.Verified), File.ReadAllText(snapshot.Received));
+        var diff = SnapshotDiff.CompareSnapshots(File.ReadAllText(snapshot.Verified),
+            File.ReadAllText(snapshot.Received));
         return new Row(snapshot, name, diff);
     }
 

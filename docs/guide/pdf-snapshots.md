@@ -1,10 +1,10 @@
 # PDF snapshots
 
-[`PdfSnapshot.VerifyAsync`](xref:PDiffy.PdfSnapshot.VerifyAsync*) is the core of PDiffy: one call prints the PDF's
+[`Snapshot.VerifyPdfAsync`](xref:PDiffy.Snapshot.VerifyPdfAsync*) is the core of PDiffy: one call prints the PDF's
 snapshot and compares it with the approved `.verified.pdfua.txt` file.
 
 ```csharp
-await PdfSnapshot.VerifyAsync(pdf);
+await Snapshot.VerifyPdfAsync(pdf);
 ```
 
 | Parameter | Use it to | Default |
@@ -15,8 +15,8 @@ await PdfSnapshot.VerifyAsync(pdf);
 | `configure` | [Ignore or scrub](options.md) what the test doesn't care about | Everything is compared |
 | `directory` | Keep this snapshot in another folder | [`Snapshot.Directory`](xref:PDiffy.Snapshot.Directory), else the test file's folder |
 
-[`PdfSnapshot.Verify`](xref:PDiffy.PdfSnapshot.Verify*) does the same synchronously, with the same parameters, for a
-test that isn't async. `VerifyAsync` does its work before it returns, so a failure throws at the call even if a `void`
+[`Snapshot.VerifyPdf`](xref:PDiffy.Snapshot.VerifyPdf*) does the same synchronously, with the same parameters, for a
+test that isn't async. `VerifyPdfAsync` does its work before it returns, so a failure throws at the call even if a `void`
 test forgets the `await`.
 
 A stream is read from its start wherever the generator left it, and its position is put back afterwards, so a test
@@ -27,7 +27,7 @@ a damaged document. Pass the loaded document instead to read the PDF only once:
 ```csharp
 var document = PdfUaDocument.Load(pdf);
 Assert.Equal("Trail Guide", document.Metadata.Title);
-await PdfSnapshot.VerifyAsync(document);
+await Snapshot.VerifyPdfAsync(document);
 ```
 
 An empty stream, a Word document passed as a PDF, or a web page (a generator's error page, say) fails with an
@@ -148,7 +148,7 @@ public async Task TrailMap_ShouldMatchApprovedSnapshot_WhenGeneratedForATrail(st
 {
     using Stream pdf = await ReportGenerator.CreateTrailMapAsync(trail);
 
-    await PdfSnapshot.VerifyAsync(pdf, variant: trail);
+    await Snapshot.VerifyPdfAsync(pdf, variant: trail);
 }
 ```
 
@@ -162,7 +162,7 @@ name instead of all of them sharing the helper's:
 ```csharp
 public static Task VerifyTrailMapAsync(string trail, [CallerFilePath] string testFile = "",
     [CallerMemberName] string testName = "") =>
-    PdfSnapshot.VerifyAsync(TrailMaps.Create(trail), testFile: testFile, testName: testName, variant: trail);
+    Snapshot.VerifyPdfAsync(TrailMaps.Create(trail), testFile: testFile, testName: testName, variant: trail);
 ```
 
 Each snapshot has up to three files:

@@ -28,7 +28,7 @@ A local tool runs as `dotnet pdiffy`.
 
 ## 2. Write a test
 
-`PdfSnapshot.VerifyAsync` takes the PDF as a stream, prints its snapshot and compares it with the approved one.
+`Snapshot.VerifyPdfAsync` takes the PDF as a stream, prints its snapshot and compares it with the approved one.
 
 ```csharp
 using PDiffy;
@@ -41,7 +41,7 @@ public class TrailGuideTests
         // Your code that produces a PDF. A FileStream works too.
         using Stream pdf = await ReportGenerator.CreateTrailGuideAsync();
 
-        await PdfSnapshot.VerifyAsync(pdf);
+        await Snapshot.VerifyPdfAsync(pdf);
     }
 }
 ```
@@ -131,7 +131,7 @@ Assert.True(document.Document.Marked);
 Assert.Equal("en-US", document.Document.Language);
 Assert.All(document.Elements(StructureType.Figure), figure => Assert.False(string.IsNullOrWhiteSpace(figure.AltText)));
 
-// The same text VerifyAsync compares.
+// The same text VerifyPdfAsync compares.
 string snapshot = document.ToSnapshot();
 ```
 

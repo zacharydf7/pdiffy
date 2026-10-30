@@ -7,9 +7,7 @@ them all.
 
 | Type | Use it to |
 |---|---|
-| <xref:PDiffy.PdfSnapshot> | Compare a PDF with its approved snapshot |
-| <xref:PDiffy.DocxSnapshot> | Compare a Word document with its approved snapshot |
-| <xref:PDiffy.Snapshot> | Compare text or JSON, and set the snapshot folder for every kind |
+| <xref:PDiffy.Snapshot> | Compare a PDF, a Word document, text or JSON with its approved snapshot, and set the snapshot folder for every kind |
 | <xref:PDiffy.SnapshotException> | The failure a test throws, with what changed |
 
 ## Options

@@ -16,7 +16,7 @@ public class DiffReportTests
         var before = Layout("p1 letter rotate=0", "p1 image tagged at=72,600 size=10x10 pixels=1x1 hash=x",
             "p1 text tagged at=72,720 size=12 \"Title\"");
 
-        var html = SnapshotDiff.Compare(before, before.Replace("at=72,600", "at=72,520")).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(before, before.Replace("at=72,600", "at=72,520")).ToHtml();
 
         Assert.Contains("<figure class=\"map\"><figcaption>p1</figcaption><svg viewBox=\"0 0 612 792\"", html);
         Assert.Matches("<g class=\"was\"><title>[^<]*at=72,600[^<]*</title><rect x=\"72\" y=\"182\" width=\"10\" "
@@ -34,7 +34,7 @@ public class DiffReportTests
     {
         var before = Layout(page, "p1 path artifact at=72,500 size=100x20");
 
-        var html = SnapshotDiff.Compare(before, before.Replace("at=72,500", "at=80,500")).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(before, before.Replace("at=72,500", "at=80,500")).ToHtml();
 
         Assert.Contains($"<svg viewBox=\"{viewBox}\"", html);
     }
@@ -44,7 +44,7 @@ public class DiffReportTests
     {
         var before = Layout("p1 letter rotate=0", "p1 text tagged at=72,720 size=12 \"Title\"");
 
-        var html = SnapshotDiff.Compare(before, before.Replace("rotate=0", "rotate=90")).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(before, before.Replace("rotate=0", "rotate=90")).ToHtml();
 
         Assert.DoesNotContain("class=\"maps\"", html);
     }
@@ -55,7 +55,8 @@ public class DiffReportTests
         var before = Layout("p1 letter rotate=0\n  p2 letter rotate=0", "p1 path artifact at=72,500 size=100x20",
             "p2 path artifact at=72,500 size=100x20");
 
-        var html = SnapshotDiff.Compare(before, before.Replace("p1 path artifact at=72,500", "p1 path artifact at=80,500")).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(before, before.Replace("p1 path artifact at=72,500",
+            "p1 path artifact at=80,500")).ToHtml();
 
         Assert.Contains("<figcaption>p1</figcaption>", html);
         Assert.DoesNotContain("<figcaption>p2</figcaption>", html);
@@ -68,7 +69,7 @@ public class DiffReportTests
         var after = Layout("p1 letter rotate=0\n  p2 letter rotate=0", "p1 text tagged at=72,700 size=12 \"A new cover\"",
             "p2 text tagged at=72,690 size=12 \"The body of the guide\"");
 
-        var html = SnapshotDiff.Compare(before, after).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(before, after).ToHtml();
 
         Assert.Matches("<figcaption>p2</figcaption>.*<g class=\"now\"><title>p2 text tagged at=72,690.*"
             + "<g class=\"was\"><title>p2 text tagged at=72,700", html);
@@ -79,7 +80,7 @@ public class DiffReportTests
     {
         var before = Layout("p1 letter rotate=0", "p1 text tagged at=72,700 \"Title\"");
 
-        var html = SnapshotDiff.Compare(before, before.Replace("at=72,700", "at=72,400")).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(before, before.Replace("at=72,700", "at=72,400")).ToHtml();
 
         Assert.Contains("<g class=\"now\"><title>p1 text tagged at=72,400 &quot;Title&quot;</title>"
             + "<rect x=\"72\" y=\"384\" width=\"25\" height=\"10\"/>", html);
@@ -90,7 +91,7 @@ public class DiffReportTests
     {
         var before = Layout("p1 letter rotate=0", "p1 text tagged size=12 \"Title\"");
 
-        var html = SnapshotDiff.Compare(before, before.Replace("Title", "Title page")).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(before, before.Replace("Title", "Title page")).ToHtml();
 
         Assert.DoesNotContain("class=\"maps\"", html);
     }
@@ -101,7 +102,8 @@ public class DiffReportTests
     [Fact]
     public void ToHtml_ShouldShowBothSidesWithTheChangedWordsMarked_WhenALineChanges()
     {
-        var html = SnapshotDiff.Compare(Before, Before.Replace("Go with a guide", "Go without a guide")).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(Before, Before.Replace("Go with a guide",
+            "Go without a guide")).ToHtml();
 
         Assert.Contains("<th>Before</th><th>After</th>", html);
         Assert.Contains("<td class=\"removed\">  P p3 &quot;Go <mark>with </mark>a guide&quot;</td>", html);
@@ -113,7 +115,7 @@ public class DiffReportTests
     {
         var after = Before.Replace("  P p1 \"Line 1\"", "  P p1 \"Line one\"").Replace("  P p3 \"Go with a guide\"", "  H2 p3 \"Go with a guide\"");
 
-        var html = SnapshotDiff.Compare(Before, after).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(Before, after).ToHtml();
 
         Assert.Contains("2 change(s), by section: structure 2", html);
         Assert.Contains("<input type=\"checkbox\" data-accessibility> Only accessibility (1)", html);
@@ -124,7 +126,8 @@ public class DiffReportTests
     [Fact]
     public void ToHtml_ShouldShowARetypedElementOnOneRow_WhenOnlyItsTypeChanges()
     {
-        var html = SnapshotDiff.Compare(Before, Before.Replace("  P p3 \"Go with a guide\"", "  H2 p3 \"Go with a guide\"")).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(Before, Before.Replace("  P p3 \"Go with a guide\"",
+            "  H2 p3 \"Go with a guide\"")).ToHtml();
 
         Assert.Contains("<td class=\"removed\">  <mark>P </mark>p3 &quot;Go with a guide&quot;</td>"
             + "<td class=\"added\">  <mark>H2 </mark>p3 &quot;Go with a guide&quot;</td>", html);
@@ -135,7 +138,7 @@ public class DiffReportTests
     {
         var after = Before.Replace("  P p3 \"Go with a guide\"", "  P p3 \"New warning\"\n  P p3 \"Go without a guide\"");
 
-        var html = SnapshotDiff.Compare(Before, after).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(Before, after).ToHtml();
 
         Assert.Contains("<td></td><td class=\"added\">  P p3 &quot;New warning&quot;</td>", html);
         Assert.Contains("<mark>with </mark>", html);
@@ -144,7 +147,8 @@ public class DiffReportTests
     [Fact]
     public void ToHtml_ShouldLinkEachPageToItsFirstChangeAndFoldUnchangedLines_WhenMostLinesMatch()
     {
-        var html = SnapshotDiff.Compare(Before, Before.Replace("Go with a guide", "Go without a guide")).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(Before, Before.Replace("Go with a guide",
+            "Go without a guide")).ToHtml();
 
         Assert.Single(html.Split("id=\"p3\"").Skip(1));
         Assert.Contains("<tr id=\"p3\"><td class=\"removed\">", html);
@@ -162,7 +166,8 @@ public class DiffReportTests
     [Fact]
     public void ToHtml_ShouldGiveEveryLinkedPageAnAnchor_WhenTheTwoViewsDisagreeAboutWhatMoved()
     {
-        var html = SnapshotDiff.Compare(SnapshotText.Header + SwapBefore, SnapshotText.Header + SwapAfter).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(SnapshotText.Header + SwapBefore,
+            SnapshotText.Header + SwapAfter).ToHtml();
 
         var links = Regex.Matches(html, "href=\"#(p\\d+)\"").Select(match => match.Groups[1].Value).Distinct().ToList();
         Assert.NotEmpty(links);
@@ -174,7 +179,7 @@ public class DiffReportTests
     {
         var header = SnapshotText.Header + "pages\n  p1 letter rotate=0\n  p2 letter rotate=0\n";
 
-        var html = SnapshotDiff.Compare(header + SwapBefore, header + SwapAfter).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(header + SwapBefore, header + SwapAfter).ToHtml();
 
         Assert.Contains("<tr id=\"p1\"><td>    Sect p1</td>", html);
     }
@@ -182,7 +187,8 @@ public class DiffReportTests
     [Fact]
     public void ToHtml_ShouldShowTheWholeTextAsOneSection_WhenTheTextIsNotASnapshot()
     {
-        var html = SnapshotDiff.Compare("structure\nGo with a guide\n", "structure\nGo without a guide\n").ToHtml();
+        var html = SnapshotDiff.CompareSnapshots("structure\nGo with a guide\n",
+            "structure\nGo without a guide\n").ToHtml();
 
         Assert.Single(html.Split("<details class=\"section\"").Skip(1));
         Assert.Contains("<summary>text</summary>", html);
@@ -192,7 +198,8 @@ public class DiffReportTests
     [Fact]
     public void ToHtml_ShouldEncodeTextAndLoadNothingFromOutside_WhenTextLooksLikeMarkup()
     {
-        var html = SnapshotDiff.Compare(Before, Before.Replace("Go with a guide", "<script>alert(1)</script>")).ToHtml();
+        var html = SnapshotDiff.CompareSnapshots(Before, Before.Replace("Go with a guide",
+            "<script>alert(1)</script>")).ToHtml();
 
         Assert.Contains("&lt;script&gt;alert(1)&lt;/script&gt;", html);
         Assert.DoesNotContain("src=", html);

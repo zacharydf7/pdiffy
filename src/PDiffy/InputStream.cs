@@ -49,12 +49,13 @@ internal static class InputStream
         if (start.IsEmpty) return $"The stream is empty, so there's no {expected} to read. Was it written and flushed?";
         if (format == DocumentFormat.Pdf && start.StartsWith("PK\u0003\u0004"u8))
         {
-            return "This is a ZIP file, not a PDF. If it's a Word document, use DocxDocument or DocxSnapshot.";
+            return "This is a ZIP file, not a PDF. If it's a Word document, use DocxDocument or "
+                + "Snapshot.VerifyDocxAsync.";
         }
 
         if (format == DocumentFormat.Docx && start.StartsWith("%PDF"u8))
         {
-            return "This is a PDF, not a Word document. Use PdfUaDocument or PdfSnapshot.";
+            return "This is a PDF, not a Word document. Use PdfUaDocument or Snapshot.VerifyPdfAsync.";
         }
 
         var text = Encoding.Latin1.GetString(start.StartsWith("\uFEFF"u8) ? start[3..] : start).TrimStart(' ', '\t', '\r', '\n');

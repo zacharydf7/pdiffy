@@ -12,9 +12,12 @@ PdfUaDocument after = PdfUaDocument.Load("guide-v2.pdf");
 SnapshotDiff diff = before.CompareTo(after, options => options.Ignore(PdfSection.Layout, PdfSection.Metadata));
 ```
 
-[`DocxDocument.CompareTo`](xref:PDiffy.DocxDocument.CompareTo*) does the same for Word documents, and
-[`SnapshotDiff.Compare`](xref:PDiffy.SnapshotDiff.Compare*) for two snapshot texts, such as two `.verified.pdfua.txt`
-files.
+[`SnapshotDiff.Compare(before, after)`](xref:PDiffy.SnapshotDiff.Compare*) does the same with the earlier document
+first, and works for Word documents too, as does [`DocxDocument.CompareTo`](xref:PDiffy.DocxDocument.CompareTo*).
+[`SnapshotDiff.CompareSnapshots`](xref:PDiffy.SnapshotDiff.CompareSnapshots*) compares two snapshot texts, such as the
+contents of two `.verified.pdfua.txt` files, and [`SnapshotDiff.CompareFiles`](xref:PDiffy.SnapshotDiff.CompareFiles*)
+compares two files the way `pdiffy before after` does, reading a PDF or Word document and taking anything else as a
+snapshot.
 
 ## Assert on the changes
 

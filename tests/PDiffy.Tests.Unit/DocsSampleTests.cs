@@ -12,7 +12,7 @@ public class DocsSampleTests
     {
         var (before, after) = (Guide(revised: false).Load().ToSnapshot(), Guide(revised: true).Load().ToSnapshot());
 
-        var report = SnapshotDiff.Compare(before, after).ToHtml();
+        var report = SnapshotDiff.CompareSnapshots(before, after).ToHtml();
 
         AssertSample("TrailGuide.verified.pdfua.txt", before);
         AssertSample("TrailGuide.received.pdfua.txt", after);

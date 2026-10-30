@@ -122,7 +122,7 @@ internal sealed class FolderComparison
         if (after is null) return new FileDifference(path, FileStatus.Removed);
         try
         {
-            var diff = SnapshotDiff.Compare(Commands.SnapshotOf(before, profile), Commands.SnapshotOf(after, profile));
+            var diff = Commands.CompareFiles(before, after, profile);
             return diff.IsEmpty ? null : new FileDifference(path, FileStatus.Changed, diff);
         }
         catch (Exception problem)

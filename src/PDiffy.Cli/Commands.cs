@@ -71,7 +71,7 @@ public static class Commands
     {
         if (CompareOptions.Parse(options) is not { } parsed) return ShowUsage(error);
 
-        var diff = SnapshotDiff.Compare(SnapshotOf(before, parsed.Profile), SnapshotOf(after, parsed.Profile));
+        var diff = CompareFiles(before, after, parsed.Profile);
         if (parsed.PrintJson) output.Write(diff.ToJson());
         else output.WriteLine(diff.Describe(int.MaxValue));
         if (parsed.Json is not null) File.WriteAllText(parsed.Json, diff.ToJson());
@@ -103,7 +103,8 @@ public static class Commands
 
     private static int Snapshot(string document, string? file, TextWriter output)
     {
-        var snapshot = IsDocx(document) ? DocxDocument.Load(document).ToSnapshot() : PdfUaDocument.Load(document).ToSnapshot();
+        var snapshot = DocumentFiles.IsDocx(document) ? DocxDocument.Load(document).ToSnapshot()
+            : PdfUaDocument.Load(document).ToSnapshot();
         if (file is null) output.Write(snapshot);
         else File.WriteAllText(file, snapshot);
         return Same;
@@ -207,23 +208,13 @@ public static class Commands
         return unused.Count == 0 || delete ? Same : Different;
     }
 
-    // A PDF or a DOCX is read and snapshotted; anything else is taken to be a snapshot already, which a profile can't
-    // change. A Word document takes the profile of the same name, or Strict when there's none.
-    internal static string SnapshotOf(string path, PdfProfile profile) =>
-        IsPdf(path) ? PdfUaDocument.Load(path).ToSnapshot(options => options.Use(profile))
-        : IsDocx(path) ? DocxDocument.Load(path).ToSnapshot(options => options.Use(
-            Enum.TryParse<DocxProfile>(profile.ToString(), out var docxProfile) ? docxProfile : DocxProfile.Strict))
-        : File.ReadAllText(path);
-
-    private static bool IsDocx(string path) => Path.GetExtension(path).Equals(".docx", StringComparison.OrdinalIgnoreCase);
-
-    // PDF readers accept the %PDF- header anywhere in the first 1024 bytes, after a byte-order mark or other junk.
-    private static bool IsPdf(string path)
+    // A snapshot file is compared as it is, which a profile can't change. A Word document takes the profile of the same
+    // name, or Strict when there's none.
+    internal static SnapshotDiff CompareFiles(string before, string after, PdfProfile profile)
     {
-        using var file = File.OpenRead(path);
-        var start = new byte[1024];
-        var length = file.ReadAtLeast(start, start.Length, throwOnEndOfStream: false);
-        return start.AsSpan(0, length).IndexOf("%PDF-"u8) >= 0;
+        var docxProfile = Enum.TryParse<DocxProfile>(profile.ToString(), out var named) ? named : DocxProfile.Strict;
+        return SnapshotDiff.CompareFiles(before, after, options => options.Use(profile),
+            options => options.Use(docxProfile));
     }
 
     // The library's version decides how documents are read, so it's the one that has to match the tests' package.

@@ -17,7 +17,7 @@ each release shipped.
 | Phase | Status |
 |---|---|
 | [1. What snapshots miss](#1-what-snapshots-miss) | Done, except the full fix for #89, which follows the API pass |
-| [2. API pass](#2-api-pass) | Partly done: #91 to #94 on `main`, for the next release; #95 next |
+| [2. API pass](#2-api-pass) | Done, for the next release |
 | [3. Adoption traps](#3-adoption-traps) | Done |
 | [4. Accessibility checks](#4-accessibility-checks) | Open: after the API pass |
 | [5. Double down on the niche](#5-double-down-on-the-niche) | 7 done, 2 partly done, the rest open |
@@ -71,7 +71,7 @@ changes are fine until 1.0; each one is listed in the release notes.
 | [#92](https://github.com/zacharydf7/pdiffy/issues/92) | Model records with real equality | Done |
 | [#93](https://github.com/zacharydf7/pdiffy/issues/93) | Enums instead of magic strings | Done |
 | [#94](https://github.com/zacharydf7/pdiffy/issues/94) | `SnapshotChange` for Word | Done |
-| [#95](https://github.com/zacharydf7/pdiffy/issues/95) | Comparison methods and one front door | Open |
+| [#95](https://github.com/zacharydf7/pdiffy/issues/95) | Comparison methods and one front door | Done |
 
 ## 3. Adoption traps
 

@@ -7,7 +7,7 @@ know PDF or DOCX internals.
 Options are passed as `configure`, and chain:
 
 ```csharp
-await PdfSnapshot.VerifyAsync(pdf, configure: options => options
+await Snapshot.VerifyPdfAsync(pdf, configure: options => options
     .Ignore(PdfSection.Metadata)
     .Ignore(PdfDetail.Positions)
     .ScrubDates()
@@ -31,7 +31,7 @@ Most tests guard one thing: the content, its accessibility or how the page looks
 out more:
 
 ```csharp
-await PdfSnapshot.VerifyAsync(pdf, configure: options => options
+await Snapshot.VerifyPdfAsync(pdf, configure: options => options
     .Use(PdfProfile.Accessibility)
     .Ignore(PdfDetail.Language));
 ```
@@ -45,14 +45,14 @@ less.
 ## Set options for the whole suite
 
 A suite whose tests share options, such as a profile or scrubbers, can set them once beside the folder, with
-`PdfSnapshot.DefaultOptions`, `DocxSnapshot.DefaultOptions` or `Snapshot.DefaultOptions` for text and JSON. Each call's
+`Snapshot.DefaultPdfOptions`, `Snapshot.DefaultDocxOptions` or `Snapshot.DefaultTextOptions` for text and JSON. Each call's
 own `configure` runs after them and adds to them. A PDF or Word call can leave out more but can't bring back what the
 defaults leave out (its `Strict` profile doesn't undo a default one), so keep the defaults to what
 every test agrees on and set the rest in each test. A text or JSON call's `KeepDates()` or `KeepGuids()` does undo a
 default scrub. A PDF or Word snapshot's first lines list what's ignored, but not what's scrubbed.
 
 ```csharp
-PdfSnapshot.DefaultOptions = options => options.Use(PdfProfile.Accessibility).ScrubDates();
+Snapshot.DefaultPdfOptions = options => options.Use(PdfProfile.Accessibility).ScrubDates();
 ```
 
 Set them in a module initializer, as for [`Snapshot.Directory`](getting-started.md#keep-snapshots-in-one-folder).
@@ -69,7 +69,7 @@ public async Task TrailMapTemplate_ShouldKeepItsTagStructure_WhenStylingChanges(
 
     // This test guards the tag tree and the text, so leave out the metadata, the document settings
     // and the layout (positions, fonts and colors), which the design team changes freely.
-    await PdfSnapshot.VerifyAsync(pdf, configure: options => options
+    await Snapshot.VerifyPdfAsync(pdf, configure: options => options
         .Ignore(PdfSection.Metadata, PdfSection.Settings, PdfSection.Layout));
 }
 ```
@@ -101,7 +101,7 @@ public async Task SeasonalGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
     using Stream pdf = await ReportGenerator.CreateSeasonalGuideAsync(month: 6);
 
-    await PdfSnapshot.VerifyAsync(pdf, configure: options => options
+    await Snapshot.VerifyPdfAsync(pdf, configure: options => options
         // The title includes the month, so it changes every time.
         .Ignore(PdfDetail.Title)
         // Text reflows when the guide has more rows, so where things land doesn't matter here.
@@ -131,7 +131,7 @@ can flip after a font or library update: text at 72.49 pt prints `at=72,...`, an
 `at=73,...`. Ignoring `PdfDetail.Positions` would also hide a heading that moved 40 pt, so tolerate the noise instead:
 
 ```csharp
-await PdfSnapshot.VerifyAsync(pdf, configure: options => options
+await Snapshot.VerifyPdfAsync(pdf, configure: options => options
     .Tolerate(PdfTolerance.Positions, points: 1)
     .Tolerate(PdfTolerance.FontSizes, points: 0.5));
 ```
@@ -142,7 +142,7 @@ await PdfSnapshot.VerifyAsync(pdf, configure: options => options
   the positions a link or bookmark opens its page at;
   `FontSizes` a text run's size; `LineWidths` a path's width. Other fields aren't numbers and can't be tolerated.
 - The snapshot's header lists each tolerance (`# tolerances: positions 1pt, font-sizes 0.5pt`), so a reader knows its
-  numbers are approximate. Comparing two snapshots, with `SnapshotDiff.Compare` or `pdiffy`, applies the tolerances
+  numbers are approximate. Comparing two snapshots, with `SnapshotDiff.CompareSnapshots` or `pdiffy`, applies the tolerances
   their header lists.
 
 ## Scrub values that change on every run
@@ -156,7 +156,7 @@ public async Task TrailPass_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
     using Stream pdf = await ReportGenerator.CreateTrailPassAsync();
 
-    await PdfSnapshot.VerifyAsync(pdf, configure: options => options
+    await Snapshot.VerifyPdfAsync(pdf, configure: options => options
         // "Printed 10/27/2026" becomes "Printed Date_1". The same text always gets the same number,
         // so the snapshot still shows that the print date and the issue date match.
         .ScrubDates()
@@ -185,7 +185,7 @@ public async Task AnnualReport_ShouldKeepTheSummaryTable_WhenGenerated()
     using Stream pdf = await ReportGenerator.CreateAnnualReportAsync();
 
     // The summary table is on pages 3 and 4; the other 120 pages have their own tests.
-    await PdfSnapshot.VerifyAsync(pdf, configure: options => options.OnlyPages(3, 4));
+    await Snapshot.VerifyPdfAsync(pdf, configure: options => options.OnlyPages(3, 4));
 }
 ```
 
@@ -198,7 +198,7 @@ public async Task AnnualReport_ShouldKeepTheSummaryTable_WhenGenerated()
 DOCX snapshots have their own sections and details, with the same scrubbers:
 
 ```csharp
-await DocxSnapshot.VerifyAsync(docx, configure: options => options
+await Snapshot.VerifyDocxAsync(docx, configure: options => options
     .Ignore(DocxSection.Styles)
     .Ignore(DocxDetail.FieldResults, DocxDetail.RevisionAuthors)
     .ScrubDates());

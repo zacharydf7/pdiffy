@@ -29,7 +29,7 @@ public async Task TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
     using Stream pdf = await ReportGenerator.CreateTrailGuideAsync();
 
-    await PdfSnapshot.VerifyAsync(pdf);
+    await Snapshot.VerifyPdfAsync(pdf);
 }
 ```
 

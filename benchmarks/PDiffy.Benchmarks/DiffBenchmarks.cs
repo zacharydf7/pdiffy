@@ -26,8 +26,8 @@ public class DiffBenchmarks
     }
 
     [Benchmark]
-    public SnapshotDiff OneEdit() => SnapshotDiff.Compare(_before, _edited);
+    public SnapshotDiff OneEdit() => SnapshotDiff.CompareSnapshots(_before, _edited);
 
     [Benchmark]
-    public SnapshotDiff Unrelated() => SnapshotDiff.Compare(_before, _unrelated);
+    public SnapshotDiff Unrelated() => SnapshotDiff.CompareSnapshots(_before, _unrelated);
 }

@@ -1,6 +1,6 @@
 # Word documents
 
-[`DocxSnapshot.VerifyAsync`](xref:PDiffy.DocxSnapshot.VerifyAsync*) snapshots DOCX files the same way, with the same
+[`Snapshot.VerifyDocxAsync`](xref:PDiffy.Snapshot.VerifyDocxAsync*) snapshots DOCX files the same way, with the same
 received and verified files, accept mode and report. It reads the file directly: no Word, Office or Open XML SDK needed.
 
 ```csharp
@@ -9,13 +9,13 @@ public async Task Notes_ShouldMatchApprovedSnapshot_WhenGenerated()
 {
     using Stream docx = await NotesGenerator.CreateAsync();
 
-    await DocxSnapshot.VerifyAsync(docx);
+    await Snapshot.VerifyDocxAsync(docx);
 }
 ```
 
 Snapshots are saved as `{name}.verified.docx.txt`. The `name`, `variant`, `configure` and `directory` parameters work as for
 [PDF snapshots](pdf-snapshots.md#naming-and-folders), and the document can be a stream, a `byte[]` or a `DocxDocument`
-already loaded, read the same way as [a PDF](pdf-snapshots.md). `DocxSnapshot.Verify` is the synchronous version, for
+already loaded, read the same way as [a PDF](pdf-snapshots.md). `Snapshot.VerifyDocx` is the synchronous version, for
 a test that isn't async.
 
 ## What a snapshot looks like
@@ -84,7 +84,7 @@ change to it still fails the test.
 ## Leave out what changes
 
 ```csharp
-await DocxSnapshot.VerifyAsync(docx, configure: options => options
+await Snapshot.VerifyDocxAsync(docx, configure: options => options
     // A PAGE field's cached result depends on where Word last laid out the page.
     .Ignore(DocxDetail.FieldResults)
     // The template's styles are tested elsewhere.
@@ -121,7 +121,7 @@ Assert.Equal("Title", notes.Paragraphs().First().Style);
 | [`Revisions()`](xref:PDiffy.DocxDocument.Revisions) | Every tracked change, in reading order |
 | [`Body`](xref:PDiffy.DocxDocument.Body), [`Headers`](xref:PDiffy.DocxDocument.Headers), [`Footers`](xref:PDiffy.DocxDocument.Footers), [`Notes`](xref:PDiffy.DocxDocument.Notes) | The content, as blocks |
 | [`Styles`](xref:PDiffy.DocxDocument.Styles), [`Lists`](xref:PDiffy.DocxDocument.Lists), [`PageSetups`](xref:PDiffy.DocxDocument.PageSetups) | Styles in use, lists and section setups |
-| [`CompareTo(other)`](xref:PDiffy.DocxDocument.CompareTo*) | A [comparison](comparing.md) with another document |
+| [`CompareTo(after)`](xref:PDiffy.DocxDocument.CompareTo*) | A [comparison](comparing.md) with another document |
 
 Kinds PDiffy decides are enums: [`DocxRevisionKind`](xref:PDiffy.DocxRevisionKind),
 [`DocxFormKind`](xref:PDiffy.DocxFormKind) and [`DocxNoteKind`](xref:PDiffy.DocxNoteKind). Values PDiffy copies from the

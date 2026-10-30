@@ -8,7 +8,7 @@ public class LayoutShiftsTests
         var before = Layout(Lines(6, insertAt: null));
         var after = Layout(Lines(6, insertAt: 2));
 
-        var diff = SnapshotDiff.Compare(before, after);
+        var diff = SnapshotDiff.CompareSnapshots(before, after);
 
         Assert.Equal(5, diff.Changes.Count);
         Assert.Contains("~ shifted layout > p1[4] to p1[7] (p1)\n    4 lines down 16 pt", diff.Describe());
@@ -21,7 +21,7 @@ public class LayoutShiftsTests
         var before = Layout(Lines(6, insertAt: null));
         var after = Layout(Lines(6, insertAt: 2)).Replace("gray:0 \"Line 5\"", "#ff0000 \"Line 5\"");
 
-        var described = SnapshotDiff.Compare(before, after).Describe();
+        var described = SnapshotDiff.CompareSnapshots(before, after).Describe();
 
         Assert.Contains("    color: gray:0 -> #ff0000", described);
         Assert.Contains("~ shifted", described);
@@ -33,7 +33,7 @@ public class LayoutShiftsTests
         var before = Layout([Line(700, "Line 1"), Line(684, "Line 2"), Line(668, "Line 3")]);
         var after = Layout([Line(700, "Line 1"), Line(668, "Line 2"), Line(652, "Line 3")]);
 
-        var described = SnapshotDiff.Compare(before, after).Describe();
+        var described = SnapshotDiff.CompareSnapshots(before, after).Describe();
 
         Assert.DoesNotContain("~ shifted", described);
         Assert.Contains("    at: 72,684 -> 72,668", described);
@@ -46,7 +46,7 @@ public class LayoutShiftsTests
         var before = Layout(Lines(30, insertAt: null));
         var after = Layout(Lines(30, insertAt: 0));
 
-        var described = SnapshotDiff.Compare(before, after).Describe(maxChanges: 2);
+        var described = SnapshotDiff.CompareSnapshots(before, after).Describe(maxChanges: 2);
 
         Assert.Contains("    30 lines down 16 pt", described);
         Assert.DoesNotContain(" more", described);
@@ -65,7 +65,7 @@ public class LayoutShiftsTests
             .. Enumerable.Range(4, 3).Select(i => Line(690 - 16 * i, $"Later line {i}", page: 2)),
         ]);
 
-        var described = SnapshotDiff.Compare(before, after).Describe();
+        var described = SnapshotDiff.CompareSnapshots(before, after).Describe();
 
         Assert.Contains("~ shifted layout > p1[1] to p1[3] (p1)\n    3 lines down 10 pt", described);
         Assert.Contains("~ shifted layout > p2[4] to p2[6] (p2)\n    3 lines down 10 pt", described);
@@ -77,7 +77,7 @@ public class LayoutShiftsTests
         var before = Layout([Line(600, "Line 1"), Line(584, "Line 2"), Line(568, "Line 3")]);
         var after = Layout([Line(616, "Line 1", x: 74), Line(600, "Line 2", x: 74), Line(584, "Line 3", x: 74)]);
 
-        var described = SnapshotDiff.Compare(before, after).Describe();
+        var described = SnapshotDiff.CompareSnapshots(before, after).Describe();
 
         Assert.Contains("    3 lines up 16 pt and right 2 pt", described);
     }
@@ -88,7 +88,7 @@ public class LayoutShiftsTests
         var before = Layout([.. Enumerable.Range(1, 7).Select(i => Line(800 - 20 * i, $"Line {i}"))]);
         var after = Layout([.. Enumerable.Range(1, 7).Select(i => Line(i == 4 ? 720 : 790 - 20 * i, $"Line {i}"))]);
 
-        var described = SnapshotDiff.Compare(before, after).Describe();
+        var described = SnapshotDiff.CompareSnapshots(before, after).Describe();
 
         Assert.Contains("~ shifted layout > p1[1] to p1[3] (p1)", described);
         Assert.Contains("~ shifted layout > p1[5] to p1[7] (p1)", described);

@@ -168,11 +168,13 @@ public sealed record PdfUaDocument
     }
 
     /// <summary>
-    /// The differences between this document's snapshot and another's, element by element: what was added, removed,
-    /// moved or changed, and where. Use it to compare two PDFs directly, such as before and after a library upgrade.
+    /// The differences between this document's snapshot and a later one's, element by element, as
+    /// <see cref="SnapshotDiff.Compare(PdfUaDocument, PdfUaDocument, Action{PdfSnapshotOptions}?)"/> gives them.
     /// </summary>
-    public SnapshotDiff CompareTo(PdfUaDocument other, Action<PdfSnapshotOptions>? configure = null) =>
-        SnapshotDiff.Compare(ToSnapshot(configure), other.ToSnapshot(configure));
+    /// <param name="after">The later PDF, whose new content counts as added.</param>
+    /// <param name="configure">What to leave out or scrub from both, as for <see cref="ToSnapshot"/>.</param>
+    public SnapshotDiff CompareTo(PdfUaDocument after, Action<PdfSnapshotOptions>? configure = null) =>
+        SnapshotDiff.Compare(this, after, configure);
 
     /// <summary>
     /// Applies the checks and lists what they find, grouped by check in the order <see cref="PdfCheck"/> declares them;
