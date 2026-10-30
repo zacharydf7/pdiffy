@@ -7,43 +7,43 @@ namespace PDiffy.Tests.Unit;
 // snapshot means adding a case here.
 public class MutationTests
 {
-    public static TheoryData<string, Sample, Section, ChangeKind, bool> Mutations => new()
+    public static TheoryData<string, Sample, PdfSection, ChangeKind, bool> Mutations => new()
     {
-        { "heading level", new Sample { Heading = "H3" }, Section.Structure, ChangeKind.Changed, true },
-        { "heading made a paragraph", new Sample { Heading = "P" }, Section.Structure, ChangeKind.Changed, true },
-        { "alt text removed", new Sample { Alt = null }, Section.Structure, ChangeKind.AttributeChanged, true },
-        { "alt text emptied", new Sample { Alt = "" }, Section.Structure, ChangeKind.AttributeChanged, true },
-        { "alt text edited", new Sample { Alt = "Store logo" }, Section.Structure, ChangeKind.AttributeChanged, false },
-        { "reading order swapped", new Sample { SwapParagraphs = true }, Section.Structure, ChangeKind.Moved, true },
-        { "header scope removed", new Sample { Scope = null }, Section.Structure, ChangeKind.AttributeChanged, true },
-        { "cell headers changed", new Sample { Headers = "(h-other)" }, Section.Structure, ChangeKind.AttributeChanged, true },
-        { "tagged text made untagged", new Sample { NoteTagged = false }, Section.Untagged, ChangeKind.Added, true },
-        { "tagged text made an artifact", new Sample { NoteArtifact = true }, Section.Layout, ChangeKind.Changed, true },
-        { "artifact made tagged", new Sample { FooterTagged = true }, Section.Artifacts, ChangeKind.Removed, false },
-        { "artifact kind", new Sample { FooterKind = "Header" }, Section.Artifacts, ChangeKind.AttributeChanged, false },
-        { "span language", new Sample { SpanLang = "de-DE" }, Section.Structure, ChangeKind.AttributeChanged, true },
-        { "document language", new Sample { DocumentLang = "en-GB" }, Section.Document, ChangeKind.AttributeChanged, true },
-        { "element language", new Sample { ElementLang = "fr-FR" }, Section.Structure, ChangeKind.AttributeChanged, true },
-        { "link target", new Sample { LinkUri = "https://example.com/b" }, Section.Annotations, ChangeKind.AttributeChanged, false },
-        { "link destination page", new Sample { LinkPage = 1 }, Section.Annotations, ChangeKind.AttributeChanged, false },
-        { "image pixels", new Sample { ImageGray = "81" }, Section.Layout, ChangeKind.AttributeChanged, false },
-        { "figure's image", new Sample { ImageGray = "81" }, Section.Structure, ChangeKind.AttributeChanged, false },
-        { "text moved by 1 pt", new Sample { TextAt = "73 400" }, Section.Layout, ChangeKind.AttributeChanged, false },
-        { "font size by 0.1 pt", new Sample { FontSize = "12.1" }, Section.Layout, ChangeKind.AttributeChanged, false },
-        { "text color", new Sample { TextColor = "1 0 0 rg" }, Section.Layout, ChangeKind.AttributeChanged, false },
-        { "field's accessible name removed", new Sample { FieldEntries = "/FT /Tx /Ff 2" }, Section.Forms, ChangeKind.AttributeChanged, true },
-        { "field no longer required", new Sample { FieldEntries = "/FT /Tx /TU (Hiker name)" }, Section.Forms, ChangeKind.AttributeChanged, false },
-        { "field text size", new Sample { FieldAppearance = "/F1 14 Tf 0 g" }, Section.Forms, ChangeKind.AttributeChanged, false },
-        { "field script edited", new Sample { FieldScript = "AFNumber_Format(2)" }, Section.Forms, ChangeKind.AttributeChanged, false },
-        { "form no longer redrawn by the viewer", new Sample { FormEntries = "" }, Section.Forms, ChangeKind.Removed, false },
-        { "signature removed", new Sample { SignatureEntries = "/FT /Sig" }, Section.Forms, ChangeKind.AttributeChanged, false },
-        { "bookmark target page", new Sample { BookmarkPage = 1 }, Section.Bookmarks, ChangeKind.Changed, false },
+        { "heading level", new Sample { Heading = "H3" }, PdfSection.Structure, ChangeKind.Changed, true },
+        { "heading made a paragraph", new Sample { Heading = "P" }, PdfSection.Structure, ChangeKind.Changed, true },
+        { "alt text removed", new Sample { Alt = null }, PdfSection.Structure, ChangeKind.AttributeChanged, true },
+        { "alt text emptied", new Sample { Alt = "" }, PdfSection.Structure, ChangeKind.AttributeChanged, true },
+        { "alt text edited", new Sample { Alt = "Store logo" }, PdfSection.Structure, ChangeKind.AttributeChanged, false },
+        { "reading order swapped", new Sample { SwapParagraphs = true }, PdfSection.Structure, ChangeKind.Moved, true },
+        { "header scope removed", new Sample { Scope = null }, PdfSection.Structure, ChangeKind.AttributeChanged, true },
+        { "cell headers changed", new Sample { Headers = "(h-other)" }, PdfSection.Structure, ChangeKind.AttributeChanged, true },
+        { "tagged text made untagged", new Sample { NoteTagged = false }, PdfSection.Untagged, ChangeKind.Added, true },
+        { "tagged text made an artifact", new Sample { NoteArtifact = true }, PdfSection.Layout, ChangeKind.Changed, true },
+        { "artifact made tagged", new Sample { FooterTagged = true }, PdfSection.Artifacts, ChangeKind.Removed, false },
+        { "artifact kind", new Sample { FooterKind = "Header" }, PdfSection.Artifacts, ChangeKind.AttributeChanged, false },
+        { "span language", new Sample { SpanLang = "de-DE" }, PdfSection.Structure, ChangeKind.AttributeChanged, true },
+        { "document language", new Sample { DocumentLang = "en-GB" }, PdfSection.Document, ChangeKind.AttributeChanged, true },
+        { "element language", new Sample { ElementLang = "fr-FR" }, PdfSection.Structure, ChangeKind.AttributeChanged, true },
+        { "link target", new Sample { LinkUri = "https://example.com/b" }, PdfSection.Annotations, ChangeKind.AttributeChanged, false },
+        { "link destination page", new Sample { LinkPage = 1 }, PdfSection.Annotations, ChangeKind.AttributeChanged, false },
+        { "image pixels", new Sample { ImageGray = "81" }, PdfSection.Layout, ChangeKind.AttributeChanged, false },
+        { "figure's image", new Sample { ImageGray = "81" }, PdfSection.Structure, ChangeKind.AttributeChanged, false },
+        { "text moved by 1 pt", new Sample { TextAt = "73 400" }, PdfSection.Layout, ChangeKind.AttributeChanged, false },
+        { "font size by 0.1 pt", new Sample { FontSize = "12.1" }, PdfSection.Layout, ChangeKind.AttributeChanged, false },
+        { "text color", new Sample { TextColor = "1 0 0 rg" }, PdfSection.Layout, ChangeKind.AttributeChanged, false },
+        { "field's accessible name removed", new Sample { FieldEntries = "/FT /Tx /Ff 2" }, PdfSection.Forms, ChangeKind.AttributeChanged, true },
+        { "field no longer required", new Sample { FieldEntries = "/FT /Tx /TU (Hiker name)" }, PdfSection.Forms, ChangeKind.AttributeChanged, false },
+        { "field text size", new Sample { FieldAppearance = "/F1 14 Tf 0 g" }, PdfSection.Forms, ChangeKind.AttributeChanged, false },
+        { "field script edited", new Sample { FieldScript = "AFNumber_Format(2)" }, PdfSection.Forms, ChangeKind.AttributeChanged, false },
+        { "form no longer redrawn by the viewer", new Sample { FormEntries = "" }, PdfSection.Forms, ChangeKind.Removed, false },
+        { "signature removed", new Sample { SignatureEntries = "/FT /Sig" }, PdfSection.Forms, ChangeKind.AttributeChanged, false },
+        { "bookmark target page", new Sample { BookmarkPage = 1 }, PdfSection.Bookmarks, ChangeKind.Changed, false },
     };
 
     [Theory]
     [MemberData(nameof(Mutations))]
     public void CompareTo_ShouldReportTheChange_WhenAMeaningfulDetailChanges(string mutation, Sample changed,
-        Section section, ChangeKind kind, bool affectsAccessibility)
+        PdfSection section, ChangeKind kind, bool affectsAccessibility)
     {
         var original = Build(new Sample());
         var mutated = Build(changed);

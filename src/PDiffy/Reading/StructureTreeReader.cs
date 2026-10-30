@@ -7,10 +7,10 @@ namespace PDiffy.Reading;
 /// <param name="ReferencedMcids">Every (page, MCID) an element points to, so content no element reaches can be found.</param>
 /// <param name="ReferencedObjects">Every object, such as an annotation, that an element points to.</param>
 internal sealed record StructureTree(
-    IReadOnlyList<RoleMapping> RoleMap, IReadOnlyList<StructureElement> Elements, IReadOnlySet<(int Page, int Mcid)> ReferencedMcids,
+    IReadOnlyList<PdfRoleMapping> RoleMap, IReadOnlyList<PdfStructureElement> Elements, IReadOnlySet<(int Page, int Mcid)> ReferencedMcids,
     IReadOnlySet<IndirectReference> ReferencedObjects);
 
-/// <summary>Turns the structure tree into <see cref="StructureElement"/>s, joining each element to its marked-content text.</summary>
+/// <summary>Turns the structure tree into <see cref="PdfStructureElement"/>s, joining each element to its marked-content text.</summary>
 internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, DestinationReader destinations,
     Func<int, PageContent?> contentOf)
 {
@@ -48,25 +48,25 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         NameReferencedHeaders(topLevel);
         var read = topLevel.Select(element => ReadElement(element, inheritedPage: null, depth: 1).Element).ToList();
         var elements = StructurePaths.Assign(read, StructurePaths.Root);
-        var mappings = _roleMap.Select(pair => new RoleMapping(pair.Key, pair.Value)).ToList();
+        var mappings = _roleMap.Select(pair => new PdfRoleMapping(pair.Key, pair.Value)).ToList();
         return new StructureTree(mappings, elements, _referencedMcids, _referencedObjects);
     }
 
     // Elements nested deeper than ReadLimits.MaxDepth are counted, not read, so a hostile tree can't overflow the stack.
     // Also gives the letters of the element and its descendants, in the order it lists them, for its parent's AllText.
-    private (StructureElement Element, List<(int Page, IReadOnlyList<Letter> Letters)> AllPieces) ReadElement(
+    private (PdfStructureElement Element, List<(int Page, IReadOnlyList<Letter> Letters)> AllPieces) ReadElement(
         DictionaryToken element, int? inheritedPage, int depth)
     {
         var type = objects.Name(element, "S") ?? "(none)";
         var page = pages.NumberOf(element.Data.GetValueOrDefault("Pg")) ?? inheritedPage;
         var pieces = new List<(int Page, IReadOnlyList<Letter> Letters)>();
         var allPieces = new List<(int Page, IReadOnlyList<Letter> Letters)>();
-        var spans = new List<MarkedSpan>();
+        var spans = new List<PdfMarkedSpan>();
         var images = new List<string>();
-        var textRuns = new List<TextRun>();
+        var textRuns = new List<PdfTextRun>();
         var pagesUsed = new SortedSet<int>();
-        var annotations = new List<Annotation>();
-        var children = new List<StructureElement>();
+        var annotations = new List<PdfAnnotation>();
+        var children = new List<PdfStructureElement>();
         var mcidsWithoutPage = 0;
         var mcidsInXObject = 0;
         var unreadChildren = 0;
@@ -135,15 +135,15 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         }
 
         var attributes = Attributes(element);
-        var result = new StructureElement
+        var result = new PdfStructureElement
         {
             Type = type,
             MappedType = MapRole(type),
             Name = objects.Text(element, "ID") is { } id ? _namesById.GetValueOrDefault(id) : null,
             FirstPage = pagesUsed.Count > 0 ? pagesUsed.Min : null,
             LastPage = pagesUsed.Count > 0 ? pagesUsed.Max : null,
-            Lang = objects.Text(element, "Lang"),
-            Alt = objects.Text(element, "Alt"),
+            Language = objects.Text(element, "Lang"),
+            AltText = objects.Text(element, "Alt"),
             ActualText = objects.Text(element, "ActualText"),
             Expansion = objects.Text(element, "E"),
             Title = objects.Text(element, "T"),
@@ -191,7 +191,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
             || TextJoiner.Gap(last, first) >= -last.PointSize * TextJoiner.SpaceGap);
     }
 
-    private Annotation? ReadAnnotation(DictionaryToken objectReference, int? elementPage)
+    private PdfAnnotation? ReadAnnotation(DictionaryToken objectReference, int? elementPage)
     {
         if (objectReference.Data.GetValueOrDefault("Obj") is IndirectReferenceToken target)
         {
@@ -204,7 +204,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         }
 
         var page = pages.NumberOf(objectReference.Data.GetValueOrDefault("Pg")) ?? elementPage;
-        return AnnotationReader.Read(objects, annotation, page, ContentRole.Tagged, destinations);
+        return AnnotationReader.Read(objects, annotation, page, PdfContentRole.Tagged, destinations);
     }
 
     // /Headers lists other elements' /ID values. In the snapshot, unresolved ones print as ?id so a broken reference shows up.

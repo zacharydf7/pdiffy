@@ -19,7 +19,7 @@ public sealed class TextSnapshotOptions
 
     /// <summary>
     /// Replaces dates with Date_1, Date_2 and so on. The same text always gets the same token. Recognizes the same dates
-    /// as <see cref="SnapshotOptions.ScrubDates"/>.
+    /// as <see cref="PdfSnapshotOptions.ScrubDates"/>.
     /// </summary>
     public TextSnapshotOptions ScrubDates()
     {

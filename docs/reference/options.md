@@ -4,10 +4,10 @@ Every option, in one place. The [Ignore and scrub](../guide/options.md) guide sh
 
 ## PDF profiles
 
-[`SnapshotOptions.Use(SnapshotProfile)`](xref:PDiffy.SnapshotOptions.Use*) leaves out what a test doesn't guard, in one
+[`PdfSnapshotOptions.Use(PdfProfile)`](xref:PDiffy.PdfSnapshotOptions.Use*) leaves out what a test doesn't guard, in one
 call. Further `Ignore` calls leave out more, and everything a profile doesn't leave out is compared.
 
-| SnapshotProfile | For tests that guard | Leaves out |
+| PdfProfile | For tests that guard | Leaves out |
 |---|---|---|
 | `Strict` | Everything | Nothing, the same as no profile |
 | `Content` | The text and its structure: tags, reading order, bookmarks, annotations and forms | The `Settings`, `Metadata`, `Fonts` and `Layout` sections, `PageBoxes` and `Positions` |
@@ -16,7 +16,7 @@ call. Further `Ignore` calls leave out more, and everything a profile doesn't le
 
 ## PDF sections
 
-[`SnapshotOptions.Ignore(params Section[])`](xref:PDiffy.SnapshotOptions.Ignore*) leaves whole sections out. Each prints
+[`PdfSnapshotOptions.Ignore(params PdfSection[])`](xref:PDiffy.PdfSnapshotOptions.Ignore*) leaves whole sections out. Each prints
 `(ignored)` instead of its contents.
 
 | Section | Contains |
@@ -35,12 +35,12 @@ call. Further `Ignore` calls leave out more, and everything a profile doesn't le
 | `Forms` | Every form field |
 | `Layout` | Every text run, image and path, with position and style |
 
-## PDF fields
+## PDF details
 
-[`SnapshotOptions.Ignore(params Field[])`](xref:PDiffy.SnapshotOptions.Ignore*) leaves one detail out wherever it
+[`PdfSnapshotOptions.Ignore(params PdfDetail[])`](xref:PDiffy.PdfSnapshotOptions.Ignore*) leaves one detail out wherever it
 appears; the rest of each line is still compared.
 
-| Field | Leaves out |
+| Detail | Leaves out |
 |---|---|
 | `Language` | The document's language, each structure element's language, languages set on marked content inside elements, and the XMP language |
 | `PdfVersion` | The PDF version in the file header and the catalog |
@@ -67,12 +67,12 @@ appears; the rest of each line is still compared.
 
 | Option | Does |
 |---|---|
-| [`ScrubDates()`](xref:PDiffy.SnapshotOptions.ScrubDates) | Replaces dates in quoted text with `Date_1`, `Date_2`, ...: `2026-10-27`, `10/27/2026`, `October 27, 2026`, `27 Oct 2026`, each with an optional time, and PDF dates such as `D:20261027120000` |
-| [`ScrubGuids()`](xref:PDiffy.SnapshotOptions.ScrubGuids) | Replaces GUIDs in quoted text with `Guid_1`, `Guid_2`, ... |
-| [`ScrubText(regex, replacement)`](xref:PDiffy.SnapshotOptions.ScrubText*) | Replaces your own pattern in quoted text. The replacement can refer to groups, such as `$1` |
-| [`ShowProducerAndCreator()`](xref:PDiffy.SnapshotOptions.ShowProducerAndCreator) | Prints the producer and creator values instead of only whether they're present |
-| [`OnlyPages(3, 4)`](xref:PDiffy.SnapshotOptions.OnlyPages*) | Keeps only what is on those pages |
-| [`Tolerate(Field.Positions, 1)`](xref:PDiffy.SnapshotOptions.Tolerate*) | Lets positions differ by up to 1 pt without failing the test; also takes `FontSizes` and `LineWidths`. The header lists it as `# tolerances: positions 1pt` |
+| [`ScrubDates()`](xref:PDiffy.PdfSnapshotOptions.ScrubDates) | Replaces dates in quoted text with `Date_1`, `Date_2`, ...: `2026-10-27`, `10/27/2026`, `October 27, 2026`, `27 Oct 2026`, each with an optional time, and PDF dates such as `D:20261027120000` |
+| [`ScrubGuids()`](xref:PDiffy.PdfSnapshotOptions.ScrubGuids) | Replaces GUIDs in quoted text with `Guid_1`, `Guid_2`, ... |
+| [`ScrubText(regex, replacement)`](xref:PDiffy.PdfSnapshotOptions.ScrubText*) | Replaces your own pattern in quoted text. The replacement can refer to groups, such as `$1` |
+| [`ShowProducerAndCreator()`](xref:PDiffy.PdfSnapshotOptions.ShowProducerAndCreator) | Prints the producer and creator values instead of only whether they're present |
+| [`OnlyPages(3, 4)`](xref:PDiffy.PdfSnapshotOptions.OnlyPages*) | Keeps only what is on those pages |
+| [`Tolerate(PdfTolerance.Positions, 1)`](xref:PDiffy.PdfSnapshotOptions.Tolerate*) | Lets positions differ by up to 1 pt without failing the test; also takes `FontSizes` and `LineWidths`. The header lists it as `# tolerances: positions 1pt` |
 
 ## Word profiles
 
@@ -139,8 +139,8 @@ less.
 | [`DocxSnapshot.DefaultOptions`](xref:PDiffy.DocxSnapshot.DefaultOptions) | `DocxSnapshot.VerifyAsync` and `Verify` | Runs first; the call adds to it and can't bring back what it leaves out |
 | [`Snapshot.DefaultOptions`](xref:PDiffy.Snapshot.DefaultOptions) | `Snapshot.VerifyAsync`, `VerifyJsonAsync`, `Verify` and `VerifyJson` | Runs first (after JSON's own scrubbing); a call's `KeepDates()` or `KeepGuids()` undoes a default scrub |
 
-Profiles and ignores add up: a default `Use(SnapshotProfile.Accessibility)` and a call's `Ignore(Section.Fonts)` leave
-out both, and a call's `Use(SnapshotProfile.Strict)` leaves out nothing more, so it doesn't undo the default.
+Profiles and ignores add up: a default `Use(PdfProfile.Accessibility)` and a call's `Ignore(PdfSection.Fonts)` leave
+out both, and a call's `Use(PdfProfile.Strict)` leaves out nothing more, so it doesn't undo the default.
 `ToSnapshot` and `CompareTo` don't use the defaults.
 
 ## Environment variables

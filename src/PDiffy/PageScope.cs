@@ -1,6 +1,6 @@
 namespace PDiffy;
 
-/// <summary>Narrows a document to some of its pages, for <see cref="SnapshotOptions.OnlyPages"/>.</summary>
+/// <summary>Narrows a document to some of its pages, for <see cref="PdfSnapshotOptions.OnlyPages"/>.</summary>
 internal static class PageScope
 {
     public static PdfUaDocument Keep(PdfUaDocument document, IReadOnlySet<int> pages)
@@ -29,9 +29,9 @@ internal static class PageScope
         Paths = document.Paths.Where(path => pages.Contains(path.Page)).ToList(),
     };
 
-    private static List<StructureElement> KeepElements(IReadOnlyList<StructureElement> elements, IReadOnlySet<int> pages)
+    private static List<PdfStructureElement> KeepElements(IReadOnlyList<PdfStructureElement> elements, IReadOnlySet<int> pages)
     {
-        var kept = new List<StructureElement>();
+        var kept = new List<PdfStructureElement>();
         foreach (var element in elements)
         {
             var children = KeepElements(element.Children, pages);
@@ -43,9 +43,9 @@ internal static class PageScope
         return kept;
     }
 
-    private static List<Bookmark> KeepBookmarks(IReadOnlyList<Bookmark> bookmarks, IReadOnlySet<int> pages)
+    private static List<PdfBookmark> KeepBookmarks(IReadOnlyList<PdfBookmark> bookmarks, IReadOnlySet<int> pages)
     {
-        var kept = new List<Bookmark>();
+        var kept = new List<PdfBookmark>();
         foreach (var bookmark in bookmarks)
         {
             var children = KeepBookmarks(bookmark.Children, pages);

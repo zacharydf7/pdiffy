@@ -9,21 +9,21 @@ namespace PDiffy.Reading;
 internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationReader destinations)
 {
     // PDF numbers permission bits from 1; these are the ones with a meaning.
-    private static readonly (int Bit, DocumentPermissions Permission)[] PermissionBits =
+    private static readonly (int Bit, PdfPermissions Permission)[] PermissionBits =
     [
-        (3, DocumentPermissions.Print), (4, DocumentPermissions.Modify), (5, DocumentPermissions.Copy),
-        (6, DocumentPermissions.Annotate), (9, DocumentPermissions.FillForms), (10, DocumentPermissions.ExtractForAccessibility),
-        (11, DocumentPermissions.Assemble), (12, DocumentPermissions.PrintHighQuality),
+        (3, PdfPermissions.Print), (4, PdfPermissions.Modify), (5, PdfPermissions.Copy),
+        (6, PdfPermissions.Annotate), (9, PdfPermissions.FillForms), (10, PdfPermissions.ExtractForAccessibility),
+        (11, PdfPermissions.Assemble), (12, PdfPermissions.PrintHighQuality),
     ];
 
-    public static DocumentSettings Read(PdfDocument document, PdfObjects objects, DictionaryToken catalog,
+    public static PdfSettings Read(PdfDocument document, PdfObjects objects, DictionaryToken catalog,
         DestinationReader destinations)
     {
         var reader = new DocumentSettingsReader(objects, destinations);
         var names = objects.Dictionary(catalog, "Names");
         var openAction = catalog.Data.GetValueOrDefault("OpenAction");
         var openActions = reader.DescribeOpenActions(openAction);
-        return new DocumentSettings
+        return new PdfSettings
         {
             PdfVersion = document.Version.ToString("0.0", CultureInfo.InvariantCulture),
             CatalogVersion = objects.Name(catalog, "Version"),
@@ -79,11 +79,11 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
         return chained.Prepend(DescribeAction(openAction)).OfType<string>().ToList();
     }
 
-    private DocumentPermissions ReadPermissions(PdfDocument document)
+    private PdfPermissions ReadPermissions(PdfDocument document)
     {
         var encryption = objects.Resolve(document.Structure.Trailer.EncryptionToken) as DictionaryToken;
         var flags = encryption is null ? 0 : objects.Integer(encryption, "P") ?? 0;
-        var permissions = DocumentPermissions.None;
+        var permissions = PdfPermissions.None;
         foreach (var (bit, permission) in PermissionBits)
         {
             if ((flags & (1 << (bit - 1))) != 0)
@@ -96,7 +96,7 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
     }
 
     // A layer is visible by default unless the default configuration turns it off, or turns everything off and not it back on.
-    private IReadOnlyList<Layer> ReadLayers(DictionaryToken catalog)
+    private IReadOnlyList<PdfLayer> ReadLayers(DictionaryToken catalog)
     {
         if (objects.Dictionary(catalog, "OCProperties") is not { } properties)
         {
@@ -107,7 +107,7 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
         var allOff = defaults is not null && objects.Name(defaults, "BaseState") == "OFF";
         var off = References(defaults, "OFF");
         var on = References(defaults, "ON");
-        var layers = new List<Layer>();
+        var layers = new List<PdfLayer>();
         foreach (var item in objects.Items(properties.Data.GetValueOrDefault("OCGs")))
         {
             if (objects.Resolve(item) is not DictionaryToken group)
@@ -118,7 +118,7 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
             var turnedOn = item is IndirectReferenceToken onReference && on.Contains(onReference.Data);
             var turnedOff = item is IndirectReferenceToken offReference && off.Contains(offReference.Data);
             var visible = allOff ? turnedOn : !turnedOff;
-            layers.Add(new Layer(objects.Text(group, "Name") ?? "(unnamed)", visible));
+            layers.Add(new PdfLayer(objects.Text(group, "Name") ?? "(unnamed)", visible));
         }
 
         return layers;
@@ -131,15 +131,15 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
     }
 
     // Embedded files are a name tree of file specifications; the file's contents are in /EF.
-    private IReadOnlyList<EmbeddedFile> ReadEmbeddedFiles(IToken? tree)
+    private IReadOnlyList<PdfEmbeddedFile> ReadEmbeddedFiles(IToken? tree)
     {
-        var files = new List<EmbeddedFile>();
+        var files = new List<PdfEmbeddedFile>();
         foreach (var (key, value) in objects.TreeEntries(tree, "Names"))
         {
             var name = PdfObjects.TextOf(objects.Resolve(key)) ?? "";
             if (objects.Resolve(value) is not DictionaryToken specification)
             {
-                files.Add(new EmbeddedFile(name, null, null, null, null, null));
+                files.Add(new PdfEmbeddedFile(name, null, null, null, null, null));
                 continue;
             }
 
@@ -147,7 +147,7 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
             var stream = streams is null ? null : (objects.Get(streams, "UF") ?? objects.Get(streams, "F")) as StreamToken;
             var contents = stream is null ? null : objects.Contents(stream);
             var hash = contents is null ? null : Convert.ToHexStringLower(SHA256.HashData(contents))[..16];
-            var file = new EmbeddedFile(name, objects.FileName(specification), objects.Text(specification, "Desc"),
+            var file = new PdfEmbeddedFile(name, objects.FileName(specification), objects.Text(specification, "Desc"),
                 objects.Name(specification, "AFRelationship"), contents?.Length, hash);
             files.Add(file with { Unreadable = stream is not null && contents is null });
         }

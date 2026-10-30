@@ -5,11 +5,11 @@ namespace PDiffy;
 /// </summary>
 internal static class StructurePaths
 {
-    public static readonly string Root = SnapshotWriter.Name(Section.Structure);
+    public static readonly string Root = SnapshotWriter.Name(PdfSection.Structure);
 
     // A sibling that shares its key with others gets its place among them: P[2].
-    public static IEnumerable<(StructureElement Element, string Path)> WithPaths(
-        IReadOnlyList<StructureElement> siblings, string parentPath)
+    public static IEnumerable<(PdfStructureElement Element, string Path)> WithPaths(
+        IReadOnlyList<PdfStructureElement> siblings, string parentPath)
     {
         var keys = siblings.Select(KeyOf).ToList();
         var counts = keys.CountBy(key => key).ToDictionary();
@@ -22,13 +22,14 @@ internal static class StructurePaths
         }
     }
 
-    /// <summary>The elements again, each with its <see cref="StructureElement.Path"/> and its children's.</summary>
-    public static IReadOnlyList<StructureElement> Assign(IReadOnlyList<StructureElement> siblings, string parentPath) =>
+    /// <summary>The elements again, each with its <see cref="PdfStructureElement.Path"/> and its children's.</summary>
+    public static IReadOnlyList<PdfStructureElement> Assign(IReadOnlyList<PdfStructureElement> siblings,
+        string parentPath) =>
         WithPaths(siblings, parentPath)
             .Select(pair => pair.Element with { Path = pair.Path, Children = Assign(pair.Element.Children, pair.Path) })
             .ToList();
 
     // As the snapshot prints an element: its name or type, then the type it's mapped to.
-    private static string KeyOf(StructureElement element) =>
+    private static string KeyOf(PdfStructureElement element) =>
         (element.Name ?? element.Type) + (element.MappedType is null ? "" : "->" + element.MappedType);
 }

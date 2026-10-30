@@ -13,7 +13,7 @@ namespace PDiffy.Diffing;
 /// to line up with the later one's, <paramref name="originals"/> gives each line as it was written, for showing. A
 /// number that moved no more than <paramref name="tolerances"/> allow isn't a change.
 /// </summary>
-internal sealed class TreeMatcher(string name, Section? section,
+internal sealed class TreeMatcher(string name, PdfSection? section,
     IReadOnlyDictionary<SnapshotLine, SnapshotLine>? originals = null, Tolerances? tolerances = null)
 {
     internal const double SameLineSimilarity = 0.5;
@@ -228,7 +228,7 @@ internal sealed class TreeMatcher(string name, Section? section,
         var match = MostAlike(removed, index, added, start, line => IsSameLine(old, line));
         if (match < 0) match = MostAlike(removed, index, added, start, line => IsReattributed(old, line));
         if (match < 0) match = MostAlike(removed, index, added, start, line => IsRewritten(old, line));
-        if (match < 0 && sectionName == SnapshotWriter.Name(Section.Structure))
+        if (match < 0 && sectionName == SnapshotWriter.Name(PdfSection.Structure))
         {
             match = MostAlike(removed, index, added, start, line => IsRetyped(old, line));
         }

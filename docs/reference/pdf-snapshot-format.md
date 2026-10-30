@@ -32,7 +32,7 @@ layout
 
 ## Sections
 
-Sections always appear in this order. Each can be left out with [`Section`](xref:PDiffy.Section).
+Sections always appear in this order. Each can be left out with [`PdfSection`](xref:PDiffy.PdfSection).
 
 | Section | Contents |
 |---|---|
@@ -86,7 +86,7 @@ Sections always appear in this order. Each can be left out with [`Section`](xref
 - A link that goes to a page prints `dest=p3` (`p?` when its page reference isn't a page), the view it opens the page
   at (`view=XYZ`, `Fit`, `FitH` and so on) and the view's positions in whole points (`view-at=72,720`, with `-` for a
   position the viewer keeps as it is), and an XYZ view's zoom when it sets one (`zoom=2`). The positions belong to
-  `Field.Positions`, so they can be tolerated or ignored.
+  `PdfDetail.Positions`, so they can be tolerated or ignored.
 - A named destination is looked up, so it prints like any other. One the PDF doesn't define, or one in another file,
   prints `dest-name="..."`.
 - A link to another file prints `file="maps.pdf"`, with the page it opens there for `action=GoToR`.
@@ -94,8 +94,8 @@ Sections always appear in this order. Each can be left out with [`Section`](xref
   in that file. A bookmark's zoom isn't read.
 - The open action reads its destination the same way, and prints it in the PDF's order inside `open-action="..."`: the
   page, the view, its positions and an XYZ view's zoom (`GoTo p1 XYZ 72 720 2`). A name the PDF doesn't define prints
-  as `named intro`. The positions aren't left out with `Field.Positions`, since the whole value belongs to
-  `Field.OpenAction`.
+  as `named intro`. The positions aren't left out with `PdfDetail.Positions`, since the whole value belongs to
+  `PdfDetail.OpenAction`.
 
 ### Fonts
 
@@ -121,7 +121,7 @@ These change without changing what anyone reading the document gets:
 - MCIDs and structure element IDs; references are resolved to names.
 - Font subset prefixes: `ABCDEF+Arial` is recorded as `Arial`.
 - Dates, document IDs and the producer string: only whether they're present.
-  [`ShowProducerAndCreator()`](xref:PDiffy.SnapshotOptions.ShowProducerAndCreator) prints the producer and creator.
+  [`ShowProducerAndCreator()`](xref:PDiffy.PdfSnapshotOptions.ShowProducerAndCreator) prints the producer and creator.
 
 ## Damaged files
 

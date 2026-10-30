@@ -6,17 +6,17 @@ namespace PDiffy.Diffing;
 /// How far numbers may differ before a line counts as changed, as a PDF snapshot's "# tolerances:" line gives them, such
 /// as "positions 1pt". Only the fields in <see cref="Numeric"/> take one.
 /// </summary>
-internal sealed class Tolerances(IReadOnlyDictionary<Field, double> points)
+internal sealed class Tolerances(IReadOnlyDictionary<PdfDetail, double> points)
 {
     public const string HeaderPrefix = "# tolerances: ";
 
-    public static readonly Field[] Numeric = [Field.Positions, Field.FontSizes, Field.LineWidths];
+    public static readonly PdfDetail[] Numeric = [PdfDetail.Positions, PdfDetail.FontSizes, PdfDetail.LineWidths];
 
     // Subtracting decimals, as in 12.3 - 12, leaves a tiny error, which mustn't push a difference equal to the
     // tolerance past it.
     private const double Slack = 1e-9;
 
-    public static string Header(IEnumerable<KeyValuePair<Field, double>> points) => HeaderPrefix
+    public static string Header(IEnumerable<KeyValuePair<PdfDetail, double>> points) => HeaderPrefix
         + string.Join(", ", points.Select(pair => $"{SnapshotWriter.Name(pair.Key)} {Number(pair.Value)}pt"));
 
     /// <summary>
@@ -26,11 +26,11 @@ internal sealed class Tolerances(IReadOnlyDictionary<Field, double> points)
     {
         var header = snapshot.Split('\n').TakeWhile(line => line.StartsWith('#'))
             .FirstOrDefault(line => line.StartsWith(HeaderPrefix, StringComparison.Ordinal));
-        var points = new Dictionary<Field, double>();
+        var points = new Dictionary<PdfDetail, double>();
         foreach (var entry in (header?[HeaderPrefix.Length..] ?? "").Split(", ", StringSplitOptions.RemoveEmptyEntries))
         {
             var (name, amount) = (entry.Split(' ')[0], entry.Split(' ').ElementAtOrDefault(1) ?? "");
-            var field = Numeric.Where(field => SnapshotWriter.Name(field) == name).Cast<Field?>().FirstOrDefault();
+            var field = Numeric.Where(field => SnapshotWriter.Name(field) == name).Cast<PdfDetail?>().FirstOrDefault();
             if (field is not null && amount.EndsWith("pt", StringComparison.Ordinal)
                 && double.TryParse(amount[..^2], NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
             {
@@ -59,13 +59,13 @@ internal sealed class Tolerances(IReadOnlyDictionary<Field, double> points)
 
     // A text run's size is its font size; every other size, every at= and a link's or bookmark's view-at= are positions.
     // An embedded file's size, on a line with no page, is a byte count. A bookmark to another file has no page either.
-    private static Field? FieldOf(SnapshotLine line, string key) => key switch
+    private static PdfDetail? FieldOf(SnapshotLine line, string key) => key switch
     {
-        "view-at" => Field.Positions,
+        "view-at" => PdfDetail.Positions,
         _ when line.Page is null => null,
-        "at" => Field.Positions,
-        "size" => line.Words.ElementAtOrDefault(1) == "text" ? Field.FontSizes : Field.Positions,
-        "width" => Field.LineWidths,
+        "at" => PdfDetail.Positions,
+        "size" => line.Words.ElementAtOrDefault(1) == "text" ? PdfDetail.FontSizes : PdfDetail.Positions,
+        "width" => PdfDetail.LineWidths,
         _ => null,
     };
 

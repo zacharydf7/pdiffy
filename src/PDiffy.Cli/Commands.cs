@@ -209,7 +209,7 @@ public static class Commands
 
     // A PDF or a DOCX is read and snapshotted; anything else is taken to be a snapshot already, which a profile can't
     // change. A Word document takes the profile of the same name, or Strict when there's none.
-    internal static string SnapshotOf(string path, SnapshotProfile profile) =>
+    internal static string SnapshotOf(string path, PdfProfile profile) =>
         IsPdf(path) ? PdfUaDocument.Load(path).ToSnapshot(options => options.Use(profile))
         : IsDocx(path) ? DocxDocument.Load(path).ToSnapshot(options => options.Use(
             Enum.TryParse<DocxProfile>(profile.ToString(), out var docxProfile) ? docxProfile : DocxProfile.Strict))
@@ -248,12 +248,12 @@ public static class Commands
     }
 
     /// <summary>The options both compare commands take.</summary>
-    private sealed record CompareOptions(string? Html, string? Json, bool PrintJson, SnapshotProfile Profile)
+    private sealed record CompareOptions(string? Html, string? Json, bool PrintJson, PdfProfile Profile)
     {
         // Null when an option is unknown or is missing its value.
         public static CompareOptions? Parse(string[] options)
         {
-            var parsed = new CompareOptions(null, null, false, SnapshotProfile.Strict);
+            var parsed = new CompareOptions(null, null, false, PdfProfile.Strict);
             for (var i = 0; i < options.Length; i++)
             {
                 var value = i + 1 < options.Length && !options[i + 1].StartsWith("--", StringComparison.Ordinal)
@@ -264,8 +264,8 @@ public static class Commands
                 else if (options[i] == "--json") parsed = parsed with { PrintJson = true };
                 // Only a name: Enum.TryParse also takes numbers and comma lists, which would pick another profile.
                 else if (options[i] == "--profile"
-                    && Enum.GetNames<SnapshotProfile>().Contains(value, StringComparer.OrdinalIgnoreCase)
-                    && Enum.TryParse<SnapshotProfile>(value, ignoreCase: true, out var profile))
+                    && Enum.GetNames<PdfProfile>().Contains(value, StringComparer.OrdinalIgnoreCase)
+                    && Enum.TryParse<PdfProfile>(value, ignoreCase: true, out var profile))
                 {
                     parsed = parsed with { Profile = profile };
                     i++;

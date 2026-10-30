@@ -11,20 +11,20 @@ public class PdfUaDocumentTests
         {
             Structure =
             [
-                new StructureElement
+                new PdfStructureElement
                 {
                     Type = "Document",
                     Children =
                     [
-                        new StructureElement { Type = "Sect", Children = [new StructureElement { Type = "Figure", Alt = "first" }] },
-                        new StructureElement { Type = "Chart", MappedType = "Figure", Alt = "second" },
-                        new StructureElement { Type = "Figure", Alt = "third" },
+                        new PdfStructureElement { Type = "Sect", Children = [new PdfStructureElement { Type = "Figure", AltText = "first" }] },
+                        new PdfStructureElement { Type = "Chart", MappedType = "Figure", AltText = "second" },
+                        new PdfStructureElement { Type = "Figure", AltText = "third" },
                     ],
                 },
             ],
         };
 
-        var alts = document.Elements(StructureType.Figure).Select(f => f.Alt);
+        var alts = document.Elements(StructureType.Figure).Select(f => f.AltText);
 
         Assert.Equal(["first", "second", "third"], alts);
     }

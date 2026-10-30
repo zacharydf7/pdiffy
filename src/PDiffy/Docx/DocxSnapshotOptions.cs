@@ -138,7 +138,7 @@ public sealed class DocxSnapshotOptions
 
     /// <summary>
     /// Replaces dates in quoted text and link addresses with Date_1, Date_2 and so on. The same text always gets the same token. Recognizes
-    /// the same dates as <see cref="SnapshotOptions.ScrubDates"/>.
+    /// the same dates as <see cref="PdfSnapshotOptions.ScrubDates"/>.
     /// </summary>
     public DocxSnapshotOptions ScrubDates()
     {

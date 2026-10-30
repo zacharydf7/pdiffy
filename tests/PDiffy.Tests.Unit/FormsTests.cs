@@ -16,10 +16,10 @@ public class FormsTests
 
         Assert.Equal(2, annotations.Count);
         var (link, note) = (annotations[0], annotations[1]);
-        Assert.Equal(("Link", ContentRole.Tagged, "https://example.com"), (link.Subtype, link.Role, link.Uri));
-        Assert.Equal(("Text", ContentRole.Untagged, "Check the stage"), (note.Subtype, note.Role, note.Contents));
+        Assert.Equal(("Link", PdfContentRole.Tagged, "https://example.com"), (link.Subtype, link.Role, link.Uri));
+        Assert.Equal(("Text", PdfContentRole.Untagged, "Check the stage"), (note.Subtype, note.Role, note.Contents));
         Assert.Equal((1, 100, 100, 20, 30), (note.Page!.Value, note.X, note.Y, note.Width, note.Height));
-        Assert.Equal(AnnotationFlags.Hidden | AnnotationFlags.Print, note.Flags);
+        Assert.Equal(PdfAnnotationFlags.Hidden | PdfAnnotationFlags.Print, note.Flags);
     }
 
     [Theory]
@@ -87,9 +87,9 @@ public class FormsTests
 
         var field = Assert.Single(pdf.Load().FormFields);
 
-        Assert.Equal(("street", FormFieldType.Text, 1), (field.Name, field.Type, field.Page!.Value));
+        Assert.Equal(("street", PdfFormFieldType.Text, 1), (field.Name, field.Type, field.Page!.Value));
         Assert.Equal(("Street address", "12 Main St", 40), (field.AccessibleName, field.Value, field.MaxLength!.Value));
-        Assert.Equal(FormFieldFlags.Required | FormFieldFlags.Multiline, field.Flags);
+        Assert.Equal(PdfFormFieldFlags.Required | PdfFormFieldFlags.Multiline, field.Flags);
     }
 
     [Fact]
@@ -106,15 +106,15 @@ public class FormsTests
 
         var fields = pdf.Load().FormFields;
 
-        FormFieldType[] types =
+        PdfFormFieldType[] types =
         [
-            FormFieldType.Checkbox, FormFieldType.RadioButton, FormFieldType.PushButton, FormFieldType.ComboBox,
-            FormFieldType.ListBox, FormFieldType.Signature,
+            PdfFormFieldType.Checkbox, PdfFormFieldType.RadioButton, PdfFormFieldType.PushButton,
+            PdfFormFieldType.ComboBox, PdfFormFieldType.ListBox, PdfFormFieldType.Signature,
         ];
         Assert.Equal(types, fields.Select(field => field.Type));
         Assert.Equal(["Yes", "Small", null, "Green", "Mushrooms, Olives", null], fields.Select(field => field.Value));
         Assert.Equal(["Red", "Green"], fields[3].Options);
-        Assert.Equal(FormFieldFlags.MultiSelect, fields[4].Flags);
+        Assert.Equal(PdfFormFieldFlags.MultiSelect, fields[4].Flags);
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public class FormsTests
 
         var field = Assert.Single(document.FormFields);
 
-        Assert.Equal(("address.city", FormFieldType.Text, FormFieldFlags.Required), (field.Name, field.Type, field.Flags));
+        Assert.Equal(("address.city", PdfFormFieldType.Text, PdfFormFieldFlags.Required), (field.Name, field.Type, field.Flags));
         Assert.Equal((1, "City"), (field.Page!.Value, field.AccessibleName));
     }
 
@@ -153,9 +153,9 @@ public class FormsTests
         var fields = document.FormFields;
 
         Assert.Equal(2, fields.Count);
-        Assert.Equal(("size", FormFieldType.RadioButton, "Small", 1),
+        Assert.Equal(("size", PdfFormFieldType.RadioButton, "Small", 1),
             (fields[0].Name, fields[0].Type, fields[0].Value, fields[0].Page!.Value));
-        Assert.Equal(("phone.number", FormFieldType.Text, "555", 10, 2),
+        Assert.Equal(("phone.number", PdfFormFieldType.Text, "555", 10, 2),
             (fields[1].Name, fields[1].Type, fields[1].Value, fields[1].MaxLength!.Value, fields[1].Page!.Value));
     }
 
@@ -172,7 +172,7 @@ public class FormsTests
 
         var field = Assert.Single(document.FormFields);
 
-        Assert.Equal(("Guest", FormFieldAlignment.Center), (field.DefaultValue, field.Alignment));
+        Assert.Equal(("Guest", PdfFormFieldAlignment.Center), (field.DefaultValue, field.Alignment));
         Assert.Equal(("Helvetica", 0.0, "gray:0"), (field.TextFont, field.TextSize, field.TextColor));
         Assert.Contains("  text \"hiker\" p1 default=\"Guest\" align=center text-font=Helvetica text-size=auto text-color=gray:0\n",
             document.ToSnapshot());
@@ -186,7 +186,7 @@ public class FormsTests
 
         var field = Assert.Single(pdf.Load().FormFields);
 
-        Assert.Equal(("Cour", 10.5, "#ff0000", FormFieldAlignment.Right),
+        Assert.Equal(("Cour", 10.5, "#ff0000", PdfFormFieldAlignment.Right),
             (field.TextFont, field.TextSize, field.TextColor, field.Alignment));
     }
 
@@ -203,7 +203,7 @@ public class FormsTests
 
         var field = Assert.Single(document.FormFields);
 
-        Assert.Equal(("None", "Cour", 9.0, FormFieldAlignment.Right), (field.DefaultValue, field.TextFont, field.TextSize, field.Alignment));
+        Assert.Equal(("None", "Cour", 9.0, PdfFormFieldAlignment.Right), (field.DefaultValue, field.TextFont, field.TextSize, field.Alignment));
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public class FormsTests
 
         var field = Assert.Single(document.FormFields);
 
-        Assert.Equal((14.0, FormFieldAlignment.Center), (field.TextSize, field.Alignment));
+        Assert.Equal((14.0, PdfFormFieldAlignment.Center), (field.TextSize, field.Alignment));
     }
 
     [Fact]
@@ -273,7 +273,7 @@ public class FormsTests
 
         var scripts = Assert.Single(pdf.Load().FormFields).Scripts;
 
-        Assert.Equal([FormScriptTrigger.Keystroke, FormScriptTrigger.Calculate, FormScriptTrigger.Activate],
+        Assert.Equal([PdfFormScriptTrigger.Keystroke, PdfFormScriptTrigger.Calculate, PdfFormScriptTrigger.Activate],
             scripts.Select(script => script.Trigger));
         Assert.Equal(3, scripts.Select(script => script.Hash).Distinct().Count());
     }
@@ -305,7 +305,7 @@ public class FormsTests
 
         var script = Assert.Single(Assert.Single(pdf.Load().FormFields).Scripts);
 
-        Assert.Equal(FormScriptTrigger.Activate, script.Trigger);
+        Assert.Equal(PdfFormScriptTrigger.Activate, script.Trigger);
     }
 
     [Fact]
@@ -316,7 +316,7 @@ public class FormsTests
 
         var script = Assert.Single(Assert.Single(pdf.Load().FormFields).Scripts);
 
-        Assert.Equal(FormScriptTrigger.Blur, script.Trigger);
+        Assert.Equal(PdfFormScriptTrigger.Blur, script.Trigger);
     }
 
     [Fact]
@@ -348,7 +348,7 @@ public class FormsTests
 
         var form = document.Form!;
 
-        Assert.Equal((true, XfaFormKind.Dynamic), (form.NeedsAppearances, form.Xfa));
+        Assert.Equal((true, PdfXfaForm.Dynamic), (form.NeedsAppearances, form.Xfa));
         Assert.Equal(["trip.tax", "trip.total", "(unknown)"], form.CalculationOrder);
         Assert.Contains("forms\n  form calculation-order=[\"trip.tax\",\"trip.total\",\"(unknown)\"] need-appearances=yes xfa=dynamic\n",
             document.ToSnapshot());
@@ -360,7 +360,7 @@ public class FormsTests
         var pdf = new TestPdf().FormField("trail", "/FT /Tx").FormEntries("/XFA (template)");
         pdf.AddPage();
 
-        Assert.Equal(XfaFormKind.Static, pdf.Load().Form!.Xfa);
+        Assert.Equal(PdfXfaForm.Static, pdf.Load().Form!.Xfa);
     }
 
     [Fact]
@@ -389,7 +389,7 @@ public class FormsTests
         var document = LoadSigned("/SubFilter /adbe.pkcs7.detached /Contents <0102> /M (D:20261030120000Z) /Reason (Approved) "
             + "/Location (Trailhead office)");
 
-        var expected = new SignatureInfo
+        var expected = new PdfSignature
         {
             SubFilter = "adbe.pkcs7.detached", CoversWholeFile = true, HasReason = true, HasLocation = true, HasSigningTime = true,
         };
@@ -407,11 +407,11 @@ public class FormsTests
     }
 
     [Theory]
-    [InlineData("/TransformParams << /P 1 >>", SignatureCertification.NoChanges)]
-    [InlineData("/TransformParams << /P 3 >>", SignatureCertification.FormFillingAndAnnotations)]
-    [InlineData("", SignatureCertification.FormFilling)]
+    [InlineData("/TransformParams << /P 1 >>", PdfSignatureCertification.NoChanges)]
+    [InlineData("/TransformParams << /P 3 >>", PdfSignatureCertification.FormFillingAndAnnotations)]
+    [InlineData("", PdfSignatureCertification.FormFilling)]
     public void Load_ShouldReadTheCertificationLevel_WhenTheSignatureCertifiesTheDocument(string parameters,
-        SignatureCertification level)
+        PdfSignatureCertification level)
     {
         var document = LoadSigned($"/Reference [<< /Type /SigRef /TransformMethod /DocMDP {parameters} >>]");
 

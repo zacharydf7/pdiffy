@@ -18,7 +18,7 @@ internal static class SnapshotBreakdown
         var total = counts.Values.Sum();
         if (total == 0) return null;
 
-        var layout = SnapshotWriter.Name(Section.Layout);
+        var layout = SnapshotWriter.Name(PdfSection.Layout);
         var parts = counts.Where(pair => pair.Value > 0).OrderByDescending(pair => pair.Value).Select(pair =>
             $"{pair.Key} {Number(pair.Value)}" + (pair.Key == layout ? $" ({pair.Value * 100 / total}%)" : ""));
         var pageCount = PageAlignment.PageCount(sections);
@@ -31,8 +31,8 @@ internal static class SnapshotBreakdown
         if (!leavesOut && counts.GetValueOrDefault(layout) * 2 >= total)
         {
             breakdown += Environment.NewLine + "Most of it is layout: where things are drawn and how they look. If the "
-                + "test guards the content or its accessibility, Use(SnapshotProfile.Content) leaves layout out, and "
-                + "Use(SnapshotProfile.Accessibility) keeps only what assistive technology uses.";
+                + "test guards the content or its accessibility, Use(PdfProfile.Content) leaves layout out, and "
+                + "Use(PdfProfile.Accessibility) keeps only what assistive technology uses.";
         }
 
         return breakdown;

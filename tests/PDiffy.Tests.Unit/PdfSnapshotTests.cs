@@ -83,13 +83,13 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
     [Fact]
     public async Task VerifyAsync_ShouldApplyTheDefaultsAndTheCallsOwnOptions_WhenDefaultOptionsAreSet()
     {
-        PdfSnapshot.DefaultOptions = options => options.Use(SnapshotProfile.Accessibility);
+        PdfSnapshot.DefaultOptions = options => options.Use(PdfProfile.Accessibility);
 
         await Assert.ThrowsAsync<SnapshotException>(
-            () => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide", o => o.Ignore(Section.Fonts)));
+            () => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide", o => o.Ignore(PdfSection.Fonts)));
 
         var expected = PdfUaDocument.Load(Pdf("Hello"))
-            .ToSnapshot(o => o.Use(SnapshotProfile.Accessibility).Ignore(Section.Fonts));
+            .ToSnapshot(o => o.Use(PdfProfile.Accessibility).Ignore(PdfSection.Fonts));
         Assert.Equal(expected, File.ReadAllText(Path.Combine(Folder, "Guide.received.pdfua.txt")));
     }
 
@@ -240,7 +240,7 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
     public async Task VerifyAsync_ShouldApplyTheOptions_WhenGivenSome()
     {
         await Assert.ThrowsAsync<SnapshotException>(
-            () => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide", o => o.Ignore(Section.Layout)));
+            () => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide", o => o.Ignore(PdfSection.Layout)));
 
         Assert.Contains("# ignored sections: layout\n", File.ReadAllText(Path.Combine(Folder, "Guide.received.pdfua.txt")));
     }

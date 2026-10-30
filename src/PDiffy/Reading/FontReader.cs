@@ -11,7 +11,7 @@ internal static class FontReader
     /// Every font the pages and their form XObjects use, once each, with the character codes its text uses that don't map
     /// to Unicode. Pages PdfPig couldn't load contribute the fonts in their resources but no codes.
     /// </summary>
-    public static IReadOnlyList<FontInfo> Read(PdfObjects objects, PageTree pages, IReadOnlyDictionary<int, Page> loaded)
+    public static IReadOnlyList<PdfFont> Read(PdfObjects objects, PageTree pages, IReadOnlyDictionary<int, Page> loaded)
     {
         var usage = new FontUsageReader(objects);
         for (var number = 1; number <= pages.Pages.Count; number++)
@@ -24,7 +24,7 @@ internal static class FontReader
         return usage.Fonts.Select(use => ReadFont(objects, use)).ToList();
     }
 
-    private static FontInfo ReadFont(PdfObjects objects, FontUse use)
+    private static PdfFont ReadFont(PdfObjects objects, FontUse use)
     {
         var font = use.Font;
         var subtype = objects.Name(font, "Subtype");
@@ -41,7 +41,7 @@ internal static class FontReader
         var embedded = descriptor is not null && FontFileKeys.Any(descriptor.Data.ContainsKey);
         var hasToUnicode = font.Data.ContainsKey("ToUnicode");
         var name = WithoutSubsetPrefix(objects.Name(font, "BaseFont") ?? "(none)");
-        return new FontInfo(name, subtype, embedded, hasToUnicode) { UnmappedCodes = UnmappedCodes(objects, use, subtype) };
+        return new PdfFont(name, subtype, embedded, hasToUnicode) { UnmappedCodes = UnmappedCodes(objects, use, subtype) };
     }
 
     // A CID font's codes are two bytes (true of the Identity encodings nearly every CID font uses); a simple font's are one.
@@ -59,7 +59,7 @@ internal static class FontReader
 
         var maps = UnicodeMap.For(objects, use.Font, subtype);
         var unmapped = codes.Where(code => !maps(code)).ToList();
-        // [] is the same shared empty list as the property's default, so a font with none still equals new FontInfo(...).
+        // [] is the same shared empty list as the property's default, so a font with none still equals new PdfFont(...).
         if (unmapped.Count == 0) return [];
         return unmapped;
     }

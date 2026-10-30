@@ -17,16 +17,16 @@ internal static class MetadataReader
     private static readonly string[] StandardInfoKeys =
         ["Title", "Author", "Subject", "Keywords", "Creator", "Producer", "CreationDate", "ModDate"];
 
-    public static DocumentInfo ReadDocumentInfo(PdfObjects objects, DictionaryToken catalog, int pageCount)
+    public static PdfDocumentInfo ReadDocumentInfo(PdfObjects objects, DictionaryToken catalog, int pageCount)
     {
         var markInfo = objects.Dictionary(catalog, "MarkInfo");
         var viewerPreferences = objects.Dictionary(catalog, "ViewerPreferences");
         var marked = markInfo is not null && objects.Boolean(markInfo, "Marked");
         var displayDocTitle = viewerPreferences is not null && objects.Boolean(viewerPreferences, "DisplayDocTitle");
-        return new DocumentInfo(marked, objects.Text(catalog, "Lang"), displayDocTitle, pageCount);
+        return new PdfDocumentInfo(marked, objects.Text(catalog, "Lang"), displayDocTitle, pageCount);
     }
 
-    public static Metadata ReadMetadata(PdfDocument document, PdfObjects objects)
+    public static PdfMetadata ReadMetadata(PdfDocument document, PdfObjects objects)
     {
         var info = document.Information;
         var otherInfo = objects.Settings(info.DocumentInformationDictionary, StandardInfoKeys);
@@ -36,7 +36,7 @@ internal static class MetadataReader
         var pdfUaPart = XmpValue(xml, PdfUaId + "part");
         var pdfAPart = XmpValue(xml, PdfAId + "part");
         var xmpTitle = xml?.Descendants(DublinCore + "title").Descendants().LastOrDefault()?.Value;
-        return new Metadata(
+        return new PdfMetadata(
             info.Title, info.Author, info.Subject, info.Keywords, info.CreationDate is not null, info.ModifiedDate is not null,
             info.Producer, info.Creator, pdfUaPart, xmpTitle)
         {

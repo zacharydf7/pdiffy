@@ -45,7 +45,7 @@ public enum ChangeKind
 /// <param name="Detail">What changed, such as <c>type: H2 -> H3</c>, <c>alt: "Trail map" -> (missing)</c> or
 /// <c>reading position 3 -> 5</c> and <c>parent: Document > P -> Document</c> for a move; for a line added or removed,
 /// the line itself. It can run over several lines.</param>
-public sealed record SnapshotChange(ChangeKind Kind, Section? Section, string Path, int? Page, string Detail)
+public sealed record SnapshotChange(ChangeKind Kind, PdfSection? Section, string Path, int? Page, string Detail)
 {
     /// <summary>
     /// Whether the change can affect what assistive technology gets, by the rules the README lists under "Changes
@@ -75,7 +75,7 @@ public sealed class SnapshotDiff
 
     /// <summary>
     /// Every change, in snapshot order; <see cref="Describe"/> lists those that can affect accessibility first. A
-    /// number that differs by no more than <see cref="SnapshotOptions.Tolerate"/> allows isn't a change.
+    /// number that differs by no more than <see cref="PdfSnapshotOptions.Tolerate"/> allows isn't a change.
     /// </summary>
     public IReadOnlyList<SnapshotChange> Changes { get; }
 
@@ -162,9 +162,9 @@ public sealed class SnapshotDiff
             .ToDictionary(pair => pair.First, pair => pair.Second);
     }
 
-    private static Section? SectionNamed(string name) =>
-        Enum.GetValues<Section>().Where(section => SnapshotWriter.Name(section) == name)
-            .Select(section => (Section?)section).FirstOrDefault();
+    private static PdfSection? SectionNamed(string name) =>
+        Enum.GetValues<PdfSection>().Where(section => SnapshotWriter.Name(section) == name)
+            .Select(section => (PdfSection?)section).FirstOrDefault();
 
     /// <summary>
     /// A summary for a test failure: counts by kind and by section, then up to <paramref name="maxChanges"/> changes,

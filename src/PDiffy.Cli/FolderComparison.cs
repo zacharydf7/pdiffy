@@ -29,7 +29,7 @@ internal sealed class FolderComparison
 
     public int NotCompared { get; }
 
-    public static FolderComparison Run(string before, string after, SnapshotProfile profile)
+    public static FolderComparison Run(string before, string after, PdfProfile profile)
     {
         var (beforeFiles, afterFiles) = (FilesIn(before), FilesIn(after));
         var paths = beforeFiles.Keys.Union(afterFiles.Keys).ToList();
@@ -116,7 +116,7 @@ internal sealed class FolderComparison
     private static SummaryRow RowOf(FileDifference file) => new(NameOf(file.Status), file.Path, file.Diff, file.Problem);
 
     // A file that can't be read is a difference, so one damaged document doesn't stop the rest being compared.
-    private static FileDifference? Compare(string path, string? before, string? after, SnapshotProfile profile)
+    private static FileDifference? Compare(string path, string? before, string? after, PdfProfile profile)
     {
         if (before is null) return new FileDifference(path, FileStatus.Added);
         if (after is null) return new FileDifference(path, FileStatus.Removed);

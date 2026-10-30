@@ -6,12 +6,12 @@ namespace PDiffy.Tests.Unit;
 
 public class SnapshotOptionsTests
 {
-    public static TheoryData<Field> AllFields => new(Enum.GetValues<Field>());
+    public static TheoryData<PdfDetail> AllFields => new(Enum.GetValues<PdfDetail>());
 
     [Fact]
     public void ToSnapshot_ShouldPrintIgnoredAndListTheSections_WhenSectionsAreIgnored()
     {
-        var snapshot = Documents.Empty().ToSnapshot(o => o.Ignore(Section.Layout, Section.Metadata));
+        var snapshot = Documents.Empty().ToSnapshot(o => o.Ignore(PdfSection.Layout, PdfSection.Metadata));
 
         Assert.Equal("# ignored sections: metadata, layout", snapshot.Split('\n')[1]);
         Assert.Equal(["  (ignored)"], SectionLines(snapshot, "metadata"));
@@ -20,13 +20,13 @@ public class SnapshotOptionsTests
     }
 
     [Theory]
-    [InlineData(SnapshotProfile.Content, "# ignored sections: settings, metadata, fonts, layout",
+    [InlineData(PdfProfile.Content, "# ignored sections: settings, metadata, fonts, layout",
         "# ignored fields: page-boxes, positions")]
-    [InlineData(SnapshotProfile.Accessibility, "# ignored fields: pdf-version, open-action, embedded-file-contents, author, "
+    [InlineData(PdfProfile.Accessibility, "# ignored fields: pdf-version, open-action, embedded-file-contents, author, "
         + "subject, keywords, dates, producer, creator, custom-info, page-boxes, positions, colors, font-names, font-sizes, "
         + "line-widths, image-contents")]
-    [InlineData(SnapshotProfile.Layout, "# ignored sections: settings, metadata")]
-    public void ToSnapshot_ShouldListWhatTheProfileLeavesOut_WhenAProfileIsUsed(SnapshotProfile profile, params string[] header)
+    [InlineData(PdfProfile.Layout, "# ignored sections: settings, metadata")]
+    public void ToSnapshot_ShouldListWhatTheProfileLeavesOut_WhenAProfileIsUsed(PdfProfile profile, params string[] header)
     {
         var snapshot = Full().ToSnapshot(o => o.Use(profile));
 
@@ -36,7 +36,7 @@ public class SnapshotOptionsTests
     [Fact]
     public void ToSnapshot_ShouldLeaveOutNothing_WhenTheStrictProfileIsUsed()
     {
-        var snapshot = Full().ToSnapshot(o => o.Use(SnapshotProfile.Strict));
+        var snapshot = Full().ToSnapshot(o => o.Use(PdfProfile.Strict));
 
         Assert.Equal(Full().ToSnapshot(), snapshot);
     }
@@ -44,7 +44,7 @@ public class SnapshotOptionsTests
     [Fact]
     public void ToSnapshot_ShouldLeaveOutWhatIgnoreAdds_WhenAProfileIsUsedWithIgnore()
     {
-        var snapshot = Full().ToSnapshot(o => o.Use(SnapshotProfile.Layout).Ignore(Field.AltText));
+        var snapshot = Full().ToSnapshot(o => o.Use(PdfProfile.Layout).Ignore(PdfDetail.AltText));
 
         Assert.StartsWith("# pdfua-snapshot v1\n# ignored sections: settings, metadata\n# ignored fields: alt-text\n", snapshot);
     }
@@ -52,33 +52,46 @@ public class SnapshotOptionsTests
     [Fact]
     public void Use_ShouldThrow_WhenGivenAValueThatIsNotAProfile()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new SnapshotOptions().Use((SnapshotProfile)99));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfSnapshotOptions().Use((PdfProfile)99));
     }
 
     [Fact]
     public void ToSnapshot_ShouldListTheTolerances_WhenNumbersAreTolerated()
     {
-        var snapshot = Full().ToSnapshot(o => o.Tolerate(Field.FontSizes, 0.5).Tolerate(Field.Positions, 1));
+        var snapshot = Full().ToSnapshot(o => o.Tolerate(PdfTolerance.FontSizes, 0.5)
+            .Tolerate(PdfTolerance.Positions, 1));
 
         Assert.Equal("# tolerances: positions 1pt, font-sizes 0.5pt", snapshot.Split('\n')[1]);
         Assert.Equal(Full().ToSnapshot().Split('\n').Skip(1), snapshot.Split('\n').Skip(2));
     }
 
     [Theory]
-    [InlineData(Field.Colors, 1)]
-    [InlineData(Field.Positions, 0)]
-    [InlineData(Field.Positions, -1)]
-    [InlineData(Field.Positions, double.NaN)]
-    [InlineData(Field.Positions, double.PositiveInfinity)]
-    public void Tolerate_ShouldThrow_WhenTheFieldIsNotANumberOrThePointsAreNotPositive(Field field, double points)
+    [InlineData(PdfTolerance.Positions, "positions")]
+    [InlineData(PdfTolerance.FontSizes, "font-sizes")]
+    [InlineData(PdfTolerance.LineWidths, "line-widths")]
+    public void ToSnapshot_ShouldListTheToleratedNumbers_WhenGivenEachTolerance(PdfTolerance tolerance, string name)
     {
-        Assert.ThrowsAny<ArgumentException>(() => new SnapshotOptions().Tolerate(field, points));
+        var snapshot = Full().ToSnapshot(o => o.Tolerate(tolerance, 2));
+
+        Assert.Equal($"# tolerances: {name} 2pt", snapshot.Split('\n')[1]);
+    }
+
+    [Theory]
+    [InlineData((PdfTolerance)3, 1)]
+    [InlineData(PdfTolerance.Positions, 0)]
+    [InlineData(PdfTolerance.Positions, -1)]
+    [InlineData(PdfTolerance.Positions, double.NaN)]
+    [InlineData(PdfTolerance.Positions, double.PositiveInfinity)]
+    public void Tolerate_ShouldThrow_WhenTheToleranceIsUnknownOrThePointsAreNotPositive(PdfTolerance tolerance,
+        double points)
+    {
+        Assert.ThrowsAny<ArgumentException>(() => new PdfSnapshotOptions().Tolerate(tolerance, points));
     }
 
     [Fact]
     public void ToSnapshot_ShouldLeaveOutOnlyThoseKeys_WhenFieldsAreIgnored()
     {
-        var snapshot = Full().ToSnapshot(o => o.Ignore(Field.Positions).Ignore(Field.Colors));
+        var snapshot = Full().ToSnapshot(o => o.Ignore(PdfDetail.Positions).Ignore(PdfDetail.Colors));
 
         Assert.Equal("# ignored fields: positions, colors", snapshot.Split('\n')[1]);
         string[] expectedLayout =
@@ -96,7 +109,8 @@ public class SnapshotOptionsTests
     [Fact]
     public void ToSnapshot_ShouldDropALine_WhenEveryKeyOnItIsIgnored()
     {
-        var snapshot = Full().ToSnapshot(o => o.Ignore(Field.Title, Field.Author, Field.Subject, Field.Keywords));
+        var snapshot = Full().ToSnapshot(o =>
+            o.Ignore(PdfDetail.Title, PdfDetail.Author, PdfDetail.Subject, PdfDetail.Keywords));
 
         Assert.Equal("  creation-date=<present> mod-date=<present> producer=<present> creator=<present>", SectionLines(snapshot, "metadata")[0]);
     }
@@ -104,15 +118,15 @@ public class SnapshotOptionsTests
     [Fact]
     public void ToSnapshot_ShouldLeaveOutEveryCopy_WhenAFieldAppearsInSeveralPlaces()
     {
-        var snapshot = Full().ToSnapshot(o => o.Ignore(Field.Title, Field.Author, Field.Subject, Field.Language, Field.LinkTargets,
-            Field.AltText, Field.ActualText, Field.ImageContents, Field.FontNames, Field.FontSizes, Field.Colors, Field.FormValues));
+        var snapshot = Full().ToSnapshot(o => o.Ignore(PdfDetail.Title, PdfDetail.Author, PdfDetail.Subject, PdfDetail.Language, PdfDetail.LinkTargets,
+            PdfDetail.AltText, PdfDetail.ActualText, PdfDetail.ImageContents, PdfDetail.FontNames, PdfDetail.FontSizes, PdfDetail.Colors, PdfDetail.FormValues));
 
         Assert.DoesNotMatch(@"\s(title|xmp-title|author|xmp-creator|subject|xmp-description|lang|span-lang|xmp-language|uri|action|file|dest|view|view-at|alt|actual|span-alt|span-actual|images|pixels|text-font|text-size|text-color|value|default)=", snapshot);
     }
 
     [Theory]
     [MemberData(nameof(AllFields))]
-    public void ToSnapshot_ShouldChangeTheBody_WhenAnyFieldIsIgnored(Field field)
+    public void ToSnapshot_ShouldChangeTheBody_WhenAnyFieldIsIgnored(PdfDetail field)
     {
         var document = Full();
 
@@ -124,7 +138,7 @@ public class SnapshotOptionsTests
     [Fact]
     public void ToSnapshot_ShouldReplaceOnlyQuotedText_WhenScrubbingAPattern()
     {
-        var paragraph = new StructureElement { Type = "P", Text = "Ticket 12345 for P. Smith" };
+        var paragraph = new PdfStructureElement { Type = "P", Text = "Ticket 12345 for P. Smith" };
         var document = Documents.Empty() with { Structure = [paragraph] };
 
         var snapshot = document.ToSnapshot(o => o.ScrubText(new Regex(@"Ticket (\d+)"), "Ticket <id>").ScrubText(new Regex("P"), "X"));
@@ -143,7 +157,7 @@ public class SnapshotOptionsTests
     [InlineData("D:20261027140300Z")]
     public void ToSnapshot_ShouldReplaceTheDate_WhenScrubbingDates(string date)
     {
-        var document = Documents.Empty() with { Structure = [new StructureElement { Type = "P", Text = $"Printed {date}." }] };
+        var document = Documents.Empty() with { Structure = [new PdfStructureElement { Type = "P", Text = $"Printed {date}." }] };
 
         var snapshot = document.ToSnapshot(o => o.ScrubDates());
 
@@ -159,9 +173,9 @@ public class SnapshotOptionsTests
         {
             Structure =
             [
-                new StructureElement { Type = "P", Text = $"Issued 2026-10-27 as {first}" },
-                new StructureElement { Type = "P", Text = $"Due 11/30/2026, replaces {second}" },
-                new StructureElement { Type = "P", Alt = $"Reissued 2026-10-27 as {first}" },
+                new PdfStructureElement { Type = "P", Text = $"Issued 2026-10-27 as {first}" },
+                new PdfStructureElement { Type = "P", Text = $"Due 11/30/2026, replaces {second}" },
+                new PdfStructureElement { Type = "P", AltText = $"Reissued 2026-10-27 as {first}" },
             ],
         };
 
@@ -191,28 +205,28 @@ public class SnapshotOptionsTests
     {
         var document = Documents.Empty() with
         {
-            Document = new DocumentInfo(true, "en-US", true, 3),
-            Pages = [new PageInfo(1, 612, 792, 0, null, false), new PageInfo(2, 612, 792, 0, null, false), new PageInfo(3, 612, 792, 0, null, false)],
-            Bookmarks = [new Bookmark("Intro", 1, []), new Bookmark("Results", null, [new Bookmark("Table", 2, []), new Bookmark("Notes", 3, [])])],
+            Document = new PdfDocumentInfo(true, "en-US", true, 3),
+            Pages = [new PdfPage(1, 612, 792, 0, null, false), new PdfPage(2, 612, 792, 0, null, false), new PdfPage(3, 612, 792, 0, null, false)],
+            Bookmarks = [new PdfBookmark("Intro", 1, []), new PdfBookmark("Results", null, [new PdfBookmark("Table", 2, []), new PdfBookmark("Notes", 3, [])])],
             Structure =
             [
-                new StructureElement
+                new PdfStructureElement
                 {
                     Type = "Document",
                     Children =
                     [
-                        new StructureElement { Type = "H1", FirstPage = 1, Text = "Intro" },
-                        new StructureElement { Type = "Table", FirstPage = 1, LastPage = 3, Text = "Spans" },
-                        new StructureElement { Type = "P", FirstPage = 2, Text = "Kept" },
-                        new StructureElement { Type = "P", FirstPage = 3, Text = "Dropped" },
+                        new PdfStructureElement { Type = "H1", FirstPage = 1, Text = "Intro" },
+                        new PdfStructureElement { Type = "Table", FirstPage = 1, LastPage = 3, Text = "Spans" },
+                        new PdfStructureElement { Type = "P", FirstPage = 2, Text = "Kept" },
+                        new PdfStructureElement { Type = "P", FirstPage = 3, Text = "Dropped" },
                     ],
                 },
             ],
-            Artifacts = [new PageText(1, "Page 1"), new PageText(2, "Page 2")],
-            Annotations = [new Annotation { Subtype = "Link", Page = 3 }, new Annotation { Subtype = "Link", Page = 2 }],
-            FormFields = [new FormField { Name = "a", Page = 1 }, new FormField { Name = "b", Page = 2 }, new FormField { Name = "c" }],
-            TextRuns = [new TextRun(1, 72, 700, "Arial", 12, null, TextRenderMode.Fill, ContentRole.Tagged, "One"),
-                new TextRun(2, 72, 700, "Arial", 12, null, TextRenderMode.Fill, ContentRole.Tagged, "Two")],
+            Artifacts = [new PdfPageText(1, "Page 1"), new PdfPageText(2, "Page 2")],
+            Annotations = [new PdfAnnotation { Subtype = "Link", Page = 3 }, new PdfAnnotation { Subtype = "Link", Page = 2 }],
+            FormFields = [new PdfFormField { Name = "a", Page = 1 }, new PdfFormField { Name = "b", Page = 2 }, new PdfFormField { Name = "c" }],
+            TextRuns = [new PdfTextRun(1, 72, 700, "Arial", 12, null, PdfTextRenderMode.Fill, PdfContentRole.Tagged, "One"),
+                new PdfTextRun(2, 72, 700, "Arial", 12, null, PdfTextRenderMode.Fill, PdfContentRole.Tagged, "Two")],
         };
 
         var snapshot = document.ToSnapshot(o => o.OnlyPages(2));
@@ -233,10 +247,10 @@ public class SnapshotOptionsTests
     {
         var document = Documents.Empty() with
         {
-            Structure = [new StructureElement { Type = "Figure", Alt = "Chart for 2026-01-01" }, new StructureElement { Type = "P", Text = "Printed 2026-10-27" }],
+            Structure = [new PdfStructureElement { Type = "Figure", AltText = "Chart for 2026-01-01" }, new PdfStructureElement { Type = "P", Text = "Printed 2026-10-27" }],
         };
 
-        var snapshot = document.ToSnapshot(o => o.Ignore(Field.AltText).ScrubDates());
+        var snapshot = document.ToSnapshot(o => o.Ignore(PdfDetail.AltText).ScrubDates());
 
         Assert.Equal(["  Figure", "  P \"Printed Date_1\""], SectionLines(snapshot, "structure"));
     }
@@ -244,7 +258,7 @@ public class SnapshotOptionsTests
     [Fact]
     public void ToSnapshot_ShouldLeaveLongerNumbersAlone_WhenScrubbingDates()
     {
-        var document = Documents.Empty() with { Structure = [new StructureElement { Type = "P", Text = "Part 1234-56-7890" }] };
+        var document = Documents.Empty() with { Structure = [new PdfStructureElement { Type = "P", Text = "Part 1234-56-7890" }] };
 
         var snapshot = document.ToSnapshot(o => o.ScrubDates());
 
@@ -254,7 +268,7 @@ public class SnapshotOptionsTests
     [Fact]
     public void OnlyPages_ShouldThrow_WhenGivenNoPagesOrPagesBelowOne()
     {
-        var options = new SnapshotOptions();
+        var options = new PdfSnapshotOptions();
 
         Assert.Throws<ArgumentException>(() => options.OnlyPages());
         Assert.Throws<ArgumentOutOfRangeException>(() => options.OnlyPages(0));
@@ -271,56 +285,56 @@ public class SnapshotOptionsTests
     // A document with every field set, so ignoring any one of them changes its snapshot.
     private static PdfUaDocument Full() => Documents.Empty() with
     {
-        Settings = new DocumentSettings
+        Settings = new PdfSettings
         {
-            PdfVersion = "1.7", OpenAction = "p1 Fit", IsEncrypted = true, Permissions = DocumentPermissions.Print,
-            EmbeddedFiles = [new EmbeddedFile("a.txt", null, null, null, 5, "2cf24dba5fb0a30e")],
+            PdfVersion = "1.7", OpenAction = "p1 Fit", IsEncrypted = true, Permissions = PdfPermissions.Print,
+            EmbeddedFiles = [new PdfEmbeddedFile("a.txt", null, null, null, 5, "2cf24dba5fb0a30e")],
         },
-        Metadata = new Metadata("Title", "Ann", "Trails", "park", true, true, "Producer 1.0", "Word", "1", "Title")
+        Metadata = new PdfMetadata("Title", "Ann", "Trails", "park", true, true, "Producer 1.0", "Word", "1", "Title")
         {
-            OtherInfo = [new Setting("Company", "Example Park")], XmpCreator = "Ann", XmpDescription = "Trails", XmpLanguage = "en-US",
+            OtherInfo = [new PdfSetting("Company", "Example Park")], XmpCreator = "Ann", XmpDescription = "Trails", XmpLanguage = "en-US",
         },
-        Pages = [new PageInfo(1, 612, 792, 0, null, false) { CropBox = new PageBox(0, 0, 600, 780) }],
+        Pages = [new PdfPage(1, 612, 792, 0, null, false) { CropBox = new PdfBox(0, 0, 600, 780) }],
         Bookmarks =
         [
-            new Bookmark("Intro", 1, []) { Destination = new Destination { Page = 1, View = "FitH", Positions = [700] } },
-            new Bookmark("Map", null, []) { Uri = "https://example.com/map" },
+            new PdfBookmark("Intro", 1, []) { Destination = new PdfDestination { Page = 1, View = "FitH", Positions = [700] } },
+            new PdfBookmark("Map", null, []) { Uri = "https://example.com/map" },
         ],
         Structure =
         [
-            new StructureElement
+            new PdfStructureElement
             {
-                Type = "Figure", Lang = "en-US", Alt = "Logo", ActualText = "Logo", ImageHashes = ["0123456789abcdef"],
-                MarkedSpans = [new MarkedSpan { Language = "fr-FR", ActualText = "fi", AltText = "ligature" }],
+                Type = "Figure", Language = "en-US", AltText = "Logo", ActualText = "Logo", ImageHashes = ["0123456789abcdef"],
+                MarkedSpans = [new PdfMarkedSpan { Language = "fr-FR", ActualText = "fi", AltText = "ligature" }],
             },
-            new StructureElement
+            new PdfStructureElement
             {
                 Type = "Link",
                 Annotations =
                 [
-                    new Annotation
+                    new PdfAnnotation
                     {
                         Subtype = "Link", Action = "GoToR", File = "maps.pdf",
-                        Destination = new Destination { Page = 1, View = "XYZ", Positions = [72, 700] },
+                        Destination = new PdfDestination { Page = 1, View = "XYZ", Positions = [72, 700] },
                     },
                 ],
             },
         ],
         Annotations =
         [
-            new Annotation { Subtype = "Link", Page = 1, X = 72, Y = 600, Width = 50, Height = 12, Uri = "https://example.com", Contents = "Example" },
+            new PdfAnnotation { Subtype = "Link", Page = 1, X = 72, Y = 600, Width = 50, Height = 12, Uri = "https://example.com", Contents = "Example" },
         ],
         FormFields =
         [
-            new FormField
+            new PdfFormField
             {
-                Name = "city", Type = FormFieldType.Text, Value = "Tampa", DefaultValue = "Miami", TextFont = "Helvetica",
+                Name = "city", Type = PdfFormFieldType.Text, Value = "Tampa", DefaultValue = "Miami", TextFont = "Helvetica",
                 TextSize = 10, TextColor = "gray:0",
             },
         ],
-        TextRuns = [new TextRun(1, 72, 700, "Arial", 12, "gray:0", TextRenderMode.Fill, ContentRole.Tagged, "Hi")],
-        Images = [new ImageInfo(1, 72, 500, 10, 10, 1, 1, "0123456789abcdef", ContentRole.Tagged)],
-        Paths = [new PathInfo(1, 72, 300, 100, 0, null, "#ff0000", 0.5, ContentRole.Artifact)],
+        TextRuns = [new PdfTextRun(1, 72, 700, "Arial", 12, "gray:0", PdfTextRenderMode.Fill, PdfContentRole.Tagged, "Hi")],
+        Images = [new PdfImage(1, 72, 500, 10, 10, 1, 1, "0123456789abcdef", PdfContentRole.Tagged)],
+        Paths = [new PdfVectorPath(1, 72, 300, 100, 0, null, "#ff0000", 0.5, PdfContentRole.Artifact)],
     };
 
     private static string Body(string snapshot) => string.Join("\n", snapshot.Split('\n').Where(line => !line.StartsWith('#')));

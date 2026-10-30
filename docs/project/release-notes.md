@@ -10,6 +10,33 @@ apart from a change to your document. After upgrading, review the received files
 Everything below is on `main`. The snapshot format stays `pdfua-snapshot v1` and `docx-snapshot v1`, but many PDF
 snapshots gain keys or lines; see [Format changes](../reference/format-changes.md#next-release) for each one.
 
+### Breaking API changes
+
+PDiffy is new, so its API can still change before 1.0. Snapshots don't change with these; only code that uses the
+library does.
+
+- PDF types carry a `Pdf` prefix, as Word types carry `Docx`, so they no longer clash with PdfPig's
+  ([#91](https://github.com/zacharydf7/pdiffy/issues/91)):
+
+  | Before | Now |
+  |---|---|
+  | `SnapshotOptions`, `Section`, `Field`, `SnapshotProfile` | `PdfSnapshotOptions`, `PdfSection`, `PdfDetail`, `PdfProfile` |
+  | `Annotation`, `AnnotationFlags`, `Bookmark`, `Destination` | `PdfAnnotation`, `PdfAnnotationFlags`, `PdfBookmark`, `PdfDestination` |
+  | `DocumentInfo`, `DocumentSettings`, `DocumentPermissions`, `Metadata` | `PdfDocumentInfo`, `PdfSettings`, `PdfPermissions`, `PdfMetadata` |
+  | `EmbeddedFile`, `Layer`, `Setting`, `RoleMapping`, `CheckFinding` | `PdfEmbeddedFile`, `PdfLayer`, `PdfSetting`, `PdfRoleMapping`, `PdfCheckFinding` |
+  | `FontInfo`, `ImageInfo`, `PathInfo`, `TextRun`, `TextRenderMode`, `ContentRole` | `PdfFont`, `PdfImage`, `PdfVectorPath`, `PdfTextRun`, `PdfTextRenderMode`, `PdfContentRole` |
+  | `PageInfo`, `PageBox`, `PageGroup`, `PageLabelRange`, `PageText`, `PageLayouts`, `PageModes` | `PdfPage`, `PdfBox`, `PdfPageGroup`, `PdfPageLabelRange`, `PdfPageText`, `PdfPageLayouts`, `PdfPageModes` |
+  | `StructureElement`, `Heading`, `MarkedSpan` | `PdfStructureElement`, `PdfHeading`, `PdfMarkedSpan` |
+  | `FormField`, `FormFieldType`, `FormFieldFlags`, `FormFieldAlignment`, `FormScript`, `FormScriptTrigger`, `FormSettings`, `XfaFormKind` | The same with `Pdf` in front, and `PdfXfaForm` |
+  | `SignatureInfo`, `SignatureCertification` | `PdfSignature`, `PdfSignatureCertification` |
+
+- `Lang` and `Alt` are `Language` and `AltText`, as in the Word model, and `HasCreationDate` and `HasModDate` are
+  `HasCreatedDate` and `HasModifiedDate`.
+- `Tolerate` takes a `PdfTolerance` (`Positions`, `FontSizes` or `LineWidths`), so only a number it can tolerate
+  compiles.
+- `PdfAnnotation.HasDestination` is gone: it covered only a link's own destination entry, not a GoTo action's.
+  `Destination` says where any link goes.
+
 ### Snapshots record more
 
 - Links and bookmarks print where they go: page, view, positions and zoom, a named destination looked up, or the file

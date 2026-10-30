@@ -10,7 +10,7 @@ public abstract class SnapshotFolderTests : IDisposable
     private readonly Dictionary<string, string?> _savedVariables =
         Variables.ToDictionary(name => name, Environment.GetEnvironmentVariable);
     private readonly string? _savedDirectory = Snapshot.Directory;
-    private readonly Action<SnapshotOptions>? _savedPdfDefaults = PdfSnapshot.DefaultOptions;
+    private readonly Action<PdfSnapshotOptions>? _savedPdfDefaults = PdfSnapshot.DefaultOptions;
     private readonly Action<DocxSnapshotOptions>? _savedDocxDefaults = DocxSnapshot.DefaultOptions;
     private readonly Action<TextSnapshotOptions>? _savedTextDefaults = Snapshot.DefaultOptions;
     private readonly Action<string> _savedOpenReport = SnapshotWorkflow.OpenReport;

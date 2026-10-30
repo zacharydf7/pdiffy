@@ -12,7 +12,7 @@ internal static class NavigationReader
     /// The bookmarks, or none when they nest deeper than <see cref="ReadLimits.MaxDepth"/>, loop back on themselves or
     /// have an item PdfPig can't read, such as one without a title.
     /// </summary>
-    public static (IReadOnlyList<Bookmark> Bookmarks, bool Unreadable) ReadBookmarks(PdfDocument document, PdfObjects objects,
+    public static (IReadOnlyList<PdfBookmark> Bookmarks, bool Unreadable) ReadBookmarks(PdfDocument document, PdfObjects objects,
         DictionaryToken catalog)
     {
         // PdfPig reads the outline recursively and doesn't notice a loop, so either would overflow the stack.
@@ -55,28 +55,28 @@ internal static class NavigationReader
     }
 
     // Page labels are a number tree of (page index, label) pairs.
-    public static IReadOnlyList<PageLabelRange> ReadPageLabels(PdfObjects objects, DictionaryToken catalog)
+    public static IReadOnlyList<PdfPageLabelRange> ReadPageLabels(PdfObjects objects, DictionaryToken catalog)
     {
-        var ranges = new List<PageLabelRange>();
+        var ranges = new List<PdfPageLabelRange>();
         foreach (var (key, value) in objects.TreeEntries(catalog.Data.GetValueOrDefault("PageLabels"), "Nums"))
         {
             if (objects.Resolve(key) is NumericToken pageIndex && objects.Resolve(value) is DictionaryToken label)
             {
                 var start = objects.Integer(label, "St") ?? 1;
-                ranges.Add(new PageLabelRange(pageIndex.Int + 1, objects.Name(label, "S"), objects.Text(label, "P"), start));
+                ranges.Add(new PdfPageLabelRange(pageIndex.Int + 1, objects.Name(label, "S"), objects.Text(label, "P"), start));
             }
         }
 
         return ranges.OrderBy(range => range.FirstPage).ToList();
     }
 
-    private static Bookmark ToBookmark(BookmarkNode node)
+    private static PdfBookmark ToBookmark(BookmarkNode node)
     {
         // PdfPig's bookmarks to another file are document bookmarks too, but their page is in that file.
         var document = node as DocumentBookmarkNode;
         var local = node is not (ExternalBookmarkNode or EmbeddedBookmarkNode);
         var page = local ? document?.PageNumber : null;
-        return new Bookmark(TextJoiner.Normalize(node.Title), page, node.Children.Select(ToBookmark).ToList())
+        return new PdfBookmark(TextJoiner.Normalize(node.Title), page, node.Children.Select(ToBookmark).ToList())
         {
             Destination = document is null ? null : DestinationReader.FromBookmark(document.Destination),
             Uri = (node as UriBookmarkNode)?.Uri,

@@ -128,8 +128,8 @@ Everything PDiffy reads is also available as properties, so you can assert on th
 PdfUaDocument document = PdfUaDocument.Load("trail-guide.pdf");
 
 Assert.True(document.Document.Marked);
-Assert.Equal("en-US", document.Document.Lang);
-Assert.All(document.Elements(StructureType.Figure), figure => Assert.False(string.IsNullOrWhiteSpace(figure.Alt)));
+Assert.Equal("en-US", document.Document.Language);
+Assert.All(document.Elements(StructureType.Figure), figure => Assert.False(string.IsNullOrWhiteSpace(figure.AltText)));
 
 // The same text VerifyAsync compares.
 string snapshot = document.ToSnapshot();

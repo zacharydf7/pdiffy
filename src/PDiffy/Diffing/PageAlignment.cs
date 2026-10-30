@@ -46,7 +46,7 @@ internal sealed class PageAlignment
         if (_removed.Count > 0) parts.Add($"{Ranges(_removed)} removed");
         parts.AddRange(Shifts().Select(shift => $"{shift.From} -> {shift.To}"));
         var page = _inserted.Concat(_removed).Min();
-        return new SnapshotChange(ChangeKind.Changed, Section.Pages, "pages", page, string.Join("; ", parts));
+        return new SnapshotChange(ChangeKind.Changed, PdfSection.Pages, "pages", page, string.Join("; ", parts));
     }
 
     /// <summary>
@@ -119,7 +119,7 @@ internal sealed class PageAlignment
     // The document line's pages= when the document section is there, else the highest page any line names.
     internal static int PageCount(Dictionary<string, List<SnapshotLine>> sections)
     {
-        var document = sections.GetValueOrDefault(SnapshotWriter.Name(Section.Document)) ?? [];
+        var document = sections.GetValueOrDefault(SnapshotWriter.Name(PdfSection.Document)) ?? [];
         var count = document.SelectMany(line => line.Attributes).Where(pair => pair.Key == "pages")
             .Select(pair => int.TryParse(pair.Value, out var pages) ? pages : 0).FirstOrDefault();
         return count > 0 ? count : AllLines(sections).Select(line => line.Page ?? 0).DefaultIfEmpty().Max();

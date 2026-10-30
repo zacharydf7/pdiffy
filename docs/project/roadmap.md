@@ -67,7 +67,7 @@ changes are fine until 1.0; each one is listed in the release notes.
 
 | Issue | What | Status |
 |---|---|---|
-| [#91](https://github.com/zacharydf7/pdiffy/issues/91) | Consistent names across PDF and Word | Open |
+| [#91](https://github.com/zacharydf7/pdiffy/issues/91) | Consistent names across PDF and Word | Done, on the `api-pass` branch; `Images` keeps both shapes (see the issue) |
 | [#92](https://github.com/zacharydf7/pdiffy/issues/92) | Model records with real equality | Open |
 | [#93](https://github.com/zacharydf7/pdiffy/issues/93) | Enums instead of magic strings | Open |
 | [#94](https://github.com/zacharydf7/pdiffy/issues/94) | `SnapshotChange` for Word | Open |

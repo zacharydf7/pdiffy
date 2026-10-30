@@ -4,7 +4,7 @@ using UglyToad.PdfPig.Core;
 namespace PDiffy.Reading;
 
 /// <summary>A text run, and the MCID of the marked content that draws it, if any.</summary>
-internal readonly record struct OwnedRun(TextRun Run, int? Mcid);
+internal readonly record struct OwnedRun(PdfTextRun Run, int? Mcid);
 
 /// <summary>
 /// A page's text runs, with each one's style and owner, read before the structure tree so elements can list their own.
@@ -51,7 +51,7 @@ internal sealed class TextRunReader(int pageNumber, ContentOwners owners, Conten
         }
 
         var start = letters[0].StartBaseLine;
-        var run = new TextRun(pageNumber, LayoutReader.Round(start.X), LayoutReader.Round(start.Y), style.Font, style.Size,
+        var run = new PdfTextRun(pageNumber, LayoutReader.Round(start.X), LayoutReader.Round(start.Y), style.Font, style.Size,
             style.Color, style.RenderMode, RoleOf(style.Owner), text)
         {
             Angle = TextJoiner.Angle(letters[0]),
@@ -60,11 +60,11 @@ internal sealed class TextRunReader(int pageNumber, ContentOwners owners, Conten
         runs.Add(new OwnedRun(run, style.Owner?.Mcid));
     }
 
-    private static ContentRole RoleOf(ContentOwner? owner) => owner switch
+    private static PdfContentRole RoleOf(ContentOwner? owner) => owner switch
     {
-        { IsArtifact: true } => ContentRole.Artifact,
-        { Mcid: not null } => ContentRole.Tagged,
-        _ => ContentRole.Untagged,
+        { IsArtifact: true } => PdfContentRole.Artifact,
+        { Mcid: not null } => PdfContentRole.Tagged,
+        _ => PdfContentRole.Untagged,
     };
 
     private RunStyle StyleOf(Letter letter)
@@ -82,19 +82,19 @@ internal sealed class TextRunReader(int pageNumber, ContentOwners owners, Conten
         TextJoiner.OnSameLine(previous, next) && TextJoiner.Advance(previous, next) >= 0;
 
     // PDF defines exactly these eight modes.
-    private static TextRenderMode ToRenderMode(TextRenderingMode mode) => mode switch
+    private static PdfTextRenderMode ToRenderMode(TextRenderingMode mode) => mode switch
     {
-        TextRenderingMode.Stroke => TextRenderMode.Stroke,
-        TextRenderingMode.FillThenStroke => TextRenderMode.FillStroke,
-        TextRenderingMode.Neither => TextRenderMode.Invisible,
-        TextRenderingMode.FillClip => TextRenderMode.FillClip,
-        TextRenderingMode.StrokeClip => TextRenderMode.StrokeClip,
-        TextRenderingMode.FillThenStrokeClip => TextRenderMode.FillStrokeClip,
-        TextRenderingMode.NeitherClip => TextRenderMode.Clip,
-        _ => TextRenderMode.Fill,
+        TextRenderingMode.Stroke => PdfTextRenderMode.Stroke,
+        TextRenderingMode.FillThenStroke => PdfTextRenderMode.FillStroke,
+        TextRenderingMode.Neither => PdfTextRenderMode.Invisible,
+        TextRenderingMode.FillClip => PdfTextRenderMode.FillClip,
+        TextRenderingMode.StrokeClip => PdfTextRenderMode.StrokeClip,
+        TextRenderingMode.FillThenStrokeClip => PdfTextRenderMode.FillStrokeClip,
+        TextRenderingMode.NeitherClip => PdfTextRenderMode.Clip,
+        _ => PdfTextRenderMode.Fill,
     };
 
     // Layers are compared by their names, so two pieces of optional content in one layer don't split a run.
-    private readonly record struct RunStyle(string Font, double Size, string? Color, TextRenderMode RenderMode,
+    private readonly record struct RunStyle(string Font, double Size, string? Color, PdfTextRenderMode RenderMode,
         ContentOwner? Owner, string Layers);
 }

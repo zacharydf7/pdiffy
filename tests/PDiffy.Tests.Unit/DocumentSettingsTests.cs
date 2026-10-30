@@ -27,9 +27,9 @@ public class DocumentSettingsTests
             (settings.PdfVersion, settings.CatalogVersion, settings.PageMode, settings.PageLayout, settings.OpenAction));
         Assert.Equal((true, true, false), (settings.HasJavaScript, settings.HasAdditionalActions, settings.IsEncrypted));
         Assert.Null(settings.Permissions);
-        Assert.Equal([new Setting("CenterWindow", "true"), new Setting("Direction", "R2L")], settings.ViewerPreferences);
-        Assert.Equal([new Layer("Watermark", true), new Layer("Draft", false)], settings.Layers);
-        Assert.Equal([new EmbeddedFile("data.xml", "data.xml", "Lab data", "Data", 5, "2cf24dba5fb0a30e")], settings.EmbeddedFiles);
+        Assert.Equal([new PdfSetting("CenterWindow", "true"), new PdfSetting("Direction", "R2L")], settings.ViewerPreferences);
+        Assert.Equal([new PdfLayer("Watermark", true), new PdfLayer("Draft", false)], settings.Layers);
+        Assert.Equal([new PdfEmbeddedFile("data.xml", "data.xml", "Lab data", "Data", 5, "2cf24dba5fb0a30e")], settings.EmbeddedFiles);
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class DocumentSettingsTests
         var settings = document.Settings;
 
         Assert.Equal(("1.7", null, "GoTo p1 XYZ 0 792 0.5"), (settings.PdfVersion, settings.CatalogVersion, settings.OpenAction));
-        Assert.Equal([new Layer("Watermark", true), new Layer("Draft", false)], settings.Layers);
+        Assert.Equal([new PdfLayer("Watermark", true), new PdfLayer("Draft", false)], settings.Layers);
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public class DocumentSettingsTests
         var settings = document.Settings;
 
         Assert.True(settings.IsEncrypted);
-        Assert.Equal(DocumentPermissions.Print | DocumentPermissions.ExtractForAccessibility, settings.Permissions);
+        Assert.Equal(PdfPermissions.Print | PdfPermissions.ExtractForAccessibility, settings.Permissions);
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public class DocumentSettingsTests
 
         var metadata = pdf.Load().Metadata;
 
-        Setting[] expectedInfo = [new("Company", "Example Park"), new("SourceModified", "D:20210101"), new("Trapped", "False")];
+        PdfSetting[] expectedInfo = [new("Company", "Example Park"), new("SourceModified", "D:20210101"), new("Trapped", "False")];
         Assert.Equal(expectedInfo, metadata.OtherInfo);
         Assert.Equal(("Ann; Bo", "Trail guide", "en-US", "2B"),
             (metadata.XmpCreator, metadata.XmpDescription, metadata.XmpLanguage, metadata.PdfAConformance));
@@ -217,12 +217,12 @@ public class DocumentSettingsTests
         var pages = pdf.Load().Pages;
 
         var boxed = pages[0];
-        Assert.Equal(new PageBox(10, 10, 592, 772), boxed.CropBox);
-        Assert.Equal(new PageBox(0, 0, 612, 792), boxed.BleedBox);
-        Assert.Equal(new PageBox(20, 20, 572, 752), boxed.TrimBox);
-        Assert.Equal(new PageBox(30, 30, 552, 732), boxed.ArtBox);
+        Assert.Equal(new PdfBox(10, 10, 592, 772), boxed.CropBox);
+        Assert.Equal(new PdfBox(0, 0, 612, 792), boxed.BleedBox);
+        Assert.Equal(new PdfBox(20, 20, 572, 752), boxed.TrimBox);
+        Assert.Equal(new PdfBox(30, 30, 552, 732), boxed.ArtBox);
         Assert.Equal(2.0, boxed.UserUnit);
-        Assert.Equal(new PageGroup("Transparency", "DeviceRGB", Isolated: true, Knockout: false), boxed.Group);
+        Assert.Equal(new PdfPageGroup("Transparency", "DeviceRGB", Isolated: true, Knockout: false), boxed.Group);
         Assert.Equal((null, null, null), (pages[1].CropBox, pages[1].TrimBox, pages[1].Group));
     }
 
@@ -235,6 +235,6 @@ public class DocumentSettingsTests
             "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
             TestPdf.Stream(""));
 
-        Assert.Equal(new PageBox(5, 5, 595, 775), Assert.Single(document.Pages).CropBox);
+        Assert.Equal(new PdfBox(5, 5, 595, 775), Assert.Single(document.Pages).CropBox);
     }
 }

@@ -39,7 +39,7 @@ internal static class DiffReport
             var changed = rows.Any(row => row.Kind != ' ');
             html.Append($"<details class=\"section\"{(changed ? " open" : "")}><summary>{Encode(name)}");
             html.Append(changed ? "" : " <span class=\"same\">unchanged</span>").Append("</summary>");
-            if (!plain && name == SnapshotWriter.Name(Section.Layout))
+            if (!plain && name == SnapshotWriter.Name(PdfSection.Layout))
             {
                 html.Append(PageMaps(beforeSections, afterSections, diff));
             }
@@ -58,11 +58,11 @@ internal static class DiffReport
     private static string PageMaps(Dictionary<string, List<string>> before, Dictionary<string, List<string>> after,
         SnapshotDiff diff)
     {
-        var layout = SnapshotWriter.Name(Section.Layout);
+        var layout = SnapshotWriter.Name(PdfSection.Layout);
         var was = PageMap.ByPage(before.GetValueOrDefault(layout) ?? []);
         var now = PageMap.ByPage(after.GetValueOrDefault(layout) ?? []);
-        var sizes = PageMap.Sizes(after.GetValueOrDefault(SnapshotWriter.Name(Section.Pages)) ?? []);
-        var maps = diff.Changes.Where(change => change.Section == Section.Layout).Select(change => change.Page)
+        var sizes = PageMap.Sizes(after.GetValueOrDefault(SnapshotWriter.Name(PdfSection.Pages)) ?? []);
+        var maps = diff.Changes.Where(change => change.Section == PdfSection.Layout).Select(change => change.Page)
             .OfType<int>().Distinct().Order()
             .Select(page => PageMap.Draw(page, was.GetValueOrDefault(page) ?? [], now.GetValueOrDefault(page) ?? [],
                 sizes.GetValueOrDefault(page, PageMap.DefaultSize)))

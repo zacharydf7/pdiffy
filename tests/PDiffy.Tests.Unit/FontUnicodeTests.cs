@@ -173,8 +173,8 @@ public class FontUnicodeTests
     {
         var fonts = new[]
         {
-            new FontInfo("Cid", "Type0", true, true) { UnmappedCodes = [0x41, 0x42, 0x43, 0x50, 0x175] },
-            new FontInfo("Simple", "TrueType", true, false) { UnmappedCodes = [0x2f] },
+            new PdfFont("Cid", "Type0", true, true) { UnmappedCodes = [0x41, 0x42, 0x43, 0x50, 0x175] },
+            new PdfFont("Simple", "TrueType", true, false) { UnmappedCodes = [0x2f] },
         };
         var document = Documents.Empty() with { Fonts = fonts };
 

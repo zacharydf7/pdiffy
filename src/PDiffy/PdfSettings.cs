@@ -1,7 +1,7 @@
 namespace PDiffy;
 
 /// <summary>Document-wide settings that change how a viewer opens, shows or restricts the file.</summary>
-public sealed record DocumentSettings
+public sealed record PdfSettings
 {
     /// <summary>The version in the file header.</summary>
     public string? PdfVersion { get; init; }
@@ -9,10 +9,10 @@ public sealed record DocumentSettings
     /// <summary>The catalog's /Version, which a writer can set to upgrade the file. A viewer uses whichever is later.</summary>
     public string? CatalogVersion { get; init; }
 
-    /// <summary>How the file opens: thumbnails, bookmarks, full screen and so on. One of <see cref="PageModes"/>.</summary>
+    /// <summary>How the file opens: thumbnails, bookmarks, full screen and so on. One of <see cref="PdfPageModes"/>.</summary>
     public string? PageMode { get; init; }
 
-    /// <summary>How pages are arranged: one at a time, a continuous column, two side by side. One of <see cref="PageLayouts"/>.</summary>
+    /// <summary>How pages are arranged: one at a time, a continuous column, two side by side. One of <see cref="PdfPageLayouts"/>.</summary>
     public string? PageLayout { get; init; }
 
     /// <summary>
@@ -37,20 +37,20 @@ public sealed record DocumentSettings
     public bool IsEncrypted { get; init; }
 
     /// <summary>What an encrypted document allows. Null when the document isn't encrypted.</summary>
-    public DocumentPermissions? Permissions { get; init; }
+    public PdfPermissions? Permissions { get; init; }
 
-    /// <summary>Viewer preferences other than DisplayDocTitle, which <see cref="DocumentInfo"/> holds.</summary>
-    public IReadOnlyList<Setting> ViewerPreferences { get; init; } = [];
+    /// <summary>Viewer preferences other than DisplayDocTitle, which <see cref="PdfDocumentInfo"/> holds.</summary>
+    public IReadOnlyList<PdfSetting> ViewerPreferences { get; init; } = [];
 
     /// <summary>The optional-content layers a viewer can show or hide, in order; empty when there are none.</summary>
-    public IReadOnlyList<Layer> Layers { get; init; } = [];
+    public IReadOnlyList<PdfLayer> Layers { get; init; } = [];
 
     /// <summary>The files attached to the document, in the order its list of attachments has them; empty when none.</summary>
-    public IReadOnlyList<EmbeddedFile> EmbeddedFiles { get; init; } = [];
+    public IReadOnlyList<PdfEmbeddedFile> EmbeddedFiles { get; init; } = [];
 }
 
-/// <summary>The standard values of <see cref="DocumentSettings.PageMode"/>.</summary>
-public static class PageModes
+/// <summary>The standard values of <see cref="PdfSettings.PageMode"/>.</summary>
+public static class PdfPageModes
 {
     /// <summary>The file opens with no side panel showing, the default.</summary>
     public const string UseNone = "UseNone";
@@ -71,8 +71,8 @@ public static class PageModes
     public const string UseAttachments = "UseAttachments";
 }
 
-/// <summary>The standard values of <see cref="DocumentSettings.PageLayout"/>.</summary>
-public static class PageLayouts
+/// <summary>The standard values of <see cref="PdfSettings.PageLayout"/>.</summary>
+public static class PdfPageLayouts
 {
     /// <summary>One page at a time.</summary>
     public const string SinglePage = "SinglePage";
@@ -107,7 +107,7 @@ public static class PageLayouts
 /// damaged.</param>
 /// <param name="Hash">The first 16 hex digits of a SHA-256 of its contents; null when they're missing or
 /// damaged.</param>
-public sealed record EmbeddedFile(string Name, string? FileName, string? Description, string? Relationship, int? Size, string? Hash)
+public sealed record PdfEmbeddedFile(string Name, string? FileName, string? Description, string? Relationship, int? Size, string? Hash)
 {
     /// <summary>
     /// Whether the contents are damaged, which leaves <see cref="Size"/> and <see cref="Hash"/> null.
@@ -117,7 +117,7 @@ public sealed record EmbeddedFile(string Name, string? FileName, string? Descrip
 
 /// <summary>What an encrypted document lets a reader do.</summary>
 [Flags]
-public enum DocumentPermissions
+public enum PdfPermissions
 {
     /// <summary>None of the actions below.</summary>
     None = 0,
@@ -159,9 +159,9 @@ public enum DocumentPermissions
 /// <summary>A named value, as the PDF stores it.</summary>
 /// <param name="Name">The entry's name, such as <c>HideToolbar</c> for a viewer preference.</param>
 /// <param name="Value">The entry's value as text, such as <c>true</c>.</param>
-public sealed record Setting(string Name, string Value);
+public sealed record PdfSetting(string Name, string Value);
 
 /// <summary>An optional-content layer and whether a viewer shows it when the file opens.</summary>
 /// <param name="Name">The layer's name as the viewer's layers panel shows it, or <c>(unnamed)</c>.</param>
 /// <param name="VisibleByDefault">Whether the viewer shows the layer when the file opens.</param>
-public sealed record Layer(string Name, bool VisibleByDefault);
+public sealed record PdfLayer(string Name, bool VisibleByDefault);

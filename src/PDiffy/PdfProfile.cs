@@ -2,10 +2,10 @@ namespace PDiffy;
 
 /// <summary>
 /// A ready-made set of sections and fields to leave out of a PDF snapshot, named after what a test guards. Apply one with
-/// <see cref="SnapshotOptions.Use(SnapshotProfile)"/>. The snapshot's header lists what it leaves out, so a profile that
+/// <see cref="PdfSnapshotOptions.Use(PdfProfile)"/>. The snapshot's header lists what it leaves out, so a profile that
 /// leaves out more in a later release shows up as a changed snapshot rather than a test that quietly checks less.
 /// </summary>
-public enum SnapshotProfile
+public enum PdfProfile
 {
     /// <summary>Compares everything, the same as using no profile.</summary>
     Strict,

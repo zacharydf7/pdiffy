@@ -39,14 +39,14 @@ PdfUaDocument document = PdfUaDocument.Load("trail-guide.pdf");
 string snapshot = document.ToSnapshot();
 
 // Everything in the snapshot is also available as properties, for asserting on directly.
-Assert.Equal("en-US", document.Document.Lang);
+Assert.Equal("en-US", document.Document.Language);
 ```
 
 ## Examples
 
 The examples below are xUnit tests, but PDiffy works with any test framework. `ReportGenerator` stands in for whatever produces your PDFs.
 
-`StructureType`, `ContentRole`, `TextRenderMode`, `AnnotationFlags`, `FormFieldType`, `FormFieldFlags`, `DocumentPermissions`, `PageModes` and `PageLayouts` list every option, so no PDF knowledge is needed to filter or assert on the model.
+`StructureType`, `PdfContentRole`, `PdfTextRenderMode`, `PdfAnnotationFlags`, `PdfFormFieldType`, `PdfFormFieldFlags`, `PdfPermissions`, `PdfPageModes` and `PdfPageLayouts` list every option, so no PDF knowledge is needed to filter or assert on the model.
 
 ### Approve a snapshot and compare against it
 
@@ -108,7 +108,7 @@ If your build maps source paths (deterministic builds, common on CI), the path t
 A suite whose tests share options, such as a profile or scrubbers, can set them once beside the folder, with `PdfSnapshot.DefaultOptions`, `DocxSnapshot.DefaultOptions` or `Snapshot.DefaultOptions` for text and JSON. Each call's own `configure` runs after them and adds to them. A PDF or Word call can leave out more but can't bring back what the defaults leave out (its `Strict` profile doesn't undo a default one), so keep the defaults to what every test agrees on and set the rest in each test. A text or JSON call's `KeepDates()` or `KeepGuids()` does undo a default scrub. A PDF or Word snapshot's first lines list what's ignored, but not what's scrubbed.
 
 ```csharp
-PdfSnapshot.DefaultOptions = options => options.Use(SnapshotProfile.Accessibility).ScrubDates();
+PdfSnapshot.DefaultOptions = options => options.Use(PdfProfile.Accessibility).ScrubDates();
 ```
 
 `VerifyAsync` also takes the document as a `byte[]`, or one you've already loaded with `PdfUaDocument.Load`, so a test that asserts on the document and snapshots it reads it once. A stream is read from its start wherever the generator left it, and its position is put back afterwards. A stream that isn't already a `MemoryStream`, such as a file or a network response, is read into memory first, so a stream that fails part way throws its own exception rather than looking like a damaged document. An empty stream, a Word document passed as a PDF, or a web page (a generator's error page, say) fails with an `InvalidDataException` that says so.
@@ -232,10 +232,10 @@ Assert.Empty(notes.Revisions());
 Most tests guard one thing: the content, its accessibility or how the page looks. A profile leaves out everything else in one call, and further `Ignore` calls leave out more:
 
 ```csharp
-await PdfSnapshot.VerifyAsync(pdf, configure: options => options.Use(SnapshotProfile.Accessibility));
+await PdfSnapshot.VerifyAsync(pdf, configure: options => options.Use(PdfProfile.Accessibility));
 ```
 
-| SnapshotProfile | For tests that guard | Leaves out |
+| PdfProfile | For tests that guard | Leaves out |
 |---|---|---|
 | `Strict` | Everything | Nothing, the same as no profile |
 | `Content` | The text and its structure: tags, reading order, bookmarks, annotations and forms | The `Settings`, `Metadata`, `Fonts` and `Layout` sections, `PageBoxes` and `Positions` |
@@ -264,7 +264,7 @@ public async Task TrailMapTemplate_ShouldKeepItsTagStructure_WhenStylingChanges(
     // This test guards the tag tree and the text, so leave out the metadata, the document settings
     // and the layout (positions, fonts and colors), which the design team changes freely.
     await PdfSnapshot.VerifyAsync(pdf, configure: options => options
-        .Ignore(Section.Metadata, Section.Settings, Section.Layout));
+        .Ignore(PdfSection.Metadata, PdfSection.Settings, PdfSection.Layout));
 }
 ```
 
@@ -284,7 +284,7 @@ metadata
 
 ### Leave out a single detail everywhere it appears
 
-For something narrower than a section, ignore a `Field`. It's left out everywhere the table under [What you can ignore](#what-you-can-ignore) lists, and the rest of each line is still compared.
+For something narrower than a section, ignore a `PdfDetail`. It's left out everywhere the table under [What you can ignore](#what-you-can-ignore) lists, and the rest of each line is still compared.
 
 ```csharp
 [Fact]
@@ -294,23 +294,23 @@ public async Task SeasonalGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
 
     await PdfSnapshot.VerifyAsync(pdf, configure: options => options
         // The title includes the month, so it changes every time.
-        .Ignore(Field.Title)
+        .Ignore(PdfDetail.Title)
         // Text reflows when the guide has more rows, so where things land doesn't matter here.
         // Fonts, sizes and colors are still compared.
-        .Ignore(Field.Positions));
+        .Ignore(PdfDetail.Positions));
 }
 ```
 
-With `Field.Positions` ignored, a layout line such as `p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Trails"` becomes `p1 text tagged font=Arial size=18 color=gray:0 "Trails"`.
+With `PdfDetail.Positions` ignored, a layout line such as `p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Trails"` becomes `p1 text tagged font=Arial size=18 color=gray:0 "Trails"`.
 
 ### Allow small numeric differences
 
-Positions are rounded to whole points, and font sizes and line widths to 0.1 pt. A value close to a rounding boundary can flip after a font or library update: text at 72.49 pt prints `at=72,...`, and moved by 0.02 pt it prints `at=73,...`. Ignoring `Field.Positions` would also hide a heading that moved 40 pt, so tolerate the noise instead:
+Positions are rounded to whole points, and font sizes and line widths to 0.1 pt. A value close to a rounding boundary can flip after a font or library update: text at 72.49 pt prints `at=72,...`, and moved by 0.02 pt it prints `at=73,...`. Ignoring `PdfDetail.Positions` would also hide a heading that moved 40 pt, so tolerate the noise instead:
 
 ```csharp
 await PdfSnapshot.VerifyAsync(pdf, configure: options => options
-    .Tolerate(Field.Positions, points: 1)
-    .Tolerate(Field.FontSizes, points: 0.5));
+    .Tolerate(PdfTolerance.Positions, points: 1)
+    .Tolerate(PdfTolerance.FontSizes, points: 0.5));
 ```
 
 A number that differs from the verified one by no more than its tolerance doesn't fail the test, and the verified file stays as it is, even in accept mode, so the baseline doesn't creep a point at a time. `Positions` covers where text, images, paths and annotations are, the size of images, paths and annotations, and the positions a link or bookmark opens its page at, `FontSizes` a text run's size, and `LineWidths` a path's width. The snapshot's header lists each tolerance (`# tolerances: positions 1pt, font-sizes 0.5pt`), so a reader knows its numbers are approximate.
@@ -362,7 +362,7 @@ PdfUaDocument before = PdfUaDocument.Load("guide-v1.pdf");
 PdfUaDocument after = PdfUaDocument.Load("guide-v2.pdf");
 
 // The same options as a snapshot: here, only the tag structure and text matter.
-SnapshotDiff diff = before.CompareTo(after, options => options.Ignore(Section.Layout, Section.Metadata));
+SnapshotDiff diff = before.CompareTo(after, options => options.Ignore(PdfSection.Layout, PdfSection.Metadata));
 
 // Each change has a kind (Added, Removed, Moved, AttributeChanged, TextChanged or Changed),
 // the section, a path such as "structure > Document > Table > TR[2] > TD[1]", the page and a detail.
@@ -414,7 +414,7 @@ public async Task TrailMap_ShouldPassTheAccessibilityChecks_WhenGenerated()
 {
     using Stream pdf = await ReportGenerator.CreateTrailMapAsync();
 
-    IReadOnlyList<CheckFinding> findings = PdfUaDocument.Load(pdf)
+    IReadOnlyList<PdfCheckFinding> findings = PdfUaDocument.Load(pdf)
         .Check(PdfCheck.DocumentLanguage, PdfCheck.FigureAltText, PdfCheck.UntaggedContent);
 
     // On failure: "FigureAltText: Figure on p2 has no alt text (structure > Document > Figure[2])".
@@ -454,14 +454,14 @@ public async Task TrailMap_ShouldBeReadableByScreenReaders_WhenGenerated()
 
     // The document is tagged and declares a language, so a screen reader knows how to pronounce it.
     Assert.True(document.Document.Marked);
-    Assert.Equal("en-US", document.Document.Lang);
+    Assert.Equal("en-US", document.Document.Language);
 
     // Every figure (logo, chart, signature) has alt text describing it.
     // Elements also finds custom tag types that the PDF maps to Figure.
-    Assert.All(document.Elements(StructureType.Figure), figure => Assert.False(string.IsNullOrWhiteSpace(figure.Alt)));
+    Assert.All(document.Elements(StructureType.Figure), figure => Assert.False(string.IsNullOrWhiteSpace(figure.AltText)));
 
     // Every piece of text is either tagged or marked as decoration. Untagged text is invisible to a screen reader.
-    Assert.DoesNotContain(document.TextRuns, run => run.Role == ContentRole.Untagged);
+    Assert.DoesNotContain(document.TextRuns, run => run.Role == PdfContentRole.Untagged);
 
     // Every link has a description a screen reader can announce.
     Assert.All(document.Annotations.Where(annotation => annotation.Subtype == "Link"),
@@ -481,13 +481,13 @@ var levels = document.Headings().Select(heading => heading.Level ?? 1).ToList();
 Assert.All(levels.Zip(levels.Skip(1)), pair => Assert.True(pair.Second <= pair.First + 1));
 
 // Every table cell says something.
-StructureElement table = document.Elements(StructureType.Table).Single();
+PdfStructureElement table = document.Elements(StructureType.Table).Single();
 Assert.All(table.Elements(StructureType.TableDataCell), cell => Assert.False(string.IsNullOrWhiteSpace(cell.AllText)));
 ```
 
 ### Check forms
 
-Each form field has its full name, type, accessible name, value and flags. `FormFieldType` and `FormFieldFlags` list every option.
+Each form field has its full name, type, accessible name, value and flags. `PdfFormFieldType` and `PdfFormFieldFlags` list every option.
 
 ```csharp
 [Fact]
@@ -500,12 +500,12 @@ public async Task EnrollmentForm_ShouldLabelAndRequireTheRightFields_WhenGenerat
     Assert.All(document.FormFields, field => Assert.False(string.IsNullOrWhiteSpace(field.AccessibleName)));
 
     // Find the required fields. Names include their parents, joined with dots.
-    var required = document.FormFields.Where(field => field.Flags.HasFlag(FormFieldFlags.Required)).Select(field => field.Name);
+    var required = document.FormFields.Where(field => field.Flags.HasFlag(PdfFormFieldFlags.Required)).Select(field => field.Name);
     Assert.Equal(["hiker.name", "hiker.dateOfBirth"], required);
 
     // The state picker is a drop-down with all 50 states.
-    FormField state = document.FormFields.Single(field => field.Name == "hiker.address.state");
-    Assert.Equal(FormFieldType.ComboBox, state.Type);
+    PdfFormField state = document.FormFields.Single(field => field.Name == "hiker.address.state");
+    Assert.Equal(PdfFormFieldType.ComboBox, state.Type);
     Assert.Equal(50, state.Options.Count);
 }
 ```
@@ -519,7 +519,7 @@ public async Task EnrollmentForm_ShouldLabelAndRequireTheRightFields_WhenGenerat
 public async Task ExportedReport_ShouldOpenSafely_WhenGenerated()
 {
     using Stream pdf = await ReportGenerator.CreateReportAsync();
-    DocumentSettings settings = PdfUaDocument.Load(pdf).Settings;
+    PdfSettings settings = PdfUaDocument.Load(pdf).Settings;
 
     // No scripts and no attached files.
     Assert.False(settings.HasJavaScript);
@@ -527,11 +527,11 @@ public async Task ExportedReport_ShouldOpenSafely_WhenGenerated()
 
     // If the file is ever encrypted, it must still let screen readers extract the text.
     // Permissions is null for an unencrypted file.
-    Assert.True(settings.Permissions is null || settings.Permissions.Value.HasFlag(DocumentPermissions.ExtractForAccessibility));
+    Assert.True(settings.Permissions is null || settings.Permissions.Value.HasFlag(PdfPermissions.ExtractForAccessibility));
 
     // Open with bookmarks showing, one page at a time in a continuous column.
-    Assert.Equal(PageModes.UseOutlines, settings.PageMode);
-    Assert.Equal(PageLayouts.OneColumn, settings.PageLayout);
+    Assert.Equal(PdfPageModes.UseOutlines, settings.PageMode);
+    Assert.Equal(PdfPageLayouts.OneColumn, settings.PageLayout);
 }
 ```
 
@@ -547,7 +547,7 @@ public async Task Brochure_ShouldUseOnlyBrandFontsAndColors_WhenGenerated()
     PdfUaDocument document = PdfUaDocument.Load(pdf);
 
     // No invisible text. It usually means an OCR layer or text hidden behind an image.
-    Assert.DoesNotContain(document.TextRuns, run => run.RenderMode == TextRenderMode.Invisible);
+    Assert.DoesNotContain(document.TextRuns, run => run.RenderMode == PdfTextRenderMode.Invisible);
 
     // Only the two brand fonts. Subset prefixes such as "ABCDEF+" are already removed.
     Assert.All(document.TextRuns, run => Assert.Contains(run.Font, new[] { "OpenSans", "OpenSans-Bold" }));
@@ -637,9 +637,9 @@ pdiffy unused tests --all --run-log artifacts/run-log
 
 ## What you can ignore
 
-Each `Section` value leaves out one section from the table above. Each `Field` value leaves out one detail wherever it appears:
+Each `PdfSection` value leaves out one section from the table above. Each `PdfDetail` value leaves out one detail wherever it appears:
 
-| Field | Leaves out |
+| Detail | Leaves out |
 |---|---|
 | `Language` | The document's language, each structure element's language, languages set on marked content inside elements, and the XMP language |
 | `PdfVersion` | The PDF version in the file header and the catalog |
@@ -671,7 +671,7 @@ The options can also change what's printed:
 | `ScrubText(regex, replacement)` | Replaces your own pattern in quoted text |
 | `ShowProducerAndCreator()` | Prints the producer and creator values instead of only whether they're present |
 | `OnlyPages(3, 4)` | Keeps only what is on those pages |
-| `Tolerate(Field.Positions, 1)` | Lets positions differ by up to 1 pt without failing the test; also takes `FontSizes` and `LineWidths` |
+| `Tolerate(PdfTolerance.Positions, 1)` | Lets positions differ by up to 1 pt without failing the test; also takes `FontSizes` and `LineWidths` |
 
 For Word documents, each `DocxSection` value leaves out one section, and each `DocxDetail` value leaves out one detail wherever it appears:
 
@@ -784,7 +784,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 | Next | `pdfua-snapshot v1`, unchanged version: a form that sets a calculation order, `NeedAppearances` or XFA prints a `form` line first in `forms`, and `javascript=yes` now covers form field scripts, so `NoActions` and `pdiffy check` report them. Only snapshots of documents with such forms or scripts change |
 | Next | `pdfua-snapshot v1`, unchanged version: form fields print their default value, export values, alignment, typed text's font, size and color, and JavaScript by when it runs (`scripts=calculate:3f9c0a1b2d4e5f60`). Snapshots of documents with forms change |
 | Next | `pdfua-snapshot v1`, unchanged version: a signed signature field prints its signature (`signed=yes subfilter=adbe.pkcs7.detached covers-file=yes`, whether a reason, location and signing time are given, and a certification level), not its bytes. Only snapshots of signed documents change |
-| Next | `pdfua-snapshot v1`, unchanged version: an element whose marked content draws an image prints the image's hash (`images=[3f9c0a1b2d4e5f60]`), so swapping two figures' images shows on their lines. Left out with `Field.ImageContents`. Snapshots of tagged documents with images change |
+| Next | `pdfua-snapshot v1`, unchanged version: an element whose marked content draws an image prints the image's hash (`images=[3f9c0a1b2d4e5f60]`), so swapping two figures' images shows on their lines. Left out with `PdfDetail.ImageContents`. Snapshots of tagged documents with images change |
 | Next | `pdfua-snapshot v1`, unchanged version: an element with marked-content references into a form XObject prints `mcids-in-xobject=N`, since its text may include the page's own text for the same MCID (and the page's element the form's). Only snapshots of documents with such references change, by the new key alone |
 | Next | `pdfua-snapshot v1`, unchanged version: marked content inside an element that sets its own language, replacement text, alt text or expansion is recorded on the element with the text it covers (`span-lang=[fr-FR:"bonjour"]`, `span-expansion=["Mount":"Mt."]`), and an artifact prints its kind (`type=Pagination subtype=Footer`). Snapshots with such marked content or typed artifacts change, and typed artifacts are common. A new `span-lang` key is flagged as affecting accessibility, like any language change |
 | Next | `pdfua-snapshot v1`, unchanged version: letter-spaced text no longer gets a space between every letter, since a gap counts as a space only when it's wider than the line's letter spacing (read from its narrowest gaps, up to a quarter of an em). Snapshots of documents with letter-spaced text change |

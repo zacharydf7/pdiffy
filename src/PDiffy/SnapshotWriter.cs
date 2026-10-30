@@ -4,7 +4,7 @@ using PDiffy.Diffing;
 namespace PDiffy;
 
 /// <summary>Writes a <see cref="PdfUaDocument"/> in the canonical snapshot format: one element per line, LF endings.</summary>
-internal sealed partial class SnapshotWriter(SnapshotOptions options)
+internal sealed partial class SnapshotWriter(PdfSnapshotOptions options)
 {
     // Every format version starts with this, so an older verified file is still known as a PDF snapshot.
     public const string FormatPrefix = "# pdfua-snapshot v";
@@ -18,7 +18,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
     private readonly StringBuilder _snapshot = new();
     private readonly Scrubbing _scrubbing = new(options.Scrubbers);
 
-    public static string Write(PdfUaDocument document, SnapshotOptions options)
+    public static string Write(PdfUaDocument document, PdfSnapshotOptions options)
     {
         var scoped = options.Pages.Count == 0 ? document : PageScope.Keep(document, options.Pages);
         return new SnapshotWriter(options).Build(scoped);
@@ -28,19 +28,19 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
     {
         Line(0, FormatHeader);
         WriteOptions();
-        WriteSection(Section.Document, () => WriteDocument(document.Document));
-        WriteSection(Section.Settings, () => WriteSettings(document.Settings));
-        WriteSection(Section.Metadata, () => WriteMetadata(document.Metadata));
-        WriteSection(Section.RoleMap, () => WriteRoleMap(document.RoleMap));
-        WriteSection(Section.Pages, () => WritePages(document.Pages, document.PageLabels));
-        WriteSection(Section.Bookmarks, () => WriteBookmarks(document.Bookmarks, document.BookmarksUnreadable));
-        WriteSection(Section.Structure, () => WriteStructure(document.Structure));
-        WriteSection(Section.Artifacts, () => WritePageTexts(document.Artifacts));
-        WriteSection(Section.Untagged, () => WriteUntagged(document));
-        WriteSection(Section.Fonts, () => WriteFonts(document.Fonts));
-        WriteSection(Section.Annotations, () => WriteAnnotations(document.Annotations));
-        WriteSection(Section.Forms, () => WriteForms(document.Form, document.FormFields));
-        WriteSection(Section.Layout, () => WriteLayout(document));
+        WriteSection(PdfSection.Document, () => WriteDocument(document.Document));
+        WriteSection(PdfSection.Settings, () => WriteSettings(document.Settings));
+        WriteSection(PdfSection.Metadata, () => WriteMetadata(document.Metadata));
+        WriteSection(PdfSection.RoleMap, () => WriteRoleMap(document.RoleMap));
+        WriteSection(PdfSection.Pages, () => WritePages(document.Pages, document.PageLabels));
+        WriteSection(PdfSection.Bookmarks, () => WriteBookmarks(document.Bookmarks, document.BookmarksUnreadable));
+        WriteSection(PdfSection.Structure, () => WriteStructure(document.Structure));
+        WriteSection(PdfSection.Artifacts, () => WritePageTexts(document.Artifacts));
+        WriteSection(PdfSection.Untagged, () => WriteUntagged(document));
+        WriteSection(PdfSection.Fonts, () => WriteFonts(document.Fonts));
+        WriteSection(PdfSection.Annotations, () => WriteAnnotations(document.Annotations));
+        WriteSection(PdfSection.Forms, () => WriteForms(document.Form, document.FormFields));
+        WriteSection(PdfSection.Layout, () => WriteLayout(document));
         return _snapshot.ToString();
     }
 
@@ -52,48 +52,48 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         if (options.Pages.Count > 0) Line(0, $"# only pages: {string.Join(", ", options.Pages)}");
     }
 
-    private void WriteSection(Section section, Action write)
+    private void WriteSection(PdfSection section, Action write)
     {
         Line(0, Name(section));
         if (options.Ignores(section)) Line(1, Ignored);
         else write();
     }
 
-    private void WriteDocument(DocumentInfo info)
+    private void WriteDocument(PdfDocumentInfo info)
     {
         var line = new StringBuilder($"marked={YesNo(info.Marked)}");
-        Key(line, Field.Language, "lang", info.Lang ?? Missing);
+        Key(line, PdfDetail.Language, "lang", info.Language ?? Missing);
         line.Append($" display-doc-title={YesNo(info.DisplayDocTitle)} pages={info.PageCount}");
         Line(1, line.ToString());
     }
 
-    private void WriteMetadata(Metadata metadata)
+    private void WriteMetadata(PdfMetadata metadata)
     {
         var names = new StringBuilder();
-        QuotedKey(names, Field.Title, "title", metadata.Title, showMissing: true);
-        QuotedKey(names, Field.Author, "author", metadata.Author, showMissing: true);
-        QuotedKey(names, Field.Subject, "subject", metadata.Subject, showMissing: true);
-        QuotedKey(names, Field.Keywords, "keywords", metadata.Keywords, showMissing: true);
+        QuotedKey(names, PdfDetail.Title, "title", metadata.Title, showMissing: true);
+        QuotedKey(names, PdfDetail.Author, "author", metadata.Author, showMissing: true);
+        QuotedKey(names, PdfDetail.Subject, "subject", metadata.Subject, showMissing: true);
+        QuotedKey(names, PdfDetail.Keywords, "keywords", metadata.Keywords, showMissing: true);
         WriteKeys(names);
         var presence = new StringBuilder();
-        Key(presence, Field.Dates, "creation-date", Present(metadata.HasCreationDate));
-        Key(presence, Field.Dates, "mod-date", Present(metadata.HasModDate));
-        Key(presence, Field.Producer, "producer", ProducerText(Field.Producer, metadata.Producer));
-        Key(presence, Field.Creator, "creator", ProducerText(Field.Creator, metadata.Creator));
+        Key(presence, PdfDetail.Dates, "creation-date", Present(metadata.HasCreatedDate));
+        Key(presence, PdfDetail.Dates, "mod-date", Present(metadata.HasModifiedDate));
+        Key(presence, PdfDetail.Producer, "producer", ProducerText(PdfDetail.Producer, metadata.Producer));
+        Key(presence, PdfDetail.Creator, "creator", ProducerText(PdfDetail.Creator, metadata.Creator));
         WriteKeys(presence);
         var xmp = new StringBuilder($"pdfuaid-part={metadata.PdfUaPart ?? Missing}");
-        QuotedKey(xmp, Field.Title, "xmp-title", metadata.XmpTitle, showMissing: true);
-        QuotedKey(xmp, Field.Author, "xmp-creator", metadata.XmpCreator);
-        QuotedKey(xmp, Field.Subject, "xmp-description", metadata.XmpDescription);
-        Key(xmp, Field.Language, "xmp-language", metadata.XmpLanguage);
+        QuotedKey(xmp, PdfDetail.Title, "xmp-title", metadata.XmpTitle, showMissing: true);
+        QuotedKey(xmp, PdfDetail.Author, "xmp-creator", metadata.XmpCreator);
+        QuotedKey(xmp, PdfDetail.Subject, "xmp-description", metadata.XmpDescription);
+        Key(xmp, PdfDetail.Language, "xmp-language", metadata.XmpLanguage);
         Key(xmp, "pdfa", metadata.PdfAConformance);
         Line(1, metadata.XmpUnreadable ? "xmp=unreadable" : xmp.ToString());
-        if (options.Ignores(Field.CustomInfo)) return;
+        if (options.Ignores(PdfDetail.CustomInfo)) return;
         foreach (var entry in metadata.OtherInfo) Line(1, $"info {entry.Name}={Quote(entry.Value)}");
     }
 
     // The role map is a dictionary in the PDF, so its order means nothing; sort it so the snapshot is stable.
-    private void WriteRoleMap(IReadOnlyList<RoleMapping> roleMap)
+    private void WriteRoleMap(IReadOnlyList<PdfRoleMapping> roleMap)
     {
         if (roleMap.Count == 0) Line(1, None);
         foreach (var mapping in roleMap.OrderBy(r => r.Custom, StringComparer.Ordinal))
@@ -102,7 +102,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         }
     }
 
-    private void WritePages(IReadOnlyList<PageInfo> pages, IReadOnlyList<PageLabelRange> labels)
+    private void WritePages(IReadOnlyList<PdfPage> pages, IReadOnlyList<PdfPageLabelRange> labels)
     {
         if (pages.Count == 0 && labels.Count == 0) Line(1, None);
         foreach (var page in pages)
@@ -115,11 +115,11 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
 
             var line = new StringBuilder($"p{page.Number} {PageSize.Describe(page.Width, page.Height)} rotate={page.Rotation}");
             if (page.Tabs is not null || page.HasAnnotations) line.Append($" tabs={page.Tabs ?? Missing}");
-            Key(line, Field.PageBoxes, "crop", BoxText(page.CropBox));
-            Key(line, Field.PageBoxes, "bleed", BoxText(page.BleedBox));
-            Key(line, Field.PageBoxes, "trim", BoxText(page.TrimBox));
-            Key(line, Field.PageBoxes, "art", BoxText(page.ArtBox));
-            Key(line, Field.PageBoxes, "user-unit", page.UserUnit?.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            Key(line, PdfDetail.PageBoxes, "crop", BoxText(page.CropBox));
+            Key(line, PdfDetail.PageBoxes, "bleed", BoxText(page.BleedBox));
+            Key(line, PdfDetail.PageBoxes, "trim", BoxText(page.TrimBox));
+            Key(line, PdfDetail.PageBoxes, "art", BoxText(page.ArtBox));
+            Key(line, PdfDetail.PageBoxes, "user-unit", page.UserUnit?.ToString(System.Globalization.CultureInfo.InvariantCulture));
             if (page.Group is { } group)
             {
                 Key(line, "group", group.Type ?? Missing);
@@ -137,24 +137,24 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         }
     }
 
-    private static string? BoxText(PageBox? box) => box is null ? null : $"{box.X},{box.Y},{box.Width},{box.Height}";
+    private static string? BoxText(PdfBox? box) => box is null ? null : $"{box.X},{box.Y},{box.Width},{box.Height}";
 
-    private void WriteBookmarks(IReadOnlyList<Bookmark> bookmarks, bool unreadable)
+    private void WriteBookmarks(IReadOnlyList<PdfBookmark> bookmarks, bool unreadable)
     {
         if (unreadable) Line(1, "unreadable");
         else if (bookmarks.Count == 0) Line(1, None);
         foreach (var bookmark in bookmarks) WriteBookmark(bookmark, 1);
     }
 
-    private void WriteBookmark(Bookmark bookmark, int depth)
+    private void WriteBookmark(PdfBookmark bookmark, int depth)
     {
         var line = new StringBuilder(bookmark.Page is int page ? $"{Quote(bookmark.Title)} -> p{page}" : Quote(bookmark.Title));
-        QuotedKey(line, Field.LinkTargets, "uri", bookmark.Uri);
-        QuotedKey(line, Field.LinkTargets, "file", bookmark.File);
+        QuotedKey(line, PdfDetail.LinkTargets, "uri", bookmark.Uri);
+        QuotedKey(line, PdfDetail.LinkTargets, "file", bookmark.File);
         if (bookmark.Destination is { } destination)
         {
             // A page in another file is printed as dest=, so it isn't read as a page of this document.
-            if (bookmark.Page is null) Key(line, Field.LinkTargets, "dest", PageText(destination));
+            if (bookmark.Page is null) Key(line, PdfDetail.LinkTargets, "dest", PageText(destination));
             AppendView(line, destination);
         }
 
@@ -164,21 +164,21 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
 
     // What marked content inside the element says of its own text, in reading order, with the text it covers:
     // span-lang=[fr:"bonjour"], span-expansion=["Mount":"Mt."].
-    private void AppendMarkedSpans(StringBuilder line, StructureElement element)
+    private void AppendMarkedSpans(StringBuilder line, PdfStructureElement element)
     {
-        if (!options.Ignores(Field.Language)) Key(line, "span-lang", Spans(element, span => span.Language));
-        if (!options.Ignores(Field.ActualText))
+        if (!options.Ignores(PdfDetail.Language)) Key(line, "span-lang", Spans(element, span => span.Language));
+        if (!options.Ignores(PdfDetail.ActualText))
         {
             Key(line, "span-actual", Spans(element, span => QuoteIfPresent(span.ActualText)));
         }
 
-        if (!options.Ignores(Field.AltText)) Key(line, "span-alt", Spans(element, span => QuoteIfPresent(span.AltText)));
+        if (!options.Ignores(PdfDetail.AltText)) Key(line, "span-alt", Spans(element, span => QuoteIfPresent(span.AltText)));
         Key(line, "span-expansion", Spans(element, span => QuoteIfPresent(span.Expansion)));
     }
 
     // Each span's value, with the text the span covers when it covers some but not all of the element's, which the
     // line already prints: a language on an element's only MCID.
-    private string? Spans(StructureElement element, Func<MarkedSpan, string?> valueOf) =>
+    private string? Spans(PdfStructureElement element, Func<PdfMarkedSpan, string?> valueOf) =>
         Bracketed(element.MarkedSpans.Select(span =>
             valueOf(span) is { } value && span.Text is { } text && text != element.Text
                 ? $"{value}:{Quote(text)}"
@@ -190,13 +190,13 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         return present.Count > 0 ? $"[{string.Join(",", present)}]" : null;
     }
 
-    private void WriteStructure(IReadOnlyList<StructureElement> structure)
+    private void WriteStructure(IReadOnlyList<PdfStructureElement> structure)
     {
         if (structure.Count == 0) Line(1, None);
         foreach (var element in structure) WriteElement(element, 1);
     }
 
-    private void WriteElement(StructureElement element, int depth)
+    private void WriteElement(PdfStructureElement element, int depth)
     {
         var line = new StringBuilder(element.Name ?? element.Type);
         if (element.MappedType is not null) line.Append("->").Append(element.MappedType);
@@ -206,9 +206,9 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
             if (element.LastPage is int last && last != first) line.Append('-').Append(last);
         }
 
-        Key(line, Field.Language, "lang", element.Lang);
-        QuotedKey(line, Field.AltText, "alt", element.Alt);
-        QuotedKey(line, Field.ActualText, "actual", element.ActualText);
+        Key(line, PdfDetail.Language, "lang", element.Language);
+        QuotedKey(line, PdfDetail.AltText, "alt", element.AltText);
+        QuotedKey(line, PdfDetail.ActualText, "actual", element.ActualText);
         Key(line, "expansion", QuoteIfPresent(element.Expansion));
         Key(line, "title", QuoteIfPresent(element.Title));
         Key(line, "scope", element.Scope);
@@ -217,7 +217,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         Key(line, "colspan", element.ColSpan?.ToString());
         Key(line, "numbering", element.ListNumbering);
         Key(line, "summary", QuoteIfPresent(element.Summary));
-        Key(line, Field.ImageContents, "images", Bracketed(element.ImageHashes));
+        Key(line, PdfDetail.ImageContents, "images", Bracketed(element.ImageHashes));
         foreach (var annotation in element.Annotations)
         {
             line.Append(" annot=").Append(annotation.Subtype);
@@ -233,7 +233,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         foreach (var child in element.Children) WriteElement(child, depth + 1);
     }
 
-    private void WritePageTexts(IReadOnlyList<PageText> texts)
+    private void WritePageTexts(IReadOnlyList<PdfPageText> texts)
     {
         if (texts.Count == 0) Line(1, None);
         foreach (var text in texts)
@@ -249,8 +249,8 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
     private void WriteUntagged(PdfUaDocument document)
     {
         var texts = document.Untagged.ToLookup(text => text.Page);
-        var images = document.Images.Where(image => image.Role == ContentRole.Untagged).ToLookup(image => image.Page);
-        var paths = document.Paths.Where(path => path.Role == ContentRole.Untagged).ToLookup(path => path.Page);
+        var images = document.Images.Where(image => image.Role == PdfContentRole.Untagged).ToLookup(image => image.Page);
+        var paths = document.Paths.Where(path => path.Role == PdfContentRole.Untagged).ToLookup(path => path.Page);
         var pages = texts.Select(page => page.Key).Concat(images.Select(page => page.Key))
             .Concat(paths.Select(page => page.Key)).Distinct().Order().ToList();
         if (pages.Count == 0) Line(1, None);
@@ -264,14 +264,14 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
     }
 
     // Two font objects can print the same line (two subsets of Arial), in no useful order; print each line once, sorted.
-    private void WriteFonts(IReadOnlyList<FontInfo> fonts)
+    private void WriteFonts(IReadOnlyList<PdfFont> fonts)
     {
         var lines = fonts.Select(FormatFont).Distinct().Order(StringComparer.Ordinal).ToList();
         if (lines.Count == 0) Line(1, None);
         foreach (var line in lines) Line(1, line);
     }
 
-    private static string FormatFont(FontInfo font)
+    private static string FormatFont(PdfFont font)
     {
         var subtype = font.Subtype is null ? "" : " " + font.Subtype;
         var line = $"{font.Name}{subtype} embedded={YesNo(font.Embedded)} to-unicode={YesNo(font.HasToUnicode)}";
@@ -311,13 +311,13 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         if (value is not null) line.Append(' ').Append(key).Append('=').Append(value);
     }
 
-    private void Key(StringBuilder line, Field field, string key, string? value)
+    private void Key(StringBuilder line, PdfDetail field, string key, string? value)
     {
         if (!options.Ignores(field)) Key(line, key, value);
     }
 
     // Quotes only what is printed, so an ignored value never uses up a Date_N or Guid_N token.
-    private void QuotedKey(StringBuilder line, Field field, string key, string? value, bool showMissing = false)
+    private void QuotedKey(StringBuilder line, PdfDetail field, string key, string? value, bool showMissing = false)
     {
         if (!options.Ignores(field)) Key(line, key, showMissing ? Quote(value) : QuoteIfPresent(value));
     }
@@ -340,7 +340,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
     }
 
     // The producer and creator change with every upgrade, so only their presence prints unless the test asks for them.
-    private string ProducerText(Field field, string? value)
+    private string ProducerText(PdfDetail field, string? value)
     {
         var show = options.ShowsProducerAndCreator && value is not null && !options.Ignores(field);
         return show ? Quote(value) : Present(value is not null);

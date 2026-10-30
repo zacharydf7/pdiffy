@@ -23,7 +23,7 @@ internal sealed class SnapshotCoverage
             .ToList();
         var formats = new List<Format>
         {
-            Format.Read("PDF", SnapshotWriter.FormatPrefix, Names<Section>(), headers),
+            Format.Read("PDF", SnapshotWriter.FormatPrefix, Names<PdfSection>(), headers),
             Format.Read("Word", DocxSnapshotWriter.FormatPrefix, Names<DocxSection>(), headers),
         };
         return new SnapshotCoverage(formats, headers.Count - formats.Sum(format => format.Count));

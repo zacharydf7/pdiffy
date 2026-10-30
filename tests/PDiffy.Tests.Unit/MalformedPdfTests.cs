@@ -27,7 +27,7 @@ public class MalformedPdfTests
     {
         var document = OnePage("/PageLabels 6 0 R", extraObjects: ["<< /Kids [6 0 R] /Nums [0 << /S /D >>] >>"]);
 
-        Assert.Equal([new PageLabelRange(1, "D", null, 1)], document.PageLabels);
+        Assert.Equal([new PdfPageLabelRange(1, "D", null, 1)], document.PageLabels);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class MalformedPdfTests
         var document = OnePage("/AcroForm << /Fields [6 0 R] >>", extraObjects: ["<< /T (loop) /FT /Tx /Kids [6 0 R] >>"]);
 
         var field = Assert.Single(document.FormFields);
-        Assert.Equal(("loop", FormFieldType.Text), (field.Name, field.Type));
+        Assert.Equal(("loop", PdfFormFieldType.Text), (field.Name, field.Type));
     }
 
     [Fact]
@@ -140,7 +140,7 @@ public class MalformedPdfTests
     {
         var document = OnePage(catalogEntries, pagesKids);
 
-        Assert.Contains(new PageText(1, "Loop"), document.Untagged);
+        Assert.Contains(new PdfPageText(1, "Loop"), document.Untagged);
     }
 
     [Fact]

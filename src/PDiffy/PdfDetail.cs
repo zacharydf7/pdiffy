@@ -1,7 +1,7 @@
 namespace PDiffy;
 
-/// <summary>A detail that <see cref="SnapshotOptions.Ignore(Field[])"/> leaves out of the snapshot wherever it appears.</summary>
-public enum Field
+/// <summary>A detail that <see cref="PdfSnapshotOptions.Ignore(PdfDetail[])"/> leaves out of the snapshot wherever it appears.</summary>
+public enum PdfDetail
 {
     /// <summary>
     /// The document's language, each structure element's language, languages set on marked content inside elements, and

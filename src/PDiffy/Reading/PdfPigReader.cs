@@ -79,15 +79,15 @@ internal static class PdfPigReader
         }
     }
 
-    private static (List<PageInfo> Pages, Dictionary<int, ReadPage> Readable) ReadPages(PdfDocument document, PdfObjects objects)
+    private static (List<PdfPage> Pages, Dictionary<int, ReadPage> Readable) ReadPages(PdfDocument document, PdfObjects objects)
     {
-        var pages = new List<PageInfo>();
+        var pages = new List<PdfPage>();
         var readable = new Dictionary<int, ReadPage>();
         for (var number = 1; number <= document.NumberOfPages; number++)
         {
             if (TryGetPage(document, number) is not { } page)
             {
-                pages.Add(new PageInfo(number, 0, 0, 0, null, false, Unreadable: true));
+                pages.Add(new PdfPage(number, 0, 0, 0, null, false, Unreadable: true));
                 continue;
             }
 
@@ -98,13 +98,13 @@ internal static class PdfPigReader
         return (pages, readable);
     }
 
-    private static PageInfo ReadPageInfo(int number, Page page, PdfObjects objects)
+    private static PdfPage ReadPageInfo(int number, Page page, PdfObjects objects)
     {
         var dictionary = page.Dictionary;
         // MediaBox size before rotation; the rotation is reported on its own.
         var size = page.MediaBox.Bounds;
         var hasAnnotations = objects.Items(dictionary.Data.GetValueOrDefault("Annots")).Count > 0;
-        return new PageInfo(number, size.Width, size.Height, page.Rotation.Value, objects.Name(dictionary, "Tabs"), hasAnnotations)
+        return new PdfPage(number, size.Width, size.Height, page.Rotation.Value, objects.Name(dictionary, "Tabs"), hasAnnotations)
         {
             CropBox = CropBoxOf(dictionary, objects),
             BleedBox = objects.Box(dictionary, "BleedBox"),
@@ -115,7 +115,7 @@ internal static class PdfPigReader
         };
     }
 
-    private static PageGroup? ReadGroup(DictionaryToken page, PdfObjects objects)
+    private static PdfPageGroup? ReadGroup(DictionaryToken page, PdfObjects objects)
     {
         if (objects.Dictionary(page, "Group") is not { } group)
         {
@@ -123,12 +123,12 @@ internal static class PdfPigReader
         }
 
         var colorSpace = objects.Describe(group.Data.GetValueOrDefault("CS"));
-        return new PageGroup(objects.Name(group, "S"), colorSpace, objects.Boolean(group, "I"), objects.Boolean(group, "K"));
+        return new PdfPageGroup(objects.Name(group, "S"), colorSpace, objects.Boolean(group, "I"), objects.Boolean(group, "K"));
     }
 
     // A CropBox can be set on a Pages node and inherited, so look up the /Parent chain when the page has none. The depth
     // limit stops a malformed loop of parents; real page trees are only a few levels deep.
-    private static PageBox? CropBoxOf(DictionaryToken page, PdfObjects objects)
+    private static PdfBox? CropBoxOf(DictionaryToken page, PdfObjects objects)
     {
         var node = page;
         for (var depth = 0; node is not null && depth < 32; depth++)
@@ -152,13 +152,13 @@ internal static class PdfPigReader
         foreach (var (number, (_, content)) in readable.OrderBy(pair => pair.Key))
         {
             loose.Artifacts.AddRange(content.Artifacts);
-            loose.Untagged.AddRange(content.UntaggedLines.Select(line => new PageText(number, line)));
+            loose.Untagged.AddRange(content.UntaggedLines.Select(line => new PdfPageText(number, line)));
 
             foreach (var (mcid, letters) in content.LettersByMcid.OrderBy(pair => pair.Key))
             {
                 if (!referenced.Contains((number, mcid)) && TextJoiner.Join(letters) is { Length: > 0 } text)
                 {
-                    loose.Untagged.Add(new PageText(number, text));
+                    loose.Untagged.Add(new PdfPageText(number, text));
                 }
             }
         }
@@ -182,5 +182,5 @@ internal static class PdfPigReader
 
     private sealed record ReadPage(Page Page, PageContent Content);
 
-    private sealed record LooseContent(List<PageText> Artifacts, List<PageText> Untagged);
+    private sealed record LooseContent(List<PdfPageText> Artifacts, List<PdfPageText> Untagged);
 }

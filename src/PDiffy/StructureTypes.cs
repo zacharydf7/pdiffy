@@ -14,11 +14,11 @@ internal static class StructureTypes
         .Where(field => field.IsLiteral).Select(field => (string)field.GetRawConstantValue()!)
         .Concat(Pdf2Types).ToArray();
 
-    public static bool IsKnown(string type, IReadOnlyList<RoleMapping> roleMap) =>
+    public static bool IsKnown(string type, IReadOnlyList<PdfRoleMapping> roleMap) =>
         Standard.Contains(type) || roleMap.Any(mapping => mapping.Custom == type || mapping.Standard == type);
 
     // A type that differs only in case, such as "figure", is the likely meant one.
-    public static string Unknown(string type, IReadOnlyList<RoleMapping> roleMap, IEnumerable<string> used)
+    public static string Unknown(string type, IReadOnlyList<PdfRoleMapping> roleMap, IEnumerable<string> used)
     {
         var meant = Standard.Concat(roleMap.Select(mapping => mapping.Custom)).Concat(used)
             .FirstOrDefault(known => string.Equals(known, type, StringComparison.OrdinalIgnoreCase));

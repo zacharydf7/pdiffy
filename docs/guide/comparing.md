@@ -9,7 +9,7 @@ PdfUaDocument before = PdfUaDocument.Load("guide-v1.pdf");
 PdfUaDocument after = PdfUaDocument.Load("guide-v2.pdf");
 
 // The same options as a snapshot: here, only the tag structure and text matter.
-SnapshotDiff diff = before.CompareTo(after, options => options.Ignore(Section.Layout, Section.Metadata));
+SnapshotDiff diff = before.CompareTo(after, options => options.Ignore(PdfSection.Layout, PdfSection.Metadata));
 ```
 
 [`DocxDocument.CompareTo`](xref:PDiffy.DocxDocument.CompareTo*) does the same for Word documents, and
@@ -24,7 +24,7 @@ A [`SnapshotDiff`](xref:PDiffy.SnapshotDiff) lists its [`Changes`](xref:PDiffy.S
 | Property | Holds | Example |
 |---|---|---|
 | [`Kind`](xref:PDiffy.SnapshotChange.Kind) | A [`ChangeKind`](xref:PDiffy.ChangeKind): `Added`, `Removed`, `Moved`, `AttributeChanged`, `TextChanged` or `Changed` | `TextChanged` |
-| [`Section`](xref:PDiffy.SnapshotChange.Section) | The PDF [`Section`](xref:PDiffy.Section) it's in; null for Word and text, and for the snapshot's first lines and whitespace-only changes | `Section.Structure` |
+| [`Section`](xref:PDiffy.SnapshotChange.Section) | The PDF [`PdfSection`](xref:PDiffy.PdfSection) it's in; null for Word and text, and for the snapshot's first lines and whitespace-only changes | `PdfSection.Structure` |
 | [`Path`](xref:PDiffy.SnapshotChange.Path) | Where it is | `structure > Document > Table > TR[2] > TD[1]` |
 | [`Page`](xref:PDiffy.SnapshotChange.Page) | The page, when it's on one | `2` |
 | [`Detail`](xref:PDiffy.SnapshotChange.Detail) | What changed | `"Go [-with-] {+without+} a guide"` |

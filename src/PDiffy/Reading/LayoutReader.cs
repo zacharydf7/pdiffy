@@ -5,7 +5,7 @@ using UglyToad.PdfPig.Graphics;
 
 namespace PDiffy.Reading;
 
-internal sealed record PageLayout(IReadOnlyList<TextRun> TextRuns, IReadOnlyList<ImageInfo> Images, IReadOnlyList<PathInfo> Paths);
+internal sealed record PageLayout(IReadOnlyList<PdfTextRun> TextRuns, IReadOnlyList<PdfImage> Images, IReadOnlyList<PdfVectorPath> Paths);
 
 /// <summary>Every text run, image and painted path on a page, with its position, style and role.</summary>
 internal sealed class LayoutReader(int pageNumber, PageContent content,
@@ -21,17 +21,17 @@ internal sealed class LayoutReader(int pageNumber, PageContent content,
     }
 
     // A run is read as tagged when marked content with an MCID draws it, and is untagged when no element points to that.
-    private List<TextRun> Roles(IReadOnlyList<OwnedRun> runs) =>
+    private List<PdfTextRun> Roles(IReadOnlyList<OwnedRun> runs) =>
         runs.Select(owned => owned.Mcid is int mcid && !referencedMcids.Contains((pageNumber, mcid))
-            ? owned.Run with { Role = ContentRole.Untagged }
+            ? owned.Run with { Role = PdfContentRole.Untagged }
             : owned.Run).ToList();
 
 
-    private List<ImageInfo> ReadImages(Page page)
+    private List<PdfImage> ReadImages(Page page)
     {
         var unmatched = content.Owners.Images.ToList();
         var inLayers = content.Layers.Images.ToList();
-        var images = new List<ImageInfo>();
+        var images = new List<PdfImage>();
         foreach (var image in page.GetImages())
         {
             // Match by position, pixel size and image data, since the marked-content copy is a different object. PdfPig
@@ -55,16 +55,16 @@ internal sealed class LayoutReader(int pageNumber, PageContent content,
             }
 
             var bounds = image.BoundingBox;
-            images.Add(new ImageInfo(pageNumber, Round(bounds.Left), Round(bounds.Bottom), Round(bounds.Width), Round(bounds.Height),
+            images.Add(new PdfImage(pageNumber, Round(bounds.Left), Round(bounds.Bottom), Round(bounds.Width), Round(bounds.Height),
                 image.WidthInSamples, image.HeightInSamples, hash ?? Hash(image), RoleOf(owner)) { Layers = layers });
         }
 
         return images;
     }
 
-    private List<PathInfo> ReadPaths(Page page)
+    private List<PdfVectorPath> ReadPaths(Page page)
     {
-        var paths = new List<PathInfo>();
+        var paths = new List<PdfVectorPath>();
         foreach (var path in page.Paths.Where(IsPainted))
         {
             var bounds = path.GetBoundingRectangle() ?? new PdfRectangle();
@@ -73,19 +73,19 @@ internal sealed class LayoutReader(int pageNumber, PageContent content,
             var fill = path.IsFilled ? ColorText.Format(path.FillColor) ?? DefaultColor : null;
             var stroke = path.IsStroked ? ColorText.Format(path.StrokeColor) ?? DefaultColor : null;
             double? lineWidth = path.IsStroked ? Math.Round((double)path.LineWidth, 1, MidpointRounding.AwayFromZero) : null;
-            paths.Add(new PathInfo(pageNumber, Round(bounds.Left), Round(bounds.Bottom), Round(bounds.Width), Round(bounds.Height),
+            paths.Add(new PdfVectorPath(pageNumber, Round(bounds.Left), Round(bounds.Bottom), Round(bounds.Width), Round(bounds.Height),
                 fill, stroke, lineWidth, RoleOf(owner)) { Layers = content.Layers.Paths.GetValueOrDefault(path) ?? [] });
         }
 
         return paths;
     }
 
-    private ContentRole RoleOf(ContentOwner? owner) => owner switch
+    private PdfContentRole RoleOf(ContentOwner? owner) => owner switch
     {
-        null => ContentRole.Untagged,
-        { IsArtifact: true } => ContentRole.Artifact,
-        { Mcid: int mcid } when referencedMcids.Contains((pageNumber, mcid)) => ContentRole.Tagged,
-        _ => ContentRole.Untagged,
+        null => PdfContentRole.Untagged,
+        { IsArtifact: true } => PdfContentRole.Artifact,
+        { Mcid: int mcid } when referencedMcids.Contains((pageNumber, mcid)) => PdfContentRole.Tagged,
+        _ => PdfContentRole.Untagged,
     };
 
     // A path that is neither filled nor stroked (such as a "W n" clip) draws nothing, so it isn't listed.

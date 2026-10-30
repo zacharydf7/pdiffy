@@ -2,7 +2,7 @@ namespace PDiffy;
 
 /// <summary>How a viewer treats an annotation: whether it is shown, printed, editable and so on.</summary>
 [Flags]
-public enum AnnotationFlags
+public enum PdfAnnotationFlags
 {
     /// <summary>No flags set: the viewer shows the annotation on screen but leaves it off printouts.</summary>
     None = 0,
@@ -31,7 +31,7 @@ public enum AnnotationFlags
 
     /// <summary>
     /// The user can't interact with the annotation, though it still shows and prints. A form field's widget uses
-    /// <see cref="FormFieldFlags.ReadOnly"/> instead.
+    /// <see cref="PdfFormFieldFlags.ReadOnly"/> instead.
     /// </summary>
     ReadOnly = 1 << 6,
 
@@ -46,7 +46,7 @@ public enum AnnotationFlags
 }
 
 /// <summary>What kind of control a form field is.</summary>
-public enum FormFieldType
+public enum PdfFormFieldType
 {
     /// <summary>A box the user types text into.</summary>
     Text,
@@ -61,7 +61,7 @@ public enum FormFieldType
     PushButton,
 
     /// <summary>
-    /// A drop-down list of choices, which takes typed text too when <see cref="FormFieldFlags.Editable"/>.
+    /// A drop-down list of choices, which takes typed text too when <see cref="PdfFormFieldFlags.Editable"/>.
     /// </summary>
     ComboBox,
 
@@ -75,9 +75,9 @@ public enum FormFieldType
     Unknown,
 }
 
-/// <summary>Options set on a form field. Which ones apply depends on the <see cref="FormFieldType"/>.</summary>
+/// <summary>Options set on a form field. Which ones apply depends on the <see cref="PdfFormFieldType"/>.</summary>
 [Flags]
-public enum FormFieldFlags
+public enum PdfFormFieldFlags
 {
     /// <summary>No options set.</summary>
     None = 0,
@@ -108,7 +108,9 @@ public enum FormFieldFlags
     /// <summary>A text field that doesn't scroll, so it takes no more text than fits in it.</summary>
     DoNotScroll = 1 << 7,
 
-    /// <summary>A text field split into <see cref="FormField.MaxLength"/> equal boxes, one character in each.</summary>
+    /// <summary>
+    /// A text field split into <see cref="PdfFormField.MaxLength"/> equal boxes, one character in each.
+    /// </summary>
     Comb = 1 << 8,
 
     /// <summary>A text field whose value is formatted rich text rather than plain text.</summary>
@@ -142,13 +144,13 @@ public enum FormFieldFlags
 /// A form field. <see cref="Name"/> is the full name, parent names joined with dots (address.city).
 /// <see cref="AccessibleName"/> is what a screen reader announces for it.
 /// </summary>
-public sealed record FormField
+public sealed record PdfFormField
 {
     /// <summary>The field's full name, or <c>(unnamed)</c> when neither it nor its parents have one.</summary>
     public required string Name { get; init; }
 
     /// <summary>What kind of control the field is.</summary>
-    public FormFieldType Type { get; init; }
+    public PdfFormFieldType Type { get; init; }
 
     /// <summary>The page number, from 1, of the field's first widget; null when its page can't be found.</summary>
     public int? Page { get; init; }
@@ -172,7 +174,7 @@ public sealed record FormField
     public int? MaxLength { get; init; }
 
     /// <summary>The options set on the field. Only those that apply to its <see cref="Type"/> are read.</summary>
-    public FormFieldFlags Flags { get; init; }
+    public PdfFormFieldFlags Flags { get; init; }
 
     /// <summary>The value a reset puts back.</summary>
     public string? DefaultValue { get; init; }
@@ -181,7 +183,7 @@ public sealed record FormField
     public IReadOnlyList<string> ExportValues { get; init; } = [];
 
     /// <summary>How text in the field lines up; left unless the field, a widget or the form says otherwise.</summary>
-    public FormFieldAlignment Alignment { get; init; }
+    public PdfFormFieldAlignment Alignment { get; init; }
 
     /// <summary>The font of text typed into the field, as the PDF names it (<c>Helvetica</c>).</summary>
     public string? TextFont { get; init; }
@@ -193,17 +195,17 @@ public sealed record FormField
     public string? TextColor { get; init; }
 
     /// <summary>
-    /// The field's JavaScript: its own scripts, then each widget's, each in <see cref="FormScriptTrigger"/> order, with
-    /// scripts an action chains after it under the same trigger.
+    /// The field's JavaScript: its own scripts, then each widget's, each in <see cref="PdfFormScriptTrigger"/> order,
+    /// with scripts an action chains after it under the same trigger.
     /// </summary>
-    public IReadOnlyList<FormScript> Scripts { get; init; } = [];
+    public IReadOnlyList<PdfFormScript> Scripts { get; init; } = [];
 
     /// <summary>The signature in a signed signature field; null for other fields and unsigned ones.</summary>
-    public SignatureInfo? Signature { get; init; }
+    public PdfSignature? Signature { get; init; }
 }
 
 /// <summary>Settings that apply to a whole form rather than to one field.</summary>
-public sealed record FormSettings
+public sealed record PdfFormSettings
 {
     /// <summary>The fields whose calculate scripts run when a value changes, by full name, in the order they run.</summary>
     public IReadOnlyList<string> CalculationOrder { get; init; } = [];
@@ -212,11 +214,11 @@ public sealed record FormSettings
     public bool NeedsAppearances { get; init; }
 
     /// <summary>The XFA form the PDF also carries, which viewers that support XFA show instead; null when there's none.</summary>
-    public XfaFormKind? Xfa { get; init; }
+    public PdfXfaForm? Xfa { get; init; }
 }
 
 /// <summary>What kind of XFA form a PDF carries.</summary>
-public enum XfaFormKind
+public enum PdfXfaForm
 {
     /// <summary>A fixed layout, with the same pages as the PDF.</summary>
     Static,
@@ -226,7 +228,7 @@ public enum XfaFormKind
 }
 
 /// <summary>How text in a field lines up.</summary>
-public enum FormFieldAlignment
+public enum PdfFormFieldAlignment
 {
     /// <summary>Lined up on the left, the default.</summary>
     Left,
@@ -244,10 +246,10 @@ public enum FormFieldAlignment
 /// </summary>
 /// <param name="Trigger">The event that runs the script, such as a value changing or the field getting focus.</param>
 /// <param name="Hash">The first 16 hex digits of a SHA-256 of the script's text, such as "9c1e5a07b3d24f68".</param>
-public sealed record FormScript(FormScriptTrigger Trigger, string? Hash);
+public sealed record PdfFormScript(PdfFormScriptTrigger Trigger, string? Hash);
 
 /// <summary>When a form field's script runs.</summary>
-public enum FormScriptTrigger
+public enum PdfFormScriptTrigger
 {
     /// <summary>As the user types or picks a value.</summary>
     Keystroke,
@@ -299,7 +301,7 @@ public enum FormScriptTrigger
 /// What a signature field's signature records, without checking it. The signature's bytes and signing time are left out,
 /// since they change every time a file is signed.
 /// </summary>
-public sealed record SignatureInfo
+public sealed record PdfSignature
 {
     /// <summary>The signature's format, such as <c>adbe.pkcs7.detached</c> or <c>ETSI.CAdES.detached</c>.</summary>
     public string? SubFilter { get; init; }
@@ -320,11 +322,11 @@ public sealed record SignatureInfo
     public bool HasSigningTime { get; init; }
 
     /// <summary>What a certifying signature still allows to change; null for a signature that doesn't certify.</summary>
-    public SignatureCertification? Certification { get; init; }
+    public PdfSignatureCertification? Certification { get; init; }
 }
 
 /// <summary>What a certifying signature allows to change after signing without invalidating it.</summary>
-public enum SignatureCertification
+public enum PdfSignatureCertification
 {
     /// <summary>No changes at all.</summary>
     NoChanges = 1,

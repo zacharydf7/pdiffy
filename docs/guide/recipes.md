@@ -40,7 +40,7 @@ To keep the output the same from run to run:
 - **The browser.** Each Playwright version pins its own Chromium build, so upgrading Playwright is a
   [generator upgrade](generator-upgrades.md): run the tests before and after.
 
-Start with `Use(SnapshotProfile.Accessibility)` if the tags are what you want to guard, or `SnapshotProfile.Content` for
+Start with `Use(PdfProfile.Accessibility)` if the tags are what you want to guard, or `PdfProfile.Content` for
 the text and structure alone. A Chromium upgrade can move lines by a point or two, so leave layout in (`Strict`) only
 where the page's look is what you're testing, and pin the browser there.
 

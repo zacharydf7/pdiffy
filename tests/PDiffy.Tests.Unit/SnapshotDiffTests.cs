@@ -41,7 +41,7 @@ public class SnapshotDiffTests
         var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
 
         var path = "structure > Document > Table > TR[2] > TD[2]";
-        Assert.Equal(new SnapshotChange(ChangeKind.TextChanged, Section.Structure, path, 2, "\"Go [-with-] {+without+} a guide\""), change);
+        Assert.Equal(new SnapshotChange(ChangeKind.TextChanged, PdfSection.Structure, path, 2, "\"Go [-with-] {+without+} a guide\""), change);
     }
 
     [Fact]
@@ -53,9 +53,9 @@ public class SnapshotDiffTests
 
         SnapshotChange[] expected =
         [
-            new(ChangeKind.AttributeChanged, Section.Structure, "structure > Document > Table > TR[1] > TH2", 2,
+            new(ChangeKind.AttributeChanged, PdfSection.Structure, "structure > Document > Table > TR[1] > TH2", 2,
                 "scope: Column -> (missing)"),
-            new(ChangeKind.AttributeChanged, Section.Layout, "layout > p1", 1, "color: gray:0 -> #ff0000"),
+            new(ChangeKind.AttributeChanged, PdfSection.Layout, "layout > p1", 1, "color: gray:0 -> #ff0000"),
         ];
         Assert.Equal(expected, changes);
     }
@@ -119,7 +119,7 @@ public class SnapshotDiffTests
 
         var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
 
-        var expected = new SnapshotChange(ChangeKind.Moved, Section.Structure, "structure > Document > Figure", 1,
+        var expected = new SnapshotChange(ChangeKind.Moved, PdfSection.Structure, "structure > Document > Figure", 1,
             "reading position 3 -> 10");
         Assert.Equal(expected, change);
     }
@@ -133,8 +133,8 @@ public class SnapshotDiffTests
 
         SnapshotChange[] expected =
         [
-            new(ChangeKind.Removed, Section.Structure, "structure > Document > P", 3, "P p3 \"Call your ranger\""),
-            new(ChangeKind.Added, Section.Structure, "structure > Document > P", 3, "P p3 \"Ask questions\""),
+            new(ChangeKind.Removed, PdfSection.Structure, "structure > Document > P", 3, "P p3 \"Call your ranger\""),
+            new(ChangeKind.Added, PdfSection.Structure, "structure > Document > P", 3, "P p3 \"Ask questions\""),
         ];
         Assert.Equal(expected, changes);
     }
@@ -159,7 +159,7 @@ public class SnapshotDiffTests
 
         var change = Assert.Single(SnapshotDiff.Compare(Before, after).Changes);
 
-        Assert.Equal(new SnapshotChange(ChangeKind.Changed, Section.Structure, "structure > Document > H2", 1, "type: H1 -> H2"), change);
+        Assert.Equal(new SnapshotChange(ChangeKind.Changed, PdfSection.Structure, "structure > Document > H2", 1, "type: H1 -> H2"), change);
     }
 
     [Fact]
@@ -205,10 +205,10 @@ public class SnapshotDiffTests
 
         SnapshotChange[] expected =
         [
-            new(ChangeKind.Moved, Section.Structure, "structure > Document > Figure", 1, "reading position 3 -> 10"),
-            new(ChangeKind.AttributeChanged, Section.Structure, "structure > Document > Figure", 1,
+            new(ChangeKind.Moved, PdfSection.Structure, "structure > Document > Figure", 1, "reading position 3 -> 10"),
+            new(ChangeKind.AttributeChanged, PdfSection.Structure, "structure > Document > Figure", 1,
                 "alt: \"Park logo\" -> \"Store logo\""),
-            new(ChangeKind.TextChanged, Section.Structure, "structure > Document > P", 3, "\"Call your [-ranger-] {+warden+}\""),
+            new(ChangeKind.TextChanged, PdfSection.Structure, "structure > Document > P", 3, "\"Call your [-ranger-] {+warden+}\""),
         ];
         Assert.Equal(expected, changes);
     }
@@ -282,8 +282,8 @@ public class SnapshotDiffTests
 
         SnapshotChange[] expected =
         [
-            new(ChangeKind.Moved, Section.Structure, "structure > L", 1, "reading position 2 -> 1"),
-            new(ChangeKind.Moved, Section.Structure, "structure > LI", 1,
+            new(ChangeKind.Moved, PdfSection.Structure, "structure > L", 1, "reading position 2 -> 1"),
+            new(ChangeKind.Moved, PdfSection.Structure, "structure > LI", 1,
                 "reading position 4 -> 5\nparent: L -> (top level)"),
         ];
         Assert.Equal(expected, changes);
@@ -329,8 +329,8 @@ public class SnapshotDiffTests
 
         SnapshotChange[] expected =
         [
-            new(ChangeKind.Added, Section.Structure, "structure > P[1]", 1, "P p1 \"S\""),
-            new(ChangeKind.Moved, Section.Structure, "structure > P[6]", 1, "reading position 4 -> 6"),
+            new(ChangeKind.Added, PdfSection.Structure, "structure > P[1]", 1, "P p1 \"S\""),
+            new(ChangeKind.Moved, PdfSection.Structure, "structure > P[6]", 1, "reading position 4 -> 6"),
         ];
         Assert.Equal(expected, changes);
     }
@@ -673,7 +673,7 @@ public class SnapshotDiffTests
 
         var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
 
-        Assert.Equal((ChangeKind.TextChanged, Section.Artifacts), (change.Kind, change.Section));
+        Assert.Equal((ChangeKind.TextChanged, PdfSection.Artifacts), (change.Kind, change.Section));
     }
 
     [Fact]
@@ -958,7 +958,7 @@ public class SnapshotDiffTests
 
         var changes = SnapshotDiff.Compare(older, Before.Replace("Go with a guide", "Go without a guide")).Changes;
 
-        Assert.Equal([null, Section.Structure], changes.Select(change => change.Section));
+        Assert.Equal([null, PdfSection.Structure], changes.Select(change => change.Section));
         Assert.Equal("header", changes[0].Path);
     }
 
@@ -969,10 +969,10 @@ public class SnapshotDiffTests
 
         SnapshotChange[] expected =
         [
-            new(ChangeKind.Changed, Section.Pages, "pages", 2, "p2 inserted; p2-10 -> p3-11"),
-            new(ChangeKind.AttributeChanged, Section.Document, "document > marked", null, "pages: 10 -> 11"),
-            new(ChangeKind.Added, Section.Structure, "structure > Document > P[2]", 2, "P p2 \"A new page\""),
-            new(ChangeKind.Added, Section.Layout, "layout > p2", 2, "p2 text tagged at=72,700 \"A new page\""),
+            new(ChangeKind.Changed, PdfSection.Pages, "pages", 2, "p2 inserted; p2-10 -> p3-11"),
+            new(ChangeKind.AttributeChanged, PdfSection.Document, "document > marked", null, "pages: 10 -> 11"),
+            new(ChangeKind.Added, PdfSection.Structure, "structure > Document > P[2]", 2, "P p2 \"A new page\""),
+            new(ChangeKind.Added, PdfSection.Layout, "layout > p2", 2, "p2 text tagged at=72,700 \"A new page\""),
         ];
         Assert.Equal(expected, changes);
     }
@@ -1120,12 +1120,12 @@ public class SnapshotDiffTests
     [Fact]
     public void CompareTo_ShouldCompareTheSnapshots_WhenGivenTwoDocuments()
     {
-        var paragraph = new StructureElement { Type = "P", FirstPage = 1, Text = "Go with a guide" };
+        var paragraph = new PdfStructureElement { Type = "P", FirstPage = 1, Text = "Go with a guide" };
         var before = Documents.Empty() with { Structure = [paragraph] };
         var after = before with { Structure = [paragraph with { Text = "Go without a guide" }] };
 
         var change = Assert.Single(before.CompareTo(after).Changes);
 
-        Assert.Equal((ChangeKind.TextChanged, Section.Structure, "structure > P"), (change.Kind, change.Section, change.Path));
+        Assert.Equal((ChangeKind.TextChanged, PdfSection.Structure, "structure > P"), (change.Kind, change.Section, change.Path));
     }
 }

@@ -1,7 +1,7 @@
 namespace PDiffy;
 
 /// <summary>The sections of a snapshot, in the order it prints them.</summary>
-public enum Section
+public enum PdfSection
 {
     /// <summary>Whether the PDF is tagged, its language, whether the viewer shows the title, and the page count.</summary>
     Document,

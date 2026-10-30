@@ -15,11 +15,11 @@ internal static class AccessibilityRules
         // Only PDF changes have a section; DOCX keys can mean other things, such as a section's headers.
         if (change.Section is not { } section) return false;
         var (before, after) = Sides(change.Detail);
-        if (section == Section.Untagged) return AddsUntagged(change.Kind, change.Detail, before, after);
+        if (section == PdfSection.Untagged) return AddsUntagged(change.Kind, change.Detail, before, after);
 
         return change.Kind switch
         {
-            ChangeKind.Moved => section == Section.Structure,
+            ChangeKind.Moved => section == PdfSection.Structure,
             ChangeKind.Changed => IsTypeChange(before, after) || HidesTagged(section, Role(before), Role(after)),
             ChangeKind.AttributeChanged => KeyOf(before) is var key
                 && (key == "lang" || key == "span-lang" && Languages(ValueOf(before)) != Languages(after)
@@ -36,22 +36,22 @@ internal static class AccessibilityRules
 
     // Tagged content that a screen reader no longer reaches: an annotation that lost its tag, or text, an image or a
     // path now marked as an artifact (decoration) or left untagged.
-    private static bool HidesTagged(Section section, string? before, string? after) => before == "tagged" && section switch
+    private static bool HidesTagged(PdfSection section, string? before, string? after) => before == "tagged" && section switch
     {
-        Section.Annotations => after == "untagged",
-        Section.Layout => after is "artifact" or "untagged",
+        PdfSection.Annotations => after == "untagged",
+        PdfSection.Layout => after is "artifact" or "untagged",
         _ => false,
     };
 
     // Keys whose change takes something away, matched by section since some names repeat elsewhere.
-    private static bool Loses(Section section, string key, string from, string to) => (section, key) switch
+    private static bool Loses(PdfSection section, string key, string from, string to) => (section, key) switch
     {
-        (Section.Document, "marked" or "display-doc-title") => from == "yes" && to != "yes",
-        (Section.Metadata, "title" or "xmp-title") => IsGone(to),
-        (Section.Pages, "tabs") => from == "S" && to != "S",
-        (Section.Fonts, "to-unicode") => from == "yes" && to != "yes",
-        (Section.Fonts, "unmapped") => AddsCodes(from, to),
-        (Section.Settings, "permissions") => AllowsExtraction(from) && !AllowsExtraction(to),
+        (PdfSection.Document, "marked" or "display-doc-title") => from == "yes" && to != "yes",
+        (PdfSection.Metadata, "title" or "xmp-title") => IsGone(to),
+        (PdfSection.Pages, "tabs") => from == "S" && to != "S",
+        (PdfSection.Fonts, "to-unicode") => from == "yes" && to != "yes",
+        (PdfSection.Fonts, "unmapped") => AddsCodes(from, to),
+        (PdfSection.Settings, "permissions") => AllowsExtraction(from) && !AllowsExtraction(to),
         _ => false,
     };
 

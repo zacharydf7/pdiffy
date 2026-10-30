@@ -65,7 +65,7 @@ internal sealed class PdfObjects(PdfDocument document)
     /// A rectangle such as /Rect or /CropBox: two opposite corners in either order, turned into the bottom-left corner
     /// plus a size in whole points. Null when the entry is missing or not four numbers.
     /// </summary>
-    public PageBox? Box(DictionaryToken owner, string key)
+    public PdfBox? Box(DictionaryToken owner, string key)
     {
         if (Get(owner, key) is not ArrayToken array || array.Data.Count < 4)
         {
@@ -77,18 +77,18 @@ internal sealed class PdfObjects(PdfDocument document)
         var bottom = Math.Min(numbers[1], numbers[3]);
         var width = Math.Abs(numbers[2] - numbers[0]);
         var height = Math.Abs(numbers[3] - numbers[1]);
-        return new PageBox(Round(left), Round(bottom), Round(width), Round(height));
+        return new PdfBox(Round(left), Round(bottom), Round(width), Round(height));
     }
 
     /// <summary>A simple value as text: a name, string, number or true/false, or an array of them in brackets.</summary>
     public string? Describe(IToken? token) => Describe(token, depth: 0);
 
     /// <summary>A dictionary's entries as sorted settings, leaving out the given keys.</summary>
-    public IReadOnlyList<Setting> Settings(DictionaryToken? dictionary, params string[] skip) =>
+    public IReadOnlyList<PdfSetting> Settings(DictionaryToken? dictionary, params string[] skip) =>
         (dictionary?.Data ?? new Dictionary<string, IToken>())
             .Where(pair => !skip.Contains(pair.Key))
             .OrderBy(pair => pair.Key, StringComparer.Ordinal)
-            .Select(pair => new Setting(pair.Key, Describe(pair.Value) ?? ""))
+            .Select(pair => new PdfSetting(pair.Key, Describe(pair.Value) ?? ""))
             .ToList();
 
     /// <summary>

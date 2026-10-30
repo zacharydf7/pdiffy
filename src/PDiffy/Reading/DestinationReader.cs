@@ -18,17 +18,17 @@ internal sealed class DestinationReader(PdfObjects objects, PageTree pages, Dict
     /// A destination: [page view positions...], or the name of one. In another file (<paramref name="remote"/>) the page
     /// is a number counted from 0, and a name can't be looked up here.
     /// </summary>
-    public Destination? Read(IToken? destination, bool remote = false)
+    public PdfDestination? Read(IToken? destination, bool remote = false)
     {
         var resolved = objects.Resolve(destination);
         var name = resolved is NameToken token ? token.Data : PdfObjects.TextOf(resolved);
         if (name is null) return Explicit(resolved, remote);
-        if (remote || !Named.TryGetValue(name, out var target)) return new Destination { Name = name };
-        return Explicit(objects.Resolve(target), remote: false) ?? new Destination { Name = name };
+        if (remote || !Named.TryGetValue(name, out var target)) return new PdfDestination { Name = name };
+        return Explicit(objects.Resolve(target), remote: false) ?? new PdfDestination { Name = name };
     }
 
     /// <summary>A bookmark's destination, which PdfPig has already looked up.</summary>
-    public static Destination FromBookmark(ExplicitDestination destination)
+    public static PdfDestination FromBookmark(ExplicitDestination destination)
     {
         var (view, positions) = destination.Type switch
         {
@@ -43,7 +43,7 @@ internal sealed class DestinationReader(PdfObjects objects, PageTree pages, Dict
             _ => ("Fit", Array.Empty<double?>()),
         };
 
-        return new Destination
+        return new PdfDestination
         {
             Page = destination.PageNumber,
             View = view,
@@ -52,7 +52,7 @@ internal sealed class DestinationReader(PdfObjects objects, PageTree pages, Dict
     }
 
     // An explicit destination is an array, or a dictionary whose /D is one (as a named destination can be).
-    private Destination? Explicit(IToken? destination, bool remote)
+    private PdfDestination? Explicit(IToken? destination, bool remote)
     {
         if (destination is DictionaryToken dictionary) destination = objects.Get(dictionary, "D");
         if (destination is not ArrayToken array || array.Data.Count == 0) return null;
@@ -66,7 +66,7 @@ internal sealed class DestinationReader(PdfObjects objects, PageTree pages, Dict
         var zoom = view == "XYZ" && array.Data.Count > 4 && objects.Resolve(array.Data[4]) is NumericToken { Double: not 0 } scale
             ? scale.Double
             : (double?)null;
-        return new Destination { Page = page, View = view, Positions = positions.ToList(), Zoom = zoom };
+        return new PdfDestination { Page = page, View = view, Positions = positions.ToList(), Zoom = zoom };
     }
 
     // Named destinations live in the catalog's /Dests dictionary (PDF 1.1) or its /Names /Dests name tree.

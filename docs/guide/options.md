@@ -8,15 +8,15 @@ Options are passed as `configure`, and chain:
 
 ```csharp
 await PdfSnapshot.VerifyAsync(pdf, configure: options => options
-    .Ignore(Section.Metadata)
-    .Ignore(Field.Positions)
+    .Ignore(PdfSection.Metadata)
+    .Ignore(PdfDetail.Positions)
     .ScrubDates()
     .OnlyPages(1, 2));
 ```
 
-- `Use(SnapshotProfile...)` compares only what a test guards, such as what assistive technology uses.
-- `Ignore(Section...)` leaves out a whole section, such as a layout the design team changes freely.
-- `Ignore(Field...)` leaves out one detail everywhere, such as positions, colors or the title.
+- `Use(PdfProfile...)` compares only what a test guards, such as what assistive technology uses.
+- `Ignore(PdfSection...)` leaves out a whole section, such as a layout the design team changes freely.
+- `Ignore(PdfDetail...)` leaves out one detail everywhere, such as positions, colors or the title.
 - `ScrubDates()`, `ScrubGuids()` and `ScrubText(...)` replace values that change on every run, such as print dates,
   permit numbers and booking ids.
 - `OnlyPages(...)` snapshots part of a long document, such as the summary on pages 3 and 4.
@@ -27,13 +27,13 @@ one.
 ## Use a profile
 
 Most tests guard one thing: the content, its accessibility or how the page looks. A
-[`SnapshotProfile`](xref:PDiffy.SnapshotProfile) leaves out everything else in one call, and further `Ignore` calls leave
+[`PdfProfile`](xref:PDiffy.PdfProfile) leaves out everything else in one call, and further `Ignore` calls leave
 out more:
 
 ```csharp
 await PdfSnapshot.VerifyAsync(pdf, configure: options => options
-    .Use(SnapshotProfile.Accessibility)
-    .Ignore(Field.Language));
+    .Use(PdfProfile.Accessibility)
+    .Ignore(PdfDetail.Language));
 ```
 
 The snapshot's header lists the sections and fields a profile leaves out, not the profile's name. If a later release
@@ -52,7 +52,7 @@ every test agrees on and set the rest in each test. A text or JSON call's `KeepD
 default scrub. A PDF or Word snapshot's first lines list what's ignored, but not what's scrubbed.
 
 ```csharp
-PdfSnapshot.DefaultOptions = options => options.Use(SnapshotProfile.Accessibility).ScrubDates();
+PdfSnapshot.DefaultOptions = options => options.Use(PdfProfile.Accessibility).ScrubDates();
 ```
 
 Set them in a module initializer, as for [`Snapshot.Directory`](getting-started.md#keep-snapshots-in-one-folder).
@@ -70,7 +70,7 @@ public async Task TrailMapTemplate_ShouldKeepItsTagStructure_WhenStylingChanges(
     // This test guards the tag tree and the text, so leave out the metadata, the document settings
     // and the layout (positions, fonts and colors), which the design team changes freely.
     await PdfSnapshot.VerifyAsync(pdf, configure: options => options
-        .Ignore(Section.Metadata, Section.Settings, Section.Layout));
+        .Ignore(PdfSection.Metadata, PdfSection.Settings, PdfSection.Layout));
 }
 ```
 
@@ -88,11 +88,11 @@ metadata
 ...
 ```
 
-[Every `Section`](../reference/options.md#pdf-sections) is listed in the reference.
+[Every `PdfSection`](../reference/options.md#pdf-sections) is listed in the reference.
 
 ## Leave out one detail everywhere
 
-For something narrower than a section, ignore a [`Field`](xref:PDiffy.Field). It's left out everywhere it appears, and
+For something narrower than a section, ignore a [`PdfDetail`](xref:PDiffy.PdfDetail). It's left out everywhere it appears, and
 the rest of each line is still compared.
 
 ```csharp
@@ -103,14 +103,14 @@ public async Task SeasonalGuide_ShouldMatchApprovedSnapshot_WhenGenerated()
 
     await PdfSnapshot.VerifyAsync(pdf, configure: options => options
         // The title includes the month, so it changes every time.
-        .Ignore(Field.Title)
+        .Ignore(PdfDetail.Title)
         // Text reflows when the guide has more rows, so where things land doesn't matter here.
         // Fonts, sizes and colors are still compared.
-        .Ignore(Field.Positions));
+        .Ignore(PdfDetail.Positions));
 }
 ```
 
-With `Field.Positions` ignored, a layout line such as
+With `PdfDetail.Positions` ignored, a layout line such as
 
 ```text
 p1 text tagged at=72,720 font=Arial size=18 color=gray:0 "Trails"
@@ -122,18 +122,18 @@ becomes
 p1 text tagged font=Arial size=18 color=gray:0 "Trails"
 ```
 
-[Every `Field`](../reference/options.md#pdf-fields) is listed in the reference.
+[Every `PdfDetail`](../reference/options.md#pdf-details) is listed in the reference.
 
 ## Allow small numeric differences
 
 Positions are rounded to whole points, and font sizes and line widths to 0.1 pt. A value close to a rounding boundary
 can flip after a font or library update: text at 72.49 pt prints `at=72,...`, and moved by 0.02 pt it prints
-`at=73,...`. Ignoring `Field.Positions` would also hide a heading that moved 40 pt, so tolerate the noise instead:
+`at=73,...`. Ignoring `PdfDetail.Positions` would also hide a heading that moved 40 pt, so tolerate the noise instead:
 
 ```csharp
 await PdfSnapshot.VerifyAsync(pdf, configure: options => options
-    .Tolerate(Field.Positions, points: 1)
-    .Tolerate(Field.FontSizes, points: 0.5));
+    .Tolerate(PdfTolerance.Positions, points: 1)
+    .Tolerate(PdfTolerance.FontSizes, points: 0.5));
 ```
 
 - A number that differs from the verified one by no more than its tolerance doesn't fail the test, and the verified
@@ -224,5 +224,5 @@ Text and JSON snapshots scrub the whole text rather than quoted values. See [Tex
 ## See also
 
 - [Options at a glance](../reference/options.md), every value in one place
-- [`SnapshotOptions`](xref:PDiffy.SnapshotOptions), [`DocxSnapshotOptions`](xref:PDiffy.DocxSnapshotOptions),
+- [`PdfSnapshotOptions`](xref:PDiffy.PdfSnapshotOptions), [`DocxSnapshotOptions`](xref:PDiffy.DocxSnapshotOptions),
   [`TextSnapshotOptions`](xref:PDiffy.TextSnapshotOptions)

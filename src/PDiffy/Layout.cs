@@ -1,7 +1,7 @@
 namespace PDiffy;
 
 /// <summary>How assistive technology treats a piece of page content.</summary>
-public enum ContentRole
+public enum PdfContentRole
 {
     /// <summary>Inside marked content that a structure element points to.</summary>
     Tagged,
@@ -14,7 +14,7 @@ public enum ContentRole
 }
 
 /// <summary>How text is drawn. Most text is <see cref="Fill"/>; <see cref="Invisible"/> text (often an OCR layer) has no ink.</summary>
-public enum TextRenderMode
+public enum PdfTextRenderMode
 {
     /// <summary>Filled in, the usual way text is drawn.</summary>
     Fill,
@@ -57,8 +57,8 @@ public enum TextRenderMode
 /// <param name="Role">Whether the text is tagged, an artifact, or untagged.</param>
 /// <param name="Text">The run's text, with a space wherever the gap between letters is wide enough for one, whitespace
 /// runs collapsed to one space, and no space at either end.</param>
-public sealed record TextRun(
-    int Page, int X, int Y, string Font, double Size, string? Color, TextRenderMode RenderMode, ContentRole Role, string Text)
+public sealed record PdfTextRun(
+    int Page, int X, int Y, string Font, double Size, string? Color, PdfTextRenderMode RenderMode, PdfContentRole Role, string Text)
 {
     /// <summary>
     /// The angle the text runs at, in degrees counterclockwise, such as 90 for text that reads upward; 0 for text across
@@ -84,8 +84,8 @@ public sealed record TextRun(
 /// <param name="Hash">The first 16 hex digits of a SHA-256 of the decoded pixels, or of the bytes as stored when the
 /// pixels can't be decoded (such as a JPEG) or are too large to decompress.</param>
 /// <param name="Role">Whether the image is tagged, an artifact, or untagged.</param>
-public sealed record ImageInfo(
-    int Page, int X, int Y, int Width, int Height, int PixelWidth, int PixelHeight, string Hash, ContentRole Role)
+public sealed record PdfImage(
+    int Page, int X, int Y, int Width, int Height, int PixelWidth, int PixelHeight, string Hash, PdfContentRole Role)
 {
     /// <summary>
     /// The optional-content layers the image is drawn in, outermost first, by name, such as "Draft"; empty when it's
@@ -107,8 +107,8 @@ public sealed record ImageInfo(
 /// <param name="LineWidth">The outline's width as the PDF sets it, rounded to one decimal place; null when the path
 /// isn't stroked.</param>
 /// <param name="Role">Whether the path is tagged, an artifact, or untagged.</param>
-public sealed record PathInfo(
-    int Page, int X, int Y, int Width, int Height, string? Fill, string? Stroke, double? LineWidth, ContentRole Role)
+public sealed record PdfVectorPath(
+    int Page, int X, int Y, int Width, int Height, string? Fill, string? Stroke, double? LineWidth, PdfContentRole Role)
 {
     /// <summary>
     /// The optional-content layers the path is drawn in, outermost first, by name, such as "Draft"; empty when it's

@@ -62,7 +62,7 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 - An element whose marked content draws an image prints the image's hash (`Figure p1 alt="Trail map"
   images=[3f9c0a1b2d4e5f60]`), the same hash as the image's layout line. If two figures' images are swapped, the alt
   text no longer matches its picture, and the figures' lines now show it. The key is left out with
-  `Field.ImageContents`, so the `Accessibility` profile doesn't print it. Snapshots of tagged documents with images
+  `PdfDetail.ImageContents`, so the `Accessibility` profile doesn't print it. Snapshots of tagged documents with images
   change.
 - Links print where they go instead of `dest=yes`: the page, the view it opens at and the view's positions
   (`dest=p3 view=XYZ view-at=72,720`, and `zoom=` when an XYZ view sets one). A named destination is looked up; one the

@@ -1,7 +1,7 @@
 namespace PDiffy.Tests.Unit.Docx;
 
 // Each case makes one small change that matters to a known DOCX and checks that the snapshot catches it, in the right
-// section and as the right kind of change. DOCX changes have no Section value, so the path is matched.
+// section and as the right kind of change. DOCX changes have no PdfSection value, so the path is matched.
 public class DocxMutationTests
 {
     private static readonly byte[] Logo = [0x89, 0x50, 0x4E, 0x47, 1, 2, 3];

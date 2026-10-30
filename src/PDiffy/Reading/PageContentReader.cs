@@ -21,15 +21,15 @@ internal sealed class ContentOwners
 /// language or replacement text, the artifacts, untagged text, and who owns what.
 /// </summary>
 internal sealed record PageContent(IReadOnlyDictionary<int, List<Letter>> LettersByMcid,
-    IReadOnlyDictionary<int, List<MarkedSpan>> SpansByMcid, IReadOnlyDictionary<int, List<string>> ImagesByMcid,
-    IReadOnlyList<PageText> Artifacts, IReadOnlyList<string> UntaggedLines, ContentOwners Owners,
-    IReadOnlyList<OwnedRun> TextRuns, IReadOnlyDictionary<int, List<TextRun>> TextRunsByMcid, ContentLayers Layers);
+    IReadOnlyDictionary<int, List<PdfMarkedSpan>> SpansByMcid, IReadOnlyDictionary<int, List<string>> ImagesByMcid,
+    IReadOnlyList<PdfPageText> Artifacts, IReadOnlyList<string> UntaggedLines, ContentOwners Owners,
+    IReadOnlyList<OwnedRun> TextRuns, IReadOnlyDictionary<int, List<PdfTextRun>> TextRunsByMcid, ContentLayers Layers);
 
 internal sealed class PageContentReader
 {
     private readonly ContentOwners _owners = new();
-    private readonly List<PageText> _artifacts = [];
-    private readonly Dictionary<int, List<MarkedSpan>> _spansByMcid = [];
+    private readonly List<PdfPageText> _artifacts = [];
+    private readonly Dictionary<int, List<PdfMarkedSpan>> _spansByMcid = [];
 
     // Each letter's place in page.Letters, which is in content order, so letters gathered by nesting can be put back.
     private readonly Dictionary<Letter, int> _drawingOrder = [];
@@ -104,7 +104,7 @@ internal sealed class PageContentReader
             if (text.Length > 0)
             {
                 var kind = markedContent as ArtifactMarkedContentElement;
-                _artifacts.Add(new PageText(_pageNumber, text)
+                _artifacts.Add(new PdfPageText(_pageNumber, text)
                 {
                     Type = kind?.Type is { } type and not ArtifactMarkedContentElement.ArtifactType.Unknown ? type.ToString() : null,
                     Subtype = kind?.SubType,
@@ -129,9 +129,9 @@ internal sealed class PageContentReader
     }
 
     // Marked content that says something of its own about its text, such as a word in another language.
-    private MarkedSpan? Span(MarkedContentElement markedContent)
+    private PdfMarkedSpan? Span(MarkedContentElement markedContent)
     {
-        var span = new MarkedSpan
+        var span = new PdfMarkedSpan
         {
             Language = NonEmpty(markedContent.Language),
             ActualText = NonEmpty(markedContent.ActualText),
@@ -140,7 +140,7 @@ internal sealed class PageContentReader
                 ?? NonEmpty(PdfObjects.TextOf(markedContent.Properties?.Data.GetValueOrDefault("Alt"))),
             Expansion = NonEmpty(markedContent.ExpandedForm),
         };
-        if (span == new MarkedSpan()) return null;
+        if (span == new PdfMarkedSpan()) return null;
 
         var letters = InDrawingOrder(SelfAndDescendants(markedContent).SelectMany(element => element.Letters));
         return span with { Text = NonEmpty(TextJoiner.Join(letters)) };
@@ -152,7 +152,7 @@ internal sealed class PageContentReader
 
     private static string? NonEmpty(string? value) => string.IsNullOrEmpty(value) ? null : value;
 
-    private List<MarkedSpan> SpansOf(int mcid)
+    private List<PdfMarkedSpan> SpansOf(int mcid)
     {
         if (!_spansByMcid.TryGetValue(mcid, out var spans))
         {

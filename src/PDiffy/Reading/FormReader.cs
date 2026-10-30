@@ -11,46 +11,46 @@ namespace PDiffy.Reading;
 internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLength, DictionaryToken form)
 {
     // The keys of a field's own /AA and of its widget's /AA, with /A (a widget's click action) as Activate.
-    private static readonly (string Key, FormScriptTrigger Trigger)[] FieldTriggers =
+    private static readonly (string Key, PdfFormScriptTrigger Trigger)[] FieldTriggers =
     [
-        ("K", FormScriptTrigger.Keystroke), ("F", FormScriptTrigger.Format), ("V", FormScriptTrigger.Validate),
-        ("C", FormScriptTrigger.Calculate),
+        ("K", PdfFormScriptTrigger.Keystroke), ("F", PdfFormScriptTrigger.Format), ("V", PdfFormScriptTrigger.Validate),
+        ("C", PdfFormScriptTrigger.Calculate),
     ];
 
-    private static readonly (string Key, FormScriptTrigger Trigger)[] WidgetTriggers =
+    private static readonly (string Key, PdfFormScriptTrigger Trigger)[] WidgetTriggers =
     [
-        ("E", FormScriptTrigger.MouseEnter), ("X", FormScriptTrigger.MouseExit), ("D", FormScriptTrigger.MouseDown),
-        ("U", FormScriptTrigger.MouseUp), ("Fo", FormScriptTrigger.Focus), ("Bl", FormScriptTrigger.Blur),
-        ("PO", FormScriptTrigger.PageOpen), ("PC", FormScriptTrigger.PageClose), ("PV", FormScriptTrigger.PageVisible),
-        ("PI", FormScriptTrigger.PageInvisible),
+        ("E", PdfFormScriptTrigger.MouseEnter), ("X", PdfFormScriptTrigger.MouseExit),
+        ("D", PdfFormScriptTrigger.MouseDown), ("U", PdfFormScriptTrigger.MouseUp), ("Fo", PdfFormScriptTrigger.Focus),
+        ("Bl", PdfFormScriptTrigger.Blur), ("PO", PdfFormScriptTrigger.PageOpen), ("PC", PdfFormScriptTrigger.PageClose),
+        ("PV", PdfFormScriptTrigger.PageVisible), ("PI", PdfFormScriptTrigger.PageInvisible),
     ];
 
     // PDF numbers field flag bits from 1. Bits 16, 17 and 18 pick the button or choice type instead.
-    private static readonly (int Bit, FormFieldFlags Flag)[] CommonFlags =
-        [(1, FormFieldFlags.ReadOnly), (2, FormFieldFlags.Required), (3, FormFieldFlags.NoExport)];
+    private static readonly (int Bit, PdfFormFieldFlags Flag)[] CommonFlags =
+        [(1, PdfFormFieldFlags.ReadOnly), (2, PdfFormFieldFlags.Required), (3, PdfFormFieldFlags.NoExport)];
 
-    private static readonly (int Bit, FormFieldFlags Flag)[] TextFlags =
+    private static readonly (int Bit, PdfFormFieldFlags Flag)[] TextFlags =
     [
-        (13, FormFieldFlags.Multiline), (14, FormFieldFlags.Password), (21, FormFieldFlags.FileSelect),
-        (23, FormFieldFlags.DoNotSpellCheck), (24, FormFieldFlags.DoNotScroll), (25, FormFieldFlags.Comb), (26, FormFieldFlags.RichText),
+        (13, PdfFormFieldFlags.Multiline), (14, PdfFormFieldFlags.Password), (21, PdfFormFieldFlags.FileSelect),
+        (23, PdfFormFieldFlags.DoNotSpellCheck), (24, PdfFormFieldFlags.DoNotScroll), (25, PdfFormFieldFlags.Comb), (26, PdfFormFieldFlags.RichText),
     ];
 
-    private static readonly (int Bit, FormFieldFlags Flag)[] ButtonFlags =
-        [(15, FormFieldFlags.NoToggleToOff), (26, FormFieldFlags.RadiosInUnison)];
+    private static readonly (int Bit, PdfFormFieldFlags Flag)[] ButtonFlags =
+        [(15, PdfFormFieldFlags.NoToggleToOff), (26, PdfFormFieldFlags.RadiosInUnison)];
 
-    private static readonly (int Bit, FormFieldFlags Flag)[] ChoiceFlags =
+    private static readonly (int Bit, PdfFormFieldFlags Flag)[] ChoiceFlags =
     [
-        (19, FormFieldFlags.Editable), (20, FormFieldFlags.Sort), (22, FormFieldFlags.MultiSelect),
-        (23, FormFieldFlags.DoNotSpellCheck), (27, FormFieldFlags.CommitOnSelectionChange),
+        (19, PdfFormFieldFlags.Editable), (20, PdfFormFieldFlags.Sort), (22, PdfFormFieldFlags.MultiSelect),
+        (23, PdfFormFieldFlags.DoNotSpellCheck), (27, PdfFormFieldFlags.CommitOnSelectionChange),
     ];
 
-    private readonly List<FormField> _fields = [];
+    private readonly List<PdfFormField> _fields = [];
     private readonly HashSet<IndirectReference> _visited = [];
     private readonly Dictionary<IndirectReference, int> _widgetPages = [];
     private readonly Dictionary<IndirectReference, string> _names = [];
 
     /// <param name="fileLength">The file's length in bytes, to tell whether a signature covers all of it.</param>
-    public static (IReadOnlyList<FormField> Fields, FormSettings? Settings) Read(PdfObjects objects, DictionaryToken catalog,
+    public static (IReadOnlyList<PdfFormField> Fields, PdfFormSettings? Settings) Read(PdfObjects objects, DictionaryToken catalog,
         PageTree pages, long fileLength)
     {
         if (objects.Dictionary(catalog, "AcroForm") is not { } form)
@@ -72,7 +72,7 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
     }
 
     // A form that also carries XFA is dynamic when the catalog asks the viewer to build its pages from the XFA.
-    private FormSettings ReadSettings(DictionaryToken catalog) => new()
+    private PdfFormSettings ReadSettings(DictionaryToken catalog) => new()
     {
         CalculationOrder = objects.Items(form.Data.GetValueOrDefault("CO"))
             .Select(field => field is IndirectReferenceToken reference ? _names.GetValueOrDefault(reference.Data) : null)
@@ -80,7 +80,7 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
             .ToList(),
         NeedsAppearances = objects.Boolean(form, "NeedAppearances"),
         Xfa = !form.Data.ContainsKey("XFA") ? null
-            : objects.Boolean(catalog, "NeedsRendering") ? XfaFormKind.Dynamic : XfaFormKind.Static,
+            : objects.Boolean(catalog, "NeedsRendering") ? PdfXfaForm.Dynamic : PdfXfaForm.Static,
     };
 
     // A widget's page is the page whose /Annots lists it; its own /P entry is optional.
@@ -146,7 +146,7 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
         var (font, size, color) = ReadAppearance(widgets.Select(widget => objects.Text(widget, "DA")).FirstOrDefault(da => da is not null)
             ?? current.Appearance);
         var alignment = widgets.Select(widget => objects.Integer(widget, "Q")).FirstOrDefault(q => q is not null) ?? current.Alignment;
-        _fields.Add(new FormField
+        _fields.Add(new PdfFormField
         {
             Name = name ?? "(unnamed)",
             Type = type,
@@ -157,8 +157,10 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
             MaxLength = current.MaxLength,
             Flags = FlagsOf(current.Type, flags),
             DefaultValue = FormatValue(objects.Resolve(current.DefaultValue)),
-            ExportValues = type is FormFieldType.Checkbox or FormFieldType.RadioButton ? ExportValuesOf(widgets) : [],
-            Alignment = alignment is 1 or 2 ? (FormFieldAlignment)alignment : FormFieldAlignment.Left,
+            ExportValues = type is PdfFormFieldType.Checkbox or PdfFormFieldType.RadioButton
+                ? ExportValuesOf(widgets)
+                : [],
+            Alignment = alignment is 1 or 2 ? (PdfFormFieldAlignment)alignment : PdfFormFieldAlignment.Left,
             TextFont = font,
             TextSize = size,
             TextColor = color,
@@ -225,9 +227,9 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
     private static double? Number(string word) =>
         double.TryParse(word, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) ? number : null;
 
-    private List<FormScript> ReadScripts(DictionaryToken field, IReadOnlyList<DictionaryToken> widgets)
+    private List<PdfFormScript> ReadScripts(DictionaryToken field, IReadOnlyList<DictionaryToken> widgets)
     {
-        var scripts = new List<FormScript>();
+        var scripts = new List<PdfFormScript>();
         var fieldActions = objects.Dictionary(field, "AA");
         foreach (var (key, trigger) in FieldTriggers)
         {
@@ -236,7 +238,7 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
 
         foreach (var widget in widgets)
         {
-            AddScript(scripts, FormScriptTrigger.Activate, widget.Data.GetValueOrDefault("A"));
+            AddScript(scripts, PdfFormScriptTrigger.Activate, widget.Data.GetValueOrDefault("A"));
             var widgetActions = objects.Dictionary(widget, "AA");
             foreach (var (key, trigger) in WidgetTriggers)
             {
@@ -247,13 +249,13 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
         return scripts;
     }
 
-    private void AddScript(List<FormScript> scripts, FormScriptTrigger trigger, IToken? action)
+    private void AddScript(List<PdfFormScript> scripts, PdfFormScriptTrigger trigger, IToken? action)
     {
         foreach (var chained in objects.Chain(action).Where(objects.RunsScript))
         {
             var script = ScriptText(objects.Get(chained, "JS"));
             var hash = script is null ? null : Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(script)))[..16];
-            scripts.Add(new FormScript(trigger, hash));
+            scripts.Add(new PdfFormScript(trigger, hash));
         }
     }
 
@@ -269,14 +271,14 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
         return Encoding.Latin1.GetString(bytes);
     }
 
-    private SignatureInfo? ReadSignature(IToken? value)
+    private PdfSignature? ReadSignature(IToken? value)
     {
         if (value is not DictionaryToken signature)
         {
             return null;
         }
 
-        return new SignatureInfo
+        return new PdfSignature
         {
             SubFilter = objects.Name(signature, "SubFilter"),
             CoversWholeFile = CoversWholeFile(signature),
@@ -301,14 +303,14 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
     }
 
     // A certifying signature names the DocMDP transform; its /P defaults to 2, form filling.
-    private SignatureCertification? CertificationOf(DictionaryToken signature)
+    private PdfSignatureCertification? CertificationOf(DictionaryToken signature)
     {
         foreach (var item in objects.Items(signature.Data.GetValueOrDefault("Reference")))
         {
             if (objects.Resolve(item) is DictionaryToken reference && objects.Name(reference, "TransformMethod") == "DocMDP")
             {
                 var level = objects.Dictionary(reference, "TransformParams") is { } parameters ? objects.Integer(parameters, "P") : null;
-                return level is 1 or 3 ? (SignatureCertification)level : SignatureCertification.FormFilling;
+                return level is 1 or 3 ? (PdfSignatureCertification)level : PdfSignatureCertification.FormFilling;
             }
         }
 
@@ -347,22 +349,22 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
         _ => PdfObjects.TextOf(value),
     };
 
-    private static FormFieldType TypeOf(string? type, int flags) => type switch
+    private static PdfFormFieldType TypeOf(string? type, int flags) => type switch
     {
-        "Tx" => FormFieldType.Text,
-        "Btn" when HasBit(flags, 17) => FormFieldType.PushButton,
-        "Btn" when HasBit(flags, 16) => FormFieldType.RadioButton,
-        "Btn" => FormFieldType.Checkbox,
-        "Ch" when HasBit(flags, 18) => FormFieldType.ComboBox,
-        "Ch" => FormFieldType.ListBox,
-        "Sig" => FormFieldType.Signature,
-        _ => FormFieldType.Unknown,
+        "Tx" => PdfFormFieldType.Text,
+        "Btn" when HasBit(flags, 17) => PdfFormFieldType.PushButton,
+        "Btn" when HasBit(flags, 16) => PdfFormFieldType.RadioButton,
+        "Btn" => PdfFormFieldType.Checkbox,
+        "Ch" when HasBit(flags, 18) => PdfFormFieldType.ComboBox,
+        "Ch" => PdfFormFieldType.ListBox,
+        "Sig" => PdfFormFieldType.Signature,
+        _ => PdfFormFieldType.Unknown,
     };
 
-    private static FormFieldFlags FlagsOf(string? type, int flags)
+    private static PdfFormFieldFlags FlagsOf(string? type, int flags)
     {
         var typeFlags = type switch { "Tx" => TextFlags, "Btn" => ButtonFlags, "Ch" => ChoiceFlags, _ => [] };
-        var result = FormFieldFlags.None;
+        var result = PdfFormFieldFlags.None;
         foreach (var (bit, flag) in CommonFlags.Concat(typeFlags))
         {
             if (HasBit(flags, bit))

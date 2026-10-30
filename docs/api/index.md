@@ -16,8 +16,9 @@ them all.
 
 | Type | Use it to |
 |---|---|
-| <xref:PDiffy.SnapshotOptions> | Ignore, scrub or limit a PDF snapshot |
-| <xref:PDiffy.Section>, <xref:PDiffy.Field> | Name the PDF sections and details to leave out |
+| <xref:PDiffy.PdfSnapshotOptions> | Ignore, scrub or limit a PDF snapshot |
+| <xref:PDiffy.PdfSection>, <xref:PDiffy.PdfDetail> | Name the PDF sections and details to leave out |
+| <xref:PDiffy.PdfProfile>, <xref:PDiffy.PdfTolerance> | Pick what a test guards, and the numbers it lets differ a little |
 | <xref:PDiffy.DocxSnapshotOptions> | Ignore or scrub a Word snapshot |
 | <xref:PDiffy.DocxSection>, <xref:PDiffy.DocxDetail> | Name the Word sections and details to leave out |
 | <xref:PDiffy.TextSnapshotOptions> | Scrub a text or JSON snapshot |
@@ -36,25 +37,25 @@ them all.
 
 | Type | Holds |
 |---|---|
-| <xref:PDiffy.DocumentInfo>, <xref:PDiffy.Metadata>, <xref:PDiffy.DocumentSettings> | Document-wide facts, metadata and settings |
-| <xref:PDiffy.PageInfo>, <xref:PDiffy.PageLabelRange>, <xref:PDiffy.Bookmark> | Pages, page labels and the outline |
-| <xref:PDiffy.StructureElement>, <xref:PDiffy.RoleMapping> | The tag tree and custom tag types |
-| <xref:PDiffy.PageText> | Artifact and untagged text, per page |
-| <xref:PDiffy.FontInfo> | Fonts and the codes that don't map to Unicode |
-| <xref:PDiffy.Annotation>, <xref:PDiffy.FormField> | Annotations and form fields |
-| <xref:PDiffy.TextRun>, <xref:PDiffy.ImageInfo>, <xref:PDiffy.PathInfo> | What's drawn on each page |
+| <xref:PDiffy.PdfDocumentInfo>, <xref:PDiffy.PdfMetadata>, <xref:PDiffy.PdfSettings> | Document-wide facts, metadata and settings |
+| <xref:PDiffy.PdfPage>, <xref:PDiffy.PdfPageLabelRange>, <xref:PDiffy.PdfBookmark> | Pages, page labels and the outline |
+| <xref:PDiffy.PdfStructureElement>, <xref:PDiffy.PdfRoleMapping> | The tag tree and custom tag types |
+| <xref:PDiffy.PdfPageText> | Artifact and untagged text, per page |
+| <xref:PDiffy.PdfFont> | Fonts and the codes that don't map to Unicode |
+| <xref:PDiffy.PdfAnnotation>, <xref:PDiffy.PdfFormField> | Annotations and form fields |
+| <xref:PDiffy.PdfTextRun>, <xref:PDiffy.PdfImage>, <xref:PDiffy.PdfVectorPath> | What's drawn on each page |
 
 Constants and flags that list every option, so you never need to know PDF names:
 
 | Type | Lists |
 |---|---|
 | <xref:PDiffy.StructureType> | Every standard tag type, such as `Figure` or `H1` |
-| <xref:PDiffy.ContentRole> | Tagged, artifact or untagged |
-| <xref:PDiffy.TextRenderMode> | How text is drawn, such as `Invisible` |
-| <xref:PDiffy.AnnotationFlags> | Annotation flags, such as `Hidden` |
-| <xref:PDiffy.FormFieldType>, <xref:PDiffy.FormFieldFlags> | Form field types and flags |
-| <xref:PDiffy.DocumentPermissions> | What an encrypted document allows |
-| <xref:PDiffy.PageModes>, <xref:PDiffy.PageLayouts> | How the file opens |
+| <xref:PDiffy.PdfContentRole> | Tagged, artifact or untagged |
+| <xref:PDiffy.PdfTextRenderMode> | How text is drawn, such as `Invisible` |
+| <xref:PDiffy.PdfAnnotationFlags> | Annotation flags, such as `Hidden` |
+| <xref:PDiffy.PdfFormFieldType>, <xref:PDiffy.PdfFormFieldFlags> | Form field types and flags |
+| <xref:PDiffy.PdfPermissions> | What an encrypted document allows |
+| <xref:PDiffy.PdfPageModes>, <xref:PDiffy.PdfPageLayouts> | How the file opens |
 
 ## The Word model
 

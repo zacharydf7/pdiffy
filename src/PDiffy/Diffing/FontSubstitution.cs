@@ -13,13 +13,13 @@ internal static class FontSubstitution
 
     public static string? Hint(SnapshotDiff diff)
     {
-        var fonts = diff.Changes.Where(change => change.Section == Section.Fonts).ToList();
+        var fonts = diff.Changes.Where(change => change.Section == PdfSection.Fonts).ToList();
         var removed = fonts.Where(change => change.Kind == ChangeKind.Removed).ToList();
         var added = fonts.Where(change => change.Kind == ChangeKind.Added).ToList();
         if (removed.Count != 1 || added.Count != 1) return null;
 
         var (from, to) = (FontName(removed[0]), FontName(added[0]));
-        var others = diff.Changes.Where(change => change.Section != Section.Fonts).ToList();
+        var others = diff.Changes.Where(change => change.Section != PdfSection.Fonts).ToList();
         var switched = others.Count(change => change.Detail == $"font: {from} -> {to}");
         var explained = others.Count(change => change.Detail == $"font: {from} -> {to}" || IsPositionChange(change));
         if (switched == 0 || explained < others.Count * ShareThatMustBeFontOrPosition) return null;
@@ -33,6 +33,6 @@ internal static class FontSubstitution
         change.Path[(change.Path.LastIndexOf("> ", StringComparison.Ordinal) + 2)..];
 
     private static bool IsPositionChange(SnapshotChange change) =>
-        change is { Section: Section.Layout, Kind: ChangeKind.AttributeChanged }
+        change is { Section: PdfSection.Layout, Kind: ChangeKind.AttributeChanged }
         && change.Detail.StartsWith("at: ", StringComparison.Ordinal);
 }

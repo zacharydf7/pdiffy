@@ -7,59 +7,60 @@ namespace PDiffy;
 /// What to leave out of a snapshot, or change in it, for content a test doesn't care about. Ignored sections still print
 /// their header with "(ignored)" under it, and the snapshot's first lines list what was ignored and which pages were kept.
 /// </summary>
-public sealed class SnapshotOptions
+public sealed class PdfSnapshotOptions
 {
-    private readonly HashSet<Section> _ignoredSections = [];
-    private readonly HashSet<Field> _ignoredFields = [];
+    private readonly HashSet<PdfSection> _ignoredSections = [];
+    private readonly HashSet<PdfDetail> _ignoredFields = [];
     private readonly List<Scrubber> _scrubbers = [];
     private readonly SortedSet<int> _pages = [];
-    private readonly SortedDictionary<Field, double> _tolerances = [];
+    private readonly SortedDictionary<PdfDetail, double> _tolerances = [];
 
-    /// <summary>Leaves whole sections out, such as <see cref="Section.Metadata"/>.</summary>
-    public SnapshotOptions Ignore(params Section[] sections)
+    /// <summary>Leaves whole sections out, such as <see cref="PdfSection.Metadata"/>.</summary>
+    public PdfSnapshotOptions Ignore(params PdfSection[] sections)
     {
         _ignoredSections.UnionWith(sections);
         return this;
     }
 
-    /// <summary>Leaves a detail out wherever it appears, such as <see cref="Field.Positions"/> or <see cref="Field.Colors"/>.</summary>
-    public SnapshotOptions Ignore(params Field[] fields)
+    /// <summary>Leaves a detail out wherever it appears, such as <see cref="PdfDetail.Positions"/> or <see cref="PdfDetail.Colors"/>.</summary>
+    public PdfSnapshotOptions Ignore(params PdfDetail[] details)
     {
-        _ignoredFields.UnionWith(fields);
+        _ignoredFields.UnionWith(details);
         return this;
     }
 
     /// <summary>
-    /// Leaves out what a profile leaves out, such as <see cref="SnapshotProfile.Accessibility"/>. Further
+    /// Leaves out what a profile leaves out, such as <see cref="PdfProfile.Accessibility"/>. Further
     /// <c>Ignore</c> calls leave out more.
     /// </summary>
-    public SnapshotOptions Use(SnapshotProfile profile) => profile switch
+    public PdfSnapshotOptions Use(PdfProfile profile) => profile switch
     {
-        SnapshotProfile.Strict => this,
-        SnapshotProfile.Content => Ignore(Section.Settings, Section.Metadata, Section.Fonts, Section.Layout)
-            .Ignore(Field.PageBoxes, Field.Positions),
-        SnapshotProfile.Accessibility => Ignore(Field.PdfVersion, Field.OpenAction, Field.EmbeddedFileContents,
-            Field.Author, Field.Subject, Field.Keywords, Field.Dates, Field.Producer, Field.Creator, Field.CustomInfo,
-            Field.PageBoxes, Field.Positions, Field.Colors, Field.FontNames, Field.FontSizes, Field.LineWidths,
-            Field.ImageContents),
-        SnapshotProfile.Layout => Ignore(Section.Settings, Section.Metadata),
-        _ => throw new ArgumentOutOfRangeException(nameof(profile), profile, "Not a SnapshotProfile value."),
+        PdfProfile.Strict => this,
+        PdfProfile.Content => Ignore(PdfSection.Settings, PdfSection.Metadata, PdfSection.Fonts, PdfSection.Layout)
+            .Ignore(PdfDetail.PageBoxes, PdfDetail.Positions),
+        PdfProfile.Accessibility => Ignore(PdfDetail.PdfVersion, PdfDetail.OpenAction, PdfDetail.EmbeddedFileContents,
+            PdfDetail.Author, PdfDetail.Subject, PdfDetail.Keywords, PdfDetail.Dates, PdfDetail.Producer, PdfDetail.Creator,
+            PdfDetail.CustomInfo, PdfDetail.PageBoxes, PdfDetail.Positions, PdfDetail.Colors, PdfDetail.FontNames,
+            PdfDetail.FontSizes, PdfDetail.LineWidths, PdfDetail.ImageContents),
+        PdfProfile.Layout => Ignore(PdfSection.Settings, PdfSection.Metadata),
+        _ => throw new ArgumentOutOfRangeException(nameof(profile), profile, "Not a PdfProfile value."),
     };
 
     /// <summary>
     /// Lets a number differ by up to <paramref name="points"/> without failing the test, so a value that rounds the
-    /// other way after a library update still passes while a real move still fails. Takes <see cref="Field.Positions"/>
-    /// (where things are, and the size of images, paths and annotations), <see cref="Field.FontSizes"/> or
-    /// <see cref="Field.LineWidths"/>. A run within the tolerance passes and leaves the verified file as it is. The
-    /// snapshot's header lists each tolerance, such as "# tolerances: positions 1pt".
+    /// other way after a library update still passes while a real move still fails. A run within the tolerance passes
+    /// and leaves the verified file as it is. The snapshot's header lists each tolerance, such as
+    /// "# tolerances: positions 1pt".
     /// </summary>
-    public SnapshotOptions Tolerate(Field field, double points)
+    public PdfSnapshotOptions Tolerate(PdfTolerance tolerance, double points)
     {
-        if (!Tolerances.Numeric.Contains(field))
+        var field = tolerance switch
         {
-            throw new ArgumentException($"{field} isn't a number. Positions, FontSizes and LineWidths take a tolerance.",
-                nameof(field));
-        }
+            PdfTolerance.Positions => PdfDetail.Positions,
+            PdfTolerance.FontSizes => PdfDetail.FontSizes,
+            PdfTolerance.LineWidths => PdfDetail.LineWidths,
+            _ => throw new ArgumentOutOfRangeException(nameof(tolerance), tolerance, "Not a PdfTolerance value."),
+        };
 
         if (!double.IsFinite(points) || points <= 0)
         {
@@ -74,7 +75,7 @@ public sealed class SnapshotOptions
     /// Replaces matches in quoted text (element text, alt text, titles, link addresses, form values and so on).
     /// The replacement can refer to groups, such as "Permit $1".
     /// </summary>
-    public SnapshotOptions ScrubText(Regex pattern, string replacement)
+    public PdfSnapshotOptions ScrubText(Regex pattern, string replacement)
     {
         _scrubbers.Add(new Scrubber(pattern, replacement, Numbered: false));
         return this;
@@ -85,14 +86,14 @@ public sealed class SnapshotOptions
     /// can still see that two dates match. Recognizes 2026-10-27, 10/27/2026, October 27, 2026 and 27 Oct 2026, each
     /// with an optional time, and PDF dates such as D:20261027120000.
     /// </summary>
-    public SnapshotOptions ScrubDates()
+    public PdfSnapshotOptions ScrubDates()
     {
         _scrubbers.Add(Scrubber.Dates);
         return this;
     }
 
     /// <summary>Replaces GUIDs in quoted text with Guid_1, Guid_2 and so on. The same text always gets the same token.</summary>
-    public SnapshotOptions ScrubGuids()
+    public PdfSnapshotOptions ScrubGuids()
     {
         _scrubbers.Add(Scrubber.Guids);
         return this;
@@ -102,7 +103,7 @@ public sealed class SnapshotOptions
     /// Prints the producer and creator (the libraries and application that wrote the PDF), which a snapshot normally
     /// records only as present or missing because they change with every upgrade.
     /// </summary>
-    public SnapshotOptions ShowProducerAndCreator()
+    public PdfSnapshotOptions ShowProducerAndCreator()
     {
         ShowsProducerAndCreator = true;
         return this;
@@ -112,7 +113,7 @@ public sealed class SnapshotOptions
     /// Keeps only what is on these pages, numbered from 1. A structure element or bookmark is kept when it, or anything
     /// under it, is on one of them. The document's page count, page labels and fonts are still printed for the whole file.
     /// </summary>
-    public SnapshotOptions OnlyPages(params int[] pages)
+    public PdfSnapshotOptions OnlyPages(params int[] pages)
     {
         if (pages.Length == 0) throw new ArgumentException("Pass at least one page.", nameof(pages));
         if (pages.Any(page => page < 1)) throw new ArgumentOutOfRangeException(nameof(pages), "Pages are numbered from 1.");
@@ -126,13 +127,13 @@ public sealed class SnapshotOptions
 
     internal IReadOnlySet<int> Pages => _pages;
 
-    internal IReadOnlyDictionary<Field, double> ToleratedFields => _tolerances;
+    internal IReadOnlyDictionary<PdfDetail, double> ToleratedFields => _tolerances;
 
-    internal bool Ignores(Section section) => _ignoredSections.Contains(section);
+    internal bool Ignores(PdfSection section) => _ignoredSections.Contains(section);
 
-    internal bool Ignores(Field field) => _ignoredFields.Contains(field);
+    internal bool Ignores(PdfDetail field) => _ignoredFields.Contains(field);
 
-    internal IEnumerable<Section> IgnoredSections => _ignoredSections.Order();
+    internal IEnumerable<PdfSection> IgnoredSections => _ignoredSections.Order();
 
-    internal IEnumerable<Field> IgnoredFields => _ignoredFields.Order();
+    internal IEnumerable<PdfDetail> IgnoredFields => _ignoredFields.Order();
 }

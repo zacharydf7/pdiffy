@@ -66,7 +66,7 @@ public enum PdfCheck
 /// "fonts > Helvetica" or "forms > trail.name".</param>
 /// <param name="Message">What's wrong, as a sentence with no closing period, such as "Font Helvetica isn't
 /// embedded".</param>
-public sealed record CheckFinding(PdfCheck Check, int? Page, string Path, string Message)
+public sealed record PdfCheckFinding(PdfCheck Check, int? Page, string Path, string Message)
 {
     /// <summary>Such as "FigureAltText: Figure on p2 has no alt text (structure > Document > Figure[2])".</summary>
     public override string ToString() => $"{Check}: {Message} ({Path})";

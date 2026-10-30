@@ -7,30 +7,30 @@ once into a model you can assert on, with no PDF knowledge needed: enums and con
   [`Elements(type)`](xref:PDiffy.PdfUaDocument.Elements*), with types listed in [`StructureType`](xref:PDiffy.StructureType).
 - **Untagged and artifact content:** [`TextRuns`](xref:PDiffy.PdfUaDocument.TextRuns),
   [`Untagged`](xref:PDiffy.PdfUaDocument.Untagged) and [`Artifacts`](xref:PDiffy.PdfUaDocument.Artifacts), with roles
-  listed in [`ContentRole`](xref:PDiffy.ContentRole).
+  listed in [`PdfContentRole`](xref:PDiffy.PdfContentRole).
 - **Links and comments:** [`Annotations`](xref:PDiffy.PdfUaDocument.Annotations), with flags listed in
-  [`AnnotationFlags`](xref:PDiffy.AnnotationFlags).
+  [`PdfAnnotationFlags`](xref:PDiffy.PdfAnnotationFlags).
 - **Form fields:** [`FormFields`](xref:PDiffy.PdfUaDocument.FormFields), with types and flags listed in
-  [`FormFieldType`](xref:PDiffy.FormFieldType) and [`FormFieldFlags`](xref:PDiffy.FormFieldFlags).
+  [`PdfFormFieldType`](xref:PDiffy.PdfFormFieldType) and [`PdfFormFieldFlags`](xref:PDiffy.PdfFormFieldFlags).
 - **How the file opens and what it allows:** [`Settings`](xref:PDiffy.PdfUaDocument.Settings), with options listed in
-  [`PageModes`](xref:PDiffy.PageModes), [`PageLayouts`](xref:PDiffy.PageLayouts) and
-  [`DocumentPermissions`](xref:PDiffy.DocumentPermissions).
+  [`PdfPageModes`](xref:PDiffy.PdfPageModes), [`PdfPageLayouts`](xref:PDiffy.PdfPageLayouts) and
+  [`PdfPermissions`](xref:PDiffy.PdfPermissions).
 - **Fonts and copyable text:** [`Fonts`](xref:PDiffy.PdfUaDocument.Fonts).
 - **Fonts, colors and hidden text on the page:** [`TextRuns`](xref:PDiffy.PdfUaDocument.TextRuns),
   [`Images`](xref:PDiffy.PdfUaDocument.Images) and [`Paths`](xref:PDiffy.PdfUaDocument.Paths), with render modes listed
-  in [`TextRenderMode`](xref:PDiffy.TextRenderMode).
+  in [`PdfTextRenderMode`](xref:PDiffy.PdfTextRenderMode).
 - **Language, title and page count:** [`Document`](xref:PDiffy.PdfUaDocument.Document),
   [`Metadata`](xref:PDiffy.PdfUaDocument.Metadata) and [`Pages`](xref:PDiffy.PdfUaDocument.Pages).
 
 ## Built-in checks
 
 [`Check`](xref:PDiffy.PdfUaDocument.Check*) applies the rules generated documents most often break and lists what it
-finds. Each [`CheckFinding`](xref:PDiffy.CheckFinding) has the check, the page, a path and a message, so a failed test
+finds. Each [`PdfCheckFinding`](xref:PDiffy.PdfCheckFinding) has the check, the page, a path and a message, so a failed test
 says which figure on which page. The path names the snapshot section and the item; for a structure element, it's the
 path a snapshot diff shows:
 
 ```csharp
-IReadOnlyList<CheckFinding> findings = document.Check(PdfCheck.DocumentLanguage, PdfCheck.FigureAltText);
+IReadOnlyList<PdfCheckFinding> findings = document.Check(PdfCheck.DocumentLanguage, PdfCheck.FigureAltText);
 
 // On failure: "FigureAltText: Figure on p2 has no alt text (structure > Document > Figure[2])".
 Assert.Empty(findings);
@@ -68,14 +68,14 @@ public async Task TrailMap_ShouldBeReadableByScreenReaders_WhenGenerated()
 
     // The document is tagged and declares a language, so a screen reader knows how to pronounce it.
     Assert.True(document.Document.Marked);
-    Assert.Equal("en-US", document.Document.Lang);
+    Assert.Equal("en-US", document.Document.Language);
 
     // Every figure (logo, chart, signature) has alt text describing it.
     // Elements also finds custom tag types that the PDF maps to Figure.
-    Assert.All(document.Elements(StructureType.Figure), figure => Assert.False(string.IsNullOrWhiteSpace(figure.Alt)));
+    Assert.All(document.Elements(StructureType.Figure), figure => Assert.False(string.IsNullOrWhiteSpace(figure.AltText)));
 
     // Every piece of text is either tagged or marked as decoration. Untagged text is invisible to a screen reader.
-    Assert.DoesNotContain(document.TextRuns, run => run.Role == ContentRole.Untagged);
+    Assert.DoesNotContain(document.TextRuns, run => run.Role == PdfContentRole.Untagged);
 
     // Every link has a description a screen reader can announce.
     Assert.All(document.Annotations.Where(annotation => annotation.Subtype == "Link"),
@@ -107,7 +107,7 @@ var levels = document.Headings().Select(heading => heading.Level ?? 1).ToList();
 Assert.All(levels.Zip(levels.Skip(1)), pair => Assert.True(pair.Second <= pair.First + 1));
 
 // Every table cell says something.
-StructureElement table = document.Elements(StructureType.Table).Single();
+PdfStructureElement table = document.Elements(StructureType.Table).Single();
 Assert.All(table.Elements(StructureType.TableDataCell), cell => Assert.False(string.IsNullOrWhiteSpace(cell.AllText)));
 ```
 
@@ -126,19 +126,19 @@ public async Task EnrollmentForm_ShouldLabelAndRequireTheRightFields_WhenGenerat
     Assert.All(document.FormFields, field => Assert.False(string.IsNullOrWhiteSpace(field.AccessibleName)));
 
     // Find the required fields. Names include their parents, joined with dots.
-    var required = document.FormFields.Where(field => field.Flags.HasFlag(FormFieldFlags.Required)).Select(field => field.Name);
+    var required = document.FormFields.Where(field => field.Flags.HasFlag(PdfFormFieldFlags.Required)).Select(field => field.Name);
     Assert.Equal(["hiker.name", "hiker.dateOfBirth"], required);
 
     // The state picker is a drop-down with all 50 states.
-    FormField state = document.FormFields.Single(field => field.Name == "hiker.address.state");
-    Assert.Equal(FormFieldType.ComboBox, state.Type);
+    PdfFormField state = document.FormFields.Single(field => field.Name == "hiker.address.state");
+    Assert.Equal(PdfFormFieldType.ComboBox, state.Type);
     Assert.Equal(50, state.Options.Count);
 }
 ```
 
 ## Document settings
 
-[`Settings`](xref:PDiffy.DocumentSettings) covers how the file opens and what it allows. It's where a library upgrade or
+[`Settings`](xref:PDiffy.PdfSettings) covers how the file opens and what it allows. It's where a library upgrade or
 a configuration change tends to show up first.
 
 ```csharp
@@ -146,7 +146,7 @@ a configuration change tends to show up first.
 public async Task ExportedReport_ShouldOpenSafely_WhenGenerated()
 {
     using Stream pdf = await ReportGenerator.CreateReportAsync();
-    DocumentSettings settings = PdfUaDocument.Load(pdf).Settings;
+    PdfSettings settings = PdfUaDocument.Load(pdf).Settings;
 
     // No scripts and no attached files.
     Assert.False(settings.HasJavaScript);
@@ -154,11 +154,11 @@ public async Task ExportedReport_ShouldOpenSafely_WhenGenerated()
 
     // If the file is ever encrypted, it must still let screen readers extract the text.
     // Permissions is null for an unencrypted file.
-    Assert.True(settings.Permissions is null || settings.Permissions.Value.HasFlag(DocumentPermissions.ExtractForAccessibility));
+    Assert.True(settings.Permissions is null || settings.Permissions.Value.HasFlag(PdfPermissions.ExtractForAccessibility));
 
     // Open with bookmarks showing, one page at a time in a continuous column.
-    Assert.Equal(PageModes.UseOutlines, settings.PageMode);
-    Assert.Equal(PageLayouts.OneColumn, settings.PageLayout);
+    Assert.Equal(PdfPageModes.UseOutlines, settings.PageMode);
+    Assert.Equal(PdfPageLayouts.OneColumn, settings.PageLayout);
 }
 ```
 
@@ -175,7 +175,7 @@ public async Task Brochure_ShouldUseOnlyBrandFontsAndColors_WhenGenerated()
     PdfUaDocument document = PdfUaDocument.Load(pdf);
 
     // No invisible text. It usually means an OCR layer or text hidden behind an image.
-    Assert.DoesNotContain(document.TextRuns, run => run.RenderMode == TextRenderMode.Invisible);
+    Assert.DoesNotContain(document.TextRuns, run => run.RenderMode == PdfTextRenderMode.Invisible);
 
     // Only the two brand fonts. Subset prefixes such as "ABCDEF+" are already removed.
     Assert.All(document.TextRuns, run => Assert.Contains(run.Font, new[] { "OpenSans", "OpenSans-Bold" }));

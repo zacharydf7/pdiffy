@@ -3,10 +3,10 @@ namespace PDiffy;
 /// <summary>Applies <see cref="PdfCheck"/> rules to a document's model, one method per rule.</summary>
 internal sealed class PdfChecker(PdfUaDocument document)
 {
-    private readonly List<CheckFinding> _findings = [];
-    private List<(StructureElement Element, string Path)>? _elements;
+    private readonly List<PdfCheckFinding> _findings = [];
+    private List<(PdfStructureElement Element, string Path)>? _elements;
 
-    public static IReadOnlyList<CheckFinding> Run(PdfUaDocument document, IEnumerable<PdfCheck> checks)
+    public static IReadOnlyList<PdfCheckFinding> Run(PdfUaDocument document, IEnumerable<PdfCheck> checks)
     {
         var checker = new PdfChecker(document);
         foreach (var check in checks.Distinct().Order()) checker.Apply(check);
@@ -35,9 +35,9 @@ internal sealed class PdfChecker(PdfUaDocument document)
 
     private void DocumentLanguage()
     {
-        if (IsBlank(document.Document.Lang))
+        if (IsBlank(document.Document.Language))
         {
-            Add(PdfCheck.DocumentLanguage, null, Name(Section.Document), "The document has no language");
+            Add(PdfCheck.DocumentLanguage, null, Name(PdfSection.Document), "The document has no language");
         }
     }
 
@@ -45,12 +45,12 @@ internal sealed class PdfChecker(PdfUaDocument document)
     {
         if (IsBlank(document.Metadata.Title) && IsBlank(document.Metadata.XmpTitle))
         {
-            Add(PdfCheck.DocumentTitle, null, Name(Section.Metadata), "The document has no title");
+            Add(PdfCheck.DocumentTitle, null, Name(PdfSection.Metadata), "The document has no title");
         }
 
         if (!document.Document.DisplayDocTitle)
         {
-            Add(PdfCheck.DocumentTitle, null, Name(Section.Document),
+            Add(PdfCheck.DocumentTitle, null, Name(PdfSection.Document),
                 "The viewer shows the file name instead of the title");
         }
     }
@@ -59,7 +59,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
     {
         foreach (var (element, path) in Elements)
         {
-            if (element.TypeOrMapped == StructureType.Figure && IsBlank(element.Alt) && IsBlank(element.ActualText))
+            if (element.TypeOrMapped == StructureType.Figure && IsBlank(element.AltText) && IsBlank(element.ActualText))
             {
                 Add(PdfCheck.FigureAltText, element.FirstPage, path, $"Figure{On(element.FirstPage)} has no alt text");
             }
@@ -72,16 +72,16 @@ internal sealed class PdfChecker(PdfUaDocument document)
         foreach (var page in document.Untagged.GroupBy(text => text.Page))
         {
             var text = string.Join(" ", page.Select(line => line.Text));
-            Add(PdfCheck.UntaggedContent, page.Key, Name(Section.Untagged), $"Untagged text on p{page.Key}: \"{text}\"");
+            Add(PdfCheck.UntaggedContent, page.Key, Name(PdfSection.Untagged), $"Untagged text on p{page.Key}: \"{text}\"");
         }
 
-        var images = document.Images.Where(image => image.Role == ContentRole.Untagged);
-        var paths = document.Paths.Where(path => path.Role == ContentRole.Untagged);
+        var images = document.Images.Where(image => image.Role == PdfContentRole.Untagged);
+        var paths = document.Paths.Where(path => path.Role == PdfContentRole.Untagged);
         var graphics = images.Select(image => (image.Page, "image")).Concat(paths.Select(path => (path.Page, "path")));
         foreach (var group in graphics.GroupBy(graphic => graphic).OrderBy(group => group.Key.Page))
         {
             var (page, kind) = group.Key;
-            Add(PdfCheck.UntaggedContent, page, Name(Section.Untagged), $"{group.Count()} untagged {kind}(s) on p{page}");
+            Add(PdfCheck.UntaggedContent, page, Name(PdfSection.Untagged), $"{group.Count()} untagged {kind}(s) on p{page}");
         }
     }
 
@@ -91,17 +91,17 @@ internal sealed class PdfChecker(PdfUaDocument document)
         {
             foreach (var link in element.Annotations.Where(IsLink))
             {
-                if (IsBlank(link.Contents) && IsBlank(element.Alt) && IsBlank(element.Text))
+                if (IsBlank(link.Contents) && IsBlank(element.AltText) && IsBlank(element.Text))
                 {
                     Add(PdfCheck.LinkDescriptions, link.Page, path, $"Link{On(link.Page)} has no description");
                 }
             }
         }
 
-        var untagged = document.Annotations.Where(link => IsLink(link) && link.Role != ContentRole.Tagged);
+        var untagged = document.Annotations.Where(link => IsLink(link) && link.Role != PdfContentRole.Tagged);
         foreach (var link in untagged.Where(link => IsBlank(link.Contents)))
         {
-            Add(PdfCheck.LinkDescriptions, link.Page, Name(Section.Annotations),
+            Add(PdfCheck.LinkDescriptions, link.Page, Name(PdfSection.Annotations),
                 $"Untagged link{On(link.Page)} has no description");
         }
     }
@@ -110,7 +110,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
     {
         foreach (var field in document.FormFields.Where(field => IsBlank(field.AccessibleName)))
         {
-            Add(PdfCheck.FormFieldNames, field.Page, $"{Name(Section.Forms)} > {field.Name}",
+            Add(PdfCheck.FormFieldNames, field.Page, $"{Name(PdfSection.Forms)} > {field.Name}",
                 $"Form field \"{field.Name}\" has no accessible name");
         }
     }
@@ -163,7 +163,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
     {
         foreach (var name in document.Fonts.Where(font => !font.Embedded).Select(font => font.Name).Distinct())
         {
-            Add(PdfCheck.FontsEmbedded, null, $"{Name(Section.Fonts)} > {name}", $"Font {name} isn't embedded");
+            Add(PdfCheck.FontsEmbedded, null, $"{Name(PdfSection.Fonts)} > {name}", $"Font {name} isn't embedded");
         }
     }
 
@@ -174,7 +174,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             var codes = fonts.SelectMany(font => font.UnmappedCodes).Distinct().Count();
             if (codes == 0) continue;
 
-            Add(PdfCheck.FontsMapToUnicode, null, $"{Name(Section.Fonts)} > {fonts.Key}",
+            Add(PdfCheck.FontsMapToUnicode, null, $"{Name(PdfSection.Fonts)} > {fonts.Key}",
                 $"Font {fonts.Key} uses {codes} code(s) that don't map to Unicode");
         }
     }
@@ -184,10 +184,10 @@ internal sealed class PdfChecker(PdfUaDocument document)
     private void NoActions()
     {
         var settings = document.Settings;
-        if (settings.HasJavaScript) Add(PdfCheck.NoActions, null, Name(Section.Settings), "The document has JavaScript");
+        if (settings.HasJavaScript) Add(PdfCheck.NoActions, null, Name(PdfSection.Settings), "The document has JavaScript");
         if (settings.HasAdditionalActions)
         {
-            Add(PdfCheck.NoActions, null, Name(Section.Settings),
+            Add(PdfCheck.NoActions, null, Name(PdfSection.Settings),
                 "The document runs actions on events such as closing or printing");
         }
 
@@ -196,7 +196,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             : settings.OpenAction is { } only ? [only] : [];
         if (actions.Any(action => !IsPageDestination(action) && action != "JavaScript"))
         {
-            Add(PdfCheck.NoActions, null, Name(Section.Settings),
+            Add(PdfCheck.NoActions, null, Name(PdfSection.Settings),
                 $"The document runs an action when it opens: {settings.OpenAction}");
         }
     }
@@ -205,7 +205,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
     {
         foreach (var file in document.Settings.EmbeddedFiles)
         {
-            Add(PdfCheck.NoEmbeddedFiles, null, Name(Section.Settings), $"The document embeds {file.Name}");
+            Add(PdfCheck.NoEmbeddedFiles, null, Name(PdfSection.Settings), $"The document embeds {file.Name}");
         }
     }
 
@@ -218,11 +218,11 @@ internal sealed class PdfChecker(PdfUaDocument document)
 
     // Every structure element in reading order, with its path as a snapshot diff shows it. Read once, since several
     // checks walk them.
-    private List<(StructureElement Element, string Path)> Elements => _elements ??=
+    private List<(PdfStructureElement Element, string Path)> Elements => _elements ??=
         [.. StructurePaths.WithPaths(document.Structure, StructurePaths.Root)
             .SelectMany(pair => Descendants(pair.Element, pair.Path, stopAt: null).Prepend(pair))];
 
-    private static IEnumerable<(StructureElement Element, string Path)> Descendants(StructureElement element, string path,
+    private static IEnumerable<(PdfStructureElement Element, string Path)> Descendants(PdfStructureElement element, string path,
         string? stopAt)
     {
         foreach (var child in StructurePaths.WithPaths(element.Children, path))
@@ -233,14 +233,14 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
-    private static string Name(Section section) => SnapshotWriter.Name(section);
+    private static string Name(PdfSection section) => SnapshotWriter.Name(section);
 
-    private static bool IsLink(Annotation annotation) => annotation.Subtype == "Link";
+    private static bool IsLink(PdfAnnotation annotation) => annotation.Subtype == "Link";
 
     private static bool IsBlank(string? text) => string.IsNullOrWhiteSpace(text);
 
     private static string On(int? page) => page is int number ? $" on p{number}" : "";
 
     private void Add(PdfCheck check, int? page, string path, string message) =>
-        _findings.Add(new CheckFinding(check, page, path, message));
+        _findings.Add(new PdfCheckFinding(check, page, path, message));
 }

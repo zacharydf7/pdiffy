@@ -13,11 +13,11 @@ public class LayoutTests
 
         var runs = pdf.Load().TextRuns;
 
-        TextRun[] expected =
+        PdfTextRun[] expected =
         [
-            new(1, 72, 720, "Helvetica", 12, "gray:0", TextRenderMode.Fill, ContentRole.Tagged, "Go with a guide"),
-            new(1, 72, 700, "Helvetica", 12, "gray:0", TextRenderMode.Fill, ContentRole.Artifact, "Page 1"),
-            new(1, 72, 680, "Helvetica", 12, "gray:0", TextRenderMode.Fill, ContentRole.Untagged, "Stray"),
+            new(1, 72, 720, "Helvetica", 12, "gray:0", PdfTextRenderMode.Fill, PdfContentRole.Tagged, "Go with a guide"),
+            new(1, 72, 700, "Helvetica", 12, "gray:0", PdfTextRenderMode.Fill, PdfContentRole.Artifact, "Page 1"),
+            new(1, 72, 680, "Helvetica", 12, "gray:0", PdfTextRenderMode.Fill, PdfContentRole.Untagged, "Stray"),
         ];
         Assert.Equal(expected, runs);
     }
@@ -45,8 +45,8 @@ public class LayoutTests
 
         var runs = pdf.Load().TextRuns;
 
-        Assert.Equal(("cmyk:0,0,0,1", TextRenderMode.Fill), (runs[0].Color, runs[0].RenderMode));
-        Assert.Equal(TextRenderMode.Invisible, runs[1].RenderMode);
+        Assert.Equal(("cmyk:0,0,0,1", PdfTextRenderMode.Fill), (runs[0].Color, runs[0].RenderMode));
+        Assert.Equal(PdfTextRenderMode.Invisible, runs[1].RenderMode);
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class LayoutTests
 
         var images = pdf.Load().Images;
 
-        Assert.Equal([ContentRole.Tagged, ContentRole.Untagged], images.Select(image => image.Role));
+        Assert.Equal([PdfContentRole.Tagged, PdfContentRole.Untagged], images.Select(image => image.Role));
         Assert.All(images, image => Assert.Equal((72, 600, 10, 10, 1, 1),
             (image.X, image.Y, image.Width, image.Height, image.PixelWidth, image.PixelHeight)));
         Assert.Equal(images[0].Hash, images[1].Hash);
@@ -160,7 +160,7 @@ public class LayoutTests
 
         var run = Assert.Single(pdf.Load().Structure[0].TextRuns);
 
-        Assert.Equal(ContentRole.Tagged, run.Role);
+        Assert.Equal(PdfContentRole.Tagged, run.Role);
         Assert.Equal(["Draft", "Notes"], run.Layers);
     }
 
@@ -190,7 +190,7 @@ public class LayoutTests
 
         var images = pdf.Load().Images;
 
-        Assert.Equal([ContentRole.Untagged, ContentRole.Tagged], images.Select(image => image.Role));
+        Assert.Equal([PdfContentRole.Untagged, PdfContentRole.Tagged], images.Select(image => image.Role));
     }
 
     [Fact]
@@ -220,7 +220,7 @@ public class LayoutTests
 
         var diff = Build("20", "E0").CompareTo(Build("E0", "20"));
 
-        var figures = diff.Changes.Where(change => change.Section == Section.Structure).ToList();
+        var figures = diff.Changes.Where(change => change.Section == PdfSection.Structure).ToList();
         Assert.Equal(2, figures.Count);
         Assert.All(figures, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
     }
@@ -233,7 +233,7 @@ public class LayoutTests
 
         var images = pdf.Load().Images;
 
-        Assert.Equal([ContentRole.Artifact, ContentRole.Artifact], images.Select(image => image.Role));
+        Assert.Equal([PdfContentRole.Artifact, PdfContentRole.Artifact], images.Select(image => image.Role));
         Assert.NotEqual(images[0].Hash, images[1].Hash);
     }
 
@@ -351,7 +351,7 @@ public class LayoutTests
         var runs = pdf.Load().TextRuns;
 
         Assert.Equal([("First line", 400), ("Second line", 386)], runs.Select(run => (run.Text, run.Y)));
-        Assert.All(runs, run => Assert.Equal(ContentRole.Tagged, run.Role));
+        Assert.All(runs, run => Assert.Equal(PdfContentRole.Tagged, run.Role));
     }
 
     [Fact]
@@ -363,7 +363,7 @@ public class LayoutTests
 
         var runs = pdf.Load().TextRuns;
 
-        Assert.Equal([ContentRole.Tagged, ContentRole.Untagged], runs.Select(run => run.Role));
+        Assert.Equal([PdfContentRole.Tagged, PdfContentRole.Untagged], runs.Select(run => run.Role));
     }
 
     [Fact]
@@ -374,11 +374,11 @@ public class LayoutTests
 
         var paths = pdf.Load().Paths;
 
-        PathInfo[] expected =
+        PdfVectorPath[] expected =
         [
-            new(1, 72, 500, 100, 20, "gray:0", null, null, ContentRole.Untagged),
-            new(1, 72, 480, 100, 1, "gray:0", null, null, ContentRole.Artifact),
-            new(1, 72, 300, 100, 0, null, "#ff0000", 2, ContentRole.Untagged),
+            new(1, 72, 500, 100, 20, "gray:0", null, null, PdfContentRole.Untagged),
+            new(1, 72, 480, 100, 1, "gray:0", null, null, PdfContentRole.Artifact),
+            new(1, 72, 300, 100, 0, null, "#ff0000", 2, PdfContentRole.Untagged),
         ];
         Assert.Equal(expected, paths);
     }

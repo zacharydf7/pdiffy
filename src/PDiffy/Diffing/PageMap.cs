@@ -24,7 +24,7 @@ internal static class PageMap
     private const int MaxLabelLength = 40;
 
     /// <summary>
-    /// The map, or null when no line on the page gives a position, as when <see cref="Field.Positions"/> is ignored.
+    /// The map, or null when no line on the page gives a position, as when <see cref="PdfDetail.Positions"/> is ignored.
     /// </summary>
     public static string? Draw(int page, IReadOnlySet<string> was, IReadOnlySet<string> now,
         (double Width, double Height) box)
