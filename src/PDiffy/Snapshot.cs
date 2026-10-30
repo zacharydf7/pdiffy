@@ -29,15 +29,19 @@ public static class Snapshot
     /// <param name="configure">What to scrub, such as dates or GUIDs.</param>
     /// <param name="extension">The snapshot files' extension, without the dot.</param>
     /// <param name="directory">The folder for this snapshot, instead of <see cref="Directory"/>.</param>
-    /// <param name="testFile">Filled in by the compiler with the calling test's file; leave it out.</param>
-    /// <param name="testName">Filled in by the compiler with the calling test's method; leave it out.</param>
+    /// <param name="testFile">Filled in by the compiler with the calling test's file. Leave it out, or pass on your own
+    /// [CallerFilePath] parameter from a helper.</param>
+    /// <param name="testName">Filled in by the compiler with the calling test's method. Leave it out, or pass on your own
+    /// [CallerMemberName] parameter from a helper.</param>
+    /// <param name="variant">Added to the name, default or not, as <c>{name}.{variant}</c>, so each row of a theory gets
+    /// its own snapshot and keeps the test's name: <c>variant: trail</c>.</param>
     public static Task VerifyAsync(string text, string? name = null, Action<TextSnapshotOptions>? configure = null,
         string extension = "txt", string? directory = null, [CallerFilePath] string testFile = "",
-        [CallerMemberName] string testName = "")
+        [CallerMemberName] string testName = "", string? variant = null)
     {
         var options = new TextSnapshotOptions();
         configure?.Invoke(options);
-        var files = SnapshotWorkflow.Files(name, extension, directory, testFile, testName);
+        var files = SnapshotWorkflow.Files(name, variant, extension, directory, testFile, testName);
         return SnapshotWorkflow.VerifyAsync(Scrub(text, options), files, "text");
     }
 
@@ -53,14 +57,19 @@ public static class Snapshot
     /// <param name="name">The snapshot's file name without extension. Defaults to the test file and method.</param>
     /// <param name="configure">What else to scrub, or what to keep.</param>
     /// <param name="directory">The folder for this snapshot, instead of <see cref="Directory"/>.</param>
-    /// <param name="testFile">Filled in by the compiler with the calling test's file; leave it out.</param>
-    /// <param name="testName">Filled in by the compiler with the calling test's method; leave it out.</param>
+    /// <param name="testFile">Filled in by the compiler with the calling test's file. Leave it out, or pass on your own
+    /// [CallerFilePath] parameter from a helper.</param>
+    /// <param name="testName">Filled in by the compiler with the calling test's method. Leave it out, or pass on your own
+    /// [CallerMemberName] parameter from a helper.</param>
+    /// <param name="variant">Added to the name, default or not, as <c>{name}.{variant}</c>, so each row of a theory gets
+    /// its own snapshot and keeps the test's name: <c>variant: trail</c>.</param>
     public static Task VerifyJsonAsync(string json, string? name = null, Action<TextSnapshotOptions>? configure = null,
-        string? directory = null, [CallerFilePath] string testFile = "", [CallerMemberName] string testName = "")
+        string? directory = null, [CallerFilePath] string testFile = "", [CallerMemberName] string testName = "",
+        string? variant = null)
     {
         var options = new TextSnapshotOptions().ScrubJsonValues();
         configure?.Invoke(options);
-        var files = SnapshotWorkflow.Files(name, "json", directory, testFile, testName);
+        var files = SnapshotWorkflow.Files(name, variant, "json", directory, testFile, testName);
         return SnapshotWorkflow.VerifyAsync(Scrub(Indent(json, files.Name), options), files, "JSON");
     }
 

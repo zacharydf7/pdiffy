@@ -11,6 +11,7 @@ await PdfSnapshot.VerifyAsync(pdf);
 |---|---|---|
 | `pdf` | Pass the PDF: a stream (read from its start and left open), a `byte[]`, or a `PdfUaDocument` already loaded | Required |
 | `name` | Name the snapshot, when one test makes several | `{TestFile}.{TestMethod}` |
+| `variant` | Add to the name, so each row of a theory gets its own snapshot | None |
 | `configure` | [Ignore or scrub](options.md) what the test doesn't care about | Everything is compared |
 | `directory` | Keep this snapshot in another folder | [`Snapshot.Directory`](xref:PDiffy.Snapshot.Directory), else the test file's folder |
 
@@ -124,7 +125,8 @@ to see one, built from two versions of a small trail guide. It has:
 
 ## Naming and folders
 
-One snapshot per test is named after the test file and method. When a test makes several, as a theory does, name each:
+One snapshot per test is named after the test file and method. When a test makes several, as a theory does, give
+each a variant, which is added to that name (`TrailMapTests.TrailMap_ShouldMatchApprovedSnapshot_WhenGeneratedForATrail.ridgeline`):
 
 ```csharp
 [Theory]
@@ -134,8 +136,21 @@ public async Task TrailMap_ShouldMatchApprovedSnapshot_WhenGeneratedForATrail(st
 {
     using Stream pdf = await ReportGenerator.CreateTrailMapAsync(trail);
 
-    await PdfSnapshot.VerifyAsync(pdf, $"TrailMap.{trail}");
+    await PdfSnapshot.VerifyAsync(pdf, variant: trail);
 }
+```
+
+Or pass a whole name with `name:`. Two calls in one run that give the same snapshot different content fail, saying
+the name is taken, instead of overwriting each other's file; the same content twice, as when a test is retried, is
+fine.
+
+A helper that verifies for many tests should take the caller's details and pass them on, so each test keeps its own
+name instead of all of them sharing the helper's:
+
+```csharp
+public static Task VerifyTrailMapAsync(string trail, [CallerFilePath] string testFile = "",
+    [CallerMemberName] string testName = "") =>
+    PdfSnapshot.VerifyAsync(TrailMaps.Create(trail), testFile: testFile, testName: testName, variant: trail);
 ```
 
 Each snapshot has up to three files:

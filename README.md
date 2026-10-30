@@ -104,7 +104,13 @@ Snapshot.Directory = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "S
 
 A test whose snapshots belong somewhere else passes the folder: `await PdfSnapshot.VerifyAsync(pdf, directory: otherFolder)`.
 
-Pass a name when one test makes several snapshots, as a theory does: `await PdfSnapshot.VerifyAsync(pdf, $"TrailMap.{trail}")`.
+When one test makes several snapshots, as a theory does, give each a variant, which is added to the default name (`TrailMapTests.TrailMap_ShouldMatch.ridgeline`): `await PdfSnapshot.VerifyAsync(pdf, variant: trail)`. Or pass a whole name: `await PdfSnapshot.VerifyAsync(pdf, $"TrailMap.{trail}")`. Two calls in one run that give the same snapshot different content fail, saying the name is taken, instead of overwriting each other's file. A helper that verifies for many tests takes the caller's details and passes them on, so each test keeps its own name:
+
+```csharp
+public static Task VerifyTrailMapAsync(string trail, [CallerFilePath] string testFile = "",
+    [CallerMemberName] string testName = "") =>
+    PdfSnapshot.VerifyAsync(TrailMaps.Create(trail), testFile: testFile, testName: testName, variant: trail);
+```
 
 Snapshots use LF line endings. If Git converts line endings on checkout, add `*.verified.txt text eol=lf` and `*.verified.json text eol=lf` (plus a line for any custom extension, such as `*.verified.csv`) to `.gitattributes`; PDiffy also compares a CRLF verified file as LF. Add `*.received.*` and `*.diff.html` to `.gitignore` and to your build server's artifacts, so a failed CI run keeps what it received and the report.
 

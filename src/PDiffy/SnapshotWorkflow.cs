@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using System.Text;
 using PDiffy.Diffing;
 
@@ -9,8 +11,13 @@ namespace PDiffy;
 /// </summary>
 internal static class SnapshotWorkflow
 {
+    // What each snapshot file received so far in this run, as a hash. Case is ignored, since names that differ only in
+    // case are one file on Windows and macOS.
+    private static readonly ConcurrentDictionary<string, string> ReceivedThisRun = new(StringComparer.OrdinalIgnoreCase);
+
     public static async Task VerifyAsync(string received, SnapshotFiles files, string kind)
     {
+        CheckNotVerifiedBefore(received, files);
         var verified = File.Exists(files.Verified) ? Normalize(await File.ReadAllTextAsync(files.Verified)) : null;
         var diff = verified is null || received == verified ? null : SnapshotDiff.Compare(verified, received);
 
@@ -40,10 +47,29 @@ internal static class SnapshotWorkflow
         throw new SnapshotException(FailureMessage(files, diff, kind, formatChange));
     }
 
-    // The folder is the call's, else Snapshot.Directory, else the test file's; the name defaults to the test file and method.
-    public static SnapshotFiles Files(string? name, string extension, string? directory, string testFile, string testName) =>
-        new(directory ?? Snapshot.Directory ?? TestFolder(testFile),
-            name ?? $"{Path.GetFileNameWithoutExtension(testFile)}.{testName}", extension);
+    // Two calls with one name write one file, so in accept mode the last silently wins and the others fail next run. The
+    // same content again is fine: a retried test.
+    private static void CheckNotVerifiedBefore(string received, SnapshotFiles files)
+    {
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(received)));
+        if (ReceivedThisRun.GetOrAdd(Path.GetFullPath(files.Verified), hash) != hash)
+        {
+            throw new SnapshotException($"Snapshot '{files.Name}' was already verified in this run with different "
+                + "content, so both calls would share one file. Give each call its own name with name: or variant:, or, "
+                + "in a helper method, take [CallerFilePath] and [CallerMemberName] parameters and pass them on as "
+                + "testFile and testName.");
+        }
+    }
+
+    // The folder is the call's, else Snapshot.Directory, else the test file's; the name defaults to the test file and
+    // method. A variant is added to either.
+    public static SnapshotFiles Files(string? name, string? variant, string extension, string? directory, string testFile,
+        string testName)
+    {
+        var baseName = name ?? $"{Path.GetFileNameWithoutExtension(testFile)}.{testName}";
+        var folder = directory ?? Snapshot.Directory ?? TestFolder(testFile);
+        return new(folder, variant is null ? baseName : $"{baseName}.{variant}", extension);
+    }
 
     // A build that maps source paths (deterministic builds, often on CI) records a path like /_/tests/..., which doesn't
     // exist on disk, so snapshots next to the test file can't be found.

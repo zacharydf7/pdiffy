@@ -84,6 +84,41 @@ public sealed class SnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public async Task VerifyAsync_ShouldAddTheVariantToTheName_WhenGivenOne()
+    {
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("one", variant: "Ridgeline"));
+        await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("two", "Export", variant: "Cedars"));
+
+        var method = nameof(VerifyAsync_ShouldAddTheVariantToTheName_WhenGivenOne);
+        Assert.True(File.Exists(Path.Combine(Folder, $"{nameof(SnapshotTests)}.{method}.Ridgeline.received.txt")));
+        Assert.True(File.Exists(Path.Combine(Folder, "Export.Cedars.received.txt")));
+    }
+
+    [Theory]
+    [InlineData("Export")]
+    [InlineData("export")]
+    public async Task VerifyAsync_ShouldSayTheNameIsTaken_WhenAnotherCallInThisRunGaveItDifferentContent(string secondName)
+    {
+        Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, "1");
+        await Snapshot.VerifyAsync("first", "Export");
+
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("second", secondName));
+
+        Assert.StartsWith($"Snapshot '{secondName}' was already verified in this run with different content", error.Message);
+        Assert.Equal("first", File.ReadAllText(Path.Combine(Folder, "Export.verified.txt")));
+    }
+
+    [Fact]
+    public async Task VerifyAsync_ShouldPass_WhenAnotherCallInThisRunGaveTheNameTheSameContent()
+    {
+        Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, "1");
+        await Snapshot.VerifyAsync("same", "Export");
+        Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, null);
+
+        await Snapshot.VerifyAsync("same", "Export");
+    }
+
+    [Fact]
     public async Task VerifyAsync_ShouldScrubTheWholeText_WhenAskedTo()
     {
         var text = "Permit 1234 for 0f8fad5b-d9cb-469f-a165-70867728950e on 2026-10-28\n";
