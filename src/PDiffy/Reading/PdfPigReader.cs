@@ -22,7 +22,6 @@ internal static class PdfPigReader
         var loose = CollectLooseContent(readable, structure.ReferencedMcids);
         var (bookmarks, bookmarksUnreadable) = NavigationReader.ReadBookmarks(document, objects, catalog);
         var (formFields, form) = FormReader.Read(objects, catalog, pageTree, fileLength);
-        var annotations = AnnotationReader.ReadAll(objects, pageTree, structure.ReferencedObjects, destinations);
         var settings = DocumentSettingsReader.Read(document, objects, catalog, pageTree);
         var layouts = readable.OrderBy(pair => pair.Key)
             .Select(pair => LayoutReader.Read(pair.Key, pair.Value.Page, pair.Value.Content.Owners, structure.ReferencedMcids))
@@ -45,7 +44,7 @@ internal static class PdfPigReader
             Artifacts = loose.Artifacts,
             Untagged = loose.Untagged,
             Fonts = FontReader.Read(objects, pageTree, readable.ToDictionary(pair => pair.Key, pair => pair.Value.Page)),
-            Annotations = annotations,
+            Annotations = AnnotationReader.ReadAll(objects, pageTree, structure.ReferencedObjects, destinations),
             FormFields = formFields,
             Form = form,
             TextRuns = layouts.SelectMany(layout => layout.TextRuns).ToList(),
