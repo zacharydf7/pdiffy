@@ -514,6 +514,19 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowTheFormLineAndJavaScript_WhenASnapshotFromBeforeFormSettingsMeetsOneWithThem()
+    {
+        var before = SnapshotText.Header + "settings\n  javascript=no additional-actions=no\nforms\n  text \"total\" p1\n";
+        var after = SnapshotText.Header + "settings\n  javascript=yes additional-actions=no\nforms\n  form need-appearances=yes\n"
+            + "  text \"total\" p1 scripts=calculate:3f9c0a1b2d4e5f60\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Equal(["AttributeChanged javascript: no -> yes", "Added form need-appearances=yes",
+            "AttributeChanged scripts: (missing) -> calculate:3f9c0a1b2d4e5f60"], changes.Select(change => $"{change.Kind} {change.Detail}"));
+    }
+
+    [Fact]
     public void Compare_ShouldShowOnlyTheNewKeys_WhenASnapshotFromBeforeFieldBehaviorMeetsOneWithIt()
     {
         var before = SnapshotText.Header + "forms\n  text \"total\" p1 flags=read-only\n";

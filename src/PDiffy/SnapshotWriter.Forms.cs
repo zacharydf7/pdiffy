@@ -53,9 +53,11 @@ internal sealed partial class SnapshotWriter
         Key(line, "zoom", destination.Zoom?.ToString(CultureInfo.InvariantCulture));
     }
 
-    private void WriteFormFields(IReadOnlyList<FormField> fields)
+    private void WriteForms(FormSettings? form, IReadOnlyList<FormField> fields)
     {
-        if (fields.Count == 0) Line(1, None);
+        var settings = form is null ? null : FormSettingsLine(form);
+        if (settings is not null) Line(1, settings);
+        else if (fields.Count == 0) Line(1, None);
         foreach (var field in fields)
         {
             var line = new StringBuilder($"{KebabCase(field.Type.ToString())} {Quote(field.Name)}");
@@ -80,6 +82,16 @@ internal sealed partial class SnapshotWriter
             if (field.Signature is { } signature) AppendSignature(line, signature);
             Line(1, line.ToString());
         }
+    }
+
+    // Null when the form sets none of them, so most forms print no line for it.
+    private string? FormSettingsLine(FormSettings form)
+    {
+        var line = new StringBuilder("form");
+        if (form.CalculationOrder.Count > 0) line.Append($" calculation-order=[{string.Join(",", form.CalculationOrder.Select(Quote))}]");
+        Key(line, "need-appearances", form.NeedsAppearances ? "yes" : null);
+        Key(line, "xfa", form.Xfa is { } xfa ? KebabCase(xfa.ToString()) : null);
+        return line.Length > "form".Length ? line.ToString() : null;
     }
 
     // A size of 0 fits the text to the field.

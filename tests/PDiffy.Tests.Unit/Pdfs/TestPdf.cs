@@ -14,6 +14,7 @@ internal sealed class TestPdf
     private readonly List<(string Name, string Entries, int Page)> _formFields = [];
     private readonly List<string> _objects = [];
     private string _catalogEntries = "";
+    private string _formEntries = "";
 
     public string? Lang { get; init; } = "en-US";
     public string? Title { get; init; }
@@ -78,6 +79,13 @@ internal sealed class TestPdf
         return this;
     }
 
+    /// <summary>Raw entries added to the form dictionary, e.g. "/NeedAppearances true".</summary>
+    public TestPdf FormEntries(string entries)
+    {
+        _formEntries += " " + entries;
+        return this;
+    }
+
     /// <summary>Raw entries added to the catalog dictionary, e.g. "/PageLabels &lt;&lt; ... &gt;&gt;".</summary>
     public TestPdf CatalogEntries(string entries)
     {
@@ -124,7 +132,7 @@ internal sealed class TestPdf
                 fields.Add(field);
             }
 
-            catalogEntries += $" /AcroForm << /Fields [{string.Join(" ", fields.Select(f => $"{f} 0 R"))}] >>";
+            catalogEntries += $" /AcroForm << /Fields [{string.Join(" ", fields.Select(f => $"{f} 0 R"))}]{_formEntries} >>";
         }
 
         if (_bookmarks.Count > 0) catalogEntries += $" /Outlines {AddOutlines(pageObjects)} 0 R";

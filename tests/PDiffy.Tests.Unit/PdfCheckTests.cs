@@ -194,6 +194,16 @@ public class PdfCheckTests
         Assert.Equal("The document has JavaScript", finding.Message);
     }
 
+    [Fact]
+    public void Check_ShouldReportJavaScript_WhenOnlyAFormFieldRunsAScript()
+    {
+        var document = OnePage(new TestPdf().FormField("total", "/FT /Tx /AA << /C << /S /JavaScript /JS (sum()) >> >>"));
+
+        var finding = Assert.Single(document.Check(PdfCheck.NoActions));
+
+        Assert.Equal("The document has JavaScript", finding.Message);
+    }
+
     [Theory]
     [InlineData("/OpenAction << /S /GoToR /F (other.pdf) /D [0 /Fit] >>", "GoToR")]
     [InlineData("/OpenAction << /S /GoToE /D [0 /Fit] >>", "GoToE")]

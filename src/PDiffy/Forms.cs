@@ -95,6 +95,29 @@ public sealed record FormField
     public SignatureInfo? Signature { get; init; }
 }
 
+/// <summary>Settings that apply to a whole form rather than to one field.</summary>
+public sealed record FormSettings
+{
+    /// <summary>The fields whose calculate scripts run when a value changes, by full name, in the order they run.</summary>
+    public IReadOnlyList<string> CalculationOrder { get; init; } = [];
+
+    /// <summary>Whether the viewer must draw each field itself instead of using the appearance stored in the file.</summary>
+    public bool NeedsAppearances { get; init; }
+
+    /// <summary>The XFA form the PDF also carries, which viewers that support XFA show instead; null when there's none.</summary>
+    public XfaFormKind? Xfa { get; init; }
+}
+
+/// <summary>What kind of XFA form a PDF carries.</summary>
+public enum XfaFormKind
+{
+    /// <summary>A fixed layout, with the same pages as the PDF.</summary>
+    Static,
+
+    /// <summary>A layout the viewer builds from the XFA itself, so the PDF's own pages may be only a placeholder.</summary>
+    Dynamic,
+}
+
 /// <summary>How text in a field lines up.</summary>
 public enum FormFieldAlignment
 {

@@ -21,6 +21,9 @@ internal static class PdfPigReader
             page => readable.TryGetValue(page, out var read) ? read.Content : null);
         var loose = CollectLooseContent(readable, structure.ReferencedMcids);
         var (bookmarks, bookmarksUnreadable) = NavigationReader.ReadBookmarks(document, objects, catalog);
+        var (formFields, form) = FormReader.Read(objects, catalog, pageTree, fileLength);
+        var annotations = AnnotationReader.ReadAll(objects, pageTree, structure.ReferencedObjects, destinations);
+        var settings = DocumentSettingsReader.Read(document, objects, catalog, pageTree);
         var layouts = readable.OrderBy(pair => pair.Key)
             .Select(pair => LayoutReader.Read(pair.Key, pair.Value.Page, pair.Value.Content.Owners, structure.ReferencedMcids))
             .ToList();
@@ -29,7 +32,10 @@ internal static class PdfPigReader
         {
             Document = MetadataReader.ReadDocumentInfo(objects, catalog, document.NumberOfPages),
             Metadata = MetadataReader.ReadMetadata(document, objects),
-            Settings = DocumentSettingsReader.Read(document, objects, catalog, pageTree),
+            Settings = settings with
+            {
+                HasJavaScript = settings.HasJavaScript || formFields.Any(field => field.Scripts.Count > 0),
+            },
             RoleMap = structure.RoleMap,
             Pages = pages,
             PageLabels = NavigationReader.ReadPageLabels(objects, catalog),
@@ -39,8 +45,9 @@ internal static class PdfPigReader
             Artifacts = loose.Artifacts,
             Untagged = loose.Untagged,
             Fonts = FontReader.Read(objects, pageTree, readable.ToDictionary(pair => pair.Key, pair => pair.Value.Page)),
-            Annotations = AnnotationReader.ReadAll(objects, pageTree, structure.ReferencedObjects, destinations),
-            FormFields = FormReader.Read(objects, catalog, pageTree, fileLength),
+            Annotations = annotations,
+            FormFields = formFields,
+            Form = form,
             TextRuns = layouts.SelectMany(layout => layout.TextRuns).ToList(),
             Images = layouts.SelectMany(layout => layout.Images).ToList(),
             Paths = layouts.SelectMany(layout => layout.Paths).ToList(),

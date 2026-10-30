@@ -16,6 +16,11 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### PDF (`pdfua-snapshot v1`, unchanged)
 
+- A form that sets a calculation order, asks the viewer to draw its fields (`NeedAppearances`) or carries XFA prints a
+  `form` line first in `forms` (`form calculation-order=["trip.tax","trip.total"] need-appearances=yes xfa=dynamic`),
+  and `javascript=` in `settings` now also says `yes` when a form field runs JavaScript, which it used to miss. Only
+  snapshots of documents with such forms or scripts change. `PdfCheck.NoActions` and `pdiffy check` now report a
+  document whose form fields run JavaScript.
 - Form fields print how they behave: the default value (`default="0"`), the value each check box or radio button widget
   sends (`exports=["Yes"]`), alignment when it isn't left (`align=center`), the font, size and color of typed text
   (`text-font=Helvetica text-size=auto text-color=gray:0`, set on a widget, the field or the whole form) and their

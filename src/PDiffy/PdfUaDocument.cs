@@ -25,6 +25,9 @@ public sealed record PdfUaDocument
     public IReadOnlyList<FontInfo> Fonts { get; init; } = [];
     public IReadOnlyList<Annotation> Annotations { get; init; } = [];
     public IReadOnlyList<FormField> FormFields { get; init; } = [];
+
+    /// <summary>Settings for the whole form; null when the document has no form.</summary>
+    public FormSettings? Form { get; init; }
     public IReadOnlyList<TextRun> TextRuns { get; init; } = [];
     public IReadOnlyList<ImageInfo> Images { get; init; } = [];
     public IReadOnlyList<PathInfo> Paths { get; init; } = [];

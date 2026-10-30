@@ -39,7 +39,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         WriteSection(Section.Untagged, () => WriteUntagged(document));
         WriteSection(Section.Fonts, () => WriteFonts(document.Fonts));
         WriteSection(Section.Annotations, () => WriteAnnotations(document.Annotations));
-        WriteSection(Section.Forms, () => WriteFormFields(document.FormFields));
+        WriteSection(Section.Forms, () => WriteForms(document.Form, document.FormFields));
         WriteSection(Section.Layout, () => WriteLayout(document));
         return _snapshot.ToString();
     }

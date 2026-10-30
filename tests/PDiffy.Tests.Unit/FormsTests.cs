@@ -323,6 +323,56 @@ public class FormsTests
     }
 
     [Fact]
+    public void Load_ShouldReadTheFormSettingsAndNameTheCalculationOrder_WhenTheFormSetsThem()
+    {
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R /NeedsRendering true "
+                + "/AcroForm << /Fields [5 0 R] /CO [7 0 R 6 0 R 4 0 R] /NeedAppearances true /XFA (template) >> >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [6 0 R 7 0 R] /Contents 4 0 R >>",
+            TestPdf.Stream(""),
+            "<< /T (trip) /FT /Tx /Kids [6 0 R 7 0 R] >>",
+            "<< /Type /Annot /Subtype /Widget /T (total) /Parent 5 0 R /Rect [72 300 272 320] >>",
+            "<< /Type /Annot /Subtype /Widget /T (tax) /Parent 5 0 R /Rect [72 270 272 290] >>");
+
+        var form = document.Form!;
+
+        Assert.Equal((true, XfaFormKind.Dynamic), (form.NeedsAppearances, form.Xfa));
+        Assert.Equal(["trip.tax", "trip.total", "(unknown)"], form.CalculationOrder);
+        Assert.Contains("forms\n  form calculation-order=[\"trip.tax\",\"trip.total\",\"(unknown)\"] need-appearances=yes xfa=dynamic\n",
+            document.ToSnapshot());
+    }
+
+    [Fact]
+    public void Load_ShouldCallTheXfaFormStatic_WhenTheCatalogDoesNotAskForItToBeRendered()
+    {
+        var pdf = new TestPdf().FormField("trail", "/FT /Tx").FormEntries("/XFA (template)");
+        pdf.AddPage();
+
+        Assert.Equal(XfaFormKind.Static, pdf.Load().Form!.Xfa);
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldPrintNoFormLine_WhenTheFormSetsNothingForTheWholeForm()
+    {
+        var pdf = new TestPdf().FormField("trail", "/FT /Tx");
+        pdf.AddPage();
+
+        Assert.Contains("forms\n  text \"trail\" p1\n", pdf.Load().ToSnapshot());
+    }
+
+    [Theory]
+    [InlineData("/FT /Tx /AA << /C << /S /JavaScript /JS (sum()) >> >>")]
+    [InlineData("/FT /Btn /Ff 65536 /A << /S /JavaScript /JS (send()) >>")]
+    public void Load_ShouldSayTheDocumentHasJavaScript_WhenOnlyAFormFieldHasAScript(string entries)
+    {
+        var pdf = new TestPdf().FormField("total", entries);
+        pdf.AddPage();
+
+        Assert.True(pdf.Load().Settings.HasJavaScript);
+    }
+
+    [Fact]
     public void Load_ShouldRecordTheSignatureButNotItsBytes_WhenASignatureFieldIsSigned()
     {
         var document = LoadSigned("/SubFilter /adbe.pkcs7.detached /Contents <0102> /M (D:20261030120000Z) /Reason (Approved) "

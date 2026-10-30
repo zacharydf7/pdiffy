@@ -24,6 +24,9 @@ public sealed record DocumentSettings
     // Each action of OpenAction on its own, since a destination's name can hold the ", " that joins them.
     internal IReadOnlyList<string> OpenActions { get; init; } = [];
 
+    /// <summary>
+    /// Whether the document has JavaScript in its document-level scripts, open action, document actions or form fields.
+    /// </summary>
     public bool HasJavaScript { get; init; }
 
     /// <summary>Whether the document runs actions on events such as closing, saving or printing.</summary>

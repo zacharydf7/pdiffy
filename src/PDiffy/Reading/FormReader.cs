@@ -47,13 +47,15 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
     private readonly List<FormField> _fields = [];
     private readonly HashSet<IndirectReference> _visited = [];
     private readonly Dictionary<IndirectReference, int> _widgetPages = [];
+    private readonly Dictionary<IndirectReference, string> _names = [];
 
     /// <param name="fileLength">The file's length in bytes, to tell whether a signature covers all of it.</param>
-    public static IReadOnlyList<FormField> Read(PdfObjects objects, DictionaryToken catalog, PageTree pages, long fileLength)
+    public static (IReadOnlyList<FormField> Fields, FormSettings? Settings) Read(PdfObjects objects, DictionaryToken catalog,
+        PageTree pages, long fileLength)
     {
         if (objects.Dictionary(catalog, "AcroForm") is not { } form)
         {
-            return [];
+            return ([], null);
         }
 
         var reader = new FormReader(objects, pages, fileLength, form);
@@ -66,8 +68,20 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
         }
 
         while (pending.TryPop(out var next)) reader.AddField(next.Field, next.Parent, pending);
-        return reader._fields;
+        return (reader._fields, reader.ReadSettings(catalog));
     }
+
+    // A form that also carries XFA is dynamic when the catalog asks the viewer to build its pages from the XFA.
+    private FormSettings ReadSettings(DictionaryToken catalog) => new()
+    {
+        CalculationOrder = objects.Items(form.Data.GetValueOrDefault("CO"))
+            .Select(field => field is IndirectReferenceToken reference ? _names.GetValueOrDefault(reference.Data) : null)
+            .Select(name => name ?? "(unknown)")
+            .ToList(),
+        NeedsAppearances = objects.Boolean(form, "NeedAppearances"),
+        Xfa = !form.Data.ContainsKey("XFA") ? null
+            : objects.Boolean(catalog, "NeedsRendering") ? XfaFormKind.Dynamic : XfaFormKind.Static,
+    };
 
     // A widget's page is the page whose /Annots lists it; its own /P entry is optional.
     private void MapWidgetPages()
@@ -102,6 +116,7 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
 
         var partialName = objects.Text(field, "T");
         var name = parent.Name is null ? partialName : partialName is null ? parent.Name : $"{parent.Name}.{partialName}";
+        if (token is IndirectReferenceToken named && name is not null) _names[named.Data] = name;
         var current = new Inherited(name, objects.Name(field, "FT") ?? parent.Type, objects.Integer(field, "Ff") ?? parent.Flags,
             objects.Get(field, "V") ?? parent.Value, objects.Get(field, "DV") ?? parent.DefaultValue,
             objects.Integer(field, "MaxLen") ?? parent.MaxLength, objects.Text(field, "DA") ?? parent.Appearance,

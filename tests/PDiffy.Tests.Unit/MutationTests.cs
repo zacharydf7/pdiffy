@@ -35,6 +35,7 @@ public class MutationTests
         { "field no longer required", new Sample { FieldEntries = "/FT /Tx /TU (Hiker name)" }, Section.Forms, ChangeKind.AttributeChanged, false },
         { "field text size", new Sample { FieldAppearance = "/F1 14 Tf 0 g" }, Section.Forms, ChangeKind.AttributeChanged, false },
         { "field script edited", new Sample { FieldScript = "AFNumber_Format(2)" }, Section.Forms, ChangeKind.AttributeChanged, false },
+        { "form no longer redrawn by the viewer", new Sample { FormEntries = "" }, Section.Forms, ChangeKind.Removed, false },
         { "signature removed", new Sample { SignatureEntries = "/FT /Sig" }, Section.Forms, ChangeKind.AttributeChanged, false },
         { "bookmark target page", new Sample { BookmarkPage = 1 }, Section.Bookmarks, ChangeKind.Changed, false },
     };
@@ -78,6 +79,7 @@ public class MutationTests
         public string FieldEntries { get; init; } = "/FT /Tx /TU (Hiker name) /Ff 2";
         public string FieldAppearance { get; init; } = "/F1 12 Tf 0 g";
         public string FieldScript { get; init; } = "AFNumber_Format(0)";
+        public string FormEntries { get; init; } = "/NeedAppearances true";
         public string SignatureEntries { get; init; } =
             "/FT /Sig /V << /Type /Sig /SubFilter /adbe.pkcs7.detached /Reason (Approved) /Reference [<< /TransformMethod /DocMDP >>] >>";
         public int BookmarkPage { get; init; } = 2;
@@ -119,7 +121,8 @@ public class MutationTests
         elements.Add(new TestElement("P", 0) { Page = 2 });
         pdf.Structure(new TestElement("Document", [.. elements]));
         pdf.Bookmark("Safety", sample.BookmarkPage);
-        pdf.FormField("hiker", $"{sample.FieldEntries} /DA ({sample.FieldAppearance}) /AA << /F << /S /JavaScript /JS ({sample.FieldScript}) >> >>").FormField("approval", sample.SignatureEntries);
+        pdf.FormField("hiker", $"{sample.FieldEntries} /DA ({sample.FieldAppearance}) /AA << /F << /S /JavaScript /JS ({sample.FieldScript}) >> >>").FormField("approval", sample.SignatureEntries)
+            .FormEntries(sample.FormEntries);
         return pdf.Load();
     }
 }
