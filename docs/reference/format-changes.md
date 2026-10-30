@@ -61,7 +61,8 @@ list of changes can see different pairings.
 ### Accessibility flags
 
 No snapshot changes, but more changes are flagged as
-[affecting accessibility](accessibility-changes.md): a language set on marked content inside an element changed,
+[affecting accessibility](accessibility-changes.md): a language set on marked content inside an element changed, or
+the replacement text, alt text or expansion set on it removed;
 tagged content made an artifact or untagged, `marked` or
 `display-doc-title` turned off, the title removed, replacement text or an expansion removed, a page's tab order no
 longer `S`, a font's text no longer mapping to Unicode, and permissions that stop text extraction for accessibility.

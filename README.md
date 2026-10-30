@@ -648,7 +648,7 @@ In a PDF snapshot, a change's `AffectsAccessibility` is true, and a failure list
 |---|---|
 | A structure element's type changed, such as a heading becoming a paragraph (a header cell's generated name, such as `TH1` becoming `TH2`, doesn't count) | `type: H2 -> P` |
 | A structure element moved in reading order | `moved` in `structure` |
-| Alt text, replacement text, an expansion, a table header's scope, a cell's headers or a form field's or annotation's accessible name was removed or emptied, or a cell's headers point at a header that isn't there | `alt: "Logo" -> (missing)`, `actual: "fi" -> (missing)`, `scope: Column -> (missing)`, `tu: "Name" -> ""`, `headers: [TH1] -> [?h2]` |
+| Alt text, replacement text or an expansion (on an element or on marked content inside it), a table header's scope, a cell's headers or a form field's or annotation's accessible name was removed or emptied, or a cell's headers point at a header that isn't there | `alt: "Logo" -> (missing)`, `actual: "fi" -> (missing)`, `span-actual: ["fi"] -> (missing)`, `scope: Column -> (missing)`, `tu: "Name" -> ""`, `headers: [TH1] -> [?h2]` |
 | The document's or an element's language changed or was removed, or one set on marked content inside an element | `lang: en-US -> en-GB`, `span-lang: [fr-FR] -> [de-DE]` |
 | Something was added to the untagged content: a line, words in a line, or more images or paths. Less untagged content doesn't count, except that a text line that loses more than half its words shows as removed and added, and the added line counts | `added`, `"Page 1 {+Draft+}"` or `images: 1 -> 2` in `untagged` |
 | An annotation became untagged | `... tagged ... -> ... untagged ...` in `annotations` |
