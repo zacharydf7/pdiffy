@@ -677,6 +677,7 @@ public class PdfCheckTests
             new TestElement("P", new TestAnnotation("/Subtype /Text /Contents (Note)")),
             new TestElement("Form", new TestAnnotation("/Subtype /Widget"), new TestAnnotation("/Subtype /Widget")),
             new TestElement("Form", 1, new TestAnnotation("/Subtype /Widget")),
+            new TestElement("Form", new TestAnnotation("/Subtype /Widget"), new TestElement("Lbl")),
             new TestElement("Artifact", new TestAnnotation("/Subtype /PrinterMark")),
             new TestElement("P", new TestAnnotation("/Subtype /TrapNet")));
 
@@ -691,6 +692,8 @@ public class PdfCheckTests
                 + "(ISO 14289-1 7.18.4)",
             "structure > Form[2]: Form on p1 sets no field role, so it should hold one widget and nothing else "
                 + "(ISO 14289-1 7.18.4)",
+            "structure > Form[3]: Form on p1 sets no field role, so it should hold one widget and nothing else "
+                + "(ISO 14289-1 7.18.4)",
             "structure > Artifact: PrinterMark annotation on p1 is tagged, but printer marks are artifacts "
                 + "(ISO 14289-1 7.18.8)",
             "annotations: Untagged Link annotation on p1 isn't in Link (ISO 14289-1 7.18.5)",
@@ -698,6 +701,48 @@ public class PdfCheckTests
             "annotations: TrapNet annotation on p1, which PDF/UA doesn't allow (ISO 14289-1 7.18.2)",
             "annotations: TrapNet annotation on p1, which PDF/UA doesn't allow (ISO 14289-1 7.18.2)",
         ], findings.Select(finding => $"{finding.Path}: {finding.Message} ({finding.Reference})"));
+    }
+
+    [Fact]
+    public void Check_ShouldFindAnnotationsWithoutADescription_WhenNeitherTheyNorTheirElementHaveOne()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Annotation("/Subtype /Text /Rect [0 0 10 10]").Annotation("/Subtype /Text /Rect [0 0 10 10] /F 2")
+            .Annotation("/Subtype /Stamp /Rect [0 0 10 10] /Contents (Approved)")
+            .Annotation("/Subtype /Link /Rect [0 0 10 10]").Annotation("/Subtype /Widget /Rect [0 0 10 10]")
+            .Annotation("/Subtype /Popup /Rect [0 0 10 10]").Annotation("/Subtype /PrinterMark /Rect [0 0 10 10]")
+            .Annotation("/Subtype /TrapNet /Rect [0 0 10 10]");
+        pdf.Structure(new TestElement("Annot", new TestAnnotation("/Subtype /Text")),
+            new TestElement("Annot", new TestAnnotation("/Subtype /Text")) { Entries = "/Alt (Comment)" },
+            new TestElement("Annot", new TestAnnotation("/Subtype /Text /Contents (Check the map)")));
+
+        var findings = pdf.Load().Check(PdfCheck.AnnotationDescriptions);
+
+        Assert.Equal(
+        [
+            "structure > Annot[1]: Text annotation on p1 has no description",
+            "annotations: Untagged Text annotation on p1 has no description",
+        ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Theory]
+    [InlineData("S", false, 0)]
+    [InlineData("R", false, 1)]
+    [InlineData(null, false, 1)]
+    [InlineData("R", true, 0)]
+    public void Check_ShouldFindOnlyPagesWithAnnotationsOutOfStructureOrder_WhenGivenEachTabOrder(string? tabs,
+        bool withoutAnnotations, int expected)
+    {
+        var pdf = new TestPdf();
+        var page = pdf.AddPage(tabs: tabs);
+        if (!withoutAnnotations) page.Annotation("/Subtype /Text /Rect [0 0 10 10] /Contents (Note)");
+
+        var findings = pdf.Load().Check(PdfCheck.TabOrder);
+
+        Assert.Equal(expected, findings.Count);
+        Assert.All(findings, finding => Assert.Equal(
+            $"pages > tabs: Page 1 has annotations, but its tab order is {tabs ?? "not set"}, not S",
+            $"{finding.Path}: {finding.Message}"));
     }
 
     [Fact]
@@ -759,6 +804,9 @@ public class PdfCheckTests
     [InlineData(PdfCheck.TableStructure, PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     [InlineData(PdfCheck.TableGrid, PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     [InlineData(PdfCheck.AnnotationTags, PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18")]
+    [InlineData(PdfCheck.AnnotationDescriptions, PdfCheckCategory.Annotations, PdfCheckSeverity.Error,
+        "ISO 14289-1 7.18.1")]
+    [InlineData(PdfCheck.TabOrder, PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.3")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

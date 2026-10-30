@@ -16,10 +16,11 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### Checks
 
-- `PdfCheckSet.Latest` has eleven new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
-  `TocStructure`, `HeadingTypes`, `NoteIds`, `TableStructure`, `TableGrid` and `AnnotationTags`, so a snapshot that
-  records checks with it prints `# checks: latest, 23 rules` and what they find
-  ([#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#69](https://github.com/zacharydf7/pdiffy/issues/69)). A release's own set, such as `PdfCheckSet.Version0_3`,
+- `PdfCheckSet.Latest` has thirteen new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
+  `TocStructure`, `HeadingTypes`, `NoteIds`, `TableStructure`, `TableGrid`, `AnnotationTags`,
+  `AnnotationDescriptions` and `TabOrder`, so a snapshot that records checks with it prints
+  `# checks: latest, 25 rules` and what they find
+  ([#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#70](https://github.com/zacharydf7/pdiffy/issues/70)). A release's own set, such as `PdfCheckSet.Version0_3`,
   doesn't change.
 
 ### Document setup

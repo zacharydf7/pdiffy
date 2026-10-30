@@ -42,6 +42,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.TableStructure: TableStructure(); break;
             case PdfCheck.TableGrid: TableGrid(); break;
             case PdfCheck.AnnotationTags: AnnotationTags(); break;
+            case PdfCheck.AnnotationDescriptions: AnnotationDescriptions(); break;
+            case PdfCheck.TabOrder: TabOrder(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -454,8 +456,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
-    // A pop-up belongs to the annotation it opens from, so it isn't tagged on its own, and a hidden annotation has
-    // nothing to read. A printer mark mustn't be tagged, and a TrapNet mustn't be there at all, which is reported once.
+    // Only an annotation for a reader needs a tag (see IsReadable). A printer mark mustn't be tagged, and a TrapNet
+    // mustn't be there at all, which is reported once.
     private void AnnotationTags()
     {
         foreach (var (element, path) in Elements)
@@ -489,10 +491,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             }
         }
 
-        var untagged = document.Annotations.Where(a => a.Role != PdfContentRole.Tagged
-            && !a.Flags.HasFlag(PdfAnnotationFlags.Hidden) && a.Subtype is not (PdfAnnotationTypes.Popup
-                or PdfAnnotationTypes.PrinterMark or PdfAnnotationTypes.TrapNet));
-        foreach (var annotation in untagged)
+        foreach (var annotation in document.Annotations.Where(a => a.Role != PdfContentRole.Tagged && IsReadable(a)))
         {
             var (expected, clause) = TagFor(annotation.Subtype);
             Add(PdfCheck.AnnotationTags, annotation.Page, Name(PdfSection.Annotations),
@@ -503,6 +502,46 @@ internal sealed class PdfChecker(PdfUaDocument document)
         {
             Add(PdfCheck.AnnotationTags, trapNet.Page, Name(PdfSection.Annotations),
                 $"TrapNet annotation{On(trapNet.Page)}, which PDF/UA doesn't allow", "ISO 14289-1 7.18.2");
+        }
+    }
+
+    // Links have their own rule, and a form field is described by its accessible name.
+    private void AnnotationDescriptions()
+    {
+        foreach (var (element, path) in Elements)
+        {
+            foreach (var annotation in element.Annotations.Where(NeedsDescription))
+            {
+                if (!IsBlank(annotation.Contents) || !IsBlank(element.AltText)) continue;
+
+                Add(PdfCheck.AnnotationDescriptions, annotation.Page, path,
+                    $"{annotation.Subtype} annotation{On(annotation.Page)} has no description");
+            }
+        }
+
+        var untagged = document.Annotations.Where(a => a.Role != PdfContentRole.Tagged && NeedsDescription(a));
+        foreach (var annotation in untagged.Where(a => IsBlank(a.Contents)))
+        {
+            Add(PdfCheck.AnnotationDescriptions, annotation.Page, Name(PdfSection.Annotations),
+                $"Untagged {annotation.Subtype} annotation{On(annotation.Page)} has no description");
+        }
+    }
+
+    private static bool NeedsDescription(PdfAnnotation annotation) =>
+        IsReadable(annotation) && annotation.Subtype is not (PdfAnnotationTypes.Link or PdfAnnotationTypes.Widget);
+
+    // A pop-up belongs to the annotation it opens from, a hidden annotation isn't shown, and printer marks and trap
+    // networks are for print production, so none of them is for a reader.
+    private static bool IsReadable(PdfAnnotation annotation) =>
+        !annotation.Flags.HasFlag(PdfAnnotationFlags.Hidden) && annotation.Subtype is not (PdfAnnotationTypes.Popup
+            or PdfAnnotationTypes.PrinterMark or PdfAnnotationTypes.TrapNet);
+
+    private void TabOrder()
+    {
+        foreach (var page in document.Pages.Where(p => p.HasAnnotations && p.Tabs != PdfTabOrders.Structure))
+        {
+            Add(PdfCheck.TabOrder, page.Number, $"{Name(PdfSection.Pages)} > tabs",
+                $"Page {page.Number} has annotations, but its tab order is {page.Tabs ?? "not set"}, not S");
         }
     }
 
@@ -721,6 +760,9 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.TableStructure or PdfCheck.TableGrid =>
             new(PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
         PdfCheck.AnnotationTags => new(PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18"),
+        PdfCheck.AnnotationDescriptions =>
+            new(PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.1"),
+        PdfCheck.TabOrder => new(PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.3"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

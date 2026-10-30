@@ -115,6 +115,15 @@ public enum PdfCheck
     /// and printer marks aren't tagged.
     /// </summary>
     AnnotationTags,
+
+    /// <summary>
+    /// Every annotation but links and form fields has a description: its contents, or alt text on the element that tags
+    /// it. <see cref="LinkDescriptions"/> covers links.
+    /// </summary>
+    AnnotationDescriptions,
+
+    /// <summary>Every page with annotations has its tab order follow the structure (S).</summary>
+    TabOrder,
 }
 
 /// <summary>

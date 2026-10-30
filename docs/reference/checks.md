@@ -82,6 +82,30 @@ stamps and other annotations with `Annot`. A `Form` for a group of widgets, such
 `Role`; a `Form` without one holds just its widget, with the field's label in an element of its own. Leave printer
 marks out of the structure tree, and remove trap networks from the file.
 
+## AnnotationDescriptions
+
+**Finds:** an annotation other than a link or a form field, such as a comment or a stamp, with no contents and no alt
+text on the element that tags it. Pop-ups, hidden annotations, printer marks and trap networks have nothing to read,
+so they're left out. **Category:** `Annotations`. **Severity:** `Error`. **From:** ISO 14289-1 7.18.1.
+
+**Why it matters:** a screen reader announces a comment or stamp by its description. Without one, a reader hears
+"annotation" and nothing else, while a sighted reader sees the note or the "Approved" stamp.
+
+**How to fix it:** give each annotation a `/Contents` entry that says what it holds or means, or alt text on the
+`Annot` element that tags it. Links are covered by [`LinkDescriptions`](#linkdescriptions), and form fields by
+[`FormFieldNames`](#formfieldnames).
+
+## TabOrder
+
+**Finds:** a page that has annotations and whose tab order (`/Tabs`) isn't `S`, the order of the structure tree.
+**Category:** `Annotations`. **Severity:** `Error`. **From:** ISO 14289-1 7.18.3.
+
+**Why it matters:** someone using the keyboard moves between links and form fields with Tab. With the structure order,
+they meet them in the same order as the text around them; in row or column order, they jump around the page.
+
+**How to fix it:** set `/Tabs /S` on every page with links, form fields or other annotations. Most generators have a
+setting for it, often called tab order or "use document structure".
+
 ## FormFieldNames
 
 **Finds:** a form field with no accessible name (tooltip). **Category:** `Forms`. **Severity:** `Error`. **From:**
