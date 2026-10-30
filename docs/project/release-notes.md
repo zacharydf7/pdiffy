@@ -128,6 +128,10 @@ library does.
   marked content: text and alt text no language reaches, annotation contents, form field names, bookmark titles and an
   XMP title or description for the default language. `PdfMetadata` has `XmpHasDefaultLanguageText`
   ([#72](https://github.com/zacharydf7/pdiffy/issues/72)).
+- `FormulaAltText` finds a formula with no alt text or replacement text, and `MediaClips` finds a media clip a Screen
+  annotation plays with no content type or alternate text. Snapshots print a Screen annotation's media clip, and
+  `PdfAnnotation` has `MediaClip`, and `PdfFormField` has `CombinedWithWidget`
+  ([#74](https://github.com/zacharydf7/pdiffy/issues/74)).
 - Snapshots print `suspects=yes` and `parent=missing` when a document has them, and a PDF 2.0 file's
   `version` is now `2.0`, not `1.4`. `PdfDocumentInfo` has `Suspects` and `HasStructureTree`, `PdfMetadata` has
   `HasXmp` and `PdfUaIdPrefix`, and `PdfStructureElement` has `ParentMissing`

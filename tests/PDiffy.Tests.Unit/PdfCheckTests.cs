@@ -815,7 +815,7 @@ public class PdfCheckTests
         var pdf = new TestPdf { Lang = lang, Xmp = xmp };
         pdf.AddPage().Tagged(0, "Hallo").Tagged(1, "Hello").Tagged(2, "Bonjour")
             .Raw("/P << /MCID 3 >> BDC BT /F1 12 Tf 72 300 Td /Span << /Lang (fr-FR) >> BDC (Salut) Tj EMC ET EMC")
-            .Raw("/Figure << /MCID 4 /Alt (Ridge view) >> BDC EMC")
+            .Raw("/Figure << /MCID 4 /Alt (Ridge view) >> BDC EMC /Figure << /MCID 4 /Alt (Summit) >> BDC EMC")
             .Annotation("/Subtype /Text /Rect [0 0 10 10] /Contents (Note)")
             .Annotation("/Subtype /Widget /Rect [0 0 10 10] /TU (Hiker name)");
         pdf.Structure(new TestElement("P", 0) { Entries = "/Lang (de-DE)" }, new TestElement("P", 1),
@@ -853,19 +853,24 @@ public class PdfCheckTests
         ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
     }
 
-    // Built by hand: TestPdf's fields are their own widgets, so their names are on the widgets.
+    // A radio group keeps its name on the field, and its widgets are kids; a text field is its own widget, so its name
+    // is checked with the widget. The paragraph's language opens the check.
     [Fact]
     public void Check_ShouldFindAFieldsNameWithNoLanguage_WhenItIsKeptOnTheFieldAndNotOnAWidget()
     {
-        var empty = Documents.Empty();
-        var document = empty with
-        {
-            Document = empty.Document with { Language = null },
-            Structure = [new PdfStructureElement { Type = "P", Language = "de-DE", Text = "Hallo" }],
-            FormFields = [new PdfFormField { Name = "trail", AccessibleName = "Trail choice", Page = 1 }],
-        };
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [6 0 R 9 0 R] >> /StructTreeRoot 10 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [7 0 R 8 0 R 9 0 R] /Contents 4 0 R >>",
+            TestPdf.Stream(""), "<< >>",
+            "<< /T (trail) /FT /Btn /Ff 32768 /TU (Trail choice) /Kids [7 0 R 8 0 R] >>",
+            "<< /Type /Annot /Subtype /Widget /Parent 6 0 R /Rect [72 300 92 320] >>",
+            "<< /Type /Annot /Subtype /Widget /Parent 6 0 R /Rect [72 260 92 280] >>",
+            "<< /Type /Annot /Subtype /Widget /T (hiker) /FT /Tx /TU (Hiker name) /Rect [72 200 272 220] >>",
+            "<< /Type /StructTreeRoot /K [11 0 R] >>",
+            "<< /Type /StructElem /S /P /P 10 0 R /Lang (de-DE) /Alt (Hallo) >>");
 
-        var findings = document.Check(PdfCheck.TextLanguage);
+        var findings = document.Check(PdfCheck.TextLanguage).Where(finding => finding.Path.StartsWith("forms"));
 
         Assert.Equal(["forms > trail: Form field \"trail\" has an accessible name with no language"],
             findings.Select(finding => $"{finding.Path}: {finding.Message}"));
@@ -894,6 +899,42 @@ public class PdfCheckTests
         var document = OnePage(new TestPdf { Lang = null });
 
         Assert.Empty(document.Check(PdfCheck.TextLanguage));
+    }
+
+    [Fact]
+    public void Check_ShouldFindTheFormulaWithoutAltText_WhenOnlyOneOfThreeHasNone()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Tagged(0, "x = 1").Tagged(1, "y = 2").Tagged(2, "z = 3");
+        pdf.Structure(new TestElement("Formula", 0) { Entries = "/Alt (x equals 1)" },
+            new TestElement("Formula", 1) { Entries = "/ActualText (y equals 2)" }, new TestElement("Formula", 2));
+
+        var findings = pdf.Load().Check(PdfCheck.FormulaAltText);
+
+        Assert.Equal(["structure > Formula[3]: Formula on p1 has no alt text"],
+            findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    private static string Screen(string clip) =>
+        $"/Subtype /Screen /Rect [0 0 10 10] /A << /S /Rendition /R << /S /MR /C << /S /MCD {clip} >> >> >>";
+
+    [Fact]
+    public void Check_ShouldFindMediaClipsWithoutAContentTypeOrAlternateText_WhenAScreenAnnotationPlaysThem()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Annotation(Screen("/CT (video/mp4) /Alt [(en-US) (Trail tour)]")).Annotation(Screen(""))
+            .Annotation("/Subtype /Screen /Rect [0 0 10 10] /A << /S /Rendition /OP 0 >>")
+            .Annotation("/Subtype /Screen /Rect [0 0 10 10] /AA << /PO << /S /Rendition /R << /S /SR /R [<< /S /MR "
+                + "/C << /S /MCS /D << /S /MCD /CT (video/mp4) >> >> >>] >> >> >>");
+
+        var findings = pdf.Load().Check(PdfCheck.MediaClips);
+
+        Assert.Equal(
+        [
+            "annotations > media-type: Media clip on p1 has no content type",
+            "annotations > media-alt: Media clip on p1 has no alternate text",
+            "annotations > media-alt: Media clip on p1 has no alternate text",
+        ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
     }
 
     [Fact]
@@ -960,6 +1001,8 @@ public class PdfCheckTests
     [InlineData(PdfCheck.TabOrder, PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.3")]
     [InlineData(PdfCheck.LanguageTags, PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     [InlineData(PdfCheck.TextLanguage, PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.FormulaAltText, PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.7")]
+    [InlineData(PdfCheck.MediaClips, PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.18.6.2")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

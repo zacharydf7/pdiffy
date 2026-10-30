@@ -48,7 +48,10 @@ public enum PdfDetail
     /// <summary>The crop, bleed, trim and art boxes and the user unit of each page.</summary>
     PageBoxes,
 
-    /// <summary>Alternate text on structure elements and marked content inside them, such as a figure's description.</summary>
+    /// <summary>
+    /// Alternate text on structure elements, marked content inside them and media clips, such as a figure's
+    /// description.
+    /// </summary>
     AltText,
 
     /// <summary>Replacement text on structure elements and marked content inside them.</summary>

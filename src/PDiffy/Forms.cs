@@ -163,6 +163,12 @@ public sealed record PdfFormField
     public string? AccessibleName { get; init; }
 
     /// <summary>
+    /// Whether the field and its widget are one dictionary, so its accessible name is on the widget too; false when its
+    /// widgets are its kids, as a radio group's are. Snapshots leave it out.
+    /// </summary>
+    public bool CombinedWithWidget { get; init; }
+
+    /// <summary>
     /// The field's value as text, or its parent's when it sets none; null when there's none. A check box or radio
     /// button holds the name of the state it's in (<c>Off</c> or an export value), and a list with several choices
     /// picked joins them with ", ".

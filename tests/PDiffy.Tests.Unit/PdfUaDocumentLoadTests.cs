@@ -19,6 +19,19 @@ public class PdfUaDocumentLoadTests
     }
 
     [Fact]
+    public void Load_ShouldReadAScreenAnnotationsMediaClip_WhenItsRenditionActionPlaysOne()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Annotation("/Subtype /Screen /Rect [0 0 10 10] /A << /S /Rendition /R << /S /MR /C << /S /MCD "
+            + "/CT (video/mp4) /Alt [(en-US) (Trail tour) (fr-FR) (Visite)] >> >> >>");
+
+        var annotation = Assert.Single(pdf.Load().Annotations);
+
+        Assert.Equal(new PdfMediaClip { ContentType = "video/mp4", AltText = "Trail tour; Visite" },
+            annotation.MediaClip);
+    }
+
+    [Fact]
     public void Load_ShouldReportMissingLang_WhenCatalogHasNoLang()
     {
         var pdf = new TestPdf { Lang = null };

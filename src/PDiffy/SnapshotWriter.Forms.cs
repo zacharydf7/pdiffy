@@ -35,6 +35,11 @@ internal sealed partial class SnapshotWriter
 
         QuotedKey(line, PdfDetail.AnnotationContents, "contents", annotation.Contents);
         Key(line, "tu", QuoteIfPresent(annotation.AccessibleName));
+        if (annotation.MediaClip is { } clip)
+        {
+            Key(line, "media-type", clip.ContentType ?? Missing);
+            QuotedKey(line, PdfDetail.AltText, "media-alt", clip.AltText, showMissing: true);
+        }
     }
 
     // p? is a page reference that isn't a page.

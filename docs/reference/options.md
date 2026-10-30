@@ -54,7 +54,7 @@ appears; the rest of each line is still compared.
 | `Producer`, `Creator` | Whether each is present |
 | `CustomInfo` | Info entries other than the standard ones |
 | `PageBoxes` | The crop, bleed, trim and art boxes and the user unit of each page |
-| `AltText`, `ActualText` | Alternate and replacement text on structure elements and on marked content inside them |
+| `AltText`, `ActualText` | Alternate and replacement text on structure elements and on marked content inside them; `AltText` also leaves out a media clip's alternate text |
 | `Positions` | Where text, images, paths and annotations are, the size of images, paths and annotations, and the positions a link or bookmark opens its page at |
 | `Colors` | Text color, path fill and stroke colors, and the color of text typed into form fields |
 | `FontNames`, `FontSizes` | The font and size of each text run in the layout, and of text typed into form fields |
@@ -73,7 +73,7 @@ appears; the rest of each line is still compared.
 | [`ScrubText(regex, replacement)`](xref:PDiffy.PdfSnapshotOptions.ScrubText*) | Replaces your own pattern in quoted text. The replacement can refer to groups, such as `$1` |
 | [`ShowProducerAndCreator()`](xref:PDiffy.PdfSnapshotOptions.ShowProducerAndCreator) | Prints the producer and creator values instead of only whether they're present |
 | [`OnlyPages(3, 4)`](xref:PDiffy.PdfSnapshotOptions.OnlyPages*) | Keeps only what is on those pages |
-| [`Check(PdfCheckSet.Latest)`](xref:PDiffy.PdfSnapshotOptions.Check*) | Adds a `checks` section with what the checks find, so the findings are approved with the snapshot. The header lists the set as `# checks: latest, 27 rules` |
+| [`Check(PdfCheckSet.Latest)`](xref:PDiffy.PdfSnapshotOptions.Check*) | Adds a `checks` section with what the checks find, so the findings are approved with the snapshot. The header lists the set as `# checks: latest, 29 rules` |
 | [`Tolerate(PdfTolerance.Positions, 1)`](xref:PDiffy.PdfSnapshotOptions.Tolerate*) | Lets positions differ by up to 1 pt without failing the test; also takes `FontSizes` and `LineWidths`. The header lists it as `# tolerances: positions 1pt` |
 
 ## Word profiles

@@ -57,6 +57,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.TabOrder: TabOrder(); break;
             case PdfCheck.LanguageTags: LanguageTags(); break;
             case PdfCheck.TextLanguage: TextLanguage(); break;
+            case PdfCheck.FormulaAltText: FormulaAltText(); break;
+            case PdfCheck.MediaClips: MediaClips(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -83,13 +85,38 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
-    private void FigureAltText()
+    private void FigureAltText() => MissingAltText(PdfCheck.FigureAltText, StructureType.Figure);
+
+    private void FormulaAltText() => MissingAltText(PdfCheck.FormulaAltText, StructureType.Formula);
+
+    private void MissingAltText(PdfCheck check, string type)
     {
         foreach (var (element, path) in Elements)
         {
-            if (element.TypeOrMapped == StructureType.Figure && IsBlank(element.AltText) && IsBlank(element.ActualText))
+            if (element.TypeOrMapped == type && IsBlank(element.AltText) && IsBlank(element.ActualText))
             {
-                Add(PdfCheck.FigureAltText, element.FirstPage, path, $"Figure{On(element.FirstPage)} has no alt text");
+                Add(check, element.FirstPage, path, $"{type}{On(element.FirstPage)} has no alt text");
+            }
+        }
+    }
+
+    private void MediaClips()
+    {
+        foreach (var annotation in document.Annotations)
+        {
+            if (annotation.MediaClip is not { } clip) continue;
+
+            var page = annotation.Page;
+            if (IsBlank(clip.ContentType))
+            {
+                Add(PdfCheck.MediaClips, page, $"{Name(PdfSection.Annotations)} > media-type",
+                    $"Media clip{On(page)} has no content type");
+            }
+
+            if (IsBlank(clip.AltText))
+            {
+                Add(PdfCheck.MediaClips, page, $"{Name(PdfSection.Annotations)} > media-alt",
+                    $"Media clip{On(page)} has no alternate text");
             }
         }
     }
@@ -627,11 +654,10 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
 
         // A field whose widgets are its kids, such as a radio group, keeps its name on the field, where no element's
-        // language reaches it.
-        var onWidgets = document.Annotations.Select(a => a.AccessibleName).OfType<string>().ToHashSet();
+        // language reaches it. A field combined with its widget is checked with the widget, above.
         foreach (var field in document.FormFields)
         {
-            if (field.AccessibleName is not { } name || IsBlank(name) || onWidgets.Contains(name)) continue;
+            if (field.CombinedWithWidget || IsBlank(field.AccessibleName)) continue;
 
             Add(PdfCheck.TextLanguage, field.Page, $"{Name(PdfSection.Forms)} > {field.Name}",
                 $"Form field \"{field.Name}\" has an accessible name with no language");
@@ -898,6 +924,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.TabOrder => new(PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.3"),
         PdfCheck.LanguageTags or PdfCheck.TextLanguage =>
             new(PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
+        PdfCheck.FormulaAltText => new(PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.7"),
+        PdfCheck.MediaClips => new(PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.18.6.2"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

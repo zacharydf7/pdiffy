@@ -8,7 +8,8 @@ internal static class AccessibilityRules
 {
     // Keys whose value going missing or empty takes something away from a screen reader.
     private static readonly HashSet<string> RemovableKeys =
-        ["alt", "actual", "expansion", "span-alt", "span-actual", "span-expansion", "scope", "headers", "tu"];
+        ["alt", "actual", "expansion", "span-alt", "span-actual", "span-expansion", "scope", "headers", "tu",
+            "media-alt"];
 
     public static bool Affects(SnapshotChange change)
     {

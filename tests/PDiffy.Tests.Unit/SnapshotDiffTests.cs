@@ -1104,6 +1104,25 @@ public class SnapshotDiffTests
         Assert.Equal((PdfSection.Structure, ChangeKind.AttributeChanged), (change.PdfSection, change.Kind));
     }
 
+    // The earlier release didn't print a Screen annotation's media clip, so its two keys show as added, on the
+    // annotation's line and on the line of the Annot element that tags it.
+    [Fact]
+    public void Compare_ShouldReportOnlyTheMediaClipsKeys_WhenASnapshotFromBeforeMediaClipsIsCompared()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage();
+        pdf.Structure(new TestElement("Annot", new TestAnnotation("/Subtype /Screen /A << /S /Rendition /R << /S /MR "
+            + "/C << /S /MCD /CT (video/mp4) /Alt [(en-US) (Trail tour)] >> >> >>")));
+        var current = pdf.Load().ToSnapshot();
+        var earlier = current.Replace(" media-type=video/mp4 media-alt=\"Trail tour\"", "");
+
+        var changes = SnapshotDiff.CompareSnapshots(earlier, current).Changes;
+
+        Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
+        Assert.Equal([PdfSection.Structure, PdfSection.Structure, PdfSection.Annotations, PdfSection.Annotations],
+            changes.Select(change => change.PdfSection));
+    }
+
     [Fact]
     public void Compare_ShouldReportTheShiftOnceAndOnlyTheNewPagesContent_WhenAPageIsInserted()
     {

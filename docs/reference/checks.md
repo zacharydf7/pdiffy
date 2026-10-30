@@ -70,6 +70,29 @@ the information the figure carries is lost.
 means, such as "Trail map of the ridge loop, 4.2 miles". An image that's only decoration should be marked as an artifact
 instead, so it isn't announced at all.
 
+## FormulaAltText
+
+**Finds:** a formula with no alt text or replacement text. **Category:** `AltText`. **Severity:** `Error`. **From:**
+ISO 14289-1 7.7.
+
+**Why it matters:** a formula drawn as glyphs or an image reads as a jumble of symbols, or as nothing. Alt text such as
+"x equals negative b plus or minus the square root of b squared minus 4 a c, all over 2 a" is how a screen reader user
+gets the math.
+
+**How to fix it:** give each `Formula` element alt text (`/Alt`) that reads the formula aloud, or replacement text
+(`/ActualText`) when the formula is plain text drawn specially. Equation editors often have a setting to export it.
+
+## MediaClips
+
+**Finds:** a media clip, such as a video a Screen annotation plays on click or when its page opens, with no content type
+(`/CT`) or no alternate text (`/Alt`). For a selector rendition, the first rendition is read. **Category:** `AltText`. **Severity:** `Error`. **From:** ISO 14289-1 7.18.6.2.
+
+**Why it matters:** a viewer needs the content type to know whether it can play the clip, and alternate text is what a
+screen reader reads in its place, so a reader who can't play or see it still knows what it shows.
+
+**How to fix it:** give the media clip data dictionary a `/CT` such as `(video/mp4)`, and `/Alt` with a language and a
+description for each language: `[(en-US) (A walk along the ridge trail)]`.
+
 ## UntaggedContent
 
 **Finds:** text, images and paths that are neither tagged nor marked as artifacts, page by page. **Category:**

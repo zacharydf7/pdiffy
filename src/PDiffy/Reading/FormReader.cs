@@ -152,6 +152,7 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
             Type = type,
             Page = PageOf(field.Data.ContainsKey("Subtype") ? token : kids.FirstOrDefault()),
             AccessibleName = objects.Text(field, "TU"),
+            CombinedWithWidget = field.Data.ContainsKey("Subtype"),
             Value = FormatValue(objects.Resolve(current.Value)),
             Options = ReadOptions(field),
             MaxLength = current.MaxLength,

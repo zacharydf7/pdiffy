@@ -16,11 +16,11 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### Checks
 
-- `PdfCheckSet.Latest` has fifteen new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
+- `PdfCheckSet.Latest` has seventeen new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
   `TocStructure`, `HeadingTypes`, `NoteIds`, `TableStructure`, `TableGrid`, `AnnotationTags`,
-  `AnnotationDescriptions`, `TabOrder`, `LanguageTags` and `TextLanguage`, so a snapshot that records checks with it
-  prints `# checks: latest, 27 rules` and what they find
-  ([#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#72](https://github.com/zacharydf7/pdiffy/issues/72)). A release's own set, such as `PdfCheckSet.Version0_3`,
+  `AnnotationDescriptions`, `TabOrder`, `LanguageTags`, `TextLanguage`, `FormulaAltText` and `MediaClips`, so a
+  snapshot that records checks with it prints `# checks: latest, 29 rules` and what they find
+  ([#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#74](https://github.com/zacharydf7/pdiffy/issues/74)). A release's own set, such as `PdfCheckSet.Version0_3`,
   doesn't change.
 
 ### Document setup
@@ -31,6 +31,10 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 - A Form element prints the kind of field it tags, from its PrintField Role attribute: `field-role=cb`
   ([#69](https://github.com/zacharydf7/pdiffy/issues/69)). Only snapshots of documents whose Form elements set one
   change.
+- A Screen annotation prints the media clip its Rendition action plays: its content type and alternate text
+  (`media-type=video/mp4 media-alt="Trail tour"`), on its `annotations` line and, when it's tagged, on its element's
+  `structure` line ([#74](https://github.com/zacharydf7/pdiffy/issues/74)). Only snapshots of documents with such
+  annotations change, and a clip that loses its alternate text is flagged as affecting accessibility.
 - A file whose header says PDF 2.0 prints `version=2.0`. PDiffy read the version through PdfPig, which reads a
   header it doesn't know as 1.4, so such snapshots printed `version=1.4` and change.
 

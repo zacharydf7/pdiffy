@@ -41,6 +41,8 @@ public class MutationTests
         { "tags marked as unreliable", new Sample { MarkInfo = "/Marked true /Suspects true" }, PdfSection.Document, ChangeKind.AttributeChanged, false },
         { "parent entry left out", new Sample { FigureWithoutParent = true }, PdfSection.Structure, ChangeKind.AttributeChanged, false },
         { "form field role", new Sample { FieldRole = "cb" }, PdfSection.Structure, ChangeKind.AttributeChanged, false },
+        { "media clip alt text", new Sample { MediaAlt = "Ridge tour" }, PdfSection.Annotations, ChangeKind.AttributeChanged, false },
+        { "media clip alt text removed", new Sample { MediaAlt = null }, PdfSection.Annotations, ChangeKind.AttributeChanged, true },
     };
 
     [Theory]
@@ -90,10 +92,11 @@ public class MutationTests
         public string MarkInfo { get; init; } = "/Marked true";
         public bool FigureWithoutParent { get; init; }
         public string FieldRole { get; init; } = "rb";
+        public string? MediaAlt { get; init; } = "Trail tour";
     }
 
     // Page 1 has a heading, two paragraphs, a figure, a note, a footer, a styled line, a table, a link, a link to page 2
-    // and two form fields, one signed; page 2 has the paragraph the bookmark points to.
+    // and two form fields, one signed; page 2 has the paragraph the bookmark points to and a Screen annotation's video.
     internal static PdfUaDocument Build(Sample sample)
     {
         var pdf = new TestPdf { Lang = sample.DocumentLang, MarkInfo = sample.MarkInfo };
@@ -108,7 +111,9 @@ public class MutationTests
         if (sample.FooterTagged) page.Tagged(5, "Page 1");
         else page.Artifact("Page 1", $"/Type /Pagination /Subtype /{sample.FooterKind}");
         page.Raw($"/P << /MCID 10 >> BDC BT /F1 12 Tf 72 150 Td (Say ) Tj /Span << /Lang ({sample.SpanLang}) >> BDC (bonjour) Tj EMC ET EMC");
-        pdf.AddPage().Tagged(0, "Safety");
+        var mediaAlt = sample.MediaAlt is null ? "" : $"/Alt [(en-US) ({sample.MediaAlt})]";
+        pdf.AddPage().Tagged(0, "Safety").Annotation("/Subtype /Screen /Rect [0 0 10 10] /A << /S /Rendition "
+            + $"/R << /S /MR /C << /S /MCD /CT (video/mp4) {mediaAlt} >> >> >>");
 
         var paragraphs = new[] { new TestElement("P", 1), new TestElement("P", 2) { Entries = $"/Lang ({sample.ElementLang})" } };
         if (sample.SwapParagraphs) paragraphs = [paragraphs[1], paragraphs[0]];

@@ -137,6 +137,14 @@ public enum PdfCheck
     /// language, need the document's.
     /// </summary>
     TextLanguage,
+
+    /// <summary>Every formula has alt text or replacement text.</summary>
+    FormulaAltText,
+
+    /// <summary>
+    /// Every media clip, such as a video a Screen annotation plays, has a content type and alternate text.
+    /// </summary>
+    MediaClips,
 }
 
 /// <summary>

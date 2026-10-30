@@ -829,6 +829,29 @@ public sealed record PdfAnnotation
 
     /// <summary>A form widget's tooltip, which a screen reader announces as its name; null when it has none.</summary>
     public string? AccessibleName { get; init; }
+
+    /// <summary>
+    /// The media clip a Screen annotation's first Rendition action plays, on click or on an event such as the page
+    /// opening; null when it plays none.
+    /// </summary>
+    public PdfMediaClip? MediaClip { get; init; }
+}
+
+/// <summary>A media clip, such as a video, that a Screen annotation plays.</summary>
+public sealed record PdfMediaClip
+{
+    internal PdfMediaClip()
+    {
+    }
+
+    /// <summary>Its content type, such as "video/mp4"; null when it doesn't say.</summary>
+    public string? ContentType { get; init; }
+
+    /// <summary>
+    /// Its alternate text, several languages' joined with "; "; null when it has none. A screen reader reads it in
+    /// place of the clip.
+    /// </summary>
+    public string? AltText { get; init; }
 }
 
 /// <summary>
