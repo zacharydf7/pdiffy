@@ -11,6 +11,63 @@ public class DiffReportTests
     ]);
 
     [Fact]
+    public void ToHtml_ShouldListNewProblemsBeforeFixedOnesWithLinks_WhenTheChecksChange()
+    {
+        var header = "# pdfua-snapshot v1\n# checks: latest, 12 rules\nchecks\n";
+        var before = header + "  TableHeaders p3 structure > TH > scope\n";
+        var after = header + "  FigureAltText p4 structure > Figure\n";
+
+        var html = SnapshotDiff.CompareSnapshots(before, after).ToHtml();
+
+        Assert.Contains("<div class=\"checks\"><h2>Checks</h2><p class=\"summary\">1 new problem(s), 1 fixed</p>",
+            html);
+        Assert.Contains("<li class=\"new\"><b>New problem</b> <a href=\"#check1\">FigureAltText p4</a> "
+            + "<code>structure &gt; Figure</code> <a href=\"https://zacharydf7.github.io/pdiffy/reference/checks.html"
+            + "#figurealttext\">How to fix it</a></li>", html);
+        Assert.True(html.IndexOf("<b>New problem</b>", StringComparison.Ordinal)
+            < html.IndexOf("<b>Fixed</b> <a href=\"#check2\">TableHeaders p3</a>", StringComparison.Ordinal));
+        Assert.Contains("<td class=\"added\" id=\"check1\">", html);
+        Assert.Contains("<td class=\"removed\" id=\"check2\">", html);
+    }
+
+    [Fact]
+    public void ToHtml_ShouldLeaveOutTheChecksPanel_WhenTheChecksDidNotChange()
+    {
+        var diff = SnapshotDiff.CompareSnapshots(Before, Before.Replace("Go with a guide", "Go without a guide"));
+
+        Assert.DoesNotContain("<div class=\"checks\">", diff.ToHtml());
+    }
+
+    [Fact]
+    public void ToHtml_ShouldLinkTheFixedAndTheNewFinding_WhenARuleMovesToAnotherPage()
+    {
+        var header = "# pdfua-snapshot v1\n# checks: latest, 12 rules\nchecks\n";
+        var before = header + "  FigureAltText p2 structure > Figure\n";
+        var after = header + "  FigureAltText p4 structure > Figure\n";
+
+        var html = SnapshotDiff.CompareSnapshots(before, after).ToHtml();
+
+        Assert.Contains("<a href=\"#check1\">FigureAltText p4</a>", html);
+        Assert.Contains("<a href=\"#check2\">FigureAltText p2</a>", html);
+        Assert.Contains("<td class=\"added\" id=\"check1\">", html);
+        Assert.Contains("<td class=\"removed\" id=\"check2\">", html);
+    }
+
+    [Fact]
+    public void ToHtml_ShouldGiveEachRepeatedFindingItsOwnLink_WhenTheSameFindingIsNewTwice()
+    {
+        var header = "# pdfua-snapshot v1\n# checks: latest, 12 rules\nchecks\n";
+        var after = header + "  LinkDescriptions p1 structure > Link\n  LinkDescriptions p1 structure > Link\n";
+
+        var html = SnapshotDiff.CompareSnapshots(header + "  (none)\n", after).ToHtml();
+
+        Assert.Contains("<a href=\"#check1\">LinkDescriptions p1</a>", html);
+        Assert.Contains("<a href=\"#check2\">LinkDescriptions p1</a>", html);
+        Assert.Single(Regex.Matches(html, "id=\"check1\""));
+        Assert.Single(Regex.Matches(html, "id=\"check2\""));
+    }
+
+    [Fact]
     public void ToHtml_ShouldDrawWhereItWasAndWhereItIs_WhenSomethingMovesOnAPage()
     {
         var before = Layout("p1 letter rotate=0", "p1 image tagged at=72,600 size=10x10 pixels=1x1 hash=x",

@@ -125,6 +125,9 @@ A failing test also writes `{name}.diff.html` next to the received file. It's on
 straight from a build artifact. Open the [sample report](../samples/TrailGuide.diff.html)
 to see one, built from two versions of a small trail guide. It has:
 
+- With a [`checks` section](checking-documents.md#approve-findings-with-the-snapshot) that changed, a checks panel:
+  new problems first, then fixed ones, each with its rule, page and path, a link to its line and a link to how to fix
+  it.
 - The list of changes, accessibility changes first, filterable by kind or to only those that affect accessibility.
 - Links to each page that changed.
 - Each section side by side, the verified snapshot on the left and the received one on the right, with edited lines

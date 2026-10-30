@@ -22,8 +22,6 @@ internal static class DiffReport
         var html = new StringBuilder();
         html.Append(Head);
         html.Append($"<h1>Snapshot differences</h1><p class=\"summary\">{Encode(Summary(diff, plain))}</p>");
-        WriteChangeList(html, diff.AccessibilityFirst().ToList());
-        WritePageIndex(html, changes);
 
         var writtenSections = Sections(before, plain);
         var beforeSections = Sections(matchedBefore, plain);
@@ -34,6 +32,11 @@ internal static class DiffReport
                 name)))
             .ToList();
         var anchors = Anchors(sections, diff);
+        var checkRows = sections.Where(section => section.Name == SnapshotWriter.Name(PdfSection.Checks))
+            .SelectMany(section => section.Rows).ToList();
+        var checkIds = WriteChecksPanel(html, changes, checkRows);
+        WriteChangeList(html, diff.AccessibilityFirst().ToList());
+        WritePageIndex(html, changes);
         foreach (var (name, rows) in sections)
         {
             var changed = rows.Any(row => row.Kind != ' ');
@@ -46,7 +49,7 @@ internal static class DiffReport
 
             html.Append("<table>");
             html.Append("<thead><tr><th>Before</th><th>After</th></tr></thead>");
-            WriteRows(html, rows, anchors);
+            WriteRows(html, rows, anchors, checkIds);
             html.Append("</table></details>");
         }
 
@@ -72,6 +75,44 @@ internal static class DiffReport
         return "<div class=\"maps\"><p class=\"legend\">Where things are on each page with a layout change: gray is "
             + "unchanged, a dashed outline is where something was, and a filled box is where it is now. A sketch of "
             + "positions, not a picture of the page.</p>" + string.Concat(maps) + "</div>";
+    }
+
+    // New problems, then fixed ones, each with its rule, page and path, a link to its line in the checks section and a
+    // link to the rule's help page. Gives each line it links to an id, for WriteRow.
+    private static Dictionary<Row, string> WriteChecksPanel(StringBuilder html, IReadOnlyList<SnapshotChange> changes,
+        List<Row> rows)
+    {
+        var ids = new Dictionary<Row, string>(ReferenceEqualityComparer.Instance);
+        var findings = changes.Where(change => change.PdfSection == PdfSection.Checks)
+            .OrderBy(change => change.Kind != ChangeKind.Added).ToList();
+        if (findings.Count == 0) return ids;
+
+        var added = findings.Count(change => change.Kind == ChangeKind.Added);
+        html.Append($"<div class=\"checks\"><h2>Checks</h2><p class=\"summary\">{added} new problem(s), "
+            + $"{findings.Count - added} fixed</p><ul>");
+        foreach (var change in findings)
+        {
+            var isNew = change.Kind == ChangeKind.Added;
+            var page = change.Page is int number ? $" p{number}" : "";
+            var line = $"{change.Path}{page} {change.Detail}";
+            var row = rows.FirstOrDefault(row => !ids.ContainsKey(row) && (isNew
+                ? row.Kind == '+' && row.After?.Trim() == line
+                : row.Kind == '-' && row.Before?.Trim() == line));
+            var where = $"{Encode(change.Path)}{page}";
+            if (row is not null)
+            {
+                ids[row] = $"check{ids.Count + 1}";
+                where = $"<a href=\"#{ids[row]}\">{where}</a>";
+            }
+
+            var help = Enum.TryParse<PdfCheck>(change.Path, out var check)
+                ? $" <a href=\"{PdfCheckFinding.HelpUrlOf(check)}\">How to fix it</a>" : "";
+            var (kind, label) = isNew ? ("new", "New problem") : ("fixed", "Fixed");
+            html.Append($"<li class=\"{kind}\"><b>{label}</b> {where} <code>{Encode(change.Detail)}</code>{help}</li>");
+        }
+
+        html.Append("</ul></div>");
+        return ids;
     }
 
     private static string Summary(SnapshotDiff diff, bool plain) =>
@@ -144,7 +185,8 @@ internal static class DiffReport
     }
 
     // Rows within Context of a change stay visible; each long run of other rows folds into one expandable block.
-    private static void WriteRows(StringBuilder html, List<Row> rows, Dictionary<Row, int> anchors)
+    private static void WriteRows(StringBuilder html, List<Row> rows, Dictionary<Row, int> anchors,
+        Dictionary<Row, string> checkIds)
     {
         var shown = new bool[rows.Count];
         for (var i = 0; i < rows.Count; i++)
@@ -159,27 +201,31 @@ internal static class DiffReport
             while (!shown[i] && end + 1 < rows.Count && !shown[end + 1]) end++;
             if (shown[i] || end - i + 1 < MinFoldedLines)
             {
-                for (var j = i; j <= end; j++) WriteRow(html, rows[j], anchors);
+                for (var j = i; j <= end; j++) WriteRow(html, rows[j], anchors, checkIds);
                 i = end;
                 continue;
             }
 
             html.Append("<tbody class=\"fold\"><tr><td colspan=\"2\"><details>");
             html.Append($"<summary>{end - i + 1} unchanged line(s)</summary><table>");
-            for (var j = i; j <= end; j++) WriteRow(html, rows[j], anchors);
+            for (var j = i; j <= end; j++) WriteRow(html, rows[j], anchors, checkIds);
             html.Append("</table></details></td></tr></tbody>");
             i = end;
         }
     }
 
-    private static void WriteRow(StringBuilder html, Row row, Dictionary<Row, int> anchors)
+    // A row can be both a page's first change and a finding the checks panel links to, so the finding's id goes on its
+    // cell.
+    private static void WriteRow(StringBuilder html, Row row, Dictionary<Row, int> anchors,
+        Dictionary<Row, string> checkIds)
     {
         var id = anchors.TryGetValue(row, out var page) ? $" id=\"p{page}\"" : "";
         var (left, right) = row.Kind == '~'
             ? Highlight(row.Before!, row.After!)
             : (Encode(row.Before ?? ""), Encode(row.After ?? ""));
-        var leftClass = row.Kind is '-' or '~' ? " class=\"removed\"" : "";
-        var rightClass = row.Kind is '+' or '~' ? " class=\"added\"" : "";
+        var checkId = checkIds.TryGetValue(row, out var finding) ? $" id=\"{finding}\"" : "";
+        var leftClass = (row.Kind is '-' or '~' ? " class=\"removed\"" : "") + (row.Kind == '-' ? checkId : "");
+        var rightClass = (row.Kind is '+' or '~' ? " class=\"added\"" : "") + (row.Kind == '+' ? checkId : "");
         html.Append($"<tr{id}><td{leftClass}>{left}</td><td{rightClass}>{right}</td></tr>");
     }
 
@@ -221,7 +267,9 @@ internal static class DiffReport
         for (var index = 0; index < removed.Count; index++)
         {
             var old = removed[index];
-            var match = TreeMatcher.MatchOf(removedLines, index, addedLines, next, sectionName);
+            // A finding is fixed or new, never edited, as in CheckChanges.
+            var match = sectionName == SnapshotWriter.Name(PdfSection.Checks)
+                ? -1 : TreeMatcher.MatchOf(removedLines, index, addedLines, next, sectionName);
             if (match < 0)
             {
                 rows.Add(new Row('-', written[old], null));
@@ -291,11 +339,18 @@ internal static class DiffReport
         <title>Snapshot differences</title>
         <style>
         {{BaseStyle}}
-        :root { --removed: #ffebe9; --added: #e6ffec; --mark-removed: #ff818266; --mark-added: #4ac26b66; }
+        :root { --removed: #ffebe9; --added: #e6ffec; --mark-removed: #ff818266; --mark-added: #4ac26b66; --new: #cf222e;
+          --fixed: #1a7f37; }
         @media (prefers-color-scheme: dark) { :root { --removed: #3c1618; --added: #12261e; --mark-removed: #f8514966;
-          --mark-added: #2ea04366; } }
+          --mark-added: #2ea04366; --new: #f85149; --fixed: #3fb950; } }
         .summary, .same { color: var(--muted); }
         .filters label { margin-right: 12px; }
+        .checks { border: 1px solid var(--line); border-radius: 6px; padding: 0 12px 4px; margin: 12px 0; }
+        .checks h2 { font-size: 16px; }
+        .checks ul { padding-left: 20px; }
+        .checks li { margin: 4px 0; }
+        .checks .new b { color: var(--new); }
+        .checks .fixed b { color: var(--fixed); }
         .accessibility { background: #fde68a; color: #1f2328; border-radius: 3px; padding: 0 4px; font-size: 12px; }
         .changes { padding-left: 20px; }
         .changes pre { margin: 2px 0 8px; white-space: pre-wrap; }
