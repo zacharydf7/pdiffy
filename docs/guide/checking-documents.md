@@ -53,6 +53,7 @@ conforms.
 | `FormFieldNames` | A form field with no accessible name (tooltip) | `Forms` | 7.18.1 |
 | `TableHeaders` | A header with no scope that no cell names, and a cell that names a header that doesn't exist | `Tables` | 7.5 |
 | `HeadingLevels` | A heading that skips a level, or one that comes before any H1 | `Headings` | 7.4.2 |
+| `HeadingTypes` | Unnumbered (H) and numbered (H1 to H6) headings in one document, and an element with more than one H | `Headings` | 7.4.4 |
 | `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |
 | `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
@@ -87,7 +88,7 @@ await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Check(PdfCheckS
 
 ```text
 # pdfua-snapshot v1
-# checks: latest, 18 rules
+# checks: latest, 19 rules
 ...
 checks
   FigureAltText p2 structure > Document > Figure[2]

@@ -97,6 +97,19 @@ nest. A skipped level, such as an `H3` straight after an `H1`, hides where they 
 **How to fix it:** start with `H1` and go down one level at a time. In the generator, map styles to heading levels by
 their place in the outline, not by how they look.
 
+## HeadingTypes
+
+**Finds:** a document that uses both unnumbered headings (`H`) and numbered ones (`H1` to `H6`), and an element, or the
+structure tree root, that holds more than one `H`. The document's first heading says which kind it uses, so each
+heading of the other kind is reported. **Category:** `Headings`. **Severity:** `Error`. **From:** ISO 14289-1 7.4.4.
+
+**Why it matters:** numbered headings give their level outright. An `H` gets its level from how deep its section is
+nested, so it only works when each section (`Sect`) has one, and a document that mixes the two leaves a screen reader
+with two ways to work out the outline that disagree.
+
+**How to fix it:** pick one kind. Numbered headings are simpler and what most generators write. With `H`, give each
+heading its own `Sect` and nest the sections the way the outline goes.
+
 ## FontsEmbedded
 
 **Finds:** a font that isn't embedded. **Category:** `Fonts`. **Severity:** `Error`. **From:** ISO 14289-1 7.21.4.1.

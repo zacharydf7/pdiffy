@@ -87,6 +87,12 @@ public enum PdfCheck
     /// which comes first.
     /// </summary>
     TocStructure,
+
+    /// <summary>
+    /// The document uses unnumbered headings (H) or numbered ones (H1 to H6), not both, and no element, nor the
+    /// structure tree root, holds more than one H.
+    /// </summary>
+    HeadingTypes,
 }
 
 /// <summary>

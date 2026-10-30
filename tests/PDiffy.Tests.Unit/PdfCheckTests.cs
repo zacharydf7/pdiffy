@@ -463,6 +463,44 @@ public class PdfCheckTests
         ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
     }
 
+    // Each heading is "Sect/Type", the section it's in, or none for the root, and its type; each expected finding is
+    // "path: message".
+    [Theory]
+    [InlineData(new[] { "1/H", "2/H" }, new string[0])]
+    [InlineData(new[] { "1/H1", "2/H2" }, new string[0])]
+    [InlineData(new[] { "1/H", "2/H2" },
+        new[] { "structure > Sect[2] > H2: H2 on p1 is numbered, but the document's first heading is H" })]
+    [InlineData(new[] { "1/H1", "2/H" },
+        new[] { "structure > Sect[2] > H: H on p1 isn't numbered, but the document's first heading is numbered" })]
+    [InlineData(new[] { "1/H", "1/H" },
+        new[] { "structure > Sect > H[2]: H on p1 is another H in the same Sect, which can hold only one" })]
+    [InlineData(new[] { "1/H1", "2/H", "2/H" },
+        new[]
+        {
+            "structure > Sect[2] > H[1]: H on p1 isn't numbered, but the document's first heading is numbered",
+            "structure > Sect[2] > H[2]: H on p1 isn't numbered, but the document's first heading is numbered",
+        })]
+    [InlineData(new[] { "/H", "/H" },
+        new[] { "structure > H[2]: H on p1 is another H in the same structure tree root, which can hold only one" })]
+    public void Check_ShouldFindMixedHeadingKindsAndASecondH_WhenTheDocumentHasThem(string[] headings,
+        string[] expected)
+    {
+        var pdf = new TestPdf();
+        var page = pdf.AddPage();
+        for (var i = 0; i < headings.Length; i++) page.Tagged(i, $"Heading {i}");
+        var groups = headings.Select((heading, mcid) => (Parts: heading.Split('/'), Mcid: mcid))
+            .GroupBy(heading => heading.Parts[0]);
+        foreach (var group in groups)
+        {
+            var elements = group.Select(heading => new TestElement(heading.Parts[1], heading.Mcid)).ToArray();
+            pdf.Structure(group.Key == "" ? elements : [new TestElement("Sect", elements)]);
+        }
+
+        var findings = pdf.Load().Check(PdfCheck.HeadingTypes);
+
+        Assert.Equal(expected, findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
     [Fact]
     public void Check_ShouldFindNoRoleMapProblem_WhenAnElementHasNoType()
     {
@@ -517,6 +555,7 @@ public class PdfCheckTests
     [InlineData(PdfCheck.PdfVersion, PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 6.1")]
     [InlineData(PdfCheck.ListStructure, PdfCheckCategory.Lists, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     [InlineData(PdfCheck.TocStructure, PdfCheckCategory.Lists, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.HeadingTypes, PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.4")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

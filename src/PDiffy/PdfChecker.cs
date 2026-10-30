@@ -37,6 +37,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.PdfVersion: PdfVersion(); break;
             case PdfCheck.ListStructure: ListStructure(); break;
             case PdfCheck.TocStructure: TocStructure(); break;
+            case PdfCheck.HeadingTypes: HeadingTypes(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -347,6 +348,40 @@ internal sealed class PdfChecker(PdfUaDocument document)
                 [StructureType.TableOfContents, StructureType.TableOfContentsItem, StructureType.Caption],
         });
 
+    // The first heading says which kind the document uses, so each heading of the other kind is reported. An H names
+    // the section it's in, so a second H in one element, or in the root, is reported too, unless every H already is.
+    private void HeadingTypes()
+    {
+        bool? numbered = null;
+        foreach (var (element, path) in Elements)
+        {
+            var type = element.TypeOrMapped;
+            var isNumbered = StructureTypes.HeadingLevel(type) is not null;
+            if (!isNumbered && type != StructureType.Heading) continue;
+
+            numbered ??= isNumbered;
+            if (isNumbered == numbered) continue;
+
+            var page = element.FirstPage;
+            Add(PdfCheck.HeadingTypes, page, path, isNumbered
+                ? $"{type}{On(page)} is numbered, but the document's first heading is H"
+                : $"H{On(page)} isn't numbered, but the document's first heading is numbered");
+        }
+
+        if (numbered != false) return;
+
+        foreach (var (parent, children) in Families())
+        {
+            var holder = parent?.TypeOrMapped ?? "structure tree root";
+            var extra = children.Where(child => child.Element.TypeOrMapped == StructureType.Heading).Skip(1);
+            foreach (var (heading, path) in extra)
+            {
+                Add(PdfCheck.HeadingTypes, heading.FirstPage, path,
+                    $"H{On(heading.FirstPage)} is another H in the same {holder}, which can hold only one");
+            }
+        }
+    }
+
     // Each element of a type that must sit in another, each child a container can't hold, and a caption that isn't
     // its container's first child. A child is reported once, for the first of these it breaks.
     private void Nesting(PdfCheck check, Dictionary<string, string> parents, Dictionary<string, string[]> holds)
@@ -462,6 +497,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.FormFieldNames => new(PdfCheckCategory.Forms, PdfCheckSeverity.Error, "ISO 14289-1 7.18.1"),
         PdfCheck.TableHeaders => new(PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.5"),
         PdfCheck.HeadingLevels => new(PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.2"),
+        PdfCheck.HeadingTypes => new(PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.4"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

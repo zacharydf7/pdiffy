@@ -105,6 +105,8 @@ library does.
   lists, bodies in items, a list holding only lists, items and a caption, an item holding only a label and a body, and
   a caption first) and `TocStructure` (items in a table of contents, which holds only tables of contents, items and a
   caption, and a caption first) ([#64](https://github.com/zacharydf7/pdiffy/issues/64)).
+- `HeadingTypes` finds a document that mixes unnumbered (H) and numbered (H1 to H6) headings, and an element with
+  more than one H ([#65](https://github.com/zacharydf7/pdiffy/issues/65)).
 - Snapshots print `suspects=yes` and `parent=missing` when a document has them, and a PDF 2.0 file's
   `version` is now `2.0`, not `1.4`. `PdfDocumentInfo` has `Suspects` and `HasStructureTree`, `PdfMetadata` has
   `HasXmp` and `PdfUaIdPrefix`, and `PdfStructureElement` has `ParentMissing`
