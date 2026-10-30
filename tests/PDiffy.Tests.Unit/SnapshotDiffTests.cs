@@ -214,6 +214,51 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldSayTheParentChanged_WhenAnElementMovesWithoutChangingReadingPosition()
+    {
+        var before = SnapshotText.Header + """
+            structure
+              Document
+                P p1 "See the park map for parking."
+                  Link p1 "park map"
+            """.ReplaceLineEndings("\n");
+        var after = SnapshotText.Header + """
+            structure
+              Document
+                P p1 "See the park map for parking."
+                Link p1 "park map"
+            """.ReplaceLineEndings("\n");
+
+        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+
+        Assert.Equal((ChangeKind.Moved, "structure > Document > Link", "parent: Document > P -> Document"),
+            (change.Kind, change.Path, change.Detail));
+    }
+
+    [Fact]
+    public void Compare_ShouldReportOnlyTheEdit_WhenAnElementKeepsItsParentAndPlaceButGetsANumberedLabel()
+    {
+        var before = SnapshotText.Header + """
+            structure
+              Document
+                P p1 "hello world"
+                  Span p1 "kids words"
+            """.ReplaceLineEndings("\n");
+        var after = SnapshotText.Header + """
+            structure
+              Document
+                P p1 "totally different"
+                  Span p1 "kids words"
+                P p1 "other"
+            """.ReplaceLineEndings("\n");
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.DoesNotContain(changes, change => change.Kind == ChangeKind.Moved);
+        Assert.Contains(changes, change => change is { Kind: ChangeKind.TextChanged, Path: "structure > Document > P[1]" });
+    }
+
+    [Fact]
     public void Compare_ShouldReportAMoveInsideAMove_WhenAChildLeavesAnElementThatAlsoMoved()
     {
         var before = SnapshotText.Header + """
@@ -238,7 +283,8 @@ public class SnapshotDiffTests
         SnapshotChange[] expected =
         [
             new(ChangeKind.Moved, Section.Structure, "structure > L", 1, "reading position 2 -> 1"),
-            new(ChangeKind.Moved, Section.Structure, "structure > LI", 1, "reading position 4 -> 5"),
+            new(ChangeKind.Moved, Section.Structure, "structure > LI", 1,
+                "reading position 4 -> 5\nparent: L -> (top level)"),
         ];
         Assert.Equal(expected, changes);
     }

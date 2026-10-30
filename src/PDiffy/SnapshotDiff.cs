@@ -43,7 +43,8 @@ public enum ChangeKind
 /// snapshot's, for a line both have); null when the line names no page. For pages inserted or removed, the first such
 /// page.</param>
 /// <param name="Detail">What changed, such as <c>type: H2 -> H3</c>, <c>alt: "Trail map" -> (missing)</c> or
-/// <c>reading position 3 -> 5</c>; for a line added or removed, the line itself. It can run over several lines.</param>
+/// <c>reading position 3 -> 5</c> and <c>parent: Document > P -> Document</c> for a move; for a line added or removed,
+/// the line itself. It can run over several lines.</param>
 public sealed record SnapshotChange(ChangeKind Kind, Section? Section, string Path, int? Page, string Detail)
 {
     /// <summary>

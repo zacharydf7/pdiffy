@@ -71,7 +71,7 @@ internal sealed class TreeMatcher(string name, Section? section,
             var match = MatchOf(removed, index, added, next, name);
             if (match < 0)
             {
-                _entries.Add(new Entry(Removed: old, Path: PathOf(old, beforeSiblings, parentPath)));
+                _entries.Add(new Entry(Removed: old, Path: PathOf(old, beforeSiblings, parentPath), Parent: parentPath));
                 continue;
             }
 
@@ -94,7 +94,7 @@ internal sealed class TreeMatcher(string name, Section? section,
             : lines;
 
     private void AddAdded(SnapshotLine line, List<SnapshotLine> siblings, string parentPath) =>
-        _entries.Add(new Entry(Added: line, Path: PathOf(line, siblings, parentPath)));
+        _entries.Add(new Entry(Added: line, Path: PathOf(line, siblings, parentPath), Parent: parentPath));
 
     private void CompareLines(SnapshotLine old, SnapshotLine edited, string path)
     {
@@ -157,11 +157,16 @@ internal sealed class TreeMatcher(string name, Section? section,
             _entries.RemoveRange(start, edits.Count);
             var index = _entries.IndexOf(match);
             _entries.RemoveAt(index);
-            // A line found again in its own place, at the same path and reading position, was edited, not moved.
-            if (path != removed.Path || _beforePositions[old] != _afterPositions[line])
+            // A line found again in its own place, under the same parent at the same reading position, was edited, not
+            // moved, even if its label changed because a sibling came or went.
+            var (oldParent, newParent) = (ParentName(removed.Parent!), ParentName(match.Parent!));
+            var (oldPosition, newPosition) = (_beforePositions[old], _afterPositions[line]);
+            if (oldParent != newParent || oldPosition != newPosition)
             {
-                var detail = $"reading position {_beforePositions[old]} -> {_afterPositions[line]}";
-                var moved = new SnapshotChange(ChangeKind.Moved, section, path, line.Page, detail);
+                var details = new List<string>();
+                if (oldPosition != newPosition) details.Add($"reading position {oldPosition} -> {newPosition}");
+                if (oldParent != newParent) details.Add($"parent: {oldParent} -> {newParent}");
+                var moved = new SnapshotChange(ChangeKind.Moved, section, path, line.Page, string.Join("\n", details));
                 _entries.Insert(index++, new Entry(Change: moved));
             }
 
@@ -182,6 +187,9 @@ internal sealed class TreeMatcher(string name, Section? section,
             : new SnapshotChange(ChangeKind.Added, section, entry.Path!, entry.Added!.Page, entry.Added.Text.Trim()));
 
     private SnapshotLine Original(SnapshotLine line) => originals?.GetValueOrDefault(line) ?? line;
+
+    // A parent's path without the section it starts with, as a move shows it: "Document > P", or "(top level)".
+    private string ParentName(string parentPath) => parentPath == name ? "(top level)" : parentPath[(name.Length + 3)..];
 
     // The key, numbered when siblings share it: "TR[2]".
     private static string PathOf(SnapshotLine line, List<SnapshotLine> siblings, string parentPath)
@@ -355,8 +363,8 @@ internal sealed class TreeMatcher(string name, Section? section,
     }
 
     // A finished change, or a removed or added line that may still turn out to be half of a move.
-    private sealed record Entry(
-        SnapshotChange? Change = null, SnapshotLine? Removed = null, SnapshotLine? Added = null, string? Path = null);
+    private sealed record Entry(SnapshotChange? Change = null, SnapshotLine? Removed = null, SnapshotLine? Added = null,
+        string? Path = null, string? Parent = null);
 }
 
 /// <summary>A word-level diff of two texts, marking removed words [-like this-] and added words {+like this+}.</summary>

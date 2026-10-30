@@ -98,7 +98,7 @@ To accept, run:
 |---|---|---|
 | `+` | Added | The new line |
 | `-` | Removed | The old line |
-| `↕` | Moved | `reading position 3 -> 10` |
+| `↕` | Moved | `reading position 3 -> 10`, and `parent: Document > P -> Document` when it moved to another parent |
 | `~` | Attribute | `scope: Column -> (missing)` |
 | `~` | Text | `"Go [-with-] {+without+} a guide"`: removed words in `[- -]`, added in `{+ +}` |
 | `~` | Changed | `type: H2 -> H3`, or a changed page range |
@@ -106,7 +106,8 @@ To accept, run:
 Elements are matched one to one, so:
 
 - An edited paragraph is one change, not a removed line and an added one.
-- An element that moved in reading order is reported as moved, along with anything that changed on it.
+- An element that moved in reading order, or to another parent, is reported as moved, along with anything that
+  changed on it.
 - A heading that became another level or a paragraph is one change: `type: H2 -> P`.
 - A one-word value replaced on an otherwise unchanged line, such as a number in a table cell, is changed, not removed
   and added. A paragraph replaced by entirely different words is removed and added.

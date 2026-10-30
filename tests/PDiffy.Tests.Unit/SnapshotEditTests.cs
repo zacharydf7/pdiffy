@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using PDiffy.Diffing;
 using PDiffy.Tests.Unit.Docx;
 using PDiffy.Tests.Unit.Producers;
@@ -49,14 +48,8 @@ public class SnapshotEditTests
         Assert.True(failures.Count == 0, $"{editName}:\n" + string.Join('\n', failures));
     }
 
-    private static string? Problem(IReadOnlyList<SnapshotChange> changes, ChangeKind[] expected, string label = "")
-    {
-        if (!changes.Select(change => change.Kind).SequenceEqual(expected)) return $"{label}got {Describe(changes)}";
-        return changes.FirstOrDefault(IsMoveInPlace) is { } move ? $"{label}moved in place: {move.Detail}" : null;
-    }
-
-    private static bool IsMoveInPlace(SnapshotChange change) =>
-        change.Kind == ChangeKind.Moved && Regex.IsMatch(change.Detail, @"^reading position (\d+) -> \1$");
+    private static string? Problem(IReadOnlyList<SnapshotChange> changes, ChangeKind[] expected, string label = "") =>
+        changes.Select(change => change.Kind).SequenceEqual(expected) ? null : $"{label}got {Describe(changes)}";
 
     private static ChangeKind Mirror(ChangeKind kind) => kind switch
     {
