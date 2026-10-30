@@ -243,27 +243,32 @@ internal sealed class PdfChecker(PdfUaDocument document)
 
     private void Add(PdfCheck check, int? page, string path, string message)
     {
-        var (severity, reference) = RuleOf(check);
+        var (category, severity, reference) = RuleOf(check);
         _findings.Add(new PdfCheckFinding
         {
-            Check = check, Severity = severity, Reference = reference, Page = page, Path = path, Message = message,
+            Check = check, Category = category, Severity = severity, Reference = reference, Page = page, Path = path,
+            Message = message,
         });
     }
 
-    // The clause of PDF/UA-1 (ISO 14289-1) each rule comes from. NoActions and NoEmbeddedFiles are house rules.
-    internal static (PdfCheckSeverity Severity, string? Reference) RuleOf(PdfCheck check) => check switch
+    // Each rule's family and the clause of PDF/UA-1 (ISO 14289-1) it comes from; house rules come from no standard.
+    internal static PdfCheckRule RuleOf(PdfCheck check) => check switch
     {
-        PdfCheck.DocumentLanguage => (PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
-        PdfCheck.DocumentTitle => (PdfCheckSeverity.Error, "ISO 14289-1 7.1"),
-        PdfCheck.FigureAltText => (PdfCheckSeverity.Error, "ISO 14289-1 7.3"),
-        PdfCheck.UntaggedContent => (PdfCheckSeverity.Error, "ISO 14289-1 7.1"),
-        PdfCheck.LinkDescriptions => (PdfCheckSeverity.Error, "ISO 14289-1 7.18.5"),
-        PdfCheck.FormFieldNames => (PdfCheckSeverity.Error, "ISO 14289-1 7.18.1"),
-        PdfCheck.TableHeaders => (PdfCheckSeverity.Error, "ISO 14289-1 7.5"),
-        PdfCheck.HeadingLevels => (PdfCheckSeverity.Error, "ISO 14289-1 7.4.2"),
-        PdfCheck.FontsEmbedded => (PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
-        PdfCheck.FontsMapToUnicode => (PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
-        PdfCheck.NoActions or PdfCheck.NoEmbeddedFiles => (PdfCheckSeverity.Warning, null),
-        _ => throw new ArgumentOutOfRangeException(nameof(check), check, "Every check needs a severity."),
+        PdfCheck.DocumentLanguage => new(PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
+        PdfCheck.DocumentTitle => new(PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),
+        PdfCheck.FigureAltText => new(PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.3"),
+        PdfCheck.UntaggedContent => new(PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),
+        PdfCheck.LinkDescriptions => new(PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.5"),
+        PdfCheck.FormFieldNames => new(PdfCheckCategory.Forms, PdfCheckSeverity.Error, "ISO 14289-1 7.18.1"),
+        PdfCheck.TableHeaders => new(PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.5"),
+        PdfCheck.HeadingLevels => new(PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.2"),
+        PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
+        PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
+        PdfCheck.NoActions or PdfCheck.NoEmbeddedFiles =>
+            new(PdfCheckCategory.HouseRules, PdfCheckSeverity.Warning, null),
+        _ => throw new ArgumentOutOfRangeException(nameof(check), check, "Every check needs a rule."),
     };
 }
+
+/// <summary>A <see cref="PdfCheck"/>'s family, how much its findings matter and the clause it comes from.</summary>
+internal readonly record struct PdfCheckRule(PdfCheckCategory Category, PdfCheckSeverity Severity, string? Reference);

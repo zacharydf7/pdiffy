@@ -425,22 +425,22 @@ public async Task TrailMap_ShouldPassTheAccessibilityChecks_WhenGenerated()
 }
 ```
 
-`Check()` with no arguments applies every check. Pick the ones a test guards. Each finding has a `Severity`, `Error` for a rule PDF/UA requires and `Warning` for a house rule, and a `Reference` to the clause of PDF/UA-1 (ISO 14289-1) the rule comes from, listed under From below. The reference says where a rule comes from, not that the document conforms. A finding's path names the snapshot section and the item, and for a structure element it's the path a snapshot diff shows.
+`Check()` with no arguments applies every check. Pick the ones a test guards. Each finding has a `Severity`, `Error` for a rule PDF/UA requires and `Warning` for a house rule, a `Category`, the family its rule belongs to (`HouseRules` for policies that aren't accessibility rules), and a `Reference` to the clause of PDF/UA-1 (ISO 14289-1) the rule comes from, listed under From below. The reference says where a rule comes from, not that the document conforms. A finding's path names the snapshot section and the item, and for a structure element it's the path a snapshot diff shows.
 
-| PdfCheck | Finds | From |
-|---|---|---|
-| `DocumentLanguage` | A document with no language | 7.2 |
-| `DocumentTitle` | A document with no title, or one whose viewer shows the file name instead | 7.1 |
-| `FigureAltText` | A figure with no alt text or replacement text | 7.3 |
-| `UntaggedContent` | Text, images and paths that are neither tagged nor artifacts, page by page | 7.1 |
-| `LinkDescriptions` | A link with no description: no contents, and no alt text or text on the element that tags it | 7.18.5 |
-| `FormFieldNames` | A form field with no accessible name (tooltip) | 7.18.1 |
-| `TableHeaders` | A header with no scope that no cell names, and a cell that names a header that doesn't exist | 7.5 |
-| `HeadingLevels` | A heading that skips a level, or one that comes before any H1 | 7.4.2 |
-| `FontsEmbedded` | A font that isn't embedded | 7.21.4.1 |
-| `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | 7.21.7 |
-| `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | House rule |
-| `NoEmbeddedFiles` | Each embedded file | House rule |
+| PdfCheck | Finds | Category | From |
+|---|---|---|---|
+| `DocumentLanguage` | A document with no language | `Language` | 7.2 |
+| `DocumentTitle` | A document with no title, or one whose viewer shows the file name instead | `Document` | 7.1 |
+| `FigureAltText` | A figure with no alt text or replacement text | `AltText` | 7.3 |
+| `UntaggedContent` | Text, images and paths that are neither tagged nor artifacts, page by page | `Content` | 7.1 |
+| `LinkDescriptions` | A link with no description: no contents, and no alt text or text on the element that tags it | `Annotations` | 7.18.5 |
+| `FormFieldNames` | A form field with no accessible name (tooltip) | `Forms` | 7.18.1 |
+| `TableHeaders` | A header with no scope that no cell names, and a cell that names a header that doesn't exist | `Tables` | 7.5 |
+| `HeadingLevels` | A heading that skips a level, or one that comes before any H1 | `Headings` | 7.4.2 |
+| `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |
+| `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
+| `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
+| `NoEmbeddedFiles` | Each embedded file | `HouseRules` | House rule |
 
 These are fast regression checks, not a PDF/UA validator. To check conformance, use [veraPDF](https://verapdf.org/) or PAC.
 

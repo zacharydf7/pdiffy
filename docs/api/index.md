@@ -29,6 +29,14 @@ them all.
 | <xref:PDiffy.SnapshotChange> | Describe one difference: kind, section, path, page, detail, accessibility flag |
 | <xref:PDiffy.ChangeKind> | Name the kind of a difference |
 
+## Checks
+
+| Type | Use it to |
+|---|---|
+| <xref:PDiffy.PdfCheck> | Name a rule <xref:PDiffy.PdfUaDocument.Check*> applies |
+| <xref:PDiffy.PdfCheckFinding> | Describe what a rule found: where, how much it matters and the clause it comes from |
+| <xref:PDiffy.PdfCheckSeverity>, <xref:PDiffy.PdfCheckCategory> | Tell errors from warnings, and group rules by family |
+
 ## The PDF model
 
 <xref:PDiffy.PdfUaDocument> is everything PDiffy reads from a PDF, in the order a snapshot prints it.

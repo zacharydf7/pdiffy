@@ -54,6 +54,43 @@ public enum PdfCheck
     NoEmbeddedFiles,
 }
 
+/// <summary>
+/// The family a <see cref="PdfCheck"/> belongs to, such as tables or fonts, so findings can be grouped by family;
+/// <see cref="HouseRules"/> holds the policies that aren't accessibility rules.
+/// </summary>
+public enum PdfCheckCategory
+{
+    /// <summary>Settings of the whole document, such as its title.</summary>
+    Document,
+
+    /// <summary>The language text is read in.</summary>
+    Language,
+
+    /// <summary>Alt text for figures.</summary>
+    AltText,
+
+    /// <summary>Content that's neither tagged nor marked as an artifact.</summary>
+    Content,
+
+    /// <summary>Headings and their levels.</summary>
+    Headings,
+
+    /// <summary>Tables and their headers.</summary>
+    Tables,
+
+    /// <summary>Links and other annotations.</summary>
+    Annotations,
+
+    /// <summary>Form fields.</summary>
+    Forms,
+
+    /// <summary>Fonts and the text they can give a screen reader.</summary>
+    Fonts,
+
+    /// <summary>Sensible policies that aren't accessibility rules, such as no JavaScript.</summary>
+    HouseRules,
+}
+
 /// <summary>How much a <see cref="PdfCheckFinding"/> matters.</summary>
 public enum PdfCheckSeverity
 {
@@ -79,6 +116,9 @@ public sealed record PdfCheckFinding
 
     /// <summary>The rule that found it.</summary>
     public required PdfCheck Check { get; init; }
+
+    /// <summary>The family the rule belongs to, such as tables or fonts.</summary>
+    public required PdfCheckCategory Category { get; init; }
 
     /// <summary>How much it matters: an error for a rule PDF/UA requires, a warning otherwise.</summary>
     public required PdfCheckSeverity Severity { get; init; }

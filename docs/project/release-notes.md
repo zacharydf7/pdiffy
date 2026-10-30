@@ -77,6 +77,9 @@ library does.
 - Each `PdfCheckFinding` has a `Severity` (`Error` or `Warning`) and a `Reference` to the PDF/UA-1 clause its
   rule comes from, such as `ISO 14289-1 7.3`; `NoActions` and `NoEmbeddedFiles` are house rules, warnings with no
   reference ([#52](https://github.com/zacharydf7/pdiffy/issues/52)).
+- Each finding has a `Category` too, the family its rule belongs to, such as `Tables` or `Fonts`; `NoActions` and
+  `NoEmbeddedFiles` are in `HouseRules`, apart from the accessibility rules
+  ([#53](https://github.com/zacharydf7/pdiffy/issues/53)).
 
 ### Read more accurately
 
