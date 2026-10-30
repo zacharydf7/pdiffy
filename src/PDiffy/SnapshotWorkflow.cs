@@ -93,6 +93,7 @@ internal static class SnapshotWorkflow
             ? $"New {kind} snapshot. Review the received file, then accept it."
             : $"The {kind}'s snapshot differs from the verified one.");
         if (diff is null && SnapshotBreakdown.Of(received) is { } breakdown) message.AppendLine(breakdown);
+        if (diff is not null && FontSubstitution.Hint(diff) is { } hint) message.AppendLine(hint);
         if (diff is null && OnCi())
         {
             message.AppendLine("This is a build server, so the verified file was probably expected: it isn't in this "

@@ -26,6 +26,14 @@ in the repository too.
 If the difference is real content, such as a font that's only installed on one machine, the snapshot is doing its job:
 the documents really differ.
 
+## Hundreds of layout and font changes on the build agent
+
+A generator that can't find a font on the machine running it uses another, often DejaVu or Liberation on Linux. The
+fonts section then loses one font and gains another, and every layout line that used it changes its `font=` and often
+moves a little. When that's most of what changed, the failure starts with a hint such as "Arial was replaced by
+DejaVuSans in 312 line(s)". Embed the font in the PDF, so it no longer depends on the machine, or install it on the
+build agent.
+
 ## Every snapshot changed after upgrading PDiffy
 
 A newer PDiffy can print some snapshots differently when it records something new or reads something more accurately.
