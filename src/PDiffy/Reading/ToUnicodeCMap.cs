@@ -93,14 +93,13 @@ internal sealed class ToUnicodeCMap
         }
     }
 
-    // A destination of nothing, or of only U+0000, U+FEFF or U+FFFE, gives a reader no text.
+    // A destination of nothing, or of only U+0000, U+FEFF and U+FFFE, gives a reader no text.
     private void Add(long code, string destination)
     {
         if (!destination.StartsWith('<')) return;
 
-        var digits = Digits(destination);
-        var noText = digits.All(c => c == '0') || Hex(destination) is long value && NotText.Contains(value);
-        if (noText) _codesWithoutText.Add(code);
+        var units = Digits(destination).Chunk(4).Select(unit => Convert.ToInt64(new string(unit), 16));
+        if (units.All(NotText.Contains)) _codesWithoutText.Add(code);
         else _codes.Add(code);
     }
 

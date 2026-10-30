@@ -80,6 +80,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.MeaningfulAltText: MeaningfulAltText(); break;
             case PdfCheck.LinkText: LinkText(); break;
             case PdfCheck.NoMissingGlyphs: NoMissingGlyphs(); break;
+            case PdfCheck.FontDictionaries: FontDictionaries(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -388,6 +389,31 @@ internal sealed class PdfChecker(PdfUaDocument document)
 
             Add(PdfCheck.NoMissingGlyphs, null, $"{Name(PdfSection.Fonts)} > {fonts.Key}",
                 $"Font {fonts.Key} shows the missing-glyph box for {codes} code(s)");
+        }
+    }
+
+    private void FontDictionaries()
+    {
+        foreach (var fonts in document.Fonts.GroupBy(font => font.Name))
+        {
+            var name = fonts.Key;
+            foreach (var problem in fonts.SelectMany(font => font.Problems).Distinct().Order())
+            {
+                var (clause, says) = problem switch
+                {
+                    PdfFontProblem.CidSystemInfo => ("7.21.3.1", "CIDSystemInfo doesn't match the CMap's"),
+                    PdfFontProblem.CidToGidMap => ("7.21.3.2", "embedded TrueType CID font with no CIDToGIDMap"),
+                    PdfFontProblem.CmapNotEmbedded => ("7.21.3.3", "CMap is neither built in nor embedded"),
+                    PdfFontProblem.CmapWritingMode => ("7.21.3.3", "CMap gives two different writing modes"),
+                    PdfFontProblem.CmapReference => ("7.21.3.3", "CMap uses a CMap that isn't built in"),
+                    PdfFontProblem.TrueTypeEncoding => ("7.21.6",
+                        "non-symbolic TrueType font whose encoding isn't MacRomanEncoding or WinAnsiEncoding"),
+                    PdfFontProblem.SymbolicEncoding => ("7.21.6", "symbolic TrueType font with an Encoding entry"),
+                    _ => throw new ArgumentOutOfRangeException(nameof(problem), problem, "Not a PdfFontProblem value."),
+                };
+                Add(PdfCheck.FontDictionaries, null, $"{Name(PdfSection.Fonts)} > {name}", $"Font {name}: {says}",
+                    $"ISO 14289-1 {clause}");
+            }
         }
     }
 
@@ -1092,6 +1118,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.MeaningfulAltText => new(PdfCheckCategory.AltText, PdfCheckSeverity.Warning, "WCAG 2.2 1.1.1"),
         PdfCheck.LinkText => new(PdfCheckCategory.Annotations, PdfCheckSeverity.Warning, "WCAG 2.2 2.4.4"),
         PdfCheck.NoMissingGlyphs => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.8"),
+        PdfCheck.FontDictionaries => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

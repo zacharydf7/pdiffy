@@ -16,14 +16,15 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### Checks
 
-- `PdfCheckSet.Latest` has 26 new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
+- `PdfCheckSet.Latest` has 27 new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
   `TocStructure`, `HeadingTypes`, `NoteIds`, `TableStructure`, `TableGrid`, `AnnotationTags`,
   `AnnotationDescriptions`, `TabOrder`, `LanguageTags`, `TextLanguage`, `FormulaAltText`, `MediaClips`,
   `ArtifactNesting`, `LayerConfigurations`, `EmbeddedFileNames`, `NoDynamicXfa`, `AccessibilityPermission`,
-  `NoReferenceXObjects`, `NoMissingGlyphs` and the warnings `MeaningfulAltText` and `LinkText`, so a snapshot that
-  records checks with it prints `# checks: latest, 38 rules` and what they find
+  `NoReferenceXObjects`, `NoMissingGlyphs`, `FontDictionaries` and the warnings `MeaningfulAltText` and `LinkText`,
+  so a snapshot that records checks with it prints `# checks: latest, 39 rules` and what they find
   ([#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#76](https://github.com/zacharydf7/pdiffy/issues/76),
-  [#78](https://github.com/zacharydf7/pdiffy/issues/78), [#79](https://github.com/zacharydf7/pdiffy/issues/79)). A
+  [#78](https://github.com/zacharydf7/pdiffy/issues/78), [#79](https://github.com/zacharydf7/pdiffy/issues/79),
+  [#164](https://github.com/zacharydf7/pdiffy/issues/164)). A
   release's own set, such as `PdfCheckSet.Version0_3`, keeps its rules, but `FontsMapToUnicode`, in every set, now
   also finds codes a font's ToUnicode map sends to U+0000, U+FEFF or U+FFFE, so a document with such a font can gain
   a finding ([#76](https://github.com/zacharydf7/pdiffy/issues/76)).
@@ -52,6 +53,9 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   ToUnicode map sends to U+0000, U+FEFF or U+FFFE is listed in `unmapped`, even when its encoding gives it a standard
   glyph name ([#76](https://github.com/zacharydf7/pdiffy/issues/76)). Only snapshots of such fonts change, and new codes
   in either list are flagged as affecting accessibility.
+- A Type 0 or TrueType font whose dictionaries break a PDF/UA font rule prints what's wrong:
+  `problems=[cid-to-gid-map,cmap-not-embedded]` ([#164](https://github.com/zacharydf7/pdiffy/issues/164)). Only
+  snapshots of such fonts change.
 - A file whose header says PDF 2.0 prints `version=2.0`. PDiffy read the version through PdfPig, which reads a
   header it doesn't know as 1.4, so such snapshots printed `version=1.4` and change.
 

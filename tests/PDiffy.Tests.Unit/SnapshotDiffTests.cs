@@ -1178,6 +1178,20 @@ public class SnapshotDiffTests
         Assert.All(changes, change => Assert.True(change.AffectsAccessibility));
     }
 
+    // The earlier release didn't list a font's problems.
+    [Fact]
+    public void Compare_ShouldReportOnlyTheFontsProblems_WhenASnapshotFromBeforeFontProblemsIsCompared()
+    {
+        var font = "<< /Type /Font /Subtype /TrueType /BaseFont /Helvetica >>";
+        var current = TestFonts.OneFont(font, "(A) Tj").ToSnapshot();
+        var earlier = current.Replace(" problems=[true-type-encoding]", "");
+
+        var changes = SnapshotDiff.CompareSnapshots(earlier, current).Changes;
+
+        Assert.Equal([(ChangeKind.AttributeChanged, PdfSection.Fonts)],
+            changes.Select(change => (change.Kind, change.PdfSection)));
+    }
+
     [Fact]
     public void Compare_ShouldReportTheShiftOnceAndOnlyTheNewPagesContent_WhenAPageIsInserted()
     {

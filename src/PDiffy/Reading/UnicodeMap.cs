@@ -74,9 +74,7 @@ internal static class UnicodeMap
         if (baseFont == "Symbol") return SymbolEncoding.Instance;
         if (baseFont == "ZapfDingbats") return ZapfDingbatsEncoding.Instance;
 
-        const int symbolicFlag = 1 << 2;
-        var descriptor = objects.Dictionary(font, "FontDescriptor");
-        var symbolic = descriptor is not null && ((objects.Integer(descriptor, "Flags") ?? 0) & symbolicFlag) != 0;
+        var symbolic = FontReader.IsSymbolic(objects, objects.Dictionary(font, "FontDescriptor"));
         return symbolic ? null : StandardEncoding.Instance;
     }
 

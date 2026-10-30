@@ -49,16 +49,18 @@ public class FontUnicodeTests
     }
 
     // 0052 and 0071 land on U+FEFF and U+FFFE part way through their ranges, and 0080 and 0090 start ranges on U+FEFF
-    // and U+0000; 0060 and 0061 map to two and three characters.
+    // and U+0000; 0043 and 0044 map only to such values, and 0060 and 0061 to two and three characters.
     [Fact]
     public void Load_ShouldReportCodesMappedToAByteOrderMarkOrANoncharacter_WhenToUnicodeMapsThemThere()
     {
-        var cmap = CMap("4 beginbfchar <0041> <FEFF> <0042> <fffe> <0060> <00660066> <0061> <006600660069> endbfchar "
-            + "4 beginbfrange <0050> <0053> <FEFD> <0070> <0071> <FFFD> <0080> <0081> <FEFF> <0090> <0091> <0000> endbfrange");
+        var cmap = CMap("6 beginbfchar <0041> <FEFF> <0042> <fffe> <0043> <FEFF0000> <0044> <00000000FEFF> "
+            + "<0060> <00660066> <0061> <006600660069> endbfchar 4 beginbfrange <0050> <0053> <FEFD> <0070> <0071> "
+            + "<FFFD> <0080> <0081> <FEFF> <0090> <0091> <0000> endbfrange");
+        var text = "<0041004200430044005000510052005300600061007000710080008100900091> Tj";
 
-        var document = OneFont(Type0, "<00410042005000510052005300600061007000710080008100900091> Tj", cmap, CidFont);
+        var document = OneFont(Type0, text, cmap, CidFont);
 
-        Assert.Equal([0x41, 0x42, 0x52, 0x71, 0x80, 0x90], Assert.Single(document.Fonts).UnmappedCodes);
+        Assert.Equal([0x41, 0x42, 0x43, 0x44, 0x52, 0x71, 0x80, 0x90], Assert.Single(document.Fonts).UnmappedCodes);
     }
 
     // The encoding gives every code a standard name, but a reader uses the ToUnicode map's value instead: none for 41-43

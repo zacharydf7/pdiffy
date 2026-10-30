@@ -154,7 +154,8 @@ internal sealed class TestPage(double width, double height, int rotate, string? 
         var descriptor = pdf.Add("<< /Type /FontDescriptor /FontName /Damaged /Flags 32 /FontBBox [0 0 1000 1000] "
             + $"/ItalicAngle 0 /Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 /FontFile2 {fontFile} 0 R >>");
         var descendant = pdf.Add("<< /Type /Font /Subtype /CIDFontType2 /BaseFont /Damaged "
-            + $"/CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor {descriptor} 0 R >>");
+            + "/CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /CIDToGIDMap /Identity "
+            + $"/FontDescriptor {descriptor} 0 R >>");
         return pdf.Add($"<< /Type /Font /Subtype /Type0 /BaseFont /Damaged /Encoding /Identity-H "
             + $"/DescendantFonts [{descendant} 0 R] /ToUnicode {toUnicode} 0 R >>");
     }

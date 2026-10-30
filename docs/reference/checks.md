@@ -323,6 +323,26 @@ the two no longer agree.
 **How to fix it:** use a font that has every character the text needs, or embed the whole font instead of a subset
 that leaves some out. Boxes often appear when text is pasted in from another font or uses a symbol the font lacks.
 
+## FontDictionaries
+
+**Finds:** a Type 0 or TrueType font whose dictionaries break a PDF/UA font rule, one finding for each kind of problem:
+
+- its CIDSystemInfo names a different character collection from its CMap's (7.21.3.1);
+- it's an embedded TrueType-based CID font with no `CIDToGIDMap` (7.21.3.2);
+- its CMap is neither built into every reader nor embedded, an embedded CMap gives two writing modes, or it uses a
+  CMap that isn't built in (7.21.3.3);
+- it's non-symbolic TrueType with an encoding other than `MacRomanEncoding` or `WinAnsiEncoding`, or symbolic
+  TrueType with an `Encoding` entry (7.21.6).
+
+**Category:** `Fonts`. **Severity:** `Error`. **From:** ISO 14289-1 7.21; each finding names its own clause.
+
+**Why it matters:** these entries tell a reader which glyph and which character each code stands for. When they're
+missing or disagree, readers can pick different glyphs or characters, so the text can look right in one viewer and
+read wrong in another.
+
+**How to fix it:** these come from the generator, not the document's content. Update the generator or its PDF/UA
+settings, or embed fonts as TrueType with WinAnsi encoding where it offers the choice.
+
 ## LayerConfigurations
 
 **Finds:** an optional-content configuration (a set of layers a viewer can switch to) with no name, and one that turns

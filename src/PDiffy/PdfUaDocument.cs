@@ -970,4 +970,40 @@ public sealed record PdfFont
     /// missing from the font file.
     /// </summary>
     public IReadOnlyList<int> MissingGlyphCodes { get; init => field = ValueList<int>.Of(value); } = ValueList<int>.Empty;
+
+    /// <summary>
+    /// What PDF/UA forbids in the font's dictionaries and CMaps, in the order of <see cref="PdfFontProblem"/>.
+    /// </summary>
+    public IReadOnlyList<PdfFontProblem> Problems
+    {
+        get;
+        init => field = ValueList<PdfFontProblem>.Of(value);
+    } = ValueList<PdfFontProblem>.Empty;
+}
+
+/// <summary>
+/// Something PDF/UA forbids in a Type 0 or TrueType font's dictionaries or CMaps, found without reading the font file.
+/// </summary>
+public enum PdfFontProblem
+{
+    /// <summary>A Type 0 font's CIDSystemInfo names a different character collection from its CMap's.</summary>
+    CidSystemInfo,
+
+    /// <summary>An embedded TrueType-based CID font has no CIDToGIDMap from its CIDs to its glyphs.</summary>
+    CidToGidMap,
+
+    /// <summary>A Type 0 font's CMap is neither embedded nor one of the CMaps every reader has built in.</summary>
+    CmapNotEmbedded,
+
+    /// <summary>An embedded CMap's dictionary and data give different writing modes (WMode).</summary>
+    CmapWritingMode,
+
+    /// <summary>An embedded CMap uses another CMap that isn't one of the built-in ones.</summary>
+    CmapReference,
+
+    /// <summary>A non-symbolic TrueType font's encoding isn't MacRomanEncoding or WinAnsiEncoding.</summary>
+    TrueTypeEncoding,
+
+    /// <summary>A symbolic TrueType font has an Encoding entry.</summary>
+    SymbolicEncoding,
 }

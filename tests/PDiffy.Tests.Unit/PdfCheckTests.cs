@@ -173,6 +173,30 @@ public class PdfCheckTests
             $"{finding.Path}: {finding.Message}"));
     }
 
+    [Theory]
+    [InlineData(PdfFontProblem.CidSystemInfo, "CIDSystemInfo doesn't match the CMap's", "7.21.3.1")]
+    [InlineData(PdfFontProblem.CidToGidMap, "embedded TrueType CID font with no CIDToGIDMap", "7.21.3.2")]
+    [InlineData(PdfFontProblem.CmapNotEmbedded, "CMap is neither built in nor embedded", "7.21.3.3")]
+    [InlineData(PdfFontProblem.CmapWritingMode, "CMap gives two different writing modes", "7.21.3.3")]
+    [InlineData(PdfFontProblem.CmapReference, "CMap uses a CMap that isn't built in", "7.21.3.3")]
+    [InlineData(PdfFontProblem.TrueTypeEncoding,
+        "non-symbolic TrueType font whose encoding isn't MacRomanEncoding or WinAnsiEncoding", "7.21.6")]
+    [InlineData(PdfFontProblem.SymbolicEncoding, "symbolic TrueType font with an Encoding entry", "7.21.6")]
+    public void Check_ShouldFindTheFontProblemWithItsClause_WhenAFontHasIt(PdfFontProblem problem, string message,
+        string clause)
+    {
+        var font = new PdfFont
+        {
+            Name = "Trail", Subtype = "Type0", Embedded = true, HasToUnicode = true, Problems = [problem],
+        };
+        var document = Documents.Empty() with { Fonts = [font, font with { Subtype = "TrueType" }] };
+
+        var finding = Assert.Single(document.Check(PdfCheck.FontDictionaries));
+
+        Assert.Equal(("fonts > Trail", $"Font Trail: {message}", $"ISO 14289-1 {clause}"),
+            (finding.Path, finding.Message, finding.Reference));
+    }
+
     [Fact]
     public void Check_ShouldFindTheFormFieldWithoutAnAccessibleName_WhenOnlyOneHasNone()
     {
@@ -1243,6 +1267,7 @@ public class PdfCheckTests
     [InlineData(PdfCheck.MeaningfulAltText, PdfCheckCategory.AltText, PdfCheckSeverity.Warning, "WCAG 2.2 1.1.1")]
     [InlineData(PdfCheck.LinkText, PdfCheckCategory.Annotations, PdfCheckSeverity.Warning, "WCAG 2.2 2.4.4")]
     [InlineData(PdfCheck.NoMissingGlyphs, PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.8")]
+    [InlineData(PdfCheck.FontDictionaries, PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

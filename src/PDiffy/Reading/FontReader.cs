@@ -49,6 +49,7 @@ internal static class FontReader
             Name = name, Subtype = subtype, Embedded = embedded, HasToUnicode = hasToUnicode,
             UnmappedCodes = codes.Where(code => !maps(code)).ToList(),
             MissingGlyphCodes = codes.Where(missing).ToList(),
+            Problems = FontProblems.Read(objects, font, subtype, descriptor, embedded),
         };
     }
 
@@ -66,6 +67,13 @@ internal static class FontReader
         }
 
         return codes;
+    }
+
+    // A symbolic font, flagged in its descriptor, uses glyphs outside the standard Latin set.
+    internal static bool IsSymbolic(PdfObjects objects, DictionaryToken? descriptor)
+    {
+        const int symbolicFlag = 1 << 2;
+        return descriptor is not null && ((objects.Integer(descriptor, "Flags") ?? 0) & symbolicFlag) != 0;
     }
 
     // A subset font is named like ABCDEF+Arial: six capital letters and a plus sign.

@@ -147,6 +147,10 @@ library does.
   font's encoding names them. Snapshots print `missing-glyphs=[...]` on a font's line, `PdfFont` has
   `MissingGlyphCodes`, and loading no longer fails on a font that maps a code to U+FFFE
   ([#76](https://github.com/zacharydf7/pdiffy/issues/76)).
+- `FontDictionaries` finds a Type 0 or TrueType font whose dictionaries break a PDF/UA font rule: a CMap and
+  CIDSystemInfo that disagree, a missing `CIDToGIDMap`, a CMap that isn't built in or embedded, or a TrueType encoding
+  PDF/UA doesn't allow. Snapshots print `problems=[...]` on such a font's line, and `PdfFont` has `Problems`
+  ([#164](https://github.com/zacharydf7/pdiffy/issues/164)).
 - The first warning from a standard other than PDF/UA, `MeaningfulAltText`, finds alt text that's a file name, such
   as `IMG_2041.jpg`, or a placeholder such as `image` or `graphic 3`. Its reference is WCAG 2.2 1.1.1, since PDF/UA
   doesn't check what alt text says ([#78](https://github.com/zacharydf7/pdiffy/issues/78)).

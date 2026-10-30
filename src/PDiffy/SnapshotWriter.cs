@@ -306,6 +306,8 @@ internal sealed partial class SnapshotWriter(PdfSnapshotOptions options)
         var width = font.Subtype == PdfFontTypes.Type0 ? 4 : 2;
         if (font.UnmappedCodes.Count > 0) line += $" unmapped=[{CodeRanges(font.UnmappedCodes, width)}]";
         if (font.MissingGlyphCodes.Count > 0) line += $" missing-glyphs=[{CodeRanges(font.MissingGlyphCodes, width)}]";
+        var problems = font.Problems.Select(problem => KebabCase(problem.ToString()));
+        if (font.Problems.Count > 0) line += $" problems=[{string.Join(',', problems)}]";
         return line;
     }
 

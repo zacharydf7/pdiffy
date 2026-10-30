@@ -32,6 +32,12 @@ internal sealed class TestPdf
     /// <summary>The BaseFont of the page font F1. The font isn't embedded, so PdfPig only recognizes standard names.</summary>
     public string BaseFont { get; init; } = "Helvetica";
 
+    /// <summary>The Subtype of the page font F1.</summary>
+    public string FontType { get; init; } = "Type1";
+
+    /// <summary>The Encoding entry of the page font F1, or an empty string for none.</summary>
+    public string FontEncoding { get; init; } = "/Encoding /WinAnsiEncoding";
+
     /// <summary>Puts the font resources on the Pages node, so every page inherits them instead of having its own.</summary>
     public bool ResourcesOnPagesNode { get; init; }
 
@@ -103,7 +109,7 @@ internal sealed class TestPdf
         _objects.Clear();
         var catalog = Reserve();
         var pagesNode = Reserve();
-        var font = Add($"<< /Type /Font /Subtype /Type1 /BaseFont /{BaseFont} /Encoding /WinAnsiEncoding >>");
+        var font = Add($"<< /Type /Font /Subtype /{FontType} /BaseFont /{BaseFont} {FontEncoding} >>");
         var pageObjects = _pages.Select(_ => Reserve()).ToList();
         var annotations = _pages.Select(_ => new List<int>()).ToList();
 

@@ -187,6 +187,13 @@ public enum PdfCheck
     /// encoding or CID-to-glyph map tells.
     /// </summary>
     NoMissingGlyphs,
+
+    /// <summary>
+    /// No Type 0 or TrueType font's dictionaries break a PDF/UA rule: a CMap and CIDSystemInfo that agree, a CIDToGIDMap
+    /// in an embedded TrueType-based CID font, CMaps that are embedded and use only built-in ones, and TrueType
+    /// encodings. <see cref="PdfFontProblem"/> lists them.
+    /// </summary>
+    FontDictionaries,
 }
 
 /// <summary>
