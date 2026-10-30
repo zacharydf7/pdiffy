@@ -580,7 +580,7 @@ pdiffy coverage --all
 | `role-map` | Each custom tag type and the standard type it maps to |
 | `pages` | Size (named when standard, such as `letter` or `a4`), rotation, tab order; crop, bleed, trim and art boxes, user unit and transparency group when set; pages that couldn't be read; page label ranges |
 | `bookmarks` | The outline tree, with each bookmark's target: a page and the view it opens at, a web address or another file. Or `unreadable` when it nests more than 256 deep or loops back on itself |
-| `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, links, the language, replacement text, alt text and expansion that marked content inside it sets (`span-lang=[fr-FR]`, `span-actual=["fi"]`), how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), how many point into a form XObject (`mcids-in-xobject`, whose text may include the page's own text for the same MCID), how many child elements are nested more than 256 deep and left out (`unread-children`), and the element's text |
+| `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, links, the hashes of the images it draws (`images=[3f9c0a1b2d4e5f60]`, the same hash as its layout line), the language, replacement text, alt text and expansion that marked content inside it sets (`span-lang=[fr-FR]`, `span-actual=["fi"]`), how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), how many point into a form XObject (`mcids-in-xobject`, whose text may include the page's own text for the same MCID), how many child elements are nested more than 256 deep and left out (`unread-children`), and the element's text |
 | `artifacts` | Text marked as an artifact (headers, footers, page numbers), per page, with its kind when it gives one (`type=Pagination subtype=Footer`) |
 | `untagged` | Text that is neither tagged nor marked as an artifact (including tagged text that no structure element points to), and a count of such images and paths per page |
 | `fonts` | Each font: name, type, whether it's embedded, whether it has a Unicode map, and the character codes its text uses that don't map to Unicode (that text can't be copied, searched or read aloud) |
@@ -610,7 +610,7 @@ Each `Section` value leaves out one section from the table above. Each `Field` v
 | `Colors` | Text color and path fill and stroke colors |
 | `FontNames`, `FontSizes` | The font and size of each text run in the layout |
 | `LineWidths` | The stroke width of each path |
-| `ImageContents` | The pixel size and hash of each image |
+| `ImageContents` | The pixel size and hash of each image, and the hashes on each structure element's `images=` |
 | `LinkTargets` | Where links, bookmarks and other actions go: web addresses, files, and the view a page opens at (a bookmark's page stays) |
 | `AnnotationContents` | The text of annotations |
 | `FormValues` | The value of each form field |
@@ -671,7 +671,7 @@ document
 structure
   Document lang=en-US
     H1 p1 "Trail Table"
-    Figure p1 alt="Park logo"
+    Figure p1 alt="Park logo" images=[3f9c0a1b2d4e5f60]
     Table p2-3 summary="Trail details"
       TR
         TH1 p2 scope=Column "Trail"
@@ -726,6 +726,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | `pdfua-snapshot v1`, unchanged version: an element whose marked content draws an image prints the image's hash (`images=[3f9c0a1b2d4e5f60]`), so swapping two figures' images shows on their lines. Left out with `Field.ImageContents`. Snapshots of tagged documents with images change |
 | Next | `pdfua-snapshot v1`, unchanged version: an element with marked-content references into a form XObject prints `mcids-in-xobject=N`, since its text may include the page's own text for the same MCID (and the page's element the form's). Only snapshots of documents with such references change, by the new key alone |
 | Next | `pdfua-snapshot v1`, unchanged version: marked content inside an element that sets its own language, replacement text, alt text or expansion is recorded on the element (`span-lang=[fr-FR]`, `span-actual=["fi"]`), and an artifact prints its kind (`type=Pagination subtype=Footer`). Snapshots with such marked content or typed artifacts change, and typed artifacts are common. A new `span-lang` key is flagged as affecting accessibility, like any language change |
 | Next | `pdfua-snapshot v1`, unchanged version: letter-spaced text no longer gets a space between every letter, since a gap counts as a space only when it's wider than the line's letter spacing (read from its narrowest gaps, up to a quarter of an em). Snapshots of documents with letter-spaced text change |

@@ -27,6 +27,7 @@ public class MutationTests
         { "link target", new Sample { LinkUri = "https://example.com/b" }, Section.Annotations, ChangeKind.AttributeChanged, false },
         { "link destination page", new Sample { LinkPage = 1 }, Section.Annotations, ChangeKind.AttributeChanged, false },
         { "image pixels", new Sample { ImageGray = "81" }, Section.Layout, ChangeKind.AttributeChanged, false },
+        { "figure's image", new Sample { ImageGray = "81" }, Section.Structure, ChangeKind.AttributeChanged, false },
         { "text moved by 1 pt", new Sample { TextAt = "73 400" }, Section.Layout, ChangeKind.AttributeChanged, false },
         { "font size by 0.1 pt", new Sample { FontSize = "12.1" }, Section.Layout, ChangeKind.AttributeChanged, false },
         { "text color", new Sample { TextColor = "1 0 0 rg" }, Section.Layout, ChangeKind.AttributeChanged, false },

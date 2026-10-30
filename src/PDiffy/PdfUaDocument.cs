@@ -219,6 +219,12 @@ public sealed record StructureElement
     /// <summary>Marked content in the element that sets its own language, replacement text, alt text or expansion.</summary>
     public IReadOnlyList<MarkedSpan> MarkedSpans { get; init; } = [];
 
+    /// <summary>
+    /// The hashes of the images the element's own marked content draws, in the order the element lists its marked
+    /// content, as <see cref="ImageInfo.Hash"/> gives them: the image a figure's alt text describes.
+    /// </summary>
+    public IReadOnlyList<string> ImageHashes { get; init; } = [];
+
     public string? Text { get; init; }
 }
 

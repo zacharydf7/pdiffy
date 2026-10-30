@@ -25,7 +25,7 @@ document
 structure
   Document lang=en-US
     H1 p1 "Trail Table"
-    Figure p1 alt="Park logo"
+    Figure p1 alt="Park logo" images=[3f9c0a1b2d4e5f60]
     Table p2-3 summary="Trail details"
       TR
         TH1 p2 scope=Column "Trail"

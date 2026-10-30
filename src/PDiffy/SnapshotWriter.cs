@@ -204,6 +204,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         Key(line, "colspan", element.ColSpan?.ToString());
         Key(line, "numbering", element.ListNumbering);
         Key(line, "summary", QuoteIfPresent(element.Summary));
+        Key(line, Field.ImageContents, "images", Bracketed(element.ImageHashes));
         foreach (var annotation in element.Annotations)
         {
             line.Append(" annot=").Append(annotation.Subtype);

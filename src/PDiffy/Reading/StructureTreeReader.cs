@@ -12,7 +12,7 @@ internal sealed record StructureTree(
 
 /// <summary>Turns the structure tree into <see cref="StructureElement"/>s, joining each element to its marked-content text.</summary>
 internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, DestinationReader destinations,
-    Func<int, int, IReadOnlyList<Letter>?> lettersOf, Func<int, int, IReadOnlyList<MarkedSpan>?> spansOf)
+    Func<int, PageContent?> contentOf)
 {
     private readonly Dictionary<string, string> _roleMap = [];
     private readonly Dictionary<string, string> _namesById = [];
@@ -20,11 +20,9 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
     private readonly HashSet<IndirectReference> _referencedObjects = [];
     private readonly HashSet<IndirectReference> _readElements = [];
 
-    /// <param name="lettersOf">The letters behind an MCID, given (page number, MCID).</param>
-    /// <param name="spansOf">The marked content behind an MCID that sets its own language or replacement text.</param>
+    /// <param name="contentOf">What a page's content stream holds behind each MCID, given the page number.</param>
     public static StructureTree Read(PdfObjects objects, DictionaryToken catalog, PageTree pages,
-        DestinationReader destinations, Func<int, int, IReadOnlyList<Letter>?> lettersOf,
-        Func<int, int, IReadOnlyList<MarkedSpan>?> spansOf)
+        DestinationReader destinations, Func<int, PageContent?> contentOf)
     {
         var root = objects.Dictionary(catalog, "StructTreeRoot");
         if (root is null)
@@ -32,7 +30,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
             return new StructureTree([], [], new HashSet<(int, int)>(), new HashSet<IndirectReference>());
         }
 
-        return new StructureTreeReader(objects, pages, destinations, lettersOf, spansOf).ReadRoot(root);
+        return new StructureTreeReader(objects, pages, destinations, contentOf).ReadRoot(root);
     }
 
     private StructureTree ReadRoot(DictionaryToken root)
@@ -60,6 +58,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         var page = pages.NumberOf(element.Data.GetValueOrDefault("Pg")) ?? inheritedPage;
         var pieces = new List<(int Page, IReadOnlyList<Letter> Letters)>();
         var spans = new List<MarkedSpan>();
+        var images = new List<string>();
         var pagesUsed = new SortedSet<int>();
         var annotations = new List<Annotation>();
         var children = new List<StructureElement>();
@@ -116,12 +115,14 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         {
             _referencedMcids.Add((textPage, mcid));
             pagesUsed.Add(textPage);
-            if (lettersOf(textPage, mcid) is { Count: > 0 } letters)
+            var content = contentOf(textPage);
+            if (content?.LettersByMcid.GetValueOrDefault(mcid) is { Count: > 0 } letters)
             {
                 pieces.Add((textPage, letters));
             }
 
-            if (spansOf(textPage, mcid) is { } found) spans.AddRange(found);
+            if (content?.SpansByMcid.GetValueOrDefault(mcid) is { } found) spans.AddRange(found);
+            if (content?.ImagesByMcid.GetValueOrDefault(mcid) is { } hashes) images.AddRange(hashes);
         }
 
         var attributes = Attributes(element);
@@ -148,6 +149,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
             McidsInXObject = mcidsInXObject,
             UnreadChildren = unreadChildren,
             MarkedSpans = spans,
+            ImageHashes = images,
             Text = Join(pieces),
             Children = children,
         };

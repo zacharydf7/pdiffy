@@ -72,7 +72,7 @@ public enum Field
     /// <summary>The stroke width of each path.</summary>
     LineWidths,
 
-    /// <summary>The pixel size and hash of each image.</summary>
+    /// <summary>The pixel size and hash of each image, and the hashes of the images each structure element draws.</summary>
     ImageContents,
 
     /// <summary>

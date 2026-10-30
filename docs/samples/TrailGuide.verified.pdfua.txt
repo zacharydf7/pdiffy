@@ -16,7 +16,7 @@ bookmarks
   "Trails" -> p2 view=Fit
 structure
   H1 p1 "Trail Guide"
-  Figure p1 alt="Park logo"
+  Figure p1 alt="Park logo" images=[76be8b528d0075f7]
   P p1 "Read this guide before you start a new trail."
   P p1 "Ask a ranger if you have questions."
   H2 p2 "Trails"

@@ -514,6 +514,17 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowOnlyTheNewKey_WhenASnapshotFromBeforeFigureImagesMeetsOneWithThem()
+    {
+        var before = SnapshotText.Header + "structure\n  Figure p1 alt=\"Logo\"\n";
+        var after = SnapshotText.Header + "structure\n  Figure p1 alt=\"Logo\" images=[76be8b528d0075f7]\n";
+
+        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+
+        Assert.Equal((ChangeKind.AttributeChanged, "images: (missing) -> [76be8b528d0075f7]"), (change.Kind, change.Detail));
+    }
+
+    [Fact]
     public void Compare_ShouldShowOnlyTheNewKey_WhenASnapshotFromBeforeFormReferencesMeetsOneWithThem()
     {
         var before = SnapshotText.Header + "structure\n  P p1 \"Stamp\"\n";

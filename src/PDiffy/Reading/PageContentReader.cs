@@ -11,8 +11,9 @@ internal sealed class ContentOwners
     public Dictionary<Letter, ContentOwner> Letters { get; } = new(ReferenceEqualityComparer.Instance);
     public Dictionary<PdfPath, ContentOwner> Paths { get; } = new(ReferenceEqualityComparer.Instance);
 
-    // PdfPig builds new image objects on every call, so images can't be looked up by reference; LayoutReader matches them by position.
-    public List<(IPdfImage Image, ContentOwner Owner)> Images { get; } = [];
+    // PdfPig builds new image objects on every call, so images can't be looked up by reference; LayoutReader matches them by
+    // position. Each is hashed once here, for the element that owns it, and LayoutReader reuses the hash.
+    public List<(IPdfImage Image, ContentOwner Owner, string Hash)> Images { get; } = [];
 }
 
 /// <summary>
@@ -20,8 +21,8 @@ internal sealed class ContentOwners
 /// language or replacement text, the artifacts, untagged text, and who owns what.
 /// </summary>
 internal sealed record PageContent(IReadOnlyDictionary<int, List<Letter>> LettersByMcid,
-    IReadOnlyDictionary<int, List<MarkedSpan>> SpansByMcid, IReadOnlyList<PageText> Artifacts, string? UntaggedText,
-    ContentOwners Owners);
+    IReadOnlyDictionary<int, List<MarkedSpan>> SpansByMcid, IReadOnlyDictionary<int, List<string>> ImagesByMcid,
+    IReadOnlyList<PageText> Artifacts, string? UntaggedText, ContentOwners Owners);
 
 internal sealed class PageContentReader
 {
@@ -67,7 +68,10 @@ internal sealed class PageContentReader
         }
 
         var untaggedText = TextJoiner.Join(untagged);
-        return new PageContent(lettersByMcid, _spansByMcid, _artifacts, untaggedText.Length > 0 ? untaggedText : null, _owners);
+        var imagesByMcid = _owners.Images.Where(image => image.Owner.Mcid is not null).GroupBy(image => image.Owner.Mcid!.Value)
+            .ToDictionary(group => group.Key, group => group.Select(image => image.Hash).ToList());
+        return new PageContent(lettersByMcid, _spansByMcid, imagesByMcid, _artifacts, untaggedText.Length > 0 ? untaggedText : null,
+            _owners);
     }
 
     // Marked content without its own MCID belongs to the nearest enclosing MCID, if there is one. Children go on the
@@ -156,7 +160,7 @@ internal sealed class PageContentReader
 
         foreach (var image in element.Images)
         {
-            _owners.Images.Add((image, owner));
+            _owners.Images.Add((image, owner, LayoutReader.Hash(image)));
         }
     }
 

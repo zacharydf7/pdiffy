@@ -94,6 +94,38 @@ public class LayoutTests
     }
 
     [Fact]
+    public void Load_ShouldTieEachFigureToTheImageItDraws_WhenAPageHasSeveralFigures()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().TaggedImage(0, gray: "20", y: 600).TaggedImage(1, gray: "E0", y: 400);
+        pdf.Structure(new TestElement("Figure", 1) { Entries = "/Alt (Logo)" }, new TestElement("Figure", 0) { Entries = "/Alt (Map)" });
+
+        var document = pdf.Load();
+
+        var (map, logo) = (document.Images[0].Hash, document.Images[1].Hash);
+        Assert.NotEqual(map, logo);
+        Assert.Equal([[logo], [map]], document.Structure.Select(figure => figure.ImageHashes));
+    }
+
+    [Fact]
+    public void CompareTo_ShouldReportBothFigures_WhenTheirImagesAreSwapped()
+    {
+        static PdfUaDocument Build(string mapGray, string logoGray)
+        {
+            var pdf = new TestPdf();
+            pdf.AddPage().TaggedImage(0, mapGray, y: 600).TaggedImage(1, logoGray, y: 400);
+            pdf.Structure(new TestElement("Figure", 0) { Entries = "/Alt (Map)" }, new TestElement("Figure", 1) { Entries = "/Alt (Logo)" });
+            return pdf.Load();
+        }
+
+        var diff = Build("20", "E0").CompareTo(Build("E0", "20"));
+
+        var figures = diff.Changes.Where(change => change.Section == Section.Structure).ToList();
+        Assert.Equal(2, figures.Count);
+        Assert.All(figures, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
+    }
+
+    [Fact]
     public void Load_ShouldGiveDifferentHashes_WhenImagePixelsDiffer()
     {
         var pdf = new TestPdf();

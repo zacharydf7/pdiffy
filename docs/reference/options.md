@@ -58,7 +58,7 @@ appears; the rest of each line is still compared.
 | `Colors` | Text color and path fill and stroke colors |
 | `FontNames`, `FontSizes` | The font and size of each text run in the layout |
 | `LineWidths` | The stroke width of each path |
-| `ImageContents` | The pixel size and hash of each image |
+| `ImageContents` | The pixel size and hash of each image, and the hashes on each structure element's `images=` |
 | `LinkTargets` | Where links, bookmarks and other actions go: web addresses, files, and the view a page opens at (a bookmark's page stays) |
 | `AnnotationContents` | The text of annotations |
 | `FormValues` | The value of each form field |

@@ -81,15 +81,16 @@ internal sealed class LayoutReader(int pageNumber, ContentOwners owners, IReadOn
             // swap roles; the untagged count stays right and they look the same.
             var match = unmatched.FindIndex(candidate => SameImage(candidate.Image, image));
             ContentOwner? owner = null;
+            string? hash = null;
             if (match >= 0)
             {
-                owner = unmatched[match].Owner;
+                (_, owner, hash) = unmatched[match];
                 unmatched.RemoveAt(match);
             }
 
             var bounds = image.BoundingBox;
             images.Add(new ImageInfo(pageNumber, Round(bounds.Left), Round(bounds.Bottom), Round(bounds.Width), Round(bounds.Height),
-                image.WidthInSamples, image.HeightInSamples, Hash(image), RoleOf(owner)));
+                image.WidthInSamples, image.HeightInSamples, hash ?? Hash(image), RoleOf(owner)));
         }
 
         return images;
@@ -132,7 +133,7 @@ internal sealed class LayoutReader(int pageNumber, ContentOwners owners, IReadOn
 
     // The first 16 hex digits of a SHA-256 of the decoded pixels, or of the raw stream when PdfPig can't decode it (e.g. JPEG).
     // An image too large to decompress is hashed as stored, which still changes when the image does.
-    private static string Hash(IPdfImage image)
+    public static string Hash(IPdfImage image)
     {
         Memory<byte> bytes;
         try
