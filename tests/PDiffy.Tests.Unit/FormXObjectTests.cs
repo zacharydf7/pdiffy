@@ -76,6 +76,17 @@ public class FormXObjectTests
         Assert.Equal(["Ranger stamp"], document.Untagged.Select(text => text.Text));
     }
 
+    // The page's marked content goes on around the form, so the form's artifact is inside it.
+    [Fact]
+    public void Load_ShouldCountTheFormsArtifactAsInsideTaggedContent_WhenTheFormIsDrawnInsideThePagesMarkedContent()
+    {
+        var document = Load(page: "/P << /MCID 0 >> BDC BT /F1 12 Tf 72 700 Td (Trail notes) Tj ET /Fm1 Do EMC",
+            elements: ["<< /Type /StructElem /S /P /P 6 0 R /Pg 3 0 R /K 0 >>"],
+            forms: [Form("/Artifact BMC BT /F1 12 Tf 72 600 Td (Page 1) Tj ET EMC")]);
+
+        Assert.Equal(1, Assert.Single(document.Pages).ArtifactsInTaggedContent);
+    }
+
     // Objects 1 to 6 are the catalog, pages, page, its content, a font and the structure root; the elements follow,
     // numbered from 7, then the forms, so with two elements the first form is object 9.
     private static PdfUaDocument Load(string page, string[] elements, string[] forms)

@@ -30,12 +30,15 @@ internal sealed record PageContent(OrderedDictionary<MarkedContentId, List<Lette
     IReadOnlyDictionary<MarkedContentId, List<PdfMarkedSpan>> SpansByMcid,
     IReadOnlyDictionary<MarkedContentId, List<string>> ImagesByMcid, IReadOnlyList<PdfPageText> Artifacts,
     IReadOnlyList<string> UntaggedLines, ContentOwners Owners, IReadOnlyList<OwnedRun> TextRuns,
-    IReadOnlyDictionary<MarkedContentId, List<PdfTextRun>> TextRunsByMcid, ContentLayers Layers, bool FormsKnown);
+    IReadOnlyDictionary<MarkedContentId, List<PdfTextRun>> TextRunsByMcid, ContentLayers Layers, bool FormsKnown,
+    int ArtifactsInTagged, int ArtifactsHoldingTagged);
 
 internal sealed class PageContentReader
 {
     private readonly ContentOwners _owners = new();
     private readonly List<PdfPageText> _artifacts = [];
+    private int _artifactsInTagged;
+    private int _artifactsHoldingTagged;
     private readonly Dictionary<MarkedContentId, List<PdfMarkedSpan>> _spansByMcid = [];
 
     // The content stream each marked-content element is in: the page's own (null) or a form XObject's.
@@ -95,7 +98,7 @@ internal sealed class PageContentReader
         var textRunsByMcid = textRuns.Where(owned => owned.Mcid is not null).GroupBy(owned => owned.Mcid!.Value)
             .ToDictionary(group => group.Key, group => group.Select(owned => owned.Run).ToList());
         return new PageContent(lettersByMcid, _spansByMcid, imagesByMcid, _artifacts, TextJoiner.JoinLines(untagged), _owners,
-            textRuns, textRunsByMcid, layers, formsKnown);
+            textRuns, textRunsByMcid, layers, formsKnown, _artifactsInTagged, _artifactsHoldingTagged);
     }
 
     // Each element's content stream, matched to the sequences in the order they begin. When the counts disagree, as for
@@ -115,6 +118,14 @@ internal sealed class PageContentReader
     {
         if (markedContent.IsArtifact)
         {
+            // Neither nests in the other: an artifact inside tagged content, or an artifact with marked content inside
+            // it that has an MCID, is counted for the page.
+            if (enclosingMcid is not null) _artifactsInTagged++;
+            if (SelfAndDescendants(markedContent).Skip(1).Any(element => element.MarkedContentIdentifier >= 0))
+            {
+                _artifactsHoldingTagged++;
+            }
+
             var artifact = new ContentOwner(IsArtifact: true, Mcid: null);
             var letters = new List<Letter>();
             foreach (var element in SelfAndDescendants(markedContent))

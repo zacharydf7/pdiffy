@@ -137,6 +137,10 @@ internal sealed partial class SnapshotWriter(PdfSnapshotOptions options)
 
             var line = new StringBuilder($"p{page.Number} {PageSize.Describe(page.Width, page.Height)} rotate={page.Rotation}");
             if (page.Tabs is not null || page.HasAnnotations) line.Append($" tabs={page.Tabs ?? Missing}");
+            Key(line, "artifacts-in-tagged",
+                page.ArtifactsInTaggedContent > 0 ? page.ArtifactsInTaggedContent.ToString() : null);
+            Key(line, "artifacts-holding-tagged",
+                page.ArtifactsHoldingTaggedContent > 0 ? page.ArtifactsHoldingTaggedContent.ToString() : null);
             Key(line, PdfDetail.PageBoxes, "crop", BoxText(page.CropBox));
             Key(line, PdfDetail.PageBoxes, "bleed", BoxText(page.BleedBox));
             Key(line, PdfDetail.PageBoxes, "trim", BoxText(page.TrimBox));

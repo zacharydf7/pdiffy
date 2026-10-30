@@ -938,6 +938,42 @@ public class PdfCheckTests
     }
 
     [Fact]
+    public void Check_ShouldFindArtifactsInsideTaggedContentAndTaggedContentInsideArtifacts_WhenAPageHasThem()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Tagged(0, "Fine").Artifact("Page 1");
+        pdf.AddPage()
+            .Raw("/P << /MCID 0 >> BDC BT /F1 12 Tf 72 700 Td (Ridge) Tj ET "
+                + "/Artifact BMC BT /F1 12 Tf 72 680 Td (1) Tj ET EMC EMC")
+            .Raw("/Artifact BMC /P << /MCID 1 >> BDC BT /F1 12 Tf 72 660 Td (Loop) Tj ET EMC EMC");
+        pdf.Structure(new TestElement("P", 0), new TestElement("P", 0) { Page = 2 },
+            new TestElement("P", 1) { Page = 2 });
+
+        var findings = pdf.Load().Check(PdfCheck.ArtifactNesting);
+
+        Assert.Equal(
+        [
+            "pages > artifacts-in-tagged: Page 2 has 1 artifact(s) inside tagged content",
+            "pages > artifacts-holding-tagged: Page 2 has 1 artifact(s) holding tagged content",
+        ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    // Marked content without an MCID, such as a layer or a language span, isn't tagged content, and an artifact that
+    // has an MCID of its own holds nothing.
+    [Fact]
+    public void Check_ShouldFindNoNesting_WhenAnArtifactSitsInMarkedContentWithoutAnMcidOrHasItsOwn()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Tagged(0, "Ridge")
+            .Raw("/OC /L1 BDC /Artifact BMC BT /F1 12 Tf 72 680 Td (Draft) Tj ET EMC EMC")
+            .Raw("/Span << /Lang (fr-FR) >> BDC /Artifact BMC BT /F1 12 Tf 72 660 Td (1) Tj ET EMC EMC")
+            .Raw("/Artifact << /MCID 3 >> BDC BT /F1 12 Tf 72 640 Td (Footer) Tj ET EMC");
+        pdf.Structure(new TestElement("P", 0));
+
+        Assert.Empty(pdf.Load().Check(PdfCheck.ArtifactNesting));
+    }
+
+    [Fact]
     public void Check_ShouldFindNoRoleMapProblem_WhenAnElementHasNoType()
     {
         var document = Documents.Empty() with { Structure = [new PdfStructureElement { Type = StructureTypes.None }] };
@@ -1003,6 +1039,7 @@ public class PdfCheckTests
     [InlineData(PdfCheck.TextLanguage, PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     [InlineData(PdfCheck.FormulaAltText, PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.7")]
     [InlineData(PdfCheck.MediaClips, PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.18.6.2")]
+    [InlineData(PdfCheck.ArtifactNesting, PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.1")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

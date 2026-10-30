@@ -40,7 +40,7 @@ Sections always appear in this order. Each can be left out with [`PdfSection`](x
 | `settings` | PDF version, page mode and layout, what happens when the file opens, whether it has JavaScript (in document-level scripts, the open action, document actions, form fields, links and other annotations, page actions or bookmarks) or document actions, encryption and what it permits; viewer preferences, optional-content layers and embedded files |
 | `metadata` | Title, author, subject, keywords; whether dates, producer and creator are present; PDF/UA identifier; XMP title, creator, description, language and PDF/A conformance, or `xmp=unreadable`; every other Info entry (such as a company name or classification label) |
 | `role-map` | Each custom tag type and the standard type it maps to |
-| `pages` | Size (named when standard, such as `letter` or `a4`), rotation, tab order; crop, bleed, trim and art boxes, user unit and transparency group when set; pages that couldn't be read; page label ranges |
+| `pages` | Size (named when standard, such as `letter` or `a4`), rotation, tab order; crop, bleed, trim and art boxes, user unit and transparency group when set; how many artifacts sit inside tagged content (`artifacts-in-tagged`) and how many hold tagged content (`artifacts-holding-tagged`), when any do; pages that couldn't be read; page label ranges |
 | `bookmarks` | The outline tree, with each bookmark's target: a page and the view it opens at, a web address or another file. Or `unreadable` when it nests more than 256 deep, loops back on itself or has a damaged item, such as one without a title |
 | `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, a form field's role (`field-role=cb`), links, the hashes of the images it draws (`images=[3f9c0a1b2d4e5f60]`, the same hash as its layout line), the language, replacement text, alt text and expansion that marked content inside it sets, each with the text it covers unless that's all of the element's text (`span-lang=[fr-FR:"bonjour"]`, `span-expansion=["Mount":"Mt."]`), how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), how many point into a form XObject (`mcids-in-xobject`), how many child elements are nested more than 256 deep and left out (`unread-children`), `parent=missing` when it has no parent entry, and the element's text |
 | `artifacts` | Text marked as an artifact (headers, footers, page numbers), per page, with its kind when it gives one (`type=Pagination subtype=Footer`) |
@@ -59,7 +59,7 @@ Sections always appear in this order. Each can be left out with [`PdfSection`](x
 - When anything is ignored, the next lines list it: `# ignored sections: ...` and `# ignored fields: ...`. With
   `Tolerate`, `# tolerances: ...` follows, such as `# tolerances: positions 1pt`, with `OnlyPages`,
   `# only pages: ...`, and with `Check`, `# checks: ...`, the rule set and how many rules it has, such as
-  `# checks: latest, 29 rules`. Comparing two snapshots applies the tolerances their header lists.
+  `# checks: latest, 30 rules`. Comparing two snapshots applies the tolerances their header lists.
 
 ### Lines and keys
 

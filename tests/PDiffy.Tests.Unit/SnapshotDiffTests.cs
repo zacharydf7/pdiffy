@@ -1123,6 +1123,24 @@ public class SnapshotDiffTests
             changes.Select(change => change.PdfSection));
     }
 
+    // The earlier release didn't count artifacts and tagged content nested in each other, so both counts show as added
+    // on the page's line.
+    [Fact]
+    public void Compare_ShouldReportOnlyTheNestingCounts_WhenASnapshotFromBeforeTheCountsIsCompared()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("/P << /MCID 0 >> BDC BT /F1 12 Tf 72 700 Td (Ridge) Tj ET /Artifact BMC EMC EMC")
+            .Raw("/Artifact BMC /P << /MCID 1 >> BDC EMC EMC");
+        pdf.Structure(new TestElement("P", 0));
+        var current = pdf.Load().ToSnapshot();
+        var earlier = current.Replace(" artifacts-in-tagged=1", "").Replace(" artifacts-holding-tagged=1", "");
+
+        var changes = SnapshotDiff.CompareSnapshots(earlier, current).Changes;
+
+        Assert.Equal([PdfSection.Pages, PdfSection.Pages], changes.Select(change => change.PdfSection));
+        Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
+    }
+
     [Fact]
     public void Compare_ShouldReportTheShiftOnceAndOnlyTheNewPagesContent_WhenAPageIsInserted()
     {

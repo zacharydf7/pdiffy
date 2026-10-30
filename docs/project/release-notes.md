@@ -132,6 +132,9 @@ library does.
   annotation plays with no content type or alternate text. Snapshots print a Screen annotation's media clip, and
   `PdfAnnotation` has `MediaClip`, and `PdfFormField` has `CombinedWithWidget`
   ([#74](https://github.com/zacharydf7/pdiffy/issues/74)).
+- `ArtifactNesting` finds an artifact inside tagged content, and an artifact holding tagged content, page by page.
+  Snapshots print the counts on the page's line, and `PdfPage` has `ArtifactsInTaggedContent` and
+  `ArtifactsHoldingTaggedContent` ([#73](https://github.com/zacharydf7/pdiffy/issues/73)).
 - Snapshots print `suspects=yes` and `parent=missing` when a document has them, and a PDF 2.0 file's
   `version` is now `2.0`, not `1.4`. `PdfDocumentInfo` has `Suspects` and `HasStructureTree`, `PdfMetadata` has
   `HasXmp` and `PdfUaIdPrefix`, and `PdfStructureElement` has `ParentMissing`

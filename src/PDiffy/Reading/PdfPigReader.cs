@@ -113,9 +113,14 @@ internal static class PdfPigReader
                 continue;
             }
 
-            pages.Add(ReadPageInfo(number, page, objects));
             var resources = pageTree.Pages.ElementAtOrDefault(number - 1)?.Resources;
-            readable[number] = new ReadPage(page, PageContentReader.Read(page, resources, objects, forms));
+            var content = PageContentReader.Read(page, resources, objects, forms);
+            pages.Add(ReadPageInfo(number, page, objects) with
+            {
+                ArtifactsInTaggedContent = content.ArtifactsInTagged,
+                ArtifactsHoldingTaggedContent = content.ArtifactsHoldingTagged,
+            });
+            readable[number] = new ReadPage(page, content);
         }
 
         return (pages, readable);

@@ -59,6 +59,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.TextLanguage: TextLanguage(); break;
             case PdfCheck.FormulaAltText: FormulaAltText(); break;
             case PdfCheck.MediaClips: MediaClips(); break;
+            case PdfCheck.ArtifactNesting: ArtifactNesting(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -117,6 +118,24 @@ internal sealed class PdfChecker(PdfUaDocument document)
             {
                 Add(PdfCheck.MediaClips, page, $"{Name(PdfSection.Annotations)} > media-alt",
                     $"Media clip{On(page)} has no alternate text");
+            }
+        }
+    }
+
+    private void ArtifactNesting()
+    {
+        foreach (var page in document.Pages)
+        {
+            if (page.ArtifactsInTaggedContent > 0)
+            {
+                Add(PdfCheck.ArtifactNesting, page.Number, $"{Name(PdfSection.Pages)} > artifacts-in-tagged",
+                    $"Page {page.Number} has {page.ArtifactsInTaggedContent} artifact(s) inside tagged content");
+            }
+
+            if (page.ArtifactsHoldingTaggedContent > 0)
+            {
+                Add(PdfCheck.ArtifactNesting, page.Number, $"{Name(PdfSection.Pages)} > artifacts-holding-tagged",
+                    $"Page {page.Number} has {page.ArtifactsHoldingTaggedContent} artifact(s) holding tagged content");
             }
         }
     }
@@ -926,6 +945,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             new(PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
         PdfCheck.FormulaAltText => new(PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.7"),
         PdfCheck.MediaClips => new(PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.18.6.2"),
+        PdfCheck.ArtifactNesting => new(PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

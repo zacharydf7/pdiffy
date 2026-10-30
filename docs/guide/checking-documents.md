@@ -64,6 +64,7 @@ conforms.
 | `TextLanguage` | In a document with no language that sets some on its elements or marked content: text, alt text, annotation contents, form field names, bookmark titles and default-language XMP text with no language to take | `Language` | 7.2 |
 | `FormulaAltText` | A formula with no alt text or replacement text | `AltText` | 7.7 |
 | `MediaClips` | A media clip a Screen annotation plays with no content type or no alternate text | `AltText` | 7.18.6.2 |
+| `ArtifactNesting` | An artifact inside tagged content, or an artifact holding tagged content, page by page | `Content` | 7.1 |
 | `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |
 | `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
@@ -98,7 +99,7 @@ await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Check(PdfCheckS
 
 ```text
 # pdfua-snapshot v1
-# checks: latest, 29 rules
+# checks: latest, 30 rules
 ...
 checks
   FigureAltText p2 structure > Document > Figure[2]

@@ -145,6 +145,9 @@ public enum PdfCheck
     /// Every media clip, such as a video a Screen annotation plays, has a content type and alternate text.
     /// </summary>
     MediaClips,
+
+    /// <summary>No artifact sits inside tagged content, and no artifact holds tagged content.</summary>
+    ArtifactNesting,
 }
 
 /// <summary>

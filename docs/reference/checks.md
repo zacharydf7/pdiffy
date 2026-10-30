@@ -105,6 +105,20 @@ so a reader can miss a heading, a warning or a price.
 tagged or marked as artifacts too. Content that repeats or only decorates, such as running headers and footers, page
 numbers, rules and backgrounds, is marked as an artifact, so a screen reader doesn't announce it on every page.
 
+## ArtifactNesting
+
+**Finds:** an artifact (`/Artifact` marked content) inside tagged content, and an artifact that holds tagged content
+(marked content with an MCID), counted page by page. **Category:** `Content`. **Severity:** `Error`. **From:** ISO
+14289-1 7.1.
+
+**Why it matters:** content is either read (tagged) or skipped (an artifact), and a screen reader can't do both. Nested
+the other way, a page number inside a paragraph may be read in the middle of a sentence, or real text inside a
+decoration may be skipped.
+
+**How to fix it:** close the tagged content before drawing the artifact, and the other way round. The usual cause is a
+generator that draws a header, footer or watermark while it's in the middle of writing a tagged paragraph. Text that
+form XObjects draw outside the structure is reported by [`UntaggedContent`](#untaggedcontent).
+
 ## LinkDescriptions
 
 **Finds:** a link with no description: no contents, and no alt text or text on the element that tags it.

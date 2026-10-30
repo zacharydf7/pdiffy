@@ -397,6 +397,17 @@ public sealed record PdfPage
     /// </summary>
     public required string? Tabs { get; init; }
 
+    /// <summary>
+    /// How many artifacts on the page sit inside tagged content, which PDF/UA doesn't allow, since a screen reader
+    /// can't tell whether to read them.
+    /// </summary>
+    public int ArtifactsInTaggedContent { get; init; }
+
+    /// <summary>
+    /// How many artifacts on the page hold tagged content (marked content with an MCID), which PDF/UA doesn't allow.
+    /// </summary>
+    public int ArtifactsHoldingTaggedContent { get; init; }
+
     /// <summary>Whether the page has annotations, such as links or form fields.</summary>
     public required bool HasAnnotations { get; init; }
 

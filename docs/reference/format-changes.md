@@ -16,10 +16,10 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### Checks
 
-- `PdfCheckSet.Latest` has seventeen new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
+- `PdfCheckSet.Latest` has eighteen new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
   `TocStructure`, `HeadingTypes`, `NoteIds`, `TableStructure`, `TableGrid`, `AnnotationTags`,
-  `AnnotationDescriptions`, `TabOrder`, `LanguageTags`, `TextLanguage`, `FormulaAltText` and `MediaClips`, so a
-  snapshot that records checks with it prints `# checks: latest, 29 rules` and what they find
+  `AnnotationDescriptions`, `TabOrder`, `LanguageTags`, `TextLanguage`, `FormulaAltText`, `MediaClips` and
+  `ArtifactNesting`, so a snapshot that records checks with it prints `# checks: latest, 30 rules` and what they find
   ([#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#74](https://github.com/zacharydf7/pdiffy/issues/74)). A release's own set, such as `PdfCheckSet.Version0_3`,
   doesn't change.
 
@@ -35,6 +35,9 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   (`media-type=video/mp4 media-alt="Trail tour"`), on its `annotations` line and, when it's tagged, on its element's
   `structure` line ([#74](https://github.com/zacharydf7/pdiffy/issues/74)). Only snapshots of documents with such
   annotations change, and a clip that loses its alternate text is flagged as affecting accessibility.
+- A page whose artifacts and tagged content nest in each other prints how many artifacts do: `artifacts-in-tagged=1`,
+  `artifacts-holding-tagged=1` ([#73](https://github.com/zacharydf7/pdiffy/issues/73)). Only snapshots of such pages
+  change.
 - A file whose header says PDF 2.0 prints `version=2.0`. PDiffy read the version through PdfPig, which reads a
   header it doesn't know as 1.4, so such snapshots printed `version=1.4` and change.
 
