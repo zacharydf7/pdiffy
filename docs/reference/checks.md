@@ -102,6 +102,21 @@ one foot, with a body whenever there's either), then `TR`, then `TH` and `TD`. T
 goes first or last. Most generators get this right for tables built with their table feature; the usual cause is a
 layout made of positioned text or nested tables used for spacing.
 
+## TableGrid
+
+**Finds:** a cell that overlaps one spanning down from an earlier row, a cell that spans past the table's last row, and
+a row that covers a different number of columns from the first row. Cells are laid out as a viewer lays them out: row
+by row, each in the first column no cell above still covers, counting `RowSpan` and `ColSpan`. **Category:** `Tables`.
+**Severity:** `Error`. **From:** ISO 14289-1 7.2.
+
+**Why it matters:** a screen reader reads a cell with the headers of its row and column, and says how many rows and
+columns the table has. When the cells don't line up, it pairs values with the wrong headers, or reports a column that
+isn't there.
+
+**How to fix it:** check each `RowSpan` and `ColSpan` against the table as it's drawn: a cell that spans two rows takes
+a column in the row below, so that row has one cell fewer. A generator that merges cells usually sets the spans; one
+that draws merged cells as separate boxes needs its merging turned on, or the extra empty cells tagged.
+
 ## HeadingLevels
 
 **Finds:** a heading that skips a level, or one that comes before any `H1`. **Category:** `Headings`. **Severity:**

@@ -586,6 +586,69 @@ public class PdfCheckTests
         ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
     }
 
+    private static TestElement Cell(int mcid, int rowSpan = 1, int colSpan = 1) =>
+        new("TD", mcid) { Entries = $"/A << /O /Table /RowSpan {rowSpan} /ColSpan {colSpan} >>" };
+
+    [Fact]
+    public void Check_ShouldFindNothing_WhenEveryRowCoversTheSameColumnsCountingSpans()
+    {
+        var pdf = new TestPdf();
+        var page = pdf.AddPage();
+        for (var i = 0; i < 7; i++) page.Tagged(i, $"Cell {i}");
+        pdf.Structure(
+            new TestElement("Table", new TestElement("THead", new TestElement("TR", Cell(0, colSpan: 2))),
+                new TestElement("TBody", new TestElement("TR", Cell(1), Cell(2)))),
+            new TestElement("Table", new TestElement("TR", Cell(3, rowSpan: 2), Cell(4)),
+                new TestElement("TR", Cell(5))),
+            new TestElement("Table", new TestElement("TR", Cell(6))));
+
+        Assert.Empty(pdf.Load().Check(PdfCheck.TableGrid));
+    }
+
+    [Fact]
+    public void Check_ShouldFindShortRowsOverlapsAndSpansPastTheLastRow_WhenTablesHaveThem()
+    {
+        var pdf = new TestPdf();
+        var page = pdf.AddPage();
+        for (var i = 0; i < 11; i++) page.Tagged(i, $"Cell {i}");
+        pdf.Structure(
+            new TestElement("Table", new TestElement("TR", Cell(0), Cell(1), Cell(2)),
+                new TestElement("TR", Cell(3), Cell(4))),
+            new TestElement("Table", new TestElement("TR", Cell(5), Cell(6, rowSpan: 2)),
+                new TestElement("TR", Cell(7, colSpan: 2))),
+            new TestElement("Table", new TestElement("TR", Cell(8, rowSpan: 3), Cell(9)),
+                new TestElement("TR", Cell(10))));
+
+        var findings = pdf.Load().Check(PdfCheck.TableGrid);
+
+        Assert.Equal(
+        [
+            "structure > Table[1] > TR[2]: TR has 2 column(s), but the first row has 3",
+            "structure > Table[2] > TR[2] > TD: TD on p1 overlaps a cell spanning from an earlier row",
+            "structure > Table[3] > TR[1] > TD[1]: TD on p1 spans 3 rows, past the table's last row",
+        ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    // A span of 0 counts as 1, and a huge one is laid out only as far as the table goes, so it can't exhaust memory.
+    [Fact]
+    public void Check_ShouldReportASpanPastTheLastRowWithoutLayingItOut_WhenASpanIsZeroOrHuge()
+    {
+        var pdf = new TestPdf();
+        var page = pdf.AddPage();
+        for (var i = 0; i < 4; i++) page.Tagged(i, $"Cell {i}");
+        pdf.Structure(new TestElement("Table",
+            new TestElement("TR", Cell(0, rowSpan: int.MaxValue), Cell(1, rowSpan: 0)),
+            new TestElement("TR", Cell(2, colSpan: int.MaxValue))));
+
+        var findings = pdf.Load().Check(PdfCheck.TableGrid);
+
+        Assert.Equal(
+        [
+            $"structure > Table > TR[1] > TD[1]: TD on p1 spans {int.MaxValue} rows, past the table's last row",
+            "structure > Table > TR[2]: TR has 1001 column(s), but the first row has 2",
+        ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
     [Fact]
     public void Check_ShouldFindNoRoleMapProblem_WhenAnElementHasNoType()
     {
@@ -643,6 +706,7 @@ public class PdfCheckTests
     [InlineData(PdfCheck.HeadingTypes, PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.4")]
     [InlineData(PdfCheck.NoteIds, PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.9")]
     [InlineData(PdfCheck.TableStructure, PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.TableGrid, PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

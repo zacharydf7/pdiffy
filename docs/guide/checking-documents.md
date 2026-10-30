@@ -56,6 +56,7 @@ conforms.
 | `HeadingTypes` | Unnumbered (H) and numbered (H1 to H6) headings in one document, and an element with more than one H | `Headings` | 7.4.4 |
 | `NoteIds` | A note with no ID, and a note with the ID of an earlier one | `Structure` | 7.9 |
 | `TableStructure` | A row, cell or row group outside where a table has them, one holding what it can't, a second THead, TFoot or Caption, a THead or TFoot with no TBody, and a caption that isn't first or last | `Tables` | 7.2 |
+| `TableGrid` | Cells that overlap, a cell that spans past the last row, and a row with a different number of columns from the first, counting spans | `Tables` | 7.2 |
 | `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |
 | `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
@@ -90,7 +91,7 @@ await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Check(PdfCheckS
 
 ```text
 # pdfua-snapshot v1
-# checks: latest, 21 rules
+# checks: latest, 22 rules
 ...
 checks
   FigureAltText p2 structure > Document > Figure[2]

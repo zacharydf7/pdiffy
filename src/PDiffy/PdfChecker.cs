@@ -40,6 +40,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.HeadingTypes: HeadingTypes(); break;
             case PdfCheck.NoteIds: NoteIds(); break;
             case PdfCheck.TableStructure: TableStructure(); break;
+            case PdfCheck.TableGrid: TableGrid(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -452,6 +453,81 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
+    // HTML's cap on a cell's column span, so a hostile span can't make the grid huge.
+    private const int MaxColumnSpan = 1000;
+
+    // Lays each table out as a grid, row by row, each cell in the first column no cell above still covers, as a viewer
+    // does, then compares what each row covers with the first row. A row span is laid out only as far as the table's
+    // last row, so a huge one costs nothing.
+    private void TableGrid()
+    {
+        foreach (var (table, tablePath) in Elements.Where(pair => pair.Element.TypeOrMapped == StructureType.Table))
+        {
+            var rows = Rows(table, tablePath).ToList();
+            var covered = new HashSet<(int Row, int Column)>();
+            for (var row = 0; row < rows.Count; row++)
+            {
+                var column = 0;
+                foreach (var (cell, path) in Cells(rows[row].Element, rows[row].Path))
+                {
+                    while (covered.Contains((row, column))) column++;
+
+                    var rowSpan = Math.Max(1, cell.RowSpan ?? 1);
+                    var colSpan = Math.Clamp(cell.ColSpan ?? 1, 1, MaxColumnSpan);
+                    var rowsLeft = rows.Count - row;
+                    var slots = Enumerable.Range(row, Math.Min(rowSpan, rowsLeft))
+                        .SelectMany(r => Enumerable.Range(column, colSpan).Select(c => (r, c))).ToList();
+                    var (type, page) = (cell.TypeOrMapped, cell.FirstPage);
+                    if (slots.Any(covered.Contains))
+                    {
+                        Add(PdfCheck.TableGrid, page, path,
+                            $"{type}{On(page)} overlaps a cell spanning from an earlier row");
+                    }
+
+                    if (rowSpan > rowsLeft)
+                    {
+                        Add(PdfCheck.TableGrid, page, path,
+                            $"{type}{On(page)} spans {rowSpan} rows, past the table's last row");
+                    }
+
+                    covered.UnionWith(slots);
+                    column += colSpan;
+                }
+            }
+
+            var widths = new int[rows.Count];
+            foreach (var (row, _) in covered) widths[row]++;
+            for (var row = 1; row < rows.Count; row++)
+            {
+                if (widths[row] == widths[0]) continue;
+
+                Add(PdfCheck.TableGrid, rows[row].Element.FirstPage, rows[row].Path,
+                    $"TR has {widths[row]} column(s), but the first row has {widths[0]}");
+            }
+        }
+    }
+
+    // A table's rows, whether straight in it or in a THead, TBody or TFoot, in the order the tree lists them.
+    private static IEnumerable<(PdfStructureElement Element, string Path)> Rows(PdfStructureElement table, string path)
+    {
+        foreach (var (child, childPath) in StructurePaths.WithPaths(table.Children, path))
+        {
+            var type = child.TypeOrMapped;
+            if (type == StructureType.TableRow) yield return (child, childPath);
+            if (type is not (StructureType.TableHead or StructureType.TableBody or StructureType.TableFoot)) continue;
+
+            foreach (var row in StructurePaths.WithPaths(child.Children, childPath))
+            {
+                if (row.Element.TypeOrMapped == StructureType.TableRow) yield return row;
+            }
+        }
+    }
+
+    private static IEnumerable<(PdfStructureElement Element, string Path)> Cells(PdfStructureElement row,
+        string path) =>
+        StructurePaths.WithPaths(row.Children, path).Where(pair =>
+            pair.Element.TypeOrMapped is StructureType.TableHeaderCell or StructureType.TableDataCell);
+
     // Each element of a type that must sit in another, each child a container can't hold, and a caption that isn't
     // its container's first child (or last, when it can be). A child is reported once, for the first of these it
     // breaks.
@@ -577,7 +653,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.HeadingLevels => new(PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.2"),
         PdfCheck.HeadingTypes => new(PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.4"),
         PdfCheck.NoteIds => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.9"),
-        PdfCheck.TableStructure => new(PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
+        PdfCheck.TableStructure or PdfCheck.TableGrid =>
+            new(PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

@@ -102,6 +102,12 @@ public enum PdfCheck
     /// THead, TFoot and Caption, a TBody when it has a THead or TFoot, and its caption first or last.
     /// </summary>
     TableStructure,
+
+    /// <summary>
+    /// A table's cells line up, counting their row and column spans: no two overlap, none spans past the last row, and
+    /// every row has as many columns as the first.
+    /// </summary>
+    TableGrid,
 }
 
 /// <summary>
