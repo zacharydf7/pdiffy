@@ -16,6 +16,10 @@ internal static partial class TextJoiner
     // Fewer gaps than this can't tell letter spacing from short words set apart, so they aren't taken as spacing.
     private const int MinGapsForLetterSpacing = 3;
 
+    // Points past MaxLetterSpacing still taken as spacing: writers round Tc to two decimals, which can land a hair past
+    // the cap (2.63 at 10.5 pt, where the cap is 2.625).
+    private const double WrittenRounding = 0.01;
+
     // A space goes between two letters when the baseline changes or the gap is wider than SpaceGap em beyond the line's
     // letter spacing. Gaps are measured along the text's own baseline, so text drawn at an angle joins as it does across
     // the page. Space glyphs in the PDF come through as letters themselves.
@@ -54,7 +58,7 @@ internal static partial class TextJoiner
         if (gaps.Count < MinGapsForLetterSpacing) return 0;
         gaps.Sort();
         var low = gaps[gaps.Count / 4];
-        return low > 0 && low <= letters[start].PointSize * MaxLetterSpacing ? low : 0;
+        return low > 0 && low <= letters[start].PointSize * MaxLetterSpacing + WrittenRounding ? low : 0;
     }
 
     /// <summary>

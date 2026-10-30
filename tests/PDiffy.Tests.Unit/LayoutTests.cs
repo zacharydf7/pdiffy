@@ -159,6 +159,8 @@ public class LayoutTests
     [InlineData("[(Go) -300 (to) -300 (B)] TJ", "Go to B")]
     [InlineData("[(1) -300 (2) -300 (3) -300 (4)] TJ", "1 2 3 4")]
     [InlineData("3 Tc (FAQ) Tj", "F A Q")]
+    [InlineData("2.7 Tc (Hello world) Tj", "Hello world")]
+    [InlineData("4 Tc (Hello world) Tj", "H e l l o w o r l d")]
     public void Load_ShouldPutSpacesOnlyBetweenWords_WhenTextIsLetterSpacedOrSetApart(string operators, string expected)
     {
         var pdf = new TestPdf();
@@ -169,6 +171,15 @@ public class LayoutTests
 
         Assert.Equal(expected, Assert.Single(document.Structure).Text);
         Assert.Equal(expected, string.Join(" ", document.TextRuns.Select(run => run.Text)));
+    }
+
+    [Fact]
+    public void Load_ShouldTakeLetterSpacingAsSuch_WhenItsRoundedJustPastTheCap()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("BT /F1 10.5 Tf 72 400 Td 2.63 Tc (Hello world) Tj ET");
+
+        Assert.Equal("Hello world", Assert.Single(pdf.Load().TextRuns).Text);
     }
 
     [Fact]
