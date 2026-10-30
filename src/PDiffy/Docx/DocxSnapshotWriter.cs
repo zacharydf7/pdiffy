@@ -17,14 +17,19 @@ internal sealed class DocxSnapshotWriter
     private readonly Scrubbing _scrubbing;
     private readonly Dictionary<string, ParagraphFormat> _styleLayouts;
 
-    private DocxSnapshotWriter(DocxDocument document, StringBuilder snapshot, DocxSnapshotOptions options, Scrubbing scrubbing)
+    // An inserted document's styles are compared with the outer document line, since its own isn't printed.
+    private readonly string? _language;
+
+    private DocxSnapshotWriter(DocxDocument document, StringBuilder snapshot, DocxSnapshotOptions options, Scrubbing scrubbing,
+        string? language)
     {
-        (_snapshot, _options, _scrubbing) = (snapshot, options, scrubbing);
+        (_snapshot, _options, _scrubbing, _language) = (snapshot, options, scrubbing, language);
         _styleLayouts = document.Styles.Where(style => style.Type == "paragraph").ToDictionary(style => style.Id, style => style.Paragraph);
     }
 
     public static string Write(DocxDocument document, DocxSnapshotOptions options) =>
-        new DocxSnapshotWriter(document, new StringBuilder(), options, new Scrubbing(options.Scrubbers)).Build(document);
+        new DocxSnapshotWriter(document, new StringBuilder(), options, new Scrubbing(options.Scrubbers), document.Document.Language)
+            .Build(document);
 
     private string Build(DocxDocument document)
     {
@@ -33,7 +38,7 @@ internal sealed class DocxSnapshotWriter
         if (_options.IgnoredDetails.Any()) Line(0, $"# ignored fields: {string.Join(", ", _options.IgnoredDetails.Select(SnapshotWriter.Name))}");
         WriteSection(DocxSection.Document, () => WriteDocument(document.Document));
         WriteSection(DocxSection.Sections, () => WriteSections(document.PageSetups));
-        WriteSection(DocxSection.Styles, () => WriteStyles(document.Styles, document.Document.Language, 1));
+        WriteSection(DocxSection.Styles, () => WriteStyles(document.Styles, 1));
         WriteSection(DocxSection.Numbering, () => WriteLists(document.Lists, 1));
         WriteSection(DocxSection.Body, () =>
         {
@@ -104,9 +109,9 @@ internal sealed class DocxSnapshotWriter
         return line.ToString();
     }
 
-    // A style's language is printed only when it isn't the document's, which the document line already shows. A
-    // character style doesn't take the document's defaults, so it has a language only when it sets one.
-    private void WriteStyles(IReadOnlyList<DocxStyle> styles, string? language, int depth)
+    // A style's language is printed only when it isn't the document line's. A character style doesn't take the
+    // document's defaults, so it has a language only when it sets one.
+    private void WriteStyles(IReadOnlyList<DocxStyle> styles, int depth)
     {
         if (styles.Count == 0) Line(depth, None);
         foreach (var style in styles)
@@ -115,7 +120,7 @@ internal sealed class DocxSnapshotWriter
             Key(line, null, Quote(style.Name));
             if (style.IsDefault) line.Append(" default");
             Key(line, "based-on", style.BasedOn);
-            WriteRun(line, style.Run, new RunFormat { Language = style.Run.Language is null ? null : language });
+            WriteRun(line, style.Run, new RunFormat { Language = style.Run.Language is null ? null : _language });
             WriteLayout(line, style.Paragraph, new ParagraphFormat());
             Line(depth, line.ToString());
         }
@@ -209,10 +214,10 @@ internal sealed class DocxSnapshotWriter
         Line(depth, line.ToString());
         if (inserted.Document is not { } document) return;
 
-        var writer = new DocxSnapshotWriter(document, _snapshot, _options, _scrubbing);
+        var writer = new DocxSnapshotWriter(document, _snapshot, _options, _scrubbing, _language);
         writer.Line(depth + 1, "styles");
         if (_options.Ignores(DocxSection.Styles)) writer.Line(depth + 2, SnapshotWriter.Ignored);
-        else writer.WriteStyles(document.Styles, document.Document.Language, depth + 2);
+        else writer.WriteStyles(document.Styles, depth + 2);
         writer.Line(depth + 1, "numbering");
         if (_options.Ignores(DocxSection.Numbering)) writer.Line(depth + 2, SnapshotWriter.Ignored);
         else writer.WriteLists(document.Lists, depth + 2);

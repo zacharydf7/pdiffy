@@ -106,6 +106,26 @@ public class DocxHeaderAndFieldTests
         Assert.Equal(["Before", "From the inserted file"], document.Paragraphs().Select(paragraph => paragraph.Text));
     }
 
+    [Fact]
+    public void ToSnapshot_ShouldPrintAnInsertedDocumentsLanguage_WhenItIsntTheOuterDocuments()
+    {
+        var inserted = new TestDocx
+        {
+            Styles = """
+                <w:docDefaults><w:rPrDefault><w:rPr><w:lang w:val="de-DE"/></w:rPr></w:rPrDefault></w:docDefaults>
+                <w:style w:type="paragraph" w:styleId="Normal" w:default="1"/>
+                """,
+            Body = "<w:p><w:r><w:t>Wanderweg</w:t></w:r></w:p>",
+        }.Build().ToArray();
+        var docx = new TestDocx
+        {
+            Styles = """<w:docDefaults><w:rPrDefault><w:rPr><w:lang w:val="en-US"/></w:rPr></w:rPrDefault></w:docDefaults>""",
+            Body = """<w:altChunk r:id="chunk"/>""",
+        }.WithPart("chunk", "aFChunk", "inserted.docx", inserted);
+
+        Assert.Contains("    styles\n      Normal paragraph default lang=de-DE\n", docx.Load().ToSnapshot());
+    }
+
     [Theory]
     [InlineData("inserted.html", "<p>Hello</p>", "Inserted html hash=")]
     [InlineData("inserted.docx", "not a zip", "Inserted docx unreadable hash=")]

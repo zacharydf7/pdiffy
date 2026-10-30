@@ -46,7 +46,7 @@ Sections always appear in this order. Each can be left out with [`DocxSection`](
 |---|---|
 | `document` | Title, subject, language, compatibility mode, whether changes are tracked, protection, even and odd headers, whether created and modified dates are present; parts that couldn't be read |
 | `sections` | One line per section (`s1`, `s2`, ...): page size, margins, header and footer distances, columns, section break, page numbering, title page, which headers and footers it has; a tracked change to its settings |
-| `styles` | The styles the document uses, with their properties resolved through the styles they're based on. A style's language prints only when it isn't the document's |
+| `styles` | The styles the document uses, with their properties resolved through the styles they're based on. A style's language prints only when it isn't the language on the document line. An inserted Word document's styles are compared with that language too, so one in another language prints `lang=` on its styles |
 | `numbering` | The lists the document uses, and each level's format, text, start and indents |
 | `body` | Paragraphs, tables, content controls and inserted documents, in reading order |
 | `headers`, `footers` | Each section's headers and footers, by kind (`default`, `first`, `even`) |

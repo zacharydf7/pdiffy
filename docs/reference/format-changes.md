@@ -26,8 +26,10 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 ### Word (`docx-snapshot v1`, unchanged)
 
 - Hidden text (`w:vanish`), double strikethrough, right-to-left runs and a run's language are read. A run that differs
-  from its paragraph in one of these prints a span (`span "care" hidden`), and a style whose language isn't the
-  document's prints `lang=`. Only snapshots of documents with such runs or styles change.
+  from its paragraph in one of these prints a span (`span "care" hidden`), and a style whose language isn't the one on
+  the document line prints `lang=`. An inserted Word document's styles are compared with that language too, so an
+  inserted document in another language prints `lang=` on its styles. Only snapshots of documents with such runs or
+  styles change.
 
 ### Accessibility flags
 
