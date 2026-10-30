@@ -98,6 +98,10 @@ the option, no snapshot prints a `checks` section.
 [Check rules](../reference/checks.md) explains each rule: why it matters to someone using assistive technology and
 how to fix it. A finding's `HelpUrl` links to its rule's entry.
 
+Since the approved snapshots hold the findings, [`pdiffy findings --all`](../reference/command-line.md#findings) counts
+them across a suite, by rule and by snapshot, without regenerating anything: a quick measure of how many problems a
+team's documents have.
+
 These are fast regression checks for the mistakes generated documents make, not a PDF/UA validator: for conformance,
 use [veraPDF](https://verapdf.org/) or PAC. On the command line, [`pdiffy check`](../reference/command-line.md#check)
 runs them all. For a rule of your own, assert on the model, as the rest of this page shows.

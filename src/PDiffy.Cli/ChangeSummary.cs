@@ -70,7 +70,7 @@ internal static class ChangeSummary
     private static string Encode(string text) => WebUtility.HtmlEncode(text);
 
     // The start of a summary page, up to and including the body tag, in the reports' style.
-    private static string PageHead(string title) => $$"""
+    internal static string PageHead(string title) => $$"""
         <!doctype html>
         <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{{title}}</title>

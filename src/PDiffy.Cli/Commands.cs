@@ -26,6 +26,8 @@ public static class Commands
                                                             Summarize received snapshots
           pdiffy coverage [<files or folders>] [--all] [--markdown <coverage.md>]
                                                             Count what the verified snapshots compare
+          pdiffy findings [<files or folders>] [--all] [--html <findings.html>] [--markdown <findings.md>]
+                                                            Count the check findings the verified snapshots hold
           pdiffy unused [<folders>] --run-log <folder> [--all] [--delete]
                                                             List or delete snapshots no test used in a run
           pdiffy --version                                  Print the version and the snapshot formats it writes
@@ -34,7 +36,8 @@ public static class Commands
         Comparing exits with 0 when nothing changed and 1 when something did; check, with 0 when it finds nothing and 1
         when it finds something; report, with 0 when no snapshot was received and 1 when one was; unused, with 0 when
         every snapshot was used or --delete removed the rest, and 1 when it lists some.
-        accept, report, coverage and unused take the current folder by default; --all includes subfolders.
+        coverage and findings always exit with 0.
+        accept, report, coverage, findings and unused take the current folder by default; --all includes subfolders.
         """;
 
     public static int Run(string[] args, TextWriter output, TextWriter error)
@@ -51,6 +54,7 @@ public static class Commands
                 ["accept", .. var rest] => Accept(rest, output),
                 ["report", .. var rest] => Report(rest, output),
                 ["coverage", .. var rest] => Coverage(rest, output),
+                ["findings", .. var rest] => Findings(rest, output),
                 ["unused", .. var rest] => Unused(rest, output),
                 ["compare", var before, var after, .. var options] =>
                     CompareFolders(before, after, options, output, error),
@@ -136,19 +140,7 @@ public static class Commands
     // The summary always prints; --html and --markdown also save it, for a build's artifacts or a CI job summary.
     private static int Report(string[] args, TextWriter output)
     {
-        var (targets, html, markdown) = (new List<string>(), (string?)null, (string?)null);
-        for (var i = 0; i < args.Length; i++)
-        {
-            if (args[i] is "--html" or "--markdown" && i + 1 == args.Length)
-            {
-                throw new ArgumentException($"{args[i]} needs a file.");
-            }
-
-            if (args[i] == "--html") html = args[++i];
-            else if (args[i] == "--markdown") markdown = args[++i];
-            else if (args[i] != "--all") targets.Add(args[i]);
-        }
-
+        var (targets, html, markdown) = SummaryOptions(args);
         var pending = PendingSnapshot.Find(targets, args.Contains("--all"));
         var summary = new PendingSummary(pending);
         output.Write(summary.ToText());
@@ -174,6 +166,37 @@ public static class Commands
         output.Write(coverage.ToText());
         if (markdown is not null) File.AppendAllText(markdown, coverage.ToMarkdown());
         return Same;
+    }
+
+    // A summary, not a gate: the approved snapshots already hold their findings, so nothing is regenerated.
+    private static int Findings(string[] args, TextWriter output)
+    {
+        var (targets, html, markdown) = SummaryOptions(args);
+        var verified = SnapshotFileSearch.Find(targets, args.Contains("--all"), SnapshotFiles.VerifiedPart);
+        var counts = FindingCounts.Of(verified);
+        output.Write(counts.ToText());
+        if (html is not null) File.WriteAllText(html, counts.ToHtml());
+        if (markdown is not null) File.AppendAllText(markdown, counts.ToMarkdown());
+        return Same;
+    }
+
+    // The files or folders, and the --html and --markdown files, that report and findings take.
+    private static (List<string> Targets, string? Html, string? Markdown) SummaryOptions(string[] args)
+    {
+        var (targets, html, markdown) = (new List<string>(), (string?)null, (string?)null);
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i] is "--html" or "--markdown" && i + 1 == args.Length)
+            {
+                throw new ArgumentException($"{args[i]} needs a file.");
+            }
+
+            if (args[i] == "--html") html = args[++i];
+            else if (args[i] == "--markdown") markdown = args[++i];
+            else if (args[i] != "--all") targets.Add(args[i]);
+        }
+
+        return (targets, html, markdown);
     }
 
     // A test that didn't run looks unused, so this is only meaningful after a full, unfiltered run.

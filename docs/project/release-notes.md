@@ -89,6 +89,9 @@ library does.
   ([#55](https://github.com/zacharydf7/pdiffy/issues/55)).
 - The HTML report lists new and fixed problems in a checks panel above the changes, each linked to its line and to
   how to fix it ([#57](https://github.com/zacharydf7/pdiffy/issues/57)).
+- `pdiffy findings` counts the check findings the verified snapshots hold, by rule and by snapshot, with
+  `--markdown` for a CI job summary and `--html` for a page; it always exits with `0`
+  ([#59](https://github.com/zacharydf7/pdiffy/issues/59)).
 - Each finding has a `HelpUrl` to its rule's entry on the new [Check rules](../reference/checks.md) page: what it
   finds, why it matters to someone using assistive technology, and how to fix it
   ([#58](https://github.com/zacharydf7/pdiffy/issues/58)).

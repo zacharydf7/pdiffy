@@ -556,6 +556,44 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void Run_ShouldCountTheFindingsByRuleAndSnapshot_WhenAskedForFindings()
+    {
+        var header = "# pdfua-snapshot v1\n# checks: latest, 12 rules\n";
+        Write("Guide.verified.pdfua.txt", header + "structure\n  P p1 \"Hi\"\nchecks\n  FigureAltText p1 structure > Figure\n"
+            + "  FigureAltText p2 structure > Figure\n  TableHeaders p2 structure > TH\n");
+        Write("Maps/Map.verified.pdfua.txt", header + "checks\n  FigureAltText p1 structure > Figure\n");
+        Write("Clean.verified.pdfua.txt", header + "checks\n  (none)\n");
+        Write("Ignored.verified.pdfua.txt", header + "# ignored sections: checks\nchecks\n  (ignored)\n");
+        Write("Old.verified.pdfua.txt", "# pdfua-snapshot v1\nstructure\n  P p1 \"Hi\"\n");
+        Write("Memo.verified.txt", "FigureAltText\n");
+        var (markdown, html) = (Path.Combine(_folder, "findings.md"), Path.Combine(_folder, "findings.html"));
+
+        var exitCode = Commands.Run(["findings", _folder, "--all", "--markdown", markdown, "--html", html], _output,
+            _error);
+
+        Assert.Equal(Commands.Same, exitCode);
+        Assert.Equal("4 problem(s) in 3 snapshot(s) (2 snapshot(s) don't record checks)\n"
+            + "by rule: FigureAltText 3, TableHeaders 1\n", _output.ToString());
+        var table = File.ReadAllText(markdown);
+        Assert.Contains("| `FigureAltText` | 3 |\n| `TableHeaders` | 1 |\n", table);
+        Assert.Matches(@"\| `\S*Guide\.verified\.pdfua\.txt` \| 3 \|\n\| `\S*Map\.verified\.pdfua\.txt` \| 1 \|\n$",
+            table);
+        Assert.Contains("<td><a href=\"https://zacharydf7.github.io/pdiffy/reference/checks.html#figurealttext\">"
+            + "FigureAltText</a></td><td>3</td>", File.ReadAllText(html));
+    }
+
+    [Fact]
+    public void Run_ShouldSayNoSnapshotRecordsChecks_WhenAskedForFindingsOfSnapshotsWithoutThem()
+    {
+        Write("Old.verified.pdfua.txt", "# pdfua-snapshot v1\nstructure\n  P p1 \"Hi\"\n");
+
+        var exitCode = Commands.Run(["findings", _folder], _output, _error);
+
+        Assert.Equal(Commands.Same, exitCode);
+        Assert.Equal("No verified snapshots record checks.\n", _output.ToString());
+    }
+
+    [Fact]
     public void Run_ShouldListTheSnapshotsNoTestUsed_WhenAskedForUnusedOnes()
     {
         var used = Write("snaps/Map.verified.pdfua.txt", "");

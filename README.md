@@ -618,6 +618,11 @@ pdiffy report --all --markdown "$GITHUB_STEP_SUMMARY" --html snapshot-summary.ht
 # suite that has drifted into ignoring layout or fonts everywhere shows it. --markdown works as for report.
 pdiffy coverage --all
 
+# Count the check findings the verified snapshots hold, by rule and by snapshot, without regenerating any document:
+# "120 problem(s) in 34 snapshot(s)". Only snapshots that record a checks section count. Always exits with 0;
+# --markdown and --html work as for report.
+pdiffy findings --all
+
 # List the snapshots no test used, such as those of renamed or deleted tests: run every test, passing, with
 # PDIFFY_RUN_LOG set to the full path of an empty folder, then give that folder to unused. --delete deletes them.
 PDIFFY_RUN_LOG="$PWD/artifacts/run-log" dotnet test

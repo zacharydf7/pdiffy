@@ -26,6 +26,7 @@ exit with `0`.
 | [`pdiffy accept [targets]`](#accept) | Accepts received snapshots as verified |
 | [`pdiffy report [targets]`](#report) | Summarizes received snapshots, for review or a CI job page |
 | [`pdiffy coverage [targets]`](#coverage) | Counts what the verified snapshots compare and leave out |
+| [`pdiffy findings [targets]`](#findings) | Counts the check findings the verified snapshots hold |
 | [`pdiffy unused [folders] --run-log <folder>`](#unused) | Lists or deletes snapshots no test used in a run |
 | `pdiffy --version` | Prints the version and the snapshot formats it writes |
 | `pdiffy --help`, `-h` | Prints the commands |
@@ -231,6 +232,32 @@ so it's fast and needs no documents.
 Each section shows how many snapshots compare it, and the fields line lists every field some snapshot leaves out, most
 often first. Text and JSON snapshots have no sections, so they're only counted. `coverage` exits with `0`, or with `2`
 when a target is missing or isn't a verified snapshot.
+
+## Findings
+
+```text
+pdiffy findings [<files or folders>] [--all] [--html <findings.html>] [--markdown <findings.md>]
+```
+
+A snapshot that records [checks](../guide/checking-documents.md#approve-findings-with-the-snapshot) holds its
+document's findings, so `findings` can count the problems a suite's documents have without regenerating any of them.
+PDF snapshots without a `checks` section, or that ignore it, are counted apart; Word, text and JSON snapshots are left
+out.
+
+| Option | Does |
+|---|---|
+| `<files or folders>` | Which verified snapshots to count. The current folder by default |
+| `--all` | Includes every folder under each folder |
+| `--html <file>` | Saves a page with the counts by rule, each linked to its [help](checks.md), and by snapshot |
+| `--markdown <file>` | Adds the same tables to the end of the file, such as GitHub's `$GITHUB_STEP_SUMMARY` |
+
+```text
+120 problem(s) in 34 snapshot(s) (2 snapshot(s) don't record checks)
+by rule: UntaggedContent 61, FigureAltText 30, TableHeaders 18, HeadingLevels 11
+```
+
+Rules are listed most found first, and the tables list the snapshots with the most problems first. It's a summary, not
+a gate: `findings` exits with `0`, or with `2` when a target is missing or isn't a verified snapshot.
 
 ## Unused
 
