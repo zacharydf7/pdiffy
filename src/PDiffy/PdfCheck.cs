@@ -75,6 +75,18 @@ public enum PdfCheck
     /// The file header and any catalog /Version say 1.0 to 1.7, the versions PDF/UA-1 builds on.
     /// </summary>
     PdfVersion,
+
+    /// <summary>
+    /// List items sit in lists and list bodies in list items; a list holds only lists, items and a caption, which
+    /// comes first; an item holds only a label and a body.
+    /// </summary>
+    ListStructure,
+
+    /// <summary>
+    /// Table of contents items sit in a table of contents, which holds only tables of contents, items and a caption,
+    /// which comes first.
+    /// </summary>
+    TocStructure,
 }
 
 /// <summary>
@@ -100,6 +112,9 @@ public enum PdfCheckCategory
 
     /// <summary>Headings and their levels.</summary>
     Headings,
+
+    /// <summary>Lists and tables of contents, and what they hold.</summary>
+    Lists,
 
     /// <summary>Tables and their headers.</summary>
     Tables,

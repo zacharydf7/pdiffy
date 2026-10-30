@@ -101,6 +101,10 @@ library does.
   PDF/UA-1 and gives its title, as PDF/UA asks; `DocumentTitle` still accepts an Info title), `TaggedPdf` (marked as
   tagged, no `Suspects`, a structure tree, and a parent entry on every element) and `PdfVersion` (a file header
   and catalog version of PDF 1.7 or earlier) ([#63](https://github.com/zacharydf7/pdiffy/issues/63)).
+- Two rules in the new `Lists` category check what lists and tables of contents hold: `ListStructure` (list items in
+  lists, bodies in items, a list holding only lists, items and a caption, an item holding only a label and a body, and
+  a caption first) and `TocStructure` (items in a table of contents, which holds only tables of contents, items and a
+  caption, and a caption first) ([#64](https://github.com/zacharydf7/pdiffy/issues/64)).
 - Snapshots print `suspects=yes` and `parent=missing` when a document has them, and a PDF 2.0 file's
   `version` is now `2.0`, not `1.4`. `PdfDocumentInfo` has `Suspects` and `HasStructureTree`, `PdfMetadata` has
   `HasXmp` and `PdfUaIdPrefix`, and `PdfStructureElement` has `ParentMissing`

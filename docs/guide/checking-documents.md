@@ -61,6 +61,8 @@ conforms.
 | `XmpMetadata` | No XMP metadata, or XMP that doesn't say the document is PDF/UA-1 with the `pdfuaid` prefix, or has no `dc:title` | `Document` | 5, 7.1 |
 | `TaggedPdf` | A document that isn't marked as tagged, says its tags may be unreliable (`Suspects`), has no structure tree, or has elements with no parent entry | `Structure` | 6.2, 7.1 |
 | `PdfVersion` | A file header or catalog version past PDF 1.7 | `Document` | 6.1 |
+| `ListStructure` | A list item outside a list or a list body outside an item, a list holding something other than lists, items and a caption, an item holding something other than a label and a body, and a list caption that isn't first | `Lists` | 7.2 |
+| `TocStructure` | A table of contents item outside a table of contents, one holding something other than tables of contents, items and a caption, and a caption that isn't first | `Lists` | 7.2 |
 
 `Check()` applies every rule PDiffy has, so an upgrade that adds rules can fail a test that passed. To choose when that
 happens, pass a [`PdfCheckSet`](xref:PDiffy.PdfCheckSet): a release's own set, such as `PdfCheckSet.Version0_3`, keeps
@@ -85,7 +87,7 @@ await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Check(PdfCheckS
 
 ```text
 # pdfua-snapshot v1
-# checks: latest, 16 rules
+# checks: latest, 18 rules
 ...
 checks
   FigureAltText p2 structure > Document > Figure[2]

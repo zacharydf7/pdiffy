@@ -195,3 +195,29 @@ written for PDF/UA-1 may not apply to it.
 
 **How to fix it:** write PDF 1.7 for PDF/UA-1, or, for a PDF 2.0 file, check it against PDF/UA-2 and leave this rule
 out of the set.
+
+## ListStructure
+
+**Finds:** a list item (`LI`) outside a list (`L`), a list body (`LBody`) outside a list item, a list holding something
+other than lists, list items and a caption, a list item holding something other than a label (`Lbl`) and a body, and a
+list caption that isn't the list's first child. **Category:** `Lists`. **Severity:** `Error`. **From:** ISO 14289-1 7.2.
+
+**Why it matters:** a screen reader announces a list and how many items it has, such as "list, 4 items", and reads
+each item's label and body together. Items outside a list, or text loose in it, are read as plain text, without the
+count or where each item starts.
+
+**How to fix it:** put each item in an `L`, and each item's text in an `LBody`, with its bullet or number in an `Lbl`.
+A nested list goes in the `LBody` of the item it belongs to, or straight in the outer `L`. A list's caption goes first.
+
+## TocStructure
+
+**Finds:** a table of contents item (`TOCI`) outside a table of contents (`TOC`), a table of contents holding
+something other than tables of contents, items and a caption, and a caption that isn't its first child.
+**Category:** `Lists`. **Severity:** `Error`. **From:** ISO 14289-1 7.2.
+
+**Why it matters:** a screen reader reads a table of contents as a list of entries that lead into the document. Entries
+outside it, or other content mixed in, read as plain text, so the list and how many entries it has are lost.
+
+**How to fix it:** put each entry in a `TOCI` inside the `TOC`, a nested part in a `TOC` of its own inside the outer one,
+and the caption first. Most generators build this from their table of contents field; check that field's tagging
+setting.

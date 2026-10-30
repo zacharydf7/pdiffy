@@ -445,6 +445,8 @@ public async Task TrailMap_ShouldPassTheAccessibilityChecks_WhenGenerated()
 | `XmpMetadata` | No XMP metadata, or XMP that doesn't say the document is PDF/UA-1 with the `pdfuaid` prefix, or has no `dc:title` | `Document` | 5, 7.1 |
 | `TaggedPdf` | A document that isn't marked as tagged, says its tags may be unreliable (`Suspects`), has no structure tree, or has elements with no parent entry | `Structure` | 6.2, 7.1 |
 | `PdfVersion` | A file header or catalog version past PDF 1.7 | `Document` | 6.1 |
+| `ListStructure` | A list item outside a list or a list body outside an item, a list holding something other than lists, items and a caption, an item holding something other than a label and a body, and a list caption that isn't first | `Lists` | 7.2 |
+| `TocStructure` | A table of contents item outside a table of contents, one holding something other than tables of contents, items and a caption, and a caption that isn't first | `Lists` | 7.2 |
 
 `Check()` applies every rule PDiffy has, so an upgrade that adds rules can fail a test that passed. To choose when that happens, pass a set: `document.Check(PdfCheckSet.Version0_3)` applies only the rules 0.3 shipped, whatever later releases add, while `PdfCheckSet.Latest` grows with each release, as .NET analyzers do with `AnalysisLevel`. `Only` and `Except` narrow a set: `PdfCheckSet.Latest.Only(PdfCheckCategory.Tables)` or `PdfCheckSet.Latest.Except(PdfCheck.HeadingLevels)`.
 
@@ -800,7 +802,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 | Release | Change |
 |---|---|
 | Next | `pdfua-snapshot v1`, unchanged version: the document line prints `suspects=yes` when MarkInfo says the tags may be unreliable, a structure element with no parent entry gets `parent=missing`, and a file whose header says PDF 2.0 prints `version=2.0`, not `1.4`. Only snapshots of such documents change |
-| Next | `pdfua-snapshot v1`, unchanged version: `PdfCheckSet.Latest` has four new rules (`RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`), so a snapshot that records checks with it prints `# checks: latest, 16 rules` and what they find. A release's own set doesn't change |
+| Next | `pdfua-snapshot v1`, unchanged version: `PdfCheckSet.Latest` has six new rules (`RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`, `TocStructure`), so a snapshot that records checks with it prints `# checks: latest, 18 rules` and what they find. A release's own set doesn't change |
 | Next | No snapshot changes. A new problem in the `checks` section from a rule that isn't a house rule is flagged as affecting accessibility |
 | Next | `pdfua-snapshot v1`, unchanged version: a test can opt into a `checks` section, with `Check(PdfCheckSet)`, that lists what the checks find, and a `# checks: ...` header line. Snapshots without the option don't change |
 | Next | `pdfua-snapshot v1`, unchanged version: an element whose marked content is in a form XObject reads its text from the form alone. A form numbers its MCIDs apart from the page, and before, both the page's element and the form's printed the text of both when the two used the same MCID. Only snapshots of documents whose forms reuse the page's MCIDs change, and text a form tags that no element points to now shows in `untagged` |

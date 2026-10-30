@@ -59,7 +59,7 @@ Sections always appear in this order. Each can be left out with [`PdfSection`](x
 - When anything is ignored, the next lines list it: `# ignored sections: ...` and `# ignored fields: ...`. With
   `Tolerate`, `# tolerances: ...` follows, such as `# tolerances: positions 1pt`, with `OnlyPages`,
   `# only pages: ...`, and with `Check`, `# checks: ...`, the rule set and how many rules it has, such as
-  `# checks: latest, 16 rules`. Comparing two snapshots applies the tolerances their header lists.
+  `# checks: latest, 18 rules`. Comparing two snapshots applies the tolerances their header lists.
 
 ### Lines and keys
 

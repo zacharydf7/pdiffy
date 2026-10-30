@@ -417,6 +417,53 @@ public class PdfCheckTests
     }
 
     [Fact]
+    public void Check_ShouldFindNothing_WhenListsAndTablesOfContentsHoldWhatTheyShould()
+    {
+        var pdf = new TestPdf();
+        var page = pdf.AddPage();
+        for (var i = 0; i < 8; i++) page.Tagged(i, $"Text {i}");
+        pdf.Structure(
+            new TestElement("L", new TestElement("Caption", 0),
+                new TestElement("LI", new TestElement("Lbl", 1), new TestElement("LBody", 2)),
+                new TestElement("L", new TestElement("LI", new TestElement("LBody", 3)))),
+            new TestElement("TOC", new TestElement("Caption", 4), new TestElement("TOCI", 5),
+                new TestElement("TOC", new TestElement("TOCI", 6))),
+            new TestElement("P", 7));
+
+        Assert.Empty(pdf.Load().Check(PdfCheck.ListStructure, PdfCheck.TocStructure));
+    }
+
+    [Fact]
+    public void Check_ShouldFindMisplacedItemsWrongChildrenAndLateCaptions_WhenListsHaveThem()
+    {
+        var pdf = new TestPdf();
+        var page = pdf.AddPage();
+        for (var i = 0; i < 11; i++) page.Tagged(i, $"Text {i}");
+        pdf.Structure(
+            new TestElement("LI", new TestElement("LBody", 0)),
+            new TestElement("L",
+                new TestElement("LI", new TestElement("Lbl", 1), new TestElement("P", 2), new TestElement("LBody", 3)),
+                new TestElement("Caption", 4), new TestElement("LBody", 5), new TestElement("P", 9)),
+            new TestElement("TOC", new TestElement("TOCI", 6), new TestElement("Caption", 7),
+                new TestElement("P", 10)),
+            new TestElement("TOCI", 8));
+
+        var findings = pdf.Load().Check(PdfCheck.ListStructure, PdfCheck.TocStructure);
+
+        Assert.Equal(
+        [
+            "structure > LI: LI isn't inside L",
+            "structure > L > Caption: Caption on p1 isn't the first child of its L",
+            "structure > L > LBody: LBody on p1 isn't inside LI",
+            "structure > L > P: P on p1 is in L, which holds only L, LI, Caption",
+            "structure > L > LI > P: P on p1 is in LI, which holds only Lbl, LBody",
+            "structure > TOCI: TOCI on p1 isn't inside TOC",
+            "structure > TOC > Caption: Caption on p1 isn't the first child of its TOC",
+            "structure > TOC > P: P on p1 is in TOC, which holds only TOC, TOCI, Caption",
+        ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Fact]
     public void Check_ShouldFindNoRoleMapProblem_WhenAnElementHasNoType()
     {
         var document = Documents.Empty() with { Structure = [new PdfStructureElement { Type = StructureTypes.None }] };
@@ -468,6 +515,8 @@ public class PdfCheckTests
     [InlineData(PdfCheck.XmpMetadata, PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 5")]
     [InlineData(PdfCheck.TaggedPdf, PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1")]
     [InlineData(PdfCheck.PdfVersion, PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 6.1")]
+    [InlineData(PdfCheck.ListStructure, PdfCheckCategory.Lists, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.TocStructure, PdfCheckCategory.Lists, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

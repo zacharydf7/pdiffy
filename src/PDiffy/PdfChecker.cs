@@ -35,6 +35,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.XmpMetadata: XmpMetadata(); break;
             case PdfCheck.TaggedPdf: TaggedPdf(); break;
             case PdfCheck.PdfVersion: PdfVersion(); break;
+            case PdfCheck.ListStructure: ListStructure(); break;
+            case PdfCheck.TocStructure: TocStructure(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -329,6 +331,62 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
+    private void ListStructure() => Nesting(PdfCheck.ListStructure,
+        new() { [StructureType.ListItem] = StructureType.List, [StructureType.ListBody] = StructureType.ListItem },
+        new()
+        {
+            [StructureType.List] = [StructureType.List, StructureType.ListItem, StructureType.Caption],
+            [StructureType.ListItem] = [StructureType.Label, StructureType.ListBody],
+        });
+
+    private void TocStructure() => Nesting(PdfCheck.TocStructure,
+        new() { [StructureType.TableOfContentsItem] = StructureType.TableOfContents },
+        new()
+        {
+            [StructureType.TableOfContents] =
+                [StructureType.TableOfContents, StructureType.TableOfContentsItem, StructureType.Caption],
+        });
+
+    // Each element of a type that must sit in another, each child a container can't hold, and a caption that isn't
+    // its container's first child. A child is reported once, for the first of these it breaks.
+    private void Nesting(PdfCheck check, Dictionary<string, string> parents, Dictionary<string, string[]> holds)
+    {
+        foreach (var (parent, children) in Families())
+        {
+            var parentType = parent?.TypeOrMapped;
+            var allowed = parentType is null ? null : holds.GetValueOrDefault(parentType);
+            for (var i = 0; i < children.Count; i++)
+            {
+                var (child, path) = children[i];
+                var (type, page) = (child.TypeOrMapped, child.FirstPage);
+                if (parents.TryGetValue(type, out var required) && parentType != required)
+                {
+                    Add(check, page, path, $"{type}{On(page)} isn't inside {required}");
+                }
+                else if (allowed is not null && !allowed.Contains(type))
+                {
+                    Add(check, page, path, $"{type}{On(page)} is in {parentType}, which holds only "
+                        + string.Join(", ", allowed));
+                }
+                else if (allowed is not null && type == StructureType.Caption && i > 0)
+                {
+                    Add(check, page, path, $"Caption{On(page)} isn't the first child of its {parentType}");
+                }
+            }
+        }
+    }
+
+    // The structure tree root's children, then each element's, with their paths.
+    private IEnumerable<(PdfStructureElement? Parent, List<(PdfStructureElement Element, string Path)> Children)>
+        Families()
+    {
+        yield return (null, [.. StructurePaths.WithPaths(document.Structure, StructurePaths.Root)]);
+        foreach (var (element, path) in Elements)
+        {
+            yield return (element, [.. StructurePaths.WithPaths(element.Children, path)]);
+        }
+    }
+
     // The type and the types it maps to in turn, up to the first standard type, a type with no mapping, or the first
     // type seen twice, which ends the chain when it loops.
     private static List<string> Chain(string type, Dictionary<string, string> map)
@@ -410,6 +468,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.XmpMetadata => new(PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 5"),
         PdfCheck.TaggedPdf => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),
         PdfCheck.PdfVersion => new(PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 6.1"),
+        PdfCheck.ListStructure or PdfCheck.TocStructure =>
+            new(PdfCheckCategory.Lists, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
         PdfCheck.NoActions or PdfCheck.NoEmbeddedFiles =>
             new(PdfCheckCategory.HouseRules, PdfCheckSeverity.Warning, null),
         _ => throw new ArgumentOutOfRangeException(nameof(check), check, "Every check needs a rule."),
