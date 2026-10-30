@@ -228,6 +228,21 @@ public sealed record RunFormat
 
     /// <summary>"superscript" or "subscript".</summary>
     public string? VerticalAlign { get; init; }
+
+    /// <summary>Text struck through with two lines.</summary>
+    public bool DoubleStrike { get; init; }
+
+    /// <summary>Hidden text, which Word doesn't show or print unless asked to.</summary>
+    public bool Hidden { get; init; }
+
+    /// <summary>Text set right to left, such as Arabic or Hebrew.</summary>
+    public bool RightToLeft { get; init; }
+
+    /// <summary>
+    /// The text's language, such as "fr-FR". A run's comes from the run, its styles or the document's defaults; a
+    /// character style's only from the style.
+    /// </summary>
+    public string? Language { get; init; }
 }
 
 /// <summary>How a paragraph is laid out. Lengths are in points; null means not set.</summary>

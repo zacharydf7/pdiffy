@@ -419,6 +419,19 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowOnlyTheNewSpanAndKey_WhenADocxSnapshotFromBeforeHiddenTextMeetsOneWithIt()
+    {
+        var before = "# docx-snapshot v1\nstyles\n  French paragraph\nbody\n  P \"Walk with care\"\n";
+        var after = "# docx-snapshot v1\nstyles\n  French paragraph lang=fr-FR\nbody\n  P \"Walk with care\"\n"
+            + "    span \"care\" hidden\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Equal(["AttributeChanged lang: (missing) -> fr-FR", "Added span \"care\" hidden"],
+            changes.Select(change => $"{change.Kind} {change.Detail}"));
+    }
+
+    [Fact]
     public void Compare_ShouldReportOneBookmarkChanged_WhenABookmarkToAnotherFileLosesItsPage()
     {
         var before = SnapshotText.Header + "bookmarks\n  \"Atlas\" -> p1\n";

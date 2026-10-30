@@ -151,6 +151,58 @@ public class DocxFormattingTests
         Assert.Equal(8, Assert.Single(docx.Load().Styles).Paragraph.SpacingAfter);
     }
 
+    [Theory]
+    [InlineData("<w:vanish/>", "hidden")]
+    [InlineData("<w:dstrike/>", "double-strike")]
+    [InlineData("<w:rtl/>", "rtl")]
+    [InlineData("<w:lang w:val=\"fr-FR\"/>", "lang=fr-FR")]
+    public void ToSnapshot_ShouldPrintASpan_WhenARunIsHiddenDoubleStruckRightToLeftOrInAnotherLanguage(string properties,
+        string expected)
+    {
+        var docx = new TestDocx
+        {
+            Body = $"<w:p><w:r><w:t xml:space=\"preserve\">Walk with </w:t></w:r><w:r><w:rPr>{properties}</w:rPr><w:t>care</w:t></w:r></w:p>",
+        };
+
+        Assert.Contains($"    span \"care\" {expected}\n", docx.Load().ToSnapshot());
+    }
+
+    [Fact]
+    public void Load_ShouldTurnHiddenTextOff_WhenACharacterStyleHidesTextTheParagraphStyleAlreadyHides()
+    {
+        var docx = new TestDocx
+        {
+            Styles = """
+                <w:style w:type="paragraph" w:styleId="Notes"><w:rPr><w:vanish/></w:rPr></w:style>
+                <w:style w:type="character" w:styleId="Shown"><w:rPr><w:vanish/></w:rPr></w:style>
+                """,
+            Body = """<w:p><w:pPr><w:pStyle w:val="Notes"/></w:pPr><w:r><w:rPr><w:rStyle w:val="Shown"/></w:rPr><w:t>Hi</w:t></w:r></w:p>""",
+        };
+
+        Assert.False(Assert.Single(Assert.Single(docx.Load().Paragraphs()).Spans).Format.Hidden);
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldPrintAStylesLanguage_WhenItIsntTheDocuments()
+    {
+        var docx = new TestDocx
+        {
+            Styles = """
+                <w:docDefaults><w:rPrDefault><w:rPr><w:lang w:val="en-US"/></w:rPr></w:rPrDefault></w:docDefaults>
+                <w:style w:type="paragraph" w:styleId="Normal" w:default="1"/>
+                <w:style w:type="paragraph" w:styleId="French"><w:rPr><w:lang w:val="fr-FR"/></w:rPr></w:style>
+                <w:style w:type="character" w:styleId="Strong"><w:rPr><w:b/></w:rPr></w:style>
+                """,
+            Body = """<w:p/><w:p><w:pPr><w:pStyle w:val="French"/></w:pPr><w:r><w:rPr><w:rStyle w:val="Strong"/></w:rPr><w:t>Oui</w:t></w:r></w:p>""",
+        };
+
+        var snapshot = docx.Load().ToSnapshot();
+
+        Assert.Contains("  Normal paragraph default\n", snapshot);
+        Assert.Contains("  French paragraph lang=fr-FR\n", snapshot);
+        Assert.Contains("  Strong character bold\n", snapshot);
+    }
+
     [Fact]
     public void ToSnapshot_ShouldShowAColumnBreak_WhenAParagraphHasOne()
     {

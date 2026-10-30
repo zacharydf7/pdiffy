@@ -67,7 +67,7 @@ internal sealed class StyleResolver
 
     /// <summary>
     /// How a run looks: the paragraph's look, then its character style, then direct formatting. Bold, italic, caps,
-    /// small caps and strike in a character style switch the paragraph's setting rather than replacing it.
+    /// small caps, strike and hidden in a character style switch the paragraph's setting rather than replacing it.
     /// </summary>
     public RunFormat Run(RunFormat paragraph, string? characterStyle, XElement? direct)
     {
@@ -84,6 +84,7 @@ internal sealed class StyleResolver
                 Caps = paragraph.Caps ^ style.Caps,
                 SmallCaps = paragraph.SmallCaps ^ style.SmallCaps,
                 Strike = paragraph.Strike ^ style.Strike,
+                Hidden = paragraph.Hidden ^ style.Hidden,
             };
         }
 
@@ -142,6 +143,10 @@ internal sealed class StyleResolver
             SmallCaps = Toggle(rPr, "smallCaps") ?? format.SmallCaps,
             Strike = Toggle(rPr, "strike") ?? format.Strike,
             VerticalAlign = Cleared(Attr(rPr.Element(W + "vertAlign"), "val"), "baseline", format.VerticalAlign),
+            DoubleStrike = Toggle(rPr, "dstrike") ?? format.DoubleStrike,
+            Hidden = Toggle(rPr, "vanish") ?? format.Hidden,
+            RightToLeft = Toggle(rPr, "rtl") ?? format.RightToLeft,
+            Language = NonEmpty(Attr(rPr.Element(W + "lang"), "val")) ?? format.Language,
         };
     }
 

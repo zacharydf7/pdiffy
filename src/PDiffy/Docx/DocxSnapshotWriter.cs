@@ -33,7 +33,7 @@ internal sealed class DocxSnapshotWriter
         if (_options.IgnoredDetails.Any()) Line(0, $"# ignored fields: {string.Join(", ", _options.IgnoredDetails.Select(SnapshotWriter.Name))}");
         WriteSection(DocxSection.Document, () => WriteDocument(document.Document));
         WriteSection(DocxSection.Sections, () => WriteSections(document.PageSetups));
-        WriteSection(DocxSection.Styles, () => WriteStyles(document.Styles, 1));
+        WriteSection(DocxSection.Styles, () => WriteStyles(document.Styles, document.Document.Language, 1));
         WriteSection(DocxSection.Numbering, () => WriteLists(document.Lists, 1));
         WriteSection(DocxSection.Body, () =>
         {
@@ -104,7 +104,9 @@ internal sealed class DocxSnapshotWriter
         return line.ToString();
     }
 
-    private void WriteStyles(IReadOnlyList<DocxStyle> styles, int depth)
+    // A style's language is printed only when it isn't the document's, which the document line already shows. A
+    // character style doesn't take the document's defaults, so it has a language only when it sets one.
+    private void WriteStyles(IReadOnlyList<DocxStyle> styles, string? language, int depth)
     {
         if (styles.Count == 0) Line(depth, None);
         foreach (var style in styles)
@@ -113,7 +115,7 @@ internal sealed class DocxSnapshotWriter
             Key(line, null, Quote(style.Name));
             if (style.IsDefault) line.Append(" default");
             Key(line, "based-on", style.BasedOn);
-            WriteRun(line, style.Run, new RunFormat());
+            WriteRun(line, style.Run, new RunFormat { Language = style.Run.Language is null ? null : language });
             WriteLayout(line, style.Paragraph, new ParagraphFormat());
             Line(depth, line.ToString());
         }
@@ -210,7 +212,7 @@ internal sealed class DocxSnapshotWriter
         var writer = new DocxSnapshotWriter(document, _snapshot, _options, _scrubbing);
         writer.Line(depth + 1, "styles");
         if (_options.Ignores(DocxSection.Styles)) writer.Line(depth + 2, SnapshotWriter.Ignored);
-        else writer.WriteStyles(document.Styles, depth + 2);
+        else writer.WriteStyles(document.Styles, document.Document.Language, depth + 2);
         writer.Line(depth + 1, "numbering");
         if (_options.Ignores(DocxSection.Numbering)) writer.Line(depth + 2, SnapshotWriter.Ignored);
         else writer.WriteLists(document.Lists, depth + 2);
@@ -396,6 +398,10 @@ internal sealed class DocxSnapshotWriter
         Flag(line, "small-caps", format.SmallCaps, baseFormat.SmallCaps);
         Flag(line, "strike", format.Strike, baseFormat.Strike);
         Changed(line, "vertical", format.VerticalAlign, baseFormat.VerticalAlign, "baseline");
+        Flag(line, "double-strike", format.DoubleStrike, baseFormat.DoubleStrike);
+        Flag(line, "hidden", format.Hidden, baseFormat.Hidden);
+        Flag(line, "rtl", format.RightToLeft, baseFormat.RightToLeft);
+        Changed(line, "lang", format.Language, baseFormat.Language, Missing);
     }
 
     private void WriteLayout(StringBuilder line, ParagraphFormat format, ParagraphFormat baseFormat)

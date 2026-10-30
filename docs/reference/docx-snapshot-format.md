@@ -46,7 +46,7 @@ Sections always appear in this order. Each can be left out with [`DocxSection`](
 |---|---|
 | `document` | Title, subject, language, compatibility mode, whether changes are tracked, protection, even and odd headers, whether created and modified dates are present; parts that couldn't be read |
 | `sections` | One line per section (`s1`, `s2`, ...): page size, margins, header and footer distances, columns, section break, page numbering, title page, which headers and footers it has; a tracked change to its settings |
-| `styles` | The styles the document uses, with their properties resolved through the styles they're based on |
+| `styles` | The styles the document uses, with their properties resolved through the styles they're based on. A style's language prints only when it isn't the document's |
 | `numbering` | The lists the document uses, and each level's format, text, start and indents |
 | `body` | Paragraphs, tables, content controls and inserted documents, in reading order |
 | `headers`, `footers` | Each section's headers and footers, by kind (`default`, `first`, `even`) |
@@ -57,7 +57,7 @@ Sections always appear in this order. Each can be left out with [`DocxSection`](
 | Line | Means |
 |---|---|
 | `P ... "text"` | A paragraph: its style, list item and label, layout that differs from its style, then its text |
-| `span "text" ...` | Part of the paragraph whose formatting differs from the paragraph's, such as `bold` or `font=` |
+| `span "text" ...` | Part of the paragraph whose formatting differs from the paragraph's, such as `bold`, `font=`, `hidden` (text Word doesn't show or print), `double-strike`, `rtl` (right to left) or `lang=fr-FR` |
 | `Table ...` | A table: style, grid widths, width, cell margins, borders |
 | `Row` / `Row header` | A table row; a header row repeats on each page |
 | `Cell ...` | A cell: span, merge, shading, width, margins, borders |

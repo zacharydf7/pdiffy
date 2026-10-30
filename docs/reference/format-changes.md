@@ -23,6 +23,12 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   bookmark to another file prints `file="atlas.pdf" dest=p1` instead of `-> p1`, since that page isn't in this document.
   Snapshots of documents with internal links or bookmarks change.
 
+### Word (`docx-snapshot v1`, unchanged)
+
+- Hidden text (`w:vanish`), double strikethrough, right-to-left runs and a run's language are read. A run that differs
+  from its paragraph in one of these prints a span (`span "care" hidden`), and a style whose language isn't the
+  document's prints `lang=`. Only snapshots of documents with such runs or styles change.
+
 ### Accessibility flags
 
 No snapshot changes, but more changes are flagged as
