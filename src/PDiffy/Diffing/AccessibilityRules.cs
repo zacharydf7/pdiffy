@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 
 namespace PDiffy.Diffing;
 
@@ -21,7 +22,8 @@ internal static class AccessibilityRules
             ChangeKind.Moved => section == Section.Structure,
             ChangeKind.Changed => IsTypeChange(before, after) || HidesTagged(section, Role(before), Role(after)),
             ChangeKind.AttributeChanged => KeyOf(before) is var key
-                && (key is "lang" or "span-lang" || TakesAway(key, after) || Loses(section, key, ValueOf(before), after)),
+                && (key == "lang" || key == "span-lang" && Languages(ValueOf(before)) != Languages(after)
+                    || TakesAway(key, after) || Loses(section, key, ValueOf(before), after)),
             _ => false,
         };
     }
@@ -98,6 +100,29 @@ internal static class AccessibilityRules
     }
 
     private static readonly char[] Digits = "0123456789".ToCharArray();
+
+    // A span-lang value lists each language with the text it covers, [fr-FR:"bonjour"]. Only the languages count, so
+    // editing the words in a French span isn't flagged as a language change.
+    private static string Languages(string value)
+    {
+        var languages = new StringBuilder();
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (value[i] == ':' && i + 1 < value.Length && value[i + 1] == '"')
+            {
+                for (i += 2; i < value.Length && value[i] != '"'; i++)
+                {
+                    if (value[i] == '\\') i++;
+                }
+
+                continue;
+            }
+
+            languages.Append(value[i]);
+        }
+
+        return languages.ToString();
+    }
 
     // An attribute change's before side reads "key: value".
     private static string KeyOf(string before) => before[..Math.Max(0, before.IndexOf(": ", StringComparison.Ordinal))];

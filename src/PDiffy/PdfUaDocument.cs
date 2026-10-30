@@ -567,6 +567,12 @@ public sealed record MarkedSpan
 
     /// <summary>The full form of an abbreviation, such as "Mount" for "Mt."; null when it has none.</summary>
     public string? Expansion { get; init; }
+
+    /// <summary>
+    /// The text the marked content covers, as it's drawn, such as "bonjour"; null when it covers no text, such as an
+    /// image with alt text.
+    /// </summary>
+    public string? Text { get; init; }
 }
 
 /// <summary>

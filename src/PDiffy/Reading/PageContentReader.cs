@@ -30,6 +30,9 @@ internal sealed class PageContentReader
     private readonly List<PageText> _artifacts = [];
     private readonly Dictionary<int, List<MarkedSpan>> _spansByMcid = [];
 
+    // Each letter's place in page.Letters, which is in content order, so letters gathered by nesting can be put back.
+    private readonly Dictionary<Letter, int> _drawingOrder = [];
+
     public static PageContent Read(Page page) => new PageContentReader(page.Number).ReadPage(page);
 
     private readonly int _pageNumber;
@@ -38,6 +41,7 @@ internal sealed class PageContentReader
 
     private PageContent ReadPage(Page page)
     {
+        for (var i = 0; i < page.Letters.Count; i++) _drawingOrder[page.Letters[i]] = i;
         var pending = new Stack<(MarkedContentElement MarkedContent, int? EnclosingMcid)>();
         foreach (var markedContent in page.GetMarkedContents().Reverse())
         {
@@ -118,7 +122,7 @@ internal sealed class PageContentReader
     }
 
     // Marked content that says something of its own about its text, such as a word in another language.
-    private static MarkedSpan? Span(MarkedContentElement markedContent)
+    private MarkedSpan? Span(MarkedContentElement markedContent)
     {
         var span = new MarkedSpan
         {
@@ -129,7 +133,13 @@ internal sealed class PageContentReader
                 ?? NonEmpty(PdfObjects.TextOf(markedContent.Properties?.Data.GetValueOrDefault("Alt"))),
             Expansion = NonEmpty(markedContent.ExpandedForm),
         };
-        return span == new MarkedSpan() ? null : span;
+        if (span == new MarkedSpan()) return null;
+
+        // Marked content with its own MCID covers that whole MCID, whose text the element already prints.
+        if (markedContent.MarkedContentIdentifier >= 0) return span;
+        var letters = SelfAndDescendants(markedContent).SelectMany(element => element.Letters)
+            .OrderBy(letter => _drawingOrder.GetValueOrDefault(letter)).ToList();
+        return span with { Text = NonEmpty(TextJoiner.Join(letters)) };
     }
 
     private static string? NonEmpty(string? value) => string.IsNullOrEmpty(value) ? null : value;

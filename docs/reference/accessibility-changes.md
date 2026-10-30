@@ -7,8 +7,8 @@ failure lists it first tagged `[accessibility]`, when it is one of these:
 |---|---|
 | A structure element's type changed, such as a heading becoming a paragraph. A header cell's generated name, such as `TH1` becoming `TH2`, doesn't count | `type: H2 -> P` |
 | A structure element moved in reading order | `moved` in `structure` |
-| Alt text, replacement text or an expansion (on an element or on marked content inside it), a table header's scope, a cell's headers, or a form field's or annotation's accessible name was removed or emptied, or a cell's headers point at a header that isn't there | `alt: "Logo" -> (missing)`, `actual: "fi" -> (missing)`, `span-actual: ["fi"] -> (missing)`, `scope: Column -> (missing)`, `tu: "Name" -> ""`, `headers: [TH1] -> [?h2]` |
-| The document's or an element's language changed or was removed, or one set on marked content inside an element | `lang: en-US -> en-GB`, `span-lang: [fr-FR] -> [de-DE]` |
+| Alt text, replacement text or an expansion (on an element or on marked content inside it), a table header's scope, a cell's headers, or a form field's or annotation's accessible name was removed or emptied, or a cell's headers point at a header that isn't there | `alt: "Logo" -> (missing)`, `actual: "fi" -> (missing)`, `span-expansion: ["Mount":"Mt."] -> (missing)`, `scope: Column -> (missing)`, `tu: "Name" -> ""`, `headers: [TH1] -> [?h2]` |
+| The document's or an element's language changed or was removed, or one set on marked content inside an element (a change to only the words such marked content covers isn't flagged) | `lang: en-US -> en-GB`, `span-lang: [fr-FR:"bonjour"] -> [de-DE:"bonjour"]` |
 | Something was added to the untagged content: a line, words in a line, or more images or paths | `added`, `"Page 1 {+Draft+}"` or `images: 1 -> 2` in `untagged` |
 | An annotation became untagged | `... tagged ... -> ... untagged ...` in `annotations` |
 | Text, an image or a path that was tagged is now an artifact (decoration) or untagged, so a screen reader skips it | `p1 text tagged ... -> p1 text artifact ...` in `layout` |

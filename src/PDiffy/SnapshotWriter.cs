@@ -162,14 +162,25 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         foreach (var child in bookmark.Children) WriteBookmark(child, depth + 1);
     }
 
-    // What marked content inside the element says of its own text, in reading order: span-lang=[fr], span-actual=["fi"].
+    // What marked content inside the element says of its own text, in reading order, with the text it covers:
+    // span-lang=[fr:"bonjour"], span-expansion=["Mount":"Mt."].
     private void AppendMarkedSpans(StringBuilder line, IReadOnlyList<MarkedSpan> spans)
     {
-        if (!options.Ignores(Field.Language)) Key(line, "span-lang", Bracketed(spans.Select(span => span.Language)));
-        if (!options.Ignores(Field.ActualText)) Key(line, "span-actual", Bracketed(spans.Select(span => QuoteIfPresent(span.ActualText))));
-        if (!options.Ignores(Field.AltText)) Key(line, "span-alt", Bracketed(spans.Select(span => QuoteIfPresent(span.AltText))));
-        Key(line, "span-expansion", Bracketed(spans.Select(span => QuoteIfPresent(span.Expansion))));
+        if (!options.Ignores(Field.Language)) Key(line, "span-lang", Spans(spans, span => span.Language));
+        if (!options.Ignores(Field.ActualText))
+        {
+            Key(line, "span-actual", Spans(spans, span => QuoteIfPresent(span.ActualText)));
+        }
+
+        if (!options.Ignores(Field.AltText)) Key(line, "span-alt", Spans(spans, span => QuoteIfPresent(span.AltText)));
+        Key(line, "span-expansion", Spans(spans, span => QuoteIfPresent(span.Expansion)));
     }
+
+    // Each span's value, with the text the span covers when it covers some.
+    private string? Spans(IReadOnlyList<MarkedSpan> spans, Func<MarkedSpan, string?> valueOf) =>
+        Bracketed(spans.Select(span => valueOf(span) is { } value && span.Text is { } text
+            ? $"{value}:{Quote(text)}"
+            : valueOf(span)));
 
     private static string? Bracketed(IEnumerable<string?> values)
     {

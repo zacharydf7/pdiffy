@@ -376,10 +376,66 @@ public class PdfUaDocumentLoadTests
 
         var element = Assert.Single(document.Structure);
         Assert.Equal(["fr-FR", null], element.MarkedSpans.Select(span => span.Language));
+        Assert.Equal(["bonjour", "x"], element.MarkedSpans.Select(span => span.Text));
         Assert.Equal((null, "fi", "ligature", "Mount"), (element.MarkedSpans[1].Language, element.MarkedSpans[1].ActualText,
             element.MarkedSpans[1].AltText, element.MarkedSpans[1].Expansion));
-        Assert.Contains("P p1 span-lang=[fr-FR] span-actual=[\"fi\"] span-alt=[\"ligature\"] span-expansion=[\"Mount\"] ",
-            document.ToSnapshot());
+        Assert.Contains("P p1 span-lang=[fr-FR:\"bonjour\"] span-actual=[\"fi\":\"x\"] span-alt=[\"ligature\":\"x\"] "
+            + "span-expansion=[\"Mount\":\"x\"] ", document.ToSnapshot());
+    }
+
+    [Fact]
+    public void Load_ShouldGiveASpanTheTextOfMarkedContentInsideIt_WhenSpansAreNested()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("/P << /MCID 0 >> BDC BT /F1 12 Tf 72 400 Td /Span << /Lang (fr-FR) >> BDC "
+            + "/Span << /E (Mount) >> BDC (Mt.) Tj EMC ( Blanc) Tj EMC ET EMC");
+        pdf.Structure(new TestElement("P", 0));
+
+        var spans = Assert.Single(pdf.Load().Structure).MarkedSpans;
+
+        Assert.Equal([("fr-FR", "Mt. Blanc"), (null, "Mt.")], spans.Select(span => (span.Language, span.Text)));
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldPrintASpanWithoutText_WhenItCoversNoText()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("/Figure << /MCID 0 >> BDC /Span << /Alt (Trail sign) >> BDC 72 500 100 20 re f EMC EMC");
+        pdf.Structure(new TestElement("Figure", 0) { Entries = "/Alt (Map)" });
+
+        var snapshot = pdf.Load().ToSnapshot();
+
+        Assert.Contains(" span-alt=[\"Trail sign\"]", snapshot);
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldLeaveOutTheCoveredText_WhenTheLanguageIsOnTheElementsOwnMarkedContent()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("/P << /Lang (fr-FR) /MCID 0 >> BDC BT /F1 12 Tf 72 400 Td (Bonjour) Tj ET EMC");
+        pdf.Structure(new TestElement("P", 0));
+
+        var snapshot = pdf.Load().ToSnapshot();
+
+        Assert.Contains("P p1 span-lang=[fr-FR] \"Bonjour\"", snapshot);
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldDiffer_WhenALanguageSpanCoversMoreWords()
+    {
+        static string SnapshotOf(string content)
+        {
+            var pdf = new TestPdf();
+            pdf.AddPage().Raw($"/P << /MCID 0 >> BDC BT /F1 12 Tf 72 400 Td {content} ET EMC");
+            pdf.Structure(new TestElement("P", 0));
+            return pdf.Load().ToSnapshot();
+        }
+
+        var word = SnapshotOf("(Say ) Tj /Span << /Lang (fr-FR) >> BDC (bonjour) Tj EMC");
+        var phrase = SnapshotOf("/Span << /Lang (fr-FR) >> BDC (Say ) Tj (bonjour) Tj EMC");
+
+        Assert.Contains("span-lang=[fr-FR:\"bonjour\"]", word);
+        Assert.Contains("span-lang=[fr-FR:\"Say bonjour\"]", phrase);
     }
 
     [Fact]
