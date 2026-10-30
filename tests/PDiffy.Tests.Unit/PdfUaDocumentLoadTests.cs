@@ -409,7 +409,7 @@ public class PdfUaDocumentLoadTests
     }
 
     [Fact]
-    public void ToSnapshot_ShouldLeaveOutTheCoveredText_WhenTheLanguageIsOnTheElementsOwnMarkedContent()
+    public void ToSnapshot_ShouldLeaveOutTheCoveredText_WhenTheSpanCoversAllOfTheElementsText()
     {
         var pdf = new TestPdf();
         pdf.AddPage().Raw("/P << /Lang (fr-FR) /MCID 0 >> BDC BT /F1 12 Tf 72 400 Td (Bonjour) Tj ET EMC");
