@@ -51,7 +51,7 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   word of three letters or fewer still prints a space between its letters. Snapshots of documents with letter-spaced
   text change.
 - Marked content inside a structure element that sets its own language, replacement text, alt text or expansion is
-  recorded on the element with the text it covers (`span-lang=[fr-FR:"bonjour"]`, `span-expansion=["Mount":"Mt."]`,
+  recorded on the element with the text it covers, unless that's all of the element's text (`span-lang=[fr-FR:"bonjour"]`, `span-expansion=["Mount":"Mt."]`,
   `span-actual=`, `span-alt=`), so a span that grows or moves to other words shows too, and an
   artifact prints its kind when it gives one (`p1 type=Pagination subtype=Footer "Page 1"`). Snapshots of documents
   with such marked content or typed artifacts change; typed artifacts are common, so many `artifacts` sections change.

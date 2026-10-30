@@ -421,6 +421,25 @@ public class PdfUaDocumentLoadTests
     }
 
     [Fact]
+    public void ToSnapshot_ShouldNameTheWordsALanguageCovers_WhenItIsOnOneOfTheElementsMcids()
+    {
+        static string SnapshotOf(string first, string second)
+        {
+            var pdf = new TestPdf();
+            pdf.AddPage().Raw($"/P << {first}/MCID 0 >> BDC BT /F1 12 Tf 72 400 Td (Say ) Tj ET EMC "
+                + $"/P << {second}/MCID 1 >> BDC BT /F1 12 Tf 100 400 Td (bonjour) Tj ET EMC");
+            pdf.Structure(new TestElement("P", 0, 1));
+            return pdf.Load().ToSnapshot();
+        }
+
+        var onTheGreeting = SnapshotOf("", "/Lang (fr-FR) ");
+        var onTheVerb = SnapshotOf("/Lang (fr-FR) ", "");
+
+        Assert.Contains("span-lang=[fr-FR:\"bonjour\"]", onTheGreeting);
+        Assert.Contains("span-lang=[fr-FR:\"Say\"]", onTheVerb);
+    }
+
+    [Fact]
     public void ToSnapshot_ShouldDiffer_WhenALanguageSpanCoversMoreWords()
     {
         static string SnapshotOf(string content)
@@ -435,7 +454,7 @@ public class PdfUaDocumentLoadTests
         var phrase = SnapshotOf("/Span << /Lang (fr-FR) >> BDC (Say ) Tj (bonjour) Tj EMC");
 
         Assert.Contains("span-lang=[fr-FR:\"bonjour\"]", word);
-        Assert.Contains("span-lang=[fr-FR:\"Say bonjour\"]", phrase);
+        Assert.Contains("span-lang=[fr-FR] \"Say bonjour\"", phrase);
     }
 
     [Fact]

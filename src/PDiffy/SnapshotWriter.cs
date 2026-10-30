@@ -164,23 +164,25 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
 
     // What marked content inside the element says of its own text, in reading order, with the text it covers:
     // span-lang=[fr:"bonjour"], span-expansion=["Mount":"Mt."].
-    private void AppendMarkedSpans(StringBuilder line, IReadOnlyList<MarkedSpan> spans)
+    private void AppendMarkedSpans(StringBuilder line, StructureElement element)
     {
-        if (!options.Ignores(Field.Language)) Key(line, "span-lang", Spans(spans, span => span.Language));
+        if (!options.Ignores(Field.Language)) Key(line, "span-lang", Spans(element, span => span.Language));
         if (!options.Ignores(Field.ActualText))
         {
-            Key(line, "span-actual", Spans(spans, span => QuoteIfPresent(span.ActualText)));
+            Key(line, "span-actual", Spans(element, span => QuoteIfPresent(span.ActualText)));
         }
 
-        if (!options.Ignores(Field.AltText)) Key(line, "span-alt", Spans(spans, span => QuoteIfPresent(span.AltText)));
-        Key(line, "span-expansion", Spans(spans, span => QuoteIfPresent(span.Expansion)));
+        if (!options.Ignores(Field.AltText)) Key(line, "span-alt", Spans(element, span => QuoteIfPresent(span.AltText)));
+        Key(line, "span-expansion", Spans(element, span => QuoteIfPresent(span.Expansion)));
     }
 
-    // Each span's value, with the text the span covers when it covers some.
-    private string? Spans(IReadOnlyList<MarkedSpan> spans, Func<MarkedSpan, string?> valueOf) =>
-        Bracketed(spans.Select(span => valueOf(span) is { } value && span.Text is { } text
-            ? $"{value}:{Quote(text)}"
-            : valueOf(span)));
+    // Each span's value, with the text the span covers when it covers some but not all of the element's, which the
+    // line already prints: a language on an element's only MCID.
+    private string? Spans(StructureElement element, Func<MarkedSpan, string?> valueOf) =>
+        Bracketed(element.MarkedSpans.Select(span =>
+            valueOf(span) is { } value && span.Text is { } text && text != element.Text
+                ? $"{value}:{Quote(text)}"
+                : valueOf(span)));
 
     private static string? Bracketed(IEnumerable<string?> values)
     {
@@ -222,7 +224,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
             AppendAnnotationDetails(line, annotation);
         }
 
-        AppendMarkedSpans(line, element.MarkedSpans);
+        AppendMarkedSpans(line, element);
         Key(line, "mcids-without-page", element.McidsWithoutPage > 0 ? element.McidsWithoutPage.ToString() : null);
         Key(line, "mcids-in-xobject", element.McidsInXObject > 0 ? element.McidsInXObject.ToString() : null);
         Key(line, "unread-children", element.UnreadChildren > 0 ? element.UnreadChildren.ToString() : null);

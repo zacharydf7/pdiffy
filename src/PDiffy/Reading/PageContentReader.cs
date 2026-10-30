@@ -135,8 +135,6 @@ internal sealed class PageContentReader
         };
         if (span == new MarkedSpan()) return null;
 
-        // Marked content with its own MCID covers that whole MCID, whose text the element already prints.
-        if (markedContent.MarkedContentIdentifier >= 0) return span;
         var letters = SelfAndDescendants(markedContent).SelectMany(element => element.Letters)
             .OrderBy(letter => _drawingOrder.GetValueOrDefault(letter)).ToList();
         return span with { Text = NonEmpty(TextJoiner.Join(letters)) };
