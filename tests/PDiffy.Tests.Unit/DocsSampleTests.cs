@@ -75,15 +75,17 @@ public class DocsSampleTests
         else Assert.True(actual == expected, $"docs/samples/{name} is out of date; run the tests with PDIFFY_ACCEPT=1.");
     }
 
+    private static string SamplesFolder() => Path.Combine(DocsFolder(), "samples");
+
     // Found from the test's output folder, since CI builds map the source paths the compiler records.
-    private static string SamplesFolder()
+    internal static string DocsFolder()
     {
         for (var folder = new DirectoryInfo(AppContext.BaseDirectory); folder is not null; folder = folder.Parent)
         {
-            var samples = Path.Combine(folder.FullName, "docs", "samples");
-            if (Directory.Exists(samples)) return samples;
+            var docs = Path.Combine(folder.FullName, "docs");
+            if (File.Exists(Path.Combine(docs, "docfx.json"))) return docs;
         }
 
-        throw new DirectoryNotFoundException("docs/samples wasn't found above the test's output folder.");
+        throw new DirectoryNotFoundException("docs wasn't found above the test's output folder.");
     }
 }

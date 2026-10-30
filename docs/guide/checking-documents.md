@@ -95,6 +95,9 @@ message never changes a snapshot. The checks look at the whole document: `OnlyPa
 Scrubbers apply to the paths too, so a form field or attachment name gets the same token as in its own section. Without
 the option, no snapshot prints a `checks` section.
 
+[Check rules](../reference/checks.md) explains each rule: why it matters to someone using assistive technology and
+how to fix it. A finding's `HelpUrl` links to its rule's entry.
+
 These are fast regression checks for the mistakes generated documents make, not a PDF/UA validator: for conformance,
 use [veraPDF](https://verapdf.org/) or PAC. On the command line, [`pdiffy check`](../reference/command-line.md#check)
 runs them all. For a rule of your own, assert on the model, as the rest of this page shows.

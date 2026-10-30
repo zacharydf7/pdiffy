@@ -6,6 +6,8 @@
   href: pdf-snapshot-format.md
 - name: Word snapshot format
   href: docx-snapshot-format.md
+- name: Check rules
+  href: checks.md
 - name: Changes that affect accessibility
   href: accessibility-changes.md
 - name: Format changes

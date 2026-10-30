@@ -87,6 +87,9 @@ library does.
 - `PdfSnapshotOptions.Check(PdfCheckSet)` records what the checks find in a `checks` section of the snapshot, so the
   findings are approved with it: a new problem fails the test, and a fixed one fails it until it's accepted
   ([#55](https://github.com/zacharydf7/pdiffy/issues/55)).
+- Each finding has a `HelpUrl` to its rule's entry on the new [Check rules](../reference/checks.md) page: what it
+  finds, why it matters to someone using assistive technology, and how to fix it
+  ([#58](https://github.com/zacharydf7/pdiffy/issues/58)).
 - A change to the `checks` section reads as a new or a fixed problem, counted as such in the summary, and a new
   problem from an accessibility rule is flagged as affecting accessibility. When an upgrade adds rules to the set,
   the summary says how many ([#56](https://github.com/zacharydf7/pdiffy/issues/56)).

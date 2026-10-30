@@ -144,6 +144,13 @@ public sealed record PdfCheckFinding
     /// <summary>What's wrong, as a sentence with no closing period, such as "Font Helvetica isn't embedded".</summary>
     public required string Message { get; init; }
 
+    /// <summary>
+    /// The rule's entry on the docs site: what it finds, why it matters to someone using assistive technology, and how
+    /// to fix it.
+    /// </summary>
+    public string HelpUrl =>
+        $"https://zacharydf7.github.io/pdiffy/reference/checks.html#{Check.ToString().ToLowerInvariant()}";
+
     /// <summary>Such as "FigureAltText: Figure on p2 has no alt text (structure > Document > Figure[2])".</summary>
     public override string ToString() => $"{Check}: {Message} ({Path})";
 }

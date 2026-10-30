@@ -324,6 +324,34 @@ public class PdfCheckTests
         Assert.Equal([PdfCheck.DocumentLanguage], findings.Select(finding => finding.Check));
     }
 
+    [Fact]
+    public void HelpUrl_ShouldLinkToTheRulesEntryOnTheDocsSite_WhenGivenAFinding()
+    {
+        var finding = Assert.Single(OnePage(new TestPdf { Lang = null }).Check(PdfCheck.DocumentLanguage));
+
+        Assert.Equal("https://zacharydf7.github.io/pdiffy/reference/checks.html#documentlanguage", finding.HelpUrl);
+    }
+
+    // Each rule's help link points at a heading of its own name on the check rules page, and the entry's category,
+    // severity and clause must match the rule's.
+    [Fact]
+    public void ChecksPage_ShouldHaveAnEntryMatchingEveryRule_WhenCalled()
+    {
+        var page = File.ReadAllText(Path.Combine(DocsSampleTests.DocsFolder(), "reference", "checks.md"))
+            .ReplaceLineEndings("\n");
+
+        Assert.All(Enum.GetValues<PdfCheck>(), check =>
+        {
+            var (category, severity, reference) = PdfChecker.RuleOf(check);
+            var start = page.IndexOf($"\n## {check}\n", StringComparison.Ordinal);
+            Assert.True(start >= 0, $"No entry for {check}");
+            var entry = page[start..page.IndexOf("**Why", start, StringComparison.Ordinal)].Replace('\n', ' ');
+            Assert.Contains($"**Category:** `{category}`", entry);
+            Assert.Contains($"**Severity:** `{severity}`", entry);
+            Assert.Contains($"**From:** {reference ?? "a house rule"}", entry);
+        });
+    }
+
     private static PdfUaDocument OnePage(TestPdf pdf)
     {
         pdf.AddPage().Tagged(0, "Hello");
