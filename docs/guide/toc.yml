@@ -18,6 +18,8 @@
       href: checking-documents.md
     - name: Catch generator upgrades
       href: generator-upgrades.md
+    - name: Recipes for generators
+      href: recipes.md
 - name: In your pipeline
   items:
     - name: Continuous integration

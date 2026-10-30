@@ -125,6 +125,7 @@ upgrade runs, and <code>pdiffy compare</code> checks every document before and a
       <li><a href="guide/comparing.md">Compare two documents</a></li>
       <li><a href="guide/checking-documents.md">Check documents directly</a></li>
       <li><a href="guide/generator-upgrades.md">Catch generator upgrades</a></li>
+      <li><a href="guide/recipes.md">Recipes for generators</a></li>
       <li><a href="guide/ci.md">Continuous integration</a></li>
       <li><a href="guide/troubleshooting.md">Troubleshooting</a></li>
     </ul>
