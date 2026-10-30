@@ -20,7 +20,5 @@
   items:
     - name: Continuous integration
       href: ci.md
-    - name: Moving from Verify
-      href: migrating-from-verify.md
     - name: Troubleshooting
       href: troubleshooting.md

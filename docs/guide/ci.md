@@ -109,6 +109,37 @@ test:
       - snapshot-summary.html
 ```
 
+## Bitbucket Pipelines
+
+The after-script runs whether the tests passed or not, so it checks `BITBUCKET_EXIT_CODE` and only writes the summary
+page after a failure. `capture-on: failed` keeps the received files and reports only when the step fails:
+
+```yaml
+image: mcr.microsoft.com/dotnet/sdk:10.0
+
+pipelines:
+  default:
+    - step:
+        name: Test
+        script:
+          - dotnet test
+        after-script:
+          - |
+            if [ "$BITBUCKET_EXIT_CODE" -ne 0 ]; then
+              dotnet tool install --global PDiffy.Cli
+              ~/.dotnet/tools/pdiffy report --all --html snapshot-summary.html || true
+            fi
+        artifacts:
+          - name: Snapshots
+            paths:
+              - "**/*.received.*"
+              - "**/*.diff.html"
+              - snapshot-summary.html
+            capture-on: failed
+```
+
+Bitbucket has no job summary page, so open `snapshot-summary.html` from the step's Artifacts tab to reach each report.
+
 ## Review and accept locally
 
 CI shows what changed; accepting is done on a developer machine, so the change goes through code review:

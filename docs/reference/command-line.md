@@ -110,9 +110,7 @@ pdiffy compare baseline current --profile content --html compare/index.html
 pdiffy snapshot <file.pdf|file.docx> [<out>]
 ```
 
-Prints the file's snapshot, or saves it to `<out>`. Useful for seeing what PDiffy reads from a document, and for
-[seeding snapshots](../guide/migrating-from-verify.md#1-seed-the-new-snapshots-from-the-approved-files) from existing
-files.
+Prints the file's snapshot, or saves it to `<out>`. Useful for seeing what PDiffy reads from a document.
 
 ```text
 pdiffy snapshot guide.pdf

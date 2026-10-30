@@ -63,7 +63,6 @@ A failing test also writes a side-by-side HTML report. Open the
 | Compare two documents without snapshot files | [Compare two documents](guide/comparing.md) |
 | Assert on alt text, forms, fonts or settings directly | [Check documents directly](guide/checking-documents.md) |
 | Run snapshot tests in GitHub Actions or another CI | [Continuous integration](guide/ci.md) |
-| Move existing Verify snapshots over | [Moving from Verify](guide/migrating-from-verify.md) |
 | Look up a command-line option | [Command line](reference/command-line.md) |
 | Read a snapshot line by line | [PDF format](reference/pdf-snapshot-format.md), [Word format](reference/docx-snapshot-format.md) |
 | See every class, property and option | [API reference](api/index.md) |
