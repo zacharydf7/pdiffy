@@ -54,6 +54,18 @@ public enum PdfCheck
     NoEmbeddedFiles,
 }
 
+/// <summary>How much a <see cref="PdfCheckFinding"/> matters.</summary>
+public enum PdfCheckSeverity
+{
+    /// <summary>The document breaks a rule PDF/UA requires (a "shall").</summary>
+    Error,
+
+    /// <summary>
+    /// The document breaks a rule PDF/UA recommends (a "should"), or a house rule that isn't from a standard.
+    /// </summary>
+    Warning,
+}
+
 /// <summary>
 /// Something a <see cref="PdfCheck"/> found: where it is, its page when it has one, and what's wrong. The path names the
 /// snapshot section and the item: for a structure element, the path a snapshot diff shows, such as
@@ -67,6 +79,15 @@ public sealed record PdfCheckFinding
 
     /// <summary>The rule that found it.</summary>
     public required PdfCheck Check { get; init; }
+
+    /// <summary>How much it matters: an error for a rule PDF/UA requires, a warning otherwise.</summary>
+    public required PdfCheckSeverity Severity { get; init; }
+
+    /// <summary>
+    /// The clause the rule comes from, such as "ISO 14289-1 7.3" (PDF/UA-1), or null for a house rule. It says where
+    /// the rule comes from; it doesn't say the document conforms to the standard.
+    /// </summary>
+    public required string? Reference { get; init; }
 
     /// <summary>
     /// The page number, counted from 1; null when the finding is about the whole document, such as a missing language

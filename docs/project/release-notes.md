@@ -68,6 +68,12 @@ library does.
   first, and `SnapshotDiff.CompareFiles(beforePath, afterPath)` compares two files the way `pdiffy before after`
   does. `CompareTo` names its parameter `after`.
 
+### Checks
+
+- Each `PdfCheckFinding` has a `Severity` (`Error` or `Warning`) and a `Reference` to the PDF/UA-1 clause its
+  rule comes from, such as `ISO 14289-1 7.3`; `NoActions` and `NoEmbeddedFiles` are house rules, warnings with no
+  reference ([#52](https://github.com/zacharydf7/pdiffy/issues/52)).
+
 ### Read more accurately
 
 - An element whose marked content is in a form XObject, such as a stamp, reads its text from the form alone, where it

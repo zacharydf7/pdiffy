@@ -241,6 +241,29 @@ internal sealed class PdfChecker(PdfUaDocument document)
 
     private static string On(int? page) => page is int number ? $" on p{number}" : "";
 
-    private void Add(PdfCheck check, int? page, string path, string message) =>
-        _findings.Add(new PdfCheckFinding { Check = check, Page = page, Path = path, Message = message });
+    private void Add(PdfCheck check, int? page, string path, string message)
+    {
+        var (severity, reference) = RuleOf(check);
+        _findings.Add(new PdfCheckFinding
+        {
+            Check = check, Severity = severity, Reference = reference, Page = page, Path = path, Message = message,
+        });
+    }
+
+    // The clause of PDF/UA-1 (ISO 14289-1) each rule comes from. NoActions and NoEmbeddedFiles are house rules.
+    internal static (PdfCheckSeverity Severity, string? Reference) RuleOf(PdfCheck check) => check switch
+    {
+        PdfCheck.DocumentLanguage => (PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
+        PdfCheck.DocumentTitle => (PdfCheckSeverity.Error, "ISO 14289-1 7.1"),
+        PdfCheck.FigureAltText => (PdfCheckSeverity.Error, "ISO 14289-1 7.3"),
+        PdfCheck.UntaggedContent => (PdfCheckSeverity.Error, "ISO 14289-1 7.1"),
+        PdfCheck.LinkDescriptions => (PdfCheckSeverity.Error, "ISO 14289-1 7.18.5"),
+        PdfCheck.FormFieldNames => (PdfCheckSeverity.Error, "ISO 14289-1 7.18.1"),
+        PdfCheck.TableHeaders => (PdfCheckSeverity.Error, "ISO 14289-1 7.5"),
+        PdfCheck.HeadingLevels => (PdfCheckSeverity.Error, "ISO 14289-1 7.4.2"),
+        PdfCheck.FontsEmbedded => (PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
+        PdfCheck.FontsMapToUnicode => (PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
+        PdfCheck.NoActions or PdfCheck.NoEmbeddedFiles => (PdfCheckSeverity.Warning, null),
+        _ => throw new ArgumentOutOfRangeException(nameof(check), check, "Every check needs a severity."),
+    };
 }

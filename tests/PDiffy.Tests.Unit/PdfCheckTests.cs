@@ -252,6 +252,45 @@ public class PdfCheckTests
             all.Select(finding => finding.Check));
     }
 
+    [Fact]
+    public void Check_ShouldGiveEachFindingItsRulesSeverityAndReference_WhenRulesFail()
+    {
+        var document = OnePage(new TestPdf { Lang = null }.CatalogEntries(
+            "/Names << /EmbeddedFiles << /Names [(data.xml) << /Type /Filespec /F (data.xml) >>] >> >>"));
+
+        var findings = document.Check(PdfCheck.DocumentLanguage, PdfCheck.NoEmbeddedFiles);
+
+        Assert.Equal([(PdfCheckSeverity.Error, "ISO 14289-1 7.2"), (PdfCheckSeverity.Warning, null)],
+            findings.Select(finding => (finding.Severity, finding.Reference)));
+    }
+
+    [Theory]
+    [InlineData(PdfCheck.DocumentLanguage, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.DocumentTitle, PdfCheckSeverity.Error, "ISO 14289-1 7.1")]
+    [InlineData(PdfCheck.FigureAltText, PdfCheckSeverity.Error, "ISO 14289-1 7.3")]
+    [InlineData(PdfCheck.UntaggedContent, PdfCheckSeverity.Error, "ISO 14289-1 7.1")]
+    [InlineData(PdfCheck.LinkDescriptions, PdfCheckSeverity.Error, "ISO 14289-1 7.18.5")]
+    [InlineData(PdfCheck.FormFieldNames, PdfCheckSeverity.Error, "ISO 14289-1 7.18.1")]
+    [InlineData(PdfCheck.TableHeaders, PdfCheckSeverity.Error, "ISO 14289-1 7.5")]
+    [InlineData(PdfCheck.HeadingLevels, PdfCheckSeverity.Error, "ISO 14289-1 7.4.2")]
+    [InlineData(PdfCheck.FontsEmbedded, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1")]
+    [InlineData(PdfCheck.FontsMapToUnicode, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7")]
+    [InlineData(PdfCheck.NoActions, PdfCheckSeverity.Warning, null)]
+    [InlineData(PdfCheck.NoEmbeddedFiles, PdfCheckSeverity.Warning, null)]
+    public void RuleOf_ShouldGiveTheRulesSeverityAndClause_WhenGivenEachRule(PdfCheck check, PdfCheckSeverity severity,
+        string? reference)
+    {
+        var rule = PdfChecker.RuleOf(check);
+
+        Assert.Equal((severity, reference), rule);
+    }
+
+    [Fact]
+    public void RuleOf_ShouldKnowEveryRule_WhenGivenAnyCheck()
+    {
+        Assert.All(Enum.GetValues<PdfCheck>(), check => PdfChecker.RuleOf(check));
+    }
+
     private static PdfUaDocument OnePage(TestPdf pdf)
     {
         pdf.AddPage().Tagged(0, "Hello");
