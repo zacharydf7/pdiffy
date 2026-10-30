@@ -38,8 +38,8 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   `[accessibility]` when an older approved snapshot meets the new one.
 - An element with marked-content references into a form XObject (an MCR with `/Stm`) prints `mcids-in-xobject=N`. Its
   text is read as before, but a form's MCIDs can't yet be told from the page's own, so when the page uses the same
-  MCID, the element's text includes the page's too; the key marks that it may. Only snapshots of documents with such
-  references change, by the new key alone.
+  MCID, the element's text includes the page's too, and the page's own element includes the form's (without the key);
+  the key marks that it may. Only snapshots of documents with such references change, by the new key alone.
 
 ### Word (`docx-snapshot v1`, unchanged)
 

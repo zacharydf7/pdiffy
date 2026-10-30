@@ -726,7 +726,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
-| Next | `pdfua-snapshot v1`, unchanged version: an element with marked-content references into a form XObject prints `mcids-in-xobject=N`, since its text may include the page's own text for the same MCID. Only snapshots of documents with such references change, by the new key alone |
+| Next | `pdfua-snapshot v1`, unchanged version: an element with marked-content references into a form XObject prints `mcids-in-xobject=N`, since its text may include the page's own text for the same MCID (and the page's element the form's). Only snapshots of documents with such references change, by the new key alone |
 | Next | `pdfua-snapshot v1`, unchanged version: marked content inside an element that sets its own language, replacement text, alt text or expansion is recorded on the element (`span-lang=[fr-FR]`, `span-actual=["fi"]`), and an artifact prints its kind (`type=Pagination subtype=Footer`). Snapshots with such marked content or typed artifacts change, and typed artifacts are common. A new `span-lang` key is flagged as affecting accessibility, like any language change |
 | Next | `pdfua-snapshot v1`, unchanged version: letter-spaced text no longer gets a space between every letter, since a gap counts as a space only when it's wider than the line's letter spacing (read from its narrowest gaps, up to a quarter of an em). Snapshots of documents with letter-spaced text change |
 | Next | `pdfua-snapshot v1`, unchanged version: text drawn at an angle is read along its own baseline, so it keeps its words and stays one layout run, which prints `angle=90`. Snapshots of documents with rotated text change |
