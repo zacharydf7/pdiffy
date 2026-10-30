@@ -65,10 +65,25 @@ internal sealed partial class SnapshotWriter
             if (field.Options.Count > 0) line.Append($" options=[{string.Join(",", field.Options.Select(Quote))}]");
             Key(line, "maxlen", field.MaxLength?.ToString());
             Key(line, "flags", FlagNames(field.Flags));
+            QuotedKey(line, Field.FormValues, "default", field.DefaultValue);
+            if (field.ExportValues.Count > 0) line.Append($" exports=[{string.Join(",", field.ExportValues.Select(Quote))}]");
+            Key(line, "align", field.Alignment == FormFieldAlignment.Left ? null : KebabCase(field.Alignment.ToString()));
+            Key(line, Field.FontNames, "text-font", field.TextFont);
+            Key(line, Field.FontSizes, "text-size", field.TextSize is { } size ? FontSizeText(size) : null);
+            Key(line, Field.Colors, "text-color", field.TextColor);
+            if (field.Scripts.Count > 0)
+            {
+                var scripts = field.Scripts.Select(script => $"{KebabCase(script.Trigger.ToString())}:{script.Hash ?? "unreadable"}");
+                line.Append($" scripts={string.Join(",", scripts)}");
+            }
+
             if (field.Signature is { } signature) AppendSignature(line, signature);
             Line(1, line.ToString());
         }
     }
+
+    // A size of 0 fits the text to the field.
+    private static string FontSizeText(double size) => size == 0 ? "auto" : size.ToString(CultureInfo.InvariantCulture);
 
     private static void AppendSignature(StringBuilder line, SignatureInfo signature)
     {

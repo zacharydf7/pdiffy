@@ -105,9 +105,9 @@ public class SnapshotOptionsTests
     public void ToSnapshot_ShouldLeaveOutEveryCopy_WhenAFieldAppearsInSeveralPlaces()
     {
         var snapshot = Full().ToSnapshot(o => o.Ignore(Field.Title, Field.Author, Field.Subject, Field.Language, Field.LinkTargets,
-            Field.AltText, Field.ActualText, Field.ImageContents));
+            Field.AltText, Field.ActualText, Field.ImageContents, Field.FontNames, Field.FontSizes, Field.Colors, Field.FormValues));
 
-        Assert.DoesNotMatch(@"\s(title|xmp-title|author|xmp-creator|subject|xmp-description|lang|span-lang|xmp-language|uri|action|file|dest|view|view-at|alt|actual|span-alt|span-actual|images|pixels)=", snapshot);
+        Assert.DoesNotMatch(@"\s(title|xmp-title|author|xmp-creator|subject|xmp-description|lang|span-lang|xmp-language|uri|action|file|dest|view|view-at|alt|actual|span-alt|span-actual|images|pixels|text-font|text-size|text-color|value|default)=", snapshot);
     }
 
     [Theory]
@@ -310,7 +310,14 @@ public class SnapshotOptionsTests
         [
             new Annotation { Subtype = "Link", Page = 1, X = 72, Y = 600, Width = 50, Height = 12, Uri = "https://example.com", Contents = "Example" },
         ],
-        FormFields = [new FormField { Name = "city", Type = FormFieldType.Text, Value = "Tampa" }],
+        FormFields =
+        [
+            new FormField
+            {
+                Name = "city", Type = FormFieldType.Text, Value = "Tampa", DefaultValue = "Miami", TextFont = "Helvetica",
+                TextSize = 10, TextColor = "gray:0",
+            },
+        ],
         TextRuns = [new TextRun(1, 72, 700, "Arial", 12, "gray:0", TextRenderMode.Fill, ContentRole.Tagged, "Hi")],
         Images = [new ImageInfo(1, 72, 500, 10, 10, 1, 1, "0123456789abcdef", ContentRole.Tagged)],
         Paths = [new PathInfo(1, 72, 300, 100, 0, null, "#ff0000", 0.5, ContentRole.Artifact)],

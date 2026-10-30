@@ -138,6 +138,43 @@ internal sealed class PdfObjects(PdfDocument document)
         }
     }
 
+    // An action and those it chains through /Next, in the order they run. An action reached a second time (a
+    // malformed loop) is skipped.
+    public List<DictionaryToken> Chain(IToken? first)
+    {
+        var chain = new List<DictionaryToken>();
+        var pending = new Stack<IToken>();
+        var visited = new HashSet<IndirectReference>();
+        if (first is not null)
+        {
+            pending.Push(first);
+        }
+
+        while (pending.Count > 0)
+        {
+            var token = pending.Pop();
+            if (token is IndirectReferenceToken reference && !visited.Add(reference.Data))
+            {
+                continue;
+            }
+
+            if (Resolve(token) is not DictionaryToken action)
+            {
+                continue;
+            }
+
+            chain.Add(action);
+
+            // Pushed last to first, so they're taken first to last.
+            foreach (var next in Items(action.Data.GetValueOrDefault("Next")).Reverse())
+            {
+                pending.Push(next);
+            }
+        }
+
+        return chain;
+    }
+
     public static string? TextOf(IToken? token) => token switch
     {
         StringToken text => text.Data,

@@ -16,6 +16,12 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### PDF (`pdfua-snapshot v1`, unchanged)
 
+- Form fields print how they behave: the default value (`default="0"`), the value each check box or radio button widget
+  sends (`exports=["Yes"]`), alignment when it isn't left (`align=center`), the font, size and color of typed text
+  (`text-font=Helvetica text-size=auto text-color=gray:0`, set on a widget, the field or the whole form) and their
+  JavaScript by when it runs, as a hash (`scripts=calculate:3f9c0a1b2d4e5f60`), including scripts an action chains
+  after it. Snapshots of documents with forms change, and most forms
+  set a text appearance.
 - A signed signature field prints its signature, which used to be left out, so a signed and an unsigned copy gave the
   same snapshot: `signature "approval" p1 signed=yes subfilter=adbe.pkcs7.detached covers-file=yes reason=<present>
   certification=form-filling`. `covers-file=no` means an update was saved after signing. Only snapshots of signed

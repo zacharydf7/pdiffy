@@ -60,13 +60,13 @@ public enum Field
     /// </summary>
     Positions,
 
-    /// <summary>Text color and path fill and stroke colors.</summary>
+    /// <summary>Text color, path fill and stroke colors, and the color of text typed into form fields.</summary>
     Colors,
 
-    /// <summary>The font of each text run in the layout section.</summary>
+    /// <summary>The font of each text run in the layout section, and of text typed into form fields.</summary>
     FontNames,
 
-    /// <summary>The font size of each text run in the layout section.</summary>
+    /// <summary>The font size of each text run in the layout section, and of text typed into form fields.</summary>
     FontSizes,
 
     /// <summary>The stroke width of each path.</summary>
@@ -84,6 +84,6 @@ public enum Field
     /// <summary>The text of annotations, such as a comment or a link's description.</summary>
     AnnotationContents,
 
-    /// <summary>The value of each form field.</summary>
+    /// <summary>The value and default value of each form field.</summary>
     FormValues,
 }

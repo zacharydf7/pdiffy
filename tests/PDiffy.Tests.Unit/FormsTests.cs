@@ -160,6 +160,169 @@ public class FormsTests
     }
 
     [Fact]
+    public void Load_ShouldTakeTheTextAppearanceAndAlignmentFromTheForm_WhenTheFieldSetsNeither()
+    {
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R] /DA (/Helv 0 Tf 0 g) /Q 1 /DR << /Font << /Helv 6 0 R >> >> >> >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [5 0 R] /Contents 4 0 R >>",
+            TestPdf.Stream(""),
+            "<< /Type /Annot /Subtype /Widget /T (hiker) /FT /Tx /DV (Guest) /Rect [72 300 272 320] >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+
+        var field = Assert.Single(document.FormFields);
+
+        Assert.Equal(("Guest", FormFieldAlignment.Center), (field.DefaultValue, field.Alignment));
+        Assert.Equal(("Helvetica", 0.0, "gray:0"), (field.TextFont, field.TextSize, field.TextColor));
+        Assert.Contains("  text \"hiker\" p1 default=\"Guest\" align=center text-font=Helvetica text-size=auto text-color=gray:0\n",
+            document.ToSnapshot());
+    }
+
+    [Fact]
+    public void Load_ShouldUseTheFieldsOwnTextAppearance_WhenItSetsOne()
+    {
+        var pdf = new TestPdf().FormField("trail", "/FT /Tx /DA (/Cour 10.5 Tf 1 0 0 rg) /Q 2");
+        pdf.AddPage();
+
+        var field = Assert.Single(pdf.Load().FormFields);
+
+        Assert.Equal(("Cour", 10.5, "#ff0000", FormFieldAlignment.Right),
+            (field.TextFont, field.TextSize, field.TextColor, field.Alignment));
+    }
+
+    [Fact]
+    public void Load_ShouldTakeTheDefaultValueAppearanceAndAlignmentFromTheParent_WhenAChildFieldSetsNone()
+    {
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R] /DA (/Helv 0 Tf 0 g) >> >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [6 0 R] /Contents 4 0 R >>",
+            TestPdf.Stream(""),
+            "<< /T (trip) /FT /Tx /DV (None) /DA (/Cour 9 Tf 0 g) /Q 2 /Kids [6 0 R] >>",
+            "<< /Type /Annot /Subtype /Widget /T (notes) /Parent 5 0 R /Rect [72 300 272 320] >>");
+
+        var field = Assert.Single(document.FormFields);
+
+        Assert.Equal(("None", "Cour", 9.0, FormFieldAlignment.Right), (field.DefaultValue, field.TextFont, field.TextSize, field.Alignment));
+    }
+
+    [Fact]
+    public void Load_ShouldUseTheWidgetsAppearance_WhenAWidgetSetsItsOwn()
+    {
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R] >> >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [6 0 R] /Contents 4 0 R >>",
+            TestPdf.Stream(""),
+            "<< /T (notes) /FT /Tx /DA (/Cour 9 Tf 0 g) /Kids [6 0 R] >>",
+            "<< /Type /Annot /Subtype /Widget /Parent 5 0 R /Rect [72 300 272 320] /DA (/Cour 14 Tf 0 g) /Q 1 >>");
+
+        var field = Assert.Single(document.FormFields);
+
+        Assert.Equal((14.0, FormFieldAlignment.Center), (field.TextSize, field.Alignment));
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldPrintTheSameLine_WhenAFieldIsLeftAlignedByDefaultOrSaysSo()
+    {
+        var unset = new TestPdf().FormField("trail", "/FT /Tx");
+        unset.AddPage();
+        var left = new TestPdf().FormField("trail", "/FT /Tx /Q 0");
+        left.AddPage();
+
+        Assert.Equal(unset.Load().ToSnapshot(), left.Load().ToSnapshot());
+    }
+
+    [Fact]
+    public void Load_ShouldListTheValueEachWidgetSends_WhenAFieldIsACheckBoxOrRadioButton()
+    {
+        var pdf = new TestPdf()
+            .FormField("agree", "/FT /Btn /AP << /N << /Off << >> /Yes << >> >> >>")
+            .FormField("submit", "/FT /Btn /Ff 65536 /AP << /N << /Up << >> >> >>");
+        pdf.AddPage();
+
+        var fields = pdf.Load().FormFields;
+
+        Assert.Equal(["Yes"], fields[0].ExportValues);
+        Assert.Empty(fields[1].ExportValues);
+    }
+
+    [Fact]
+    public void Load_ShouldListEachWidgetsExportValue_WhenARadioGroupHasSeveralWidgets()
+    {
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R] >> >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [6 0 R 7 0 R] /Contents 4 0 R >>",
+            TestPdf.Stream(""),
+            "<< /T (size) /FT /Btn /Ff 32768 /V /Large /Kids [6 0 R 7 0 R] >>",
+            "<< /Type /Annot /Subtype /Widget /Parent 5 0 R /Rect [72 300 92 320] /AP << /N << /Small 4 0 R /Off 4 0 R >> >> >>",
+            "<< /Type /Annot /Subtype /Widget /Parent 5 0 R /Rect [72 270 92 290] /AP << /N << /Large 4 0 R /Off 4 0 R >> >> >>");
+
+        var snapshot = document.ToSnapshot();
+
+        Assert.Contains("  radio-button \"size\" p1 value=\"Large\" exports=[\"Small\",\"Large\"]\n", snapshot);
+    }
+
+    [Fact]
+    public void Load_ShouldListJavaScriptByWhenItRuns_WhenAFieldAndItsWidgetHaveScripts()
+    {
+        var pdf = new TestPdf().FormField("total", "/FT /Tx /A << /S /JavaScript /JS (start()) >> "
+            + "/AA << /C << /S /JavaScript /JS (sum()) >> /K << /S /JavaScript /JS (digits()) >> /Bl << /S /SubmitForm >> >>");
+        pdf.AddPage();
+
+        var scripts = Assert.Single(pdf.Load().FormFields).Scripts;
+
+        Assert.Equal([FormScriptTrigger.Keystroke, FormScriptTrigger.Calculate, FormScriptTrigger.Activate],
+            scripts.Select(script => script.Trigger));
+        Assert.Equal(3, scripts.Select(script => script.Hash).Distinct().Count());
+    }
+
+    [Theory]
+    [InlineData("(sum)", "sum")]
+    [InlineData("(caf\u00e9)", "\u00fe\u00ff\0c\0a\0f\0\u00e9")]
+    public void Load_ShouldGiveTheSameHash_WhenTheSameScriptIsAStringOrAStream(string text, string streamContent)
+    {
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R 6 0 R] >> >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [5 0 R 6 0 R] /Contents 4 0 R >>",
+            TestPdf.Stream(""),
+            $"<< /Type /Annot /Subtype /Widget /T (a) /FT /Tx /Rect [72 300 272 320] /AA << /C << /S /JavaScript /JS {text} >> >> >>",
+            "<< /Type /Annot /Subtype /Widget /T (b) /FT /Tx /Rect [72 270 272 290] /AA << /C << /S /JavaScript /JS 7 0 R >> >> >>",
+            TestPdf.Stream(streamContent));
+
+        var fields = document.FormFields;
+
+        Assert.Equal(fields[0].Scripts.Single().Hash, fields[1].Scripts.Single().Hash);
+    }
+
+    [Fact]
+    public void Load_ShouldListAChainedScriptUnderTheSameTrigger_WhenAnActionRunsAnotherAfterIt()
+    {
+        var pdf = new TestPdf().FormField("total", "/FT /Tx /AA << /Bl << /S /SubmitForm /Next << /S /JavaScript /JS (log()) >> >> >>");
+        pdf.AddPage();
+
+        var script = Assert.Single(Assert.Single(pdf.Load().FormFields).Scripts);
+
+        Assert.Equal(FormScriptTrigger.Blur, script.Trigger);
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldMarkAScriptUnreadable_WhenItsStreamIsDamaged()
+    {
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R] >> >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [5 0 R] /Contents 4 0 R >>",
+            TestPdf.Stream(""),
+            "<< /Type /Annot /Subtype /Widget /T (a) /FT /Tx /Rect [72 300 272 320] /AA << /C << /S /JavaScript /JS 6 0 R >> >> >>",
+            "<< /Length 5 /Filter /LZWDecode >>\nstream\nhello\nendstream");
+
+        Assert.Contains(" scripts=calculate:unreadable\n", document.ToSnapshot());
+    }
+
+    [Fact]
     public void Load_ShouldRecordTheSignatureButNotItsBytes_WhenASignatureFieldIsSigned()
     {
         var document = LoadSigned("/SubFilter /adbe.pkcs7.detached /Contents <0102> /M (D:20261030120000Z) /Reason (Approved) "

@@ -514,6 +514,21 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowOnlyTheNewKeys_WhenASnapshotFromBeforeFieldBehaviorMeetsOneWithIt()
+    {
+        var before = SnapshotText.Header + "forms\n  text \"total\" p1 flags=read-only\n";
+        var after = SnapshotText.Header + "forms\n  text \"total\" p1 flags=read-only default=\"0\" align=right "
+            + "text-font=Helvetica text-size=auto text-color=gray:0 scripts=calculate:3f9c0a1b2d4e5f60\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
+        Assert.Equal(["default: (missing) -> \"0\"", "align: (missing) -> right", "text-font: (missing) -> Helvetica",
+            "text-size: (missing) -> auto", "text-color: (missing) -> gray:0", "scripts: (missing) -> calculate:3f9c0a1b2d4e5f60"],
+            changes.Select(change => change.Detail));
+    }
+
+    [Fact]
     public void Compare_ShouldShowOnlyTheNewKeys_WhenASnapshotFromBeforeSignaturesMeetsOneWithThem()
     {
         var before = SnapshotText.Header + "forms\n  signature \"approval\" p1\n";

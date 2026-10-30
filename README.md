@@ -585,7 +585,7 @@ pdiffy coverage --all
 | `untagged` | Text that is neither tagged nor marked as an artifact (including tagged text that no structure element points to), and a count of such images and paths per page |
 | `fonts` | Each font: name, type, whether it's embedded, whether it has a Unicode map, and the character codes its text uses that don't map to Unicode (that text can't be copied, searched or read aloud) |
 | `annotations` | Every annotation (links, comments, form widgets and so on), page by page in the order each page lists them: type, `tagged` or `untagged`, rectangle, flags (such as `print` or `hidden`), where a link goes (a web address, or a page and the view it opens at, or another file), contents and accessible name |
-| `forms` | Every form field: type, full name (`address.city`), page, accessible name, value, options, maximum length and flags (such as `required` or `read-only`). A signed signature field prints `signed=yes`, the signature's format (`subfilter=`), whether the signed bytes run to the end of the file (`covers-file=no` after an update saved since signing), whether a reason, location and signing time are given (`reason=<present>`), and what a certifying signature still allows (`certification=form-filling`). The signature's bytes and signing time aren't recorded, so signing the same file again gives the same snapshot |
+| `forms` | Every form field: type, full name (`address.city`), page, accessible name, value, options, maximum length, flags (such as `required` or `read-only`), default value, the value each check box or radio button widget sends (`exports=["Yes"]`), alignment when it isn't left (`align=center`), the font, size and color of typed text (`text-font=Helvetica text-size=auto text-color=gray:0`, from the widget, the field or the form) and the field's JavaScript by when it runs, as a hash (`scripts=format:1a2b3c4d5e6f7081`). A signed signature field prints `signed=yes`, the signature's format (`subfilter=`), whether the signed bytes run to the end of the file (`covers-file=no` after an update saved since signing), whether a reason, location and signing time are given (`reason=<present>`), and what a certifying signature still allows (`certification=form-filling`). The signature's bytes and signing time aren't recorded, so signing the same file again gives the same snapshot |
 | `layout` | Every text run, image and painted vector path, page by page, each labeled `tagged`, `artifact` or `untagged`. Text runs: position, font, size, color, render mode, angle. Images: position, size, pixel size, a hash of the pixels. Paths: bounding box, fill, stroke and line width |
 
 ## What you can ignore
@@ -607,13 +607,13 @@ Each `Section` value leaves out one section from the table above. Each `Field` v
 | `PageBoxes` | The crop, bleed, trim and art boxes and the user unit of each page |
 | `AltText`, `ActualText` | Alternate and replacement text on structure elements and on marked content inside them |
 | `Positions` | Where text, images, paths and annotations are, the size of images, paths and annotations, and the positions a link or bookmark opens its page at |
-| `Colors` | Text color and path fill and stroke colors |
-| `FontNames`, `FontSizes` | The font and size of each text run in the layout |
+| `Colors` | Text color, path fill and stroke colors, and the color of text typed into form fields |
+| `FontNames`, `FontSizes` | The font and size of each text run in the layout, and of text typed into form fields |
 | `LineWidths` | The stroke width of each path |
 | `ImageContents` | The pixel size and hash of each image, and the hashes on each structure element's `images=` |
 | `LinkTargets` | Where links, bookmarks and other actions go: web addresses, files, and the view a page opens at (a bookmark's page stays) |
 | `AnnotationContents` | The text of annotations |
-| `FormValues` | The value of each form field |
+| `FormValues` | The value and default value of each form field |
 
 The options can also change what's printed:
 
@@ -726,6 +726,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | `pdfua-snapshot v1`, unchanged version: form fields print their default value, export values, alignment, typed text's font, size and color, and JavaScript by when it runs (`scripts=calculate:3f9c0a1b2d4e5f60`). Snapshots of documents with forms change |
 | Next | `pdfua-snapshot v1`, unchanged version: a signed signature field prints its signature (`signed=yes subfilter=adbe.pkcs7.detached covers-file=yes`, whether a reason, location and signing time are given, and a certification level), not its bytes. Only snapshots of signed documents change |
 | Next | `pdfua-snapshot v1`, unchanged version: an element whose marked content draws an image prints the image's hash (`images=[3f9c0a1b2d4e5f60]`), so swapping two figures' images shows on their lines. Left out with `Field.ImageContents`. Snapshots of tagged documents with images change |
 | Next | `pdfua-snapshot v1`, unchanged version: an element with marked-content references into a form XObject prints `mcids-in-xobject=N`, since its text may include the page's own text for the same MCID (and the page's element the form's). Only snapshots of documents with such references change, by the new key alone |

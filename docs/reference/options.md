@@ -55,13 +55,13 @@ appears; the rest of each line is still compared.
 | `PageBoxes` | The crop, bleed, trim and art boxes and the user unit of each page |
 | `AltText`, `ActualText` | Alternate and replacement text on structure elements and on marked content inside them |
 | `Positions` | Where text, images, paths and annotations are, the size of images, paths and annotations, and the positions a link or bookmark opens its page at |
-| `Colors` | Text color and path fill and stroke colors |
-| `FontNames`, `FontSizes` | The font and size of each text run in the layout |
+| `Colors` | Text color, path fill and stroke colors, and the color of text typed into form fields |
+| `FontNames`, `FontSizes` | The font and size of each text run in the layout, and of text typed into form fields |
 | `LineWidths` | The stroke width of each path |
 | `ImageContents` | The pixel size and hash of each image, and the hashes on each structure element's `images=` |
 | `LinkTargets` | Where links, bookmarks and other actions go: web addresses, files, and the view a page opens at (a bookmark's page stays) |
 | `AnnotationContents` | The text of annotations |
-| `FormValues` | The value of each form field |
+| `FormValues` | The value and default value of each form field |
 
 ## PDF options that change what's printed
 

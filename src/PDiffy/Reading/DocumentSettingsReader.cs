@@ -32,7 +32,7 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, PageTree pages)
             OpenActions = openActions,
             // The catalog's /AA actions (run on close, save and print) are always JavaScript.
             HasJavaScript = names?.Data.ContainsKey("JavaScript") == true || catalog.Data.ContainsKey("AA")
-                || reader.Chain(openAction).Any(action => objects.Name(action, "S") == "JavaScript"),
+                || objects.Chain(openAction).Any(action => objects.Name(action, "S") == "JavaScript"),
             HasAdditionalActions = catalog.Data.ContainsKey("AA"),
             IsEncrypted = document.IsEncrypted,
             Permissions = document.IsEncrypted ? reader.ReadPermissions(document) : null,
@@ -75,45 +75,8 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, PageTree pages)
     // The open action and those it chains through /Next, in the order they run, each described on its own.
     private List<string> DescribeOpenActions(IToken? openAction)
     {
-        var chained = Chain(openAction).Skip(1).Select(action => DescribeAction(action));
+        var chained = objects.Chain(openAction).Skip(1).Select(action => DescribeAction(action));
         return chained.Prepend(DescribeAction(openAction)).OfType<string>().ToList();
-    }
-
-    // An action and those it chains through /Next, in the order they run. An action reached a second time (a
-    // malformed loop) is skipped.
-    private List<DictionaryToken> Chain(IToken? first)
-    {
-        var chain = new List<DictionaryToken>();
-        var pending = new Stack<IToken>();
-        var visited = new HashSet<IndirectReference>();
-        if (first is not null)
-        {
-            pending.Push(first);
-        }
-
-        while (pending.Count > 0)
-        {
-            var token = pending.Pop();
-            if (token is IndirectReferenceToken reference && !visited.Add(reference.Data))
-            {
-                continue;
-            }
-
-            if (objects.Resolve(token) is not DictionaryToken action)
-            {
-                continue;
-            }
-
-            chain.Add(action);
-
-            // Pushed last to first, so they're taken first to last.
-            foreach (var next in objects.Items(action.Data.GetValueOrDefault("Next")).Reverse())
-            {
-                pending.Push(next);
-            }
-        }
-
-        return chain;
     }
 
     private DocumentPermissions ReadPermissions(PdfDocument document)
