@@ -55,14 +55,20 @@ public class LayoutShiftsTests
     [Fact]
     public void Describe_ShouldStartANewShift_WhenTheLinesMoveOnToAnotherPage()
     {
-        var before = Layout([.. Lines(3, insertAt: null), .. Lines(3, insertAt: null).Select(OnPageTwo)]);
-        var after = before.Replace("at=72,700", "at=72,690").Replace("at=72,684", "at=72,674")
-            .Replace("at=72,668", "at=72,658");
+        // Page 1's last moved line is p1[3] and page 2's first is p2[4], so only the page tells the two runs apart.
+        var pageOne = Enumerable.Range(1, 3).Select(i => Line(700 - 16 * i, $"Line {i}")).ToList();
+        var pageTwo = Enumerable.Range(1, 6).Select(i => Line(700 - 16 * i, $"Later line {i}", page: 2)).ToList();
+        var before = Layout([.. pageOne, .. pageTwo]);
+        var after = Layout([
+            .. Enumerable.Range(1, 3).Select(i => Line(690 - 16 * i, $"Line {i}")),
+            .. pageTwo.Take(3),
+            .. Enumerable.Range(4, 3).Select(i => Line(690 - 16 * i, $"Later line {i}", page: 2)),
+        ]);
 
         var described = SnapshotDiff.Compare(before, after).Describe();
 
         Assert.Contains("~ shifted layout > p1[1] to p1[3] (p1)\n    3 lines down 10 pt", described);
-        Assert.Contains("~ shifted layout > p2[1] to p2[3] (p2)\n    3 lines down 10 pt", described);
+        Assert.Contains("~ shifted layout > p2[4] to p2[6] (p2)\n    3 lines down 10 pt", described);
     }
 
     [Fact]
@@ -96,10 +102,8 @@ public class LayoutShiftsTests
         return texts.Select((text, i) => Line(700 - 16 * i, text)).ToList();
     }
 
-    private static string OnPageTwo(string line) => line.Replace("  p1 ", "  p2 ").Replace("\"Line", "\"Page two line");
-
-    private static string Line(int y, string text, int x = 72) =>
-        $"  p1 text tagged at={x},{y} font=Arial size=12 color=gray:0 \"{text}\"";
+    private static string Line(int y, string text, int x = 72, int page = 1) =>
+        $"  p{page} text tagged at={x},{y} font=Arial size=12 color=gray:0 \"{text}\"";
 
     private static string Layout(List<string> lines) =>
         SnapshotText.Header + "layout\n" + string.Join("\n", lines) + "\n";
