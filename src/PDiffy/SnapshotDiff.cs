@@ -168,7 +168,8 @@ public sealed class SnapshotDiff
 
     /// <summary>
     /// A summary for a test failure: counts by kind and by section, then up to <paramref name="maxChanges"/> changes,
-    /// those that can affect accessibility first.
+    /// those that can affect accessibility first. Layout lines one after another that moved the same way count as one
+    /// change, a shift.
     /// </summary>
     public string Describe(int maxChanges = 20)
     {
@@ -182,15 +183,28 @@ public sealed class SnapshotDiff
 
         var flagged = Changes.Count(change => change.AffectsAccessibility);
         if (flagged > 0) text.Append($"\n{flagged} can affect accessibility, listed first");
-        foreach (var change in AccessibilityFirst().Take(maxChanges))
+        // A reflow's run of lines that all moved the same way is one item, so the edit that caused it isn't buried.
+        var shown = 0;
+        foreach (var group in LayoutShifts.Group(AccessibilityFirst()).Take(maxChanges))
         {
+            var change = group[0];
             var page = change.Page is int number ? $" (p{number})" : "";
-            var tag = change.AffectsAccessibility ? " [accessibility]" : "";
-            text.Append($"\n{Symbol(change.Kind)} {Label(change.Kind)} {change.Path}{page}{tag}");
-            foreach (var line in change.Detail.Split('\n')) text.Append($"\n    {line}");
+            if (LayoutShifts.IsRun(group))
+            {
+                text.Append($"\n~ shifted {change.Path} to {group[^1].Path.Split(" > ")[^1]}{page}");
+                text.Append($"\n    {LayoutShifts.Describe(group)}");
+            }
+            else
+            {
+                var tag = change.AffectsAccessibility ? " [accessibility]" : "";
+                text.Append($"\n{Symbol(change.Kind)} {Label(change.Kind)} {change.Path}{page}{tag}");
+                foreach (var line in change.Detail.Split('\n')) text.Append($"\n    {line}");
+            }
+
+            shown += group.Count;
         }
 
-        if (Changes.Count > maxChanges) text.Append($"\n... and {Changes.Count - maxChanges} more");
+        if (Changes.Count > shown) text.Append($"\n... and {Changes.Count - shown} more");
         return text.ToString();
     }
 
@@ -206,7 +220,7 @@ public sealed class SnapshotDiff
     /// </summary>
     public string ToJson() => DiffJson.Write(this);
 
-    /// <summary>The same summary as <see cref="Describe"/>, with every change listed.</summary>
+    /// <summary>The same summary as <see cref="Describe"/>, with nothing left out.</summary>
     public override string ToString() => Describe(int.MaxValue);
 
     internal bool IsSectioned => SnapshotTree.IsSectioned(_before) && SnapshotTree.IsSectioned(_after);

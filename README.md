@@ -81,7 +81,7 @@ by section: structure 3
     "Go [-with-] {+without+} a guide"
 ```
 
-When pages are inserted or removed, the shift is one change (`p2 inserted; p2-10 -> p3-11`) and each element is compared with the page it lines up with, so a new cover page doesn't report every later element as changed. The second line counts the changes in each section, so a reflow that moves 200 layout lines doesn't hide one change to the structure. Changes that can affect what a screen reader gets come first, tagged `[accessibility]` (see [Changes that affect accessibility](#changes-that-affect-accessibility)).
+When pages are inserted or removed, the shift is one change (`p2 inserted; p2-10 -> p3-11`) and each element is compared with the page it lines up with, so a new cover page doesn't report every later element as changed. Within a page, layout lines one after another that all moved the same way, such as everything below an inserted paragraph, are listed as one shift (`~ shifted layout > p1[4] to p1[31] (p1)`, `28 lines down 16 pt`); a line whose color, font or text also changed still lists that change. `Changes`, the JSON and the report keep every line. The second line counts the changes in each section, so a reflow that moves 200 layout lines doesn't hide one change to the structure. Changes that can affect what a screen reader gets come first, tagged `[accessibility]` (see [Changes that affect accessibility](#changes-that-affect-accessibility)).
 
 What happens on each run:
 

@@ -113,6 +113,10 @@ Elements are matched one to one, so:
   and added. A paragraph replaced by entirely different words is removed and added.
 - Inserted or removed pages are one change, such as `p2 inserted; p2-10 -> p3-11`. Pages are lined up by their text,
   and each element is compared with the page it lines up with, so a new cover page doesn't report every later element.
+- Within a page, three or more layout lines one after another that all moved the same way, such as everything below an
+  inserted paragraph, are listed as one shift: `~ shifted layout > p1[4] to p1[31] (p1)` and `28 lines down 16 pt`.
+  Only a move is grouped, so a line whose color, font or text also changed still lists that change. The summary groups
+  them; `Changes`, the JSON and the report keep every line.
 
 ## The HTML report
 

@@ -49,7 +49,7 @@ Assert.True(diff.IsEmpty);
 
 | Method | Gives |
 |---|---|
-| [`Describe(maxChanges)`](xref:PDiffy.SnapshotDiff.Describe*) | The summary a failing test shows: counts by kind and section, then up to `maxChanges` changes, accessibility ones first |
+| [`Describe(maxChanges)`](xref:PDiffy.SnapshotDiff.Describe*) | The summary a failing test shows: counts by kind and section, then up to `maxChanges` changes, accessibility ones first, with layout lines that moved together shown as one shift |
 | [`ToHtml()`](xref:PDiffy.SnapshotDiff.ToHtml) | The side-by-side HTML report |
 | [`ToJson()`](xref:PDiffy.SnapshotDiff.ToJson) | The changes as JSON, for scripts and tools outside .NET |
 
