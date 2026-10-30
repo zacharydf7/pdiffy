@@ -11,6 +11,7 @@ internal sealed class SnapshotCoverage
 {
     private const string IgnoredSections = "# ignored sections: ";
     private const string IgnoredFields = "# ignored fields: ";
+    private const string ChecksHeader = "# checks: ";
 
     private readonly List<Format> _formats;
     private readonly int _others;
@@ -39,7 +40,7 @@ internal sealed class SnapshotCoverage
             foreach (var section in format.Sections)
             {
                 var ignored = format.IgnoredIn(section);
-                text.Append($"  {section.PadRight(width)}  {format.Count - ignored} of {format.Count}")
+                text.Append($"  {section.PadRight(width)}  {format.ComparedIn(section)} of {format.Count}")
                     .Append(ignored > 0 ? $", ignored in {ignored}\n" : "\n");
             }
 
@@ -62,7 +63,7 @@ internal sealed class SnapshotCoverage
             foreach (var section in format.Sections)
             {
                 var ignored = format.IgnoredIn(section);
-                text.Append($"| `{section}` | {format.Count - ignored} | {ignored} |\n");
+                text.Append($"| `{section}` | {format.ComparedIn(section)} | {ignored} |\n");
             }
 
             text.Append($"\nFields ignored: {format.FieldsIgnored(code: true)}\n");
@@ -91,6 +92,11 @@ internal sealed class SnapshotCoverage
             new(name, sections, headers.Where(header => header.FirstOrDefault()?.StartsWith(prefix) == true).ToList());
 
         public int IgnoredIn(string section) => Headers.Count(header => Listed(header, IgnoredSections).Contains(section));
+
+        // The checks section prints only in a snapshot that opts in, which its header says.
+        public int ComparedIn(string section) => Headers.Count(header =>
+            !Listed(header, IgnoredSections).Contains(section)
+            && (section != SnapshotWriter.Name(PdfSection.Checks) || header.Any(line => line.StartsWith(ChecksHeader))));
 
         // Most used first, such as "positions in 30, colors in 12".
         public string FieldsIgnored(bool code = false)

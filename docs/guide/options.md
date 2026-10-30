@@ -20,6 +20,8 @@ await Snapshot.VerifyPdfAsync(pdf, configure: options => options
 - `ScrubDates()`, `ScrubGuids()` and `ScrubText(...)` replace values that change on every run, such as print dates,
   permit numbers and booking ids.
 - `OnlyPages(...)` snapshots part of a long document, such as the summary on pages 3 and 4.
+- `Check(PdfCheckSet.Latest)` records what the [built-in checks](checking-documents.md#approve-findings-with-the-snapshot)
+  find, so the findings are approved with the snapshot.
 
 The snapshot's first lines always list what was ignored, so nobody reading it mistakes a missing section for an empty
 one.

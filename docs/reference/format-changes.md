@@ -16,6 +16,9 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### PDF (`pdfua-snapshot v1`, unchanged)
 
+- A test can opt into a `checks` section with `Check(PdfCheckSet)`: what the checks find, one line per
+  finding with its rule, page and path, after a `# checks: ...` header line that names the rule set
+  ([#55](https://github.com/zacharydf7/pdiffy/issues/55)). Snapshots without the option don't change.
 - An element whose marked content is in a form XObject, such as a stamp the page draws, reads its text from the form
   alone ([#89](https://github.com/zacharydf7/pdiffy/issues/89)). A form numbers its MCIDs apart from the page, and
   before, when the two used the same MCID, both the page's element and the form's printed the text of both. Only

@@ -639,6 +639,7 @@ pdiffy unused tests --all --run-log artifacts/run-log
 | `annotations` | Every annotation (links, comments, form widgets and so on), page by page in the order each page lists them: type, `tagged` or `untagged`, rectangle, flags (such as `print` or `hidden`), where a link goes (a web address, or a page and the view it opens at, or another file), contents and accessible name |
 | `forms` | A `form` line for settings that apply to the whole form, when it sets any: the order calculate scripts run in (`calculation-order=["trip.tax","trip.total"]`), whether the viewer must draw the fields itself (`need-appearances=yes`) and an XFA form (`xfa=static` or `xfa=dynamic`). Then every form field: type, full name (`address.city`), page, accessible name, value, options, maximum length, flags (such as `required` or `read-only`), default value, the value each check box or radio button widget sends (`exports=["Yes"]`), alignment when it isn't left (`align=center`), the font, size and color of typed text (`text-font=Helvetica text-size=auto text-color=gray:0`, from the widget, the field or the form) and the field's JavaScript by when it runs, as a hash (`scripts=format:1a2b3c4d5e6f7081`). A signed signature field prints `signed=yes`, the signature's format (`subfilter=`), whether the signed bytes run to the end of the file (`covers-file=no` after an update saved since signing), whether a reason, location and signing time are given (`reason=<present>`), and what a certifying signature still allows (`certification=form-filling`). The signature's bytes and signing time aren't recorded, so signing the same file again gives the same snapshot |
 | `layout` | Every text run, image and painted vector path, page by page, each labeled `tagged`, `artifact` or `untagged`. Text runs: position, font, size, color, render mode, angle. Images: position, size, pixel size, a hash of the pixels. Paths: bounding box, fill, stroke and line width. Any of them drawn inside optional-content marked content (`/OC ... BDC`, a layer a viewer can hide) also lists its layers by name, outermost first (`layers=["Draft"]`) |
+| `checks` | Only with `Check(PdfCheckSet)`: what the checks find, one line per finding with its rule, page and path (`FigureAltText p2 structure > Document > Figure[2]`), sorted, or `(none)` |
 
 ## What you can ignore
 
@@ -676,6 +677,7 @@ The options can also change what's printed:
 | `ScrubText(regex, replacement)` | Replaces your own pattern in quoted text |
 | `ShowProducerAndCreator()` | Prints the producer and creator values instead of only whether they're present |
 | `OnlyPages(3, 4)` | Keeps only what is on those pages |
+| `Check(PdfCheckSet.Latest)` | Adds a `checks` section with what the checks find, so the findings are approved with the snapshot |
 | `Tolerate(PdfTolerance.Positions, 1)` | Lets positions differ by up to 1 pt without failing the test; also takes `FontSizes` and `LineWidths` |
 
 For Word documents, each `DocxSection` value leaves out one section, and each `DocxDetail` value leaves out one detail wherever it appears:
@@ -744,7 +746,7 @@ layout
 ```
 
 - The first line is the format version. See [Format changes](#format-changes) for when it changes.
-- When anything is ignored, the next lines list it: `# ignored sections: ...` and `# ignored fields: ...`. With `Tolerate`, `# tolerances: ...` follows, and with `OnlyPages`, `# only pages: ...`.
+- When anything is ignored, the next lines list it: `# ignored sections: ...` and `# ignored fields: ...`. With `Tolerate`, `# tolerances: ...` follows, with `OnlyPages`, `# only pages: ...`, and with `Check`, `# checks: ...`, the rule set and how many rules it has.
 - Sections always appear in the same order. An empty section prints `(none)` and an ignored one prints `(ignored)`, so something disappearing shows up as a change.
 - Two spaces of indent per nesting level. Keys appear in a fixed order and are left out when they have no value.
 - Text is quoted; `"` and `\` are escaped, and control characters print as `\uXXXX`.
@@ -780,6 +782,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | `pdfua-snapshot v1`, unchanged version: a test can opt into a `checks` section, with `Check(PdfCheckSet)`, that lists what the checks find, and a `# checks: ...` header line. Snapshots without the option don't change |
 | Next | `pdfua-snapshot v1`, unchanged version: an element whose marked content is in a form XObject reads its text from the form alone. A form numbers its MCIDs apart from the page, and before, both the page's element and the form's printed the text of both when the two used the same MCID. Only snapshots of documents whose forms reuse the page's MCIDs change, and text a form tags that no element points to now shows in `untagged` |
 | 0.4.0 | `pdfua-snapshot v1`, unchanged version: a PDF that refers to an object it doesn't have, has a bookmark without a title, or has an image that can't be decoded now loads (the bookmarks print `unreadable`). Such files used to throw, so no approved snapshot changes |
 | 0.4.0 | `pdfua-snapshot v1`, unchanged version: text, images and paths drawn inside optional-content marked content (a layer a viewer can hide) list their layers on their layout lines (`layers=["Draft"]`), and text runs end where a layer starts or ends, so a run a layer splits shows as changed with the rest added. Only snapshots of documents with such content change |

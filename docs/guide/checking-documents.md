@@ -69,6 +69,32 @@ document.Check(PdfCheckSet.Latest.Only(PdfCheckCategory.Tables));
 document.Check(PdfCheckSet.Latest.Except(PdfCheck.HeadingLevels));
 ```
 
+### Approve findings with the snapshot
+
+A document generated from real data often starts with problems no one can fix at once. Instead of asserting that a check
+finds nothing, record what it finds in the snapshot with [`Check`](xref:PDiffy.PdfSnapshotOptions.Check*), and approve
+the findings along with everything else:
+
+```csharp
+await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Check(PdfCheckSet.Latest));
+```
+
+```text
+# pdfua-snapshot v1
+# checks: latest, 12 rules
+...
+checks
+  FigureAltText p2 structure > Document > Figure[2]
+  TableHeaders p3 structure > Document > Table > TR[1] > TH[2] > scope
+```
+
+A new problem fails the test, like any other change. A fixed one fails it too until the snapshot is accepted, so the
+problem can't come back unnoticed. Each line names the rule, the page and the path, with no message text, so rewording a
+message never changes a snapshot. The checks look at the whole document: `OnlyPages` narrows their findings, and
+`Ignore` doesn't change them, since it controls what's compared; to leave a rule out, leave it out of the set.
+Scrubbers apply to the paths too, so a form field or attachment name gets the same token as in its own section. Without
+the option, no snapshot prints a `checks` section.
+
 These are fast regression checks for the mistakes generated documents make, not a PDF/UA validator: for conformance,
 use [veraPDF](https://verapdf.org/) or PAC. On the command line, [`pdiffy check`](../reference/command-line.md#check)
 runs them all. For a rule of your own, assert on the model, as the rest of this page shows.

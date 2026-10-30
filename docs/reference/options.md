@@ -34,6 +34,7 @@ call. Further `Ignore` calls leave out more, and everything a profile doesn't le
 | `Annotations` | Links, comments, widgets and other annotations |
 | `Forms` | Every form field |
 | `Layout` | Every text run, image and path, with position and style |
+| `Checks` | What the checks a test opts into with `Check` find; printed only then |
 
 ## PDF details
 
@@ -72,6 +73,7 @@ appears; the rest of each line is still compared.
 | [`ScrubText(regex, replacement)`](xref:PDiffy.PdfSnapshotOptions.ScrubText*) | Replaces your own pattern in quoted text. The replacement can refer to groups, such as `$1` |
 | [`ShowProducerAndCreator()`](xref:PDiffy.PdfSnapshotOptions.ShowProducerAndCreator) | Prints the producer and creator values instead of only whether they're present |
 | [`OnlyPages(3, 4)`](xref:PDiffy.PdfSnapshotOptions.OnlyPages*) | Keeps only what is on those pages |
+| [`Check(PdfCheckSet.Latest)`](xref:PDiffy.PdfSnapshotOptions.Check*) | Adds a `checks` section with what the checks find, so the findings are approved with the snapshot. The header lists the set as `# checks: latest, 12 rules` |
 | [`Tolerate(PdfTolerance.Positions, 1)`](xref:PDiffy.PdfSnapshotOptions.Tolerate*) | Lets positions differ by up to 1 pt without failing the test; also takes `FontSizes` and `LineWidths`. The header lists it as `# tolerances: positions 1pt` |
 
 ## Word profiles

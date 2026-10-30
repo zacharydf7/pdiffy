@@ -512,7 +512,7 @@ public sealed class CliTests : IDisposable
     {
         Write("a.verified.pdfua.txt", "# pdfua-snapshot v1\n# ignored sections: layout\n# ignored fields: positions, colors\n");
         Write("b.verified.pdfua.txt", "# pdfua-snapshot v1\n# ignored fields: positions\n# tolerances: font-sizes 0.5pt\n"
-            + "# only pages: 1\ndocument\n");
+            + "# only pages: 1\n# checks: latest, 12 rules\ndocument\n");
         Write("c.verified.docx.txt", "# docx-snapshot v1\n# ignored sections: styles\n");
         Write("d.verified.json", "{}\n");
         Write("a.received.pdfua.txt", "# pdfua-snapshot v1\n# ignored sections: structure\n");
@@ -525,6 +525,7 @@ public sealed class CliTests : IDisposable
         Assert.Equal("2 PDF snapshot(s)", lines[0]);
         Assert.Contains($"  {"structure",-11}  2 of 2", lines);
         Assert.Contains($"  {"layout",-11}  1 of 2, ignored in 1", lines);
+        Assert.Contains($"  {"checks",-11}  1 of 2", lines);
         Assert.Contains("  fields ignored: positions in 2, colors in 1", lines);
         Assert.Contains("  limited to some pages: 1", lines);
         Assert.Contains("  with tolerances: 1", lines);

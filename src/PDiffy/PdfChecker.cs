@@ -81,7 +81,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
         foreach (var group in graphics.GroupBy(graphic => graphic).OrderBy(group => group.Key.Page))
         {
             var (page, kind) = group.Key;
-            Add(PdfCheck.UntaggedContent, page, Name(PdfSection.Untagged), $"{group.Count()} untagged {kind}(s) on p{page}");
+            Add(PdfCheck.UntaggedContent, page, $"{Name(PdfSection.Untagged)} > {kind}s",
+                $"{group.Count()} untagged {kind}(s) on p{page}");
         }
     }
 
@@ -128,13 +129,13 @@ internal sealed class PdfChecker(PdfUaDocument document)
                 var isNamed = cell.Name is { } name && named.Contains(name);
                 if (cell.TypeOrMapped == StructureType.TableHeaderCell && cell.Scope is null && !isNamed)
                 {
-                    Add(PdfCheck.TableHeaders, cell.FirstPage, path,
+                    Add(PdfCheck.TableHeaders, cell.FirstPage, $"{path} > scope",
                         $"Header{On(cell.FirstPage)} has no scope, and no cell names it");
                 }
 
                 foreach (var missing in (cell.Headers ?? []).Where(header => header.StartsWith('?')))
                 {
-                    Add(PdfCheck.TableHeaders, cell.FirstPage, path,
+                    Add(PdfCheck.TableHeaders, cell.FirstPage, $"{path} > headers",
                         $"Cell{On(cell.FirstPage)} names a header that doesn't exist ({missing[1..]})");
                 }
             }
@@ -184,10 +185,10 @@ internal sealed class PdfChecker(PdfUaDocument document)
     private void NoActions()
     {
         var settings = document.Settings;
-        if (settings.HasJavaScript) Add(PdfCheck.NoActions, null, Name(PdfSection.Settings), "The document has JavaScript");
+        if (settings.HasJavaScript) Add(PdfCheck.NoActions, null, Setting("javascript"), "The document has JavaScript");
         if (settings.HasAdditionalActions)
         {
-            Add(PdfCheck.NoActions, null, Name(PdfSection.Settings),
+            Add(PdfCheck.NoActions, null, Setting("additional-actions"),
                 "The document runs actions on events such as closing or printing");
         }
 
@@ -196,7 +197,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             : settings.OpenAction is { } only ? [only] : [];
         if (actions.Any(action => !IsPageDestination(action) && action != "JavaScript"))
         {
-            Add(PdfCheck.NoActions, null, Name(PdfSection.Settings),
+            Add(PdfCheck.NoActions, null, Setting("open-action"),
                 $"The document runs an action when it opens: {settings.OpenAction}");
         }
     }
@@ -205,7 +206,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
     {
         foreach (var file in document.Settings.EmbeddedFiles)
         {
-            Add(PdfCheck.NoEmbeddedFiles, null, Name(PdfSection.Settings), $"The document embeds {file.Name}");
+            Add(PdfCheck.NoEmbeddedFiles, null, Setting(file.Name), $"The document embeds {file.Name}");
         }
     }
 
@@ -234,6 +235,9 @@ internal sealed class PdfChecker(PdfUaDocument document)
     }
 
     private static string Name(PdfSection section) => SnapshotWriter.Name(section);
+
+    // A path into the settings section names the setting, so findings about different settings don't share a path.
+    private static string Setting(string name) => $"{Name(PdfSection.Settings)} > {name}";
 
     private static bool IsLink(PdfAnnotation annotation) => annotation.Subtype == PdfAnnotationTypes.Link;
 

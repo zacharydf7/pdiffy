@@ -49,6 +49,7 @@ Sections always appear in this order. Each can be left out with [`PdfSection`](x
 | `annotations` | Every annotation (links, comments, form widgets and so on), page by page in the order each page lists them: type, `tagged` or `untagged`, rectangle, flags (such as `print` or `hidden`), where a link goes (a web address, or a page and the view it opens at, or another file), contents and accessible name |
 | `forms` | A `form` line for settings that apply to the whole form, when it sets any: the order calculate scripts run in (`calculation-order=["trip.tax","trip.total"]`), whether the viewer must draw the fields itself (`need-appearances=yes`) and an XFA form (`xfa=static` or `xfa=dynamic`). Then every form field: type, full name (`address.city`), page, accessible name, value, options, maximum length, flags (such as `required` or `read-only`), default value, the value each check box or radio button widget sends (`exports=["Yes"]`), alignment when it isn't left (`align=center`), the font, size and color of typed text (`text-font=Helvetica text-size=auto text-color=gray:0`, from the widget, the field or the form) and the field's JavaScript by when it runs, as a hash (`scripts=format:1a2b3c4d5e6f7081`). A signed signature field prints `signed=yes`, the signature's format (`subfilter=`), whether the signed bytes run to the end of the file (`covers-file=no` after an update saved since signing), whether a reason, location and signing time are given (`reason=<present>`), and what a certifying signature still allows (`certification=form-filling`). The signature's bytes and signing time aren't recorded, so signing the same file again gives the same snapshot |
 | `layout` | Every text run, image and painted vector path, page by page, each labeled `tagged`, `artifact` or `untagged`. Text runs: position, font, size, color, render mode, angle. Images: position, size, pixel size, a hash of the pixels. Paths: bounding box, fill, stroke and line width. Any of them drawn inside optional-content marked content (`/OC ... BDC`, a layer a viewer can hide) also lists its layers by name, outermost first (`layers=["Draft"]`) |
+| `checks` | Only with `Check(PdfCheckSet)`: what the checks find, one line per finding with its rule, page and path (`FigureAltText p2 structure > Document > Figure[2]`), sorted, or `(none)` |
 
 ## Rules
 
@@ -56,8 +57,9 @@ Sections always appear in this order. Each can be left out with [`PdfSection`](x
 
 - The first line is the format version. See [Format changes](format-changes.md) for when it changes.
 - When anything is ignored, the next lines list it: `# ignored sections: ...` and `# ignored fields: ...`. With
-  `Tolerate`, `# tolerances: ...` follows, such as `# tolerances: positions 1pt`, and with `OnlyPages`,
-  `# only pages: ...`. Comparing two snapshots applies the tolerances their header lists.
+  `Tolerate`, `# tolerances: ...` follows, such as `# tolerances: positions 1pt`, with `OnlyPages`,
+  `# only pages: ...`, and with `Check`, `# checks: ...`, the rule set and how many rules it has, such as
+  `# checks: latest, 12 rules`. Comparing two snapshots applies the tolerances their header lists.
 
 ### Lines and keys
 

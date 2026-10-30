@@ -46,9 +46,11 @@ public class PdfCheckTests
         var pdf = new TestPdf();
         pdf.AddPage().Untagged("Draft").UntaggedImage().UntaggedPath().UntaggedPath();
 
-        var findings = pdf.Load().Check(PdfCheck.UntaggedContent).Select(finding => finding.Message);
+        var findings = pdf.Load().Check(PdfCheck.UntaggedContent);
 
-        Assert.Equal(["Untagged text on p1: \"Draft\"", "1 untagged image(s) on p1", "2 untagged path(s) on p1"], findings);
+        Assert.Equal(["Untagged text on p1: \"Draft\"", "1 untagged image(s) on p1", "2 untagged path(s) on p1"],
+            findings.Select(finding => finding.Message));
+        Assert.Equal(["untagged", "untagged > images", "untagged > paths"], findings.Select(finding => finding.Path));
     }
 
     [Fact]
@@ -138,7 +140,21 @@ public class PdfCheckTests
 
         var finding = Assert.Single(pdf.Load().Check(PdfCheck.TableHeaders));
 
-        Assert.Equal("structure > Table > TR > TD > Table > TR > TH", finding.Path);
+        Assert.Equal("structure > Table > TR > TD > Table > TR > TH > scope", finding.Path);
+    }
+
+    [Fact]
+    public void Check_ShouldNameTheKeyOfEachHeaderProblem_WhenOneCellHasTwo()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Tagged(0, "Trail");
+        pdf.Structure(new TestElement("Table",
+            new TestElement("TR", new TestElement("TH", 0) { Entries = "/A << /O /Table /Headers [(gone)] >>" })));
+
+        var findings = pdf.Load().Check(PdfCheck.TableHeaders);
+
+        Assert.Equal(["structure > Table > TR > TH > scope", "structure > Table > TR > TH > headers"],
+            findings.Select(finding => finding.Path));
     }
 
     [Theory]
@@ -187,10 +203,14 @@ public class PdfCheckTests
             "<< /Type /Filespec /F (data.xml) /UF (data.xml) /EF << /F 6 0 R >> >>",
             TestPdf.Stream("hello"));
 
-        var findings = document.Check(PdfCheck.NoActions, PdfCheck.NoEmbeddedFiles).Select(finding => finding.Message);
+        var findings = document.Check(PdfCheck.NoActions, PdfCheck.NoEmbeddedFiles);
 
         Assert.Equal(["The document has JavaScript", "The document runs actions on events such as closing or printing",
-            "The document runs an action when it opens: URI https://example.com", "The document embeds data.xml"], findings);
+            "The document runs an action when it opens: URI https://example.com", "The document embeds data.xml"],
+            findings.Select(finding => finding.Message));
+        Assert.Equal(
+            ["settings > javascript", "settings > additional-actions", "settings > open-action", "settings > data.xml"],
+            findings.Select(finding => finding.Path));
     }
 
     [Theory]

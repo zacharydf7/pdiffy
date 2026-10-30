@@ -21,10 +21,11 @@ internal sealed partial class SnapshotWriter(PdfSnapshotOptions options)
     public static string Write(PdfUaDocument document, PdfSnapshotOptions options)
     {
         var scoped = options.Pages.Count == 0 ? document : PageScope.Keep(document, options.Pages);
-        return new SnapshotWriter(options).Build(scoped);
+        return new SnapshotWriter(options).Build(scoped, document);
     }
 
-    private string Build(PdfUaDocument document)
+    // The checks look at the whole document, so their findings don't depend on which pages are printed.
+    private string Build(PdfUaDocument document, PdfUaDocument whole)
     {
         Line(0, FormatHeader);
         WriteOptions();
@@ -41,6 +42,7 @@ internal sealed partial class SnapshotWriter(PdfSnapshotOptions options)
         WriteSection(PdfSection.Annotations, () => WriteAnnotations(document.Annotations));
         WriteSection(PdfSection.Forms, () => WriteForms(document.Form, document.FormFields));
         WriteSection(PdfSection.Layout, () => WriteLayout(document));
+        if (options.CheckSet is { } set) WriteSection(PdfSection.Checks, () => WriteChecks(whole, set));
         return _snapshot.ToString();
     }
 
@@ -50,6 +52,24 @@ internal sealed partial class SnapshotWriter(PdfSnapshotOptions options)
         if (options.IgnoredFields.Any()) Line(0, $"# ignored fields: {string.Join(", ", options.IgnoredFields.Select(Name))}");
         if (options.ToleratedFields.Count > 0) Line(0, Tolerances.Header(options.ToleratedFields));
         if (options.Pages.Count > 0) Line(0, $"# only pages: {string.Join(", ", options.Pages)}");
+        if (options.CheckSet is { } set) Line(0, $"# checks: {set}");
+    }
+
+    // A finding prints as its rule, page and path, with no message text, so rewording a message never changes a
+    // snapshot; findings on pages left out are left out too. A path can hold the document's own names, such as a form
+    // field's, so it's scrubbed like quoted text.
+    private void WriteChecks(PdfUaDocument document, PdfCheckSet set)
+    {
+        var findings = document.Check(set)
+            .Where(finding => options.Pages.Count == 0 || finding.Page is not int page || options.Pages.Contains(page))
+            .OrderBy(finding => finding.Check).ThenBy(finding => finding.Page ?? 0)
+            .ThenBy(finding => finding.Path, StringComparer.Ordinal).ToList();
+        if (findings.Count == 0) Line(1, None);
+        foreach (var finding in findings)
+        {
+            var page = finding.Page is int number ? $" p{number}" : "";
+            Line(1, $"{finding.Check}{page} {_scrubbing.Scrub(finding.Path)}");
+        }
     }
 
     private void WriteSection(PdfSection section, Action write)

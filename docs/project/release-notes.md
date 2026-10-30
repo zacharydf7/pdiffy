@@ -84,6 +84,13 @@ library does.
   release's own set, such as `PdfCheckSet.Version0_3`, which never changes, so an upgrade adds no rules to a test
   until it moves on. `Only` and `Except` narrow a set by category or rule
   ([#54](https://github.com/zacharydf7/pdiffy/issues/54)).
+- `PdfSnapshotOptions.Check(PdfCheckSet)` records what the checks find in a `checks` section of the snapshot, so the
+  findings are approved with it: a new problem fails the test, and a fixed one fails it until it's accepted
+  ([#55](https://github.com/zacharydf7/pdiffy/issues/55)).
+- A finding's path names the setting, key or kind of content when one rule can find different things in one place:
+  `untagged > images` and `untagged > paths` for untagged graphics, `settings > javascript`,
+  `settings > additional-actions` and `settings > open-action` for `NoActions`, `settings > data.xml` for an embedded
+  file, and `> scope` or `> headers` after a table cell's path for `TableHeaders`.
 
 ### Read more accurately
 

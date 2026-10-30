@@ -41,4 +41,9 @@ public enum PdfSection
 
     /// <summary>Every text run, image and path with its position, font, size and color.</summary>
     Layout,
+
+    /// <summary>
+    /// What the checks a test opts into with <see cref="PdfSnapshotOptions.Check"/> find; printed last, and only then.
+    /// </summary>
+    Checks,
 }

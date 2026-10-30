@@ -121,7 +121,22 @@ public sealed class PdfSnapshotOptions
         return this;
     }
 
+    /// <summary>
+    /// Records what a set of checks finds in a <c>checks</c> section, so the findings are approved with the snapshot: a
+    /// new problem fails the test, and a fixed one fails it too until the snapshot is accepted. Each line is the rule,
+    /// the page and the path, with no message text. The checks look at the whole document; <see cref="OnlyPages"/>
+    /// narrows their findings, and <see cref="Ignore(PdfSection[])"/> doesn't change them.
+    /// </summary>
+    /// <param name="set">The rules to apply, such as <see cref="PdfCheckSet.Latest"/>.</param>
+    public PdfSnapshotOptions Check(PdfCheckSet set)
+    {
+        CheckSet = set;
+        return this;
+    }
+
     internal bool ShowsProducerAndCreator { get; private set; }
+
+    internal PdfCheckSet? CheckSet { get; private set; }
 
     internal IReadOnlyList<Scrubber> Scrubbers => _scrubbers;
 
