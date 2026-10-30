@@ -399,6 +399,10 @@ For scripts and tools outside .NET, `diff.ToJson()` (or `pdiffy before.pdf after
 - `page` is `null` when the change isn't on a page.
 - `version` goes up only when a field is renamed, removed or changes meaning. New fields can be added without it.
 
+### Catch a generator upgrade that breaks documents
+
+Upgrading the library that writes your PDFs can break them while every page looks the same: a font loses its map to Unicode, so its text can't be searched or read aloud (`to-unicode: yes -> no`), a heading comes out as a paragraph (`type: H1 -> P`), or a post-processing step strips the tags. Snapshot tests catch these the first time the upgraded generator runs, accessibility changes first. To check every document it writes, generate them all before and after the upgrade and compare the folders: `dotnet pdiffy compare before after --html upgrade.html --profile accessibility`. The docs site walks through it in [Catch generator upgrades](https://zacharydf7.github.io/pdiffy/guide/generator-upgrades.html).
+
 ### Run the built-in checks
 
 `Check` applies the rules generated documents most often break and lists what it finds, each with the element's path and page, so a failed test says which figure on which page:

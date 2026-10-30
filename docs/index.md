@@ -52,6 +52,12 @@ by section: structure 3
 </div>
 </div>
 
+<h2 class="pd-section">Upgrade without breaking your documents</h2>
+<p class="pd-section-lead">A new version of the library that writes your PDFs can drop a font's Unicode map, retag a
+heading as a paragraph or strip the tags, while every page looks the same. A snapshot test catches it the first time the
+upgrade runs, and <code>pdiffy compare</code> checks every document before and after.
+<a href="guide/generator-upgrades.md">Catch generator upgrades</a></p>
+
 <h2 class="pd-section">One reading, three kinds of test</h2>
 
 <div class="pd-cards">
@@ -118,6 +124,7 @@ by section: structure 3
     <ul>
       <li><a href="guide/comparing.md">Compare two documents</a></li>
       <li><a href="guide/checking-documents.md">Check documents directly</a></li>
+      <li><a href="guide/generator-upgrades.md">Catch generator upgrades</a></li>
       <li><a href="guide/ci.md">Continuous integration</a></li>
       <li><a href="guide/troubleshooting.md">Troubleshooting</a></li>
     </ul>
