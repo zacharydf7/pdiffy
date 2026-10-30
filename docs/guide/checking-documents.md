@@ -74,7 +74,8 @@ that the document conforms.
 | `MeaningfulAltText` | A warning: alt text that's a file name, such as `IMG_2041.jpg`, or a placeholder such as `image` or `graphic 3` | `AltText` | WCAG 1.1.1 |
 | `LinkText` | A warning: a link that says only something vague, such as "click here", "read more" or "link", with no other text saying where it goes | `Annotations` | WCAG 2.4.4 |
 | `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |
-| `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
+| `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode, or map to U+0000, U+FEFF or U+FFFE | `Fonts` | 7.21.7 |
+| `NoMissingGlyphs` | A font whose text shows the missing-glyph box (.notdef), as its encoding or CID-to-glyph map tells | `Fonts` | 7.21.8 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
 | `NoEmbeddedFiles` | Each embedded file | `HouseRules` | House rule |
 | `RoleMap` | A custom structure type that doesn't map to a standard one, a mapping that loops back on itself, and a standard type that's remapped | `Structure` | 7.1 |
@@ -107,7 +108,7 @@ await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Check(PdfCheckS
 
 ```text
 # pdfua-snapshot v1
-# checks: latest, 37 rules
+# checks: latest, 38 rules
 ...
 checks
   FigureAltText p2 structure > Document > Figure[2]

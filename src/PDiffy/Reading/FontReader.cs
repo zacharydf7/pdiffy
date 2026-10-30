@@ -41,15 +41,19 @@ internal static class FontReader
         var embedded = descriptor is not null && FontFileKeys.Any(descriptor.Data.ContainsKey);
         var hasToUnicode = font.Data.ContainsKey("ToUnicode");
         var name = WithoutSubsetPrefix(objects.Name(font, "BaseFont") ?? "(none)");
+        var codes = UsedCodes(use, subtype);
+        var maps = UnicodeMap.For(objects, font, subtype);
+        var missing = MissingGlyphs.For(objects, font, subtype);
         return new PdfFont
         {
             Name = name, Subtype = subtype, Embedded = embedded, HasToUnicode = hasToUnicode,
-            UnmappedCodes = UnmappedCodes(objects, use, subtype),
+            UnmappedCodes = codes.Where(code => !maps(code)).ToList(),
+            MissingGlyphCodes = codes.Where(missing).ToList(),
         };
     }
 
     // A CID font's codes are two bytes (true of the Identity encodings nearly every CID font uses); a simple font's are one.
-    private static IReadOnlyList<int> UnmappedCodes(PdfObjects objects, FontUse use, string? subtype)
+    private static SortedSet<int> UsedCodes(FontUse use, string? subtype)
     {
         var width = subtype == "Type0" ? 2 : 1;
         var codes = new SortedSet<int>();
@@ -61,8 +65,7 @@ internal static class FontReader
             }
         }
 
-        var maps = UnicodeMap.For(objects, use.Font, subtype);
-        return codes.Where(code => !maps(code)).ToList();
+        return codes;
     }
 
     // A subset font is named like ABCDEF+Arial: six capital letters and a plus sign.

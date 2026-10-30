@@ -304,7 +304,9 @@ internal sealed partial class SnapshotWriter(PdfSnapshotOptions options)
         var subtype = font.Subtype is null ? "" : " " + font.Subtype;
         var line = $"{font.Name}{subtype} embedded={YesNo(font.Embedded)} to-unicode={YesNo(font.HasToUnicode)}";
         var width = font.Subtype == PdfFontTypes.Type0 ? 4 : 2;
-        return font.UnmappedCodes.Count == 0 ? line : $"{line} unmapped=[{CodeRanges(font.UnmappedCodes, width)}]";
+        if (font.UnmappedCodes.Count > 0) line += $" unmapped=[{CodeRanges(font.UnmappedCodes, width)}]";
+        if (font.MissingGlyphCodes.Count > 0) line += $" missing-glyphs=[{CodeRanges(font.MissingGlyphCodes, width)}]";
+        return line;
     }
 
     // Hex codes, with runs of consecutive codes shortened to first-last: [0041-0043,0050].

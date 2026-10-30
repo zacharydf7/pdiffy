@@ -119,8 +119,9 @@ internal static partial class TextJoiner
     }
 
     /// <summary>Unicode NFC, whitespace runs collapsed to one space, trimmed.</summary>
+    // Normalizing throws on U+FFFE, which a broken ToUnicode map can give, so U+FFFD replaces it.
     public static string Normalize(string text) =>
-        Whitespace().Replace(text.Normalize(NormalizationForm.FormC), " ").Trim();
+        Whitespace().Replace(text.Replace('\uFFFE', '\uFFFD').Normalize(NormalizationForm.FormC), " ").Trim();
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex Whitespace();

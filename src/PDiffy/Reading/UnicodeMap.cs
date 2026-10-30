@@ -5,10 +5,10 @@ using UglyToad.PdfPig.Tokens;
 namespace PDiffy.Reading;
 
 /// <summary>
-/// Whether a font maps a character code to Unicode, which is what lets its text be copied, searched and read aloud.
-/// A ToUnicode CMap is checked first. A simple font also maps a code when its encoding gives the code a standard glyph
-/// name, as readers fall back to that; a CID font only when it uses a predefined CMap (not Identity) over one of Adobe's
-/// character collections.
+/// Whether a font maps a character code to Unicode, which is what lets its text be copied, searched and read aloud. A
+/// ToUnicode CMap is checked first, and a code it maps to no text has none. A simple font also maps a code when its
+/// encoding gives the code a standard glyph name, as readers fall back to that; a CID font only when it uses a
+/// predefined CMap (not Identity) over one of Adobe's character collections.
 /// </summary>
 internal static class UnicodeMap
 {
@@ -23,21 +23,23 @@ internal static class UnicodeMap
         if (subtype == "Type0")
         {
             var usesCollection = UsesAdobeCollection(objects, font);
-            return code => usesCollection || cmap?.Maps(code) == true;
+            return code => cmap?.GivesNoText(code) != true && (usesCollection || cmap?.Maps(code) == true);
         }
 
-        var glyphName = GlyphNames(objects, font);
-        return code => cmap?.Maps(code) == true || glyphName(code) is { } name && HasUnicode(name);
+        var glyphName = GlyphNames(objects, font, DefaultEncoding(objects, font));
+        return code => cmap?.GivesNoText(code) != true
+            && (cmap?.Maps(code) == true || glyphName(code) is { } name && HasUnicode(name));
     }
 
     private static bool HasUnicode(string glyphName) =>
         !string.IsNullOrEmpty(GlyphList.AdobeGlyphList.NameToUnicode(glyphName))
         || !string.IsNullOrEmpty(GlyphList.ZapfDingbats.NameToUnicode(glyphName));
 
-    // The encoding's name for each code, with the /Differences array replacing names for the codes it lists.
-    private static Func<int, string?> GlyphNames(PdfObjects objects, DictionaryToken font)
+    // The encoding's name for each code, with the /Differences array replacing names for the codes it lists. Without a
+    // named encoding, the names come from the default one, if any.
+    internal static Func<int, string?> GlyphNames(PdfObjects objects, DictionaryToken font, Encoding? defaultEncoding)
     {
-        var baseEncoding = DefaultEncoding(objects, font);
+        var baseEncoding = defaultEncoding;
         var differences = new Dictionary<int, string>();
         switch (objects.Get(font, "Encoding"))
         {

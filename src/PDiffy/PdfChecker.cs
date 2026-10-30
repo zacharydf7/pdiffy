@@ -79,6 +79,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.NoReferenceXObjects: NoReferenceXObjects(); break;
             case PdfCheck.MeaningfulAltText: MeaningfulAltText(); break;
             case PdfCheck.LinkText: LinkText(); break;
+            case PdfCheck.NoMissingGlyphs: NoMissingGlyphs(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -375,6 +376,18 @@ internal sealed class PdfChecker(PdfUaDocument document)
 
             Add(PdfCheck.FontsMapToUnicode, null, $"{Name(PdfSection.Fonts)} > {fonts.Key}",
                 $"Font {fonts.Key} uses {codes} code(s) that don't map to Unicode");
+        }
+    }
+
+    private void NoMissingGlyphs()
+    {
+        foreach (var fonts in document.Fonts.GroupBy(font => font.Name))
+        {
+            var codes = fonts.SelectMany(font => font.MissingGlyphCodes).Distinct().Count();
+            if (codes == 0) continue;
+
+            Add(PdfCheck.NoMissingGlyphs, null, $"{Name(PdfSection.Fonts)} > {fonts.Key}",
+                $"Font {fonts.Key} shows the missing-glyph box for {codes} code(s)");
         }
     }
 
@@ -1078,6 +1091,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.NoReferenceXObjects => new(PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.20"),
         PdfCheck.MeaningfulAltText => new(PdfCheckCategory.AltText, PdfCheckSeverity.Warning, "WCAG 2.2 1.1.1"),
         PdfCheck.LinkText => new(PdfCheckCategory.Annotations, PdfCheckSeverity.Warning, "WCAG 2.2 2.4.4"),
+        PdfCheck.NoMissingGlyphs => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.8"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

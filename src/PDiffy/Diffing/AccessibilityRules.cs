@@ -58,7 +58,7 @@ internal static class AccessibilityRules
         (PdfSection.Metadata, "title" or "xmp-title") => IsGone(to),
         (PdfSection.Pages, "tabs") => from == "S" && to != "S",
         (PdfSection.Fonts, "to-unicode") => from == "yes" && to != "yes",
-        (PdfSection.Fonts, "unmapped") => AddsCodes(from, to),
+        (PdfSection.Fonts, "unmapped" or "missing-glyphs") => AddsCodes(from, to),
         (PdfSection.Settings, "permissions") => AllowsExtraction(from) && !AllowsExtraction(to),
         _ => false,
     };
@@ -67,8 +67,9 @@ internal static class AccessibilityRules
     private static bool AllowsExtraction(string permissions) =>
         permissions == "(missing)" || permissions.Split(',').Contains("extract-for-accessibility");
 
-    // Character codes that no longer map to Unicode, written as "[41-43,50]": more of them is worse, fewer isn't. Runs of
-    // codes are written as one range, so a range is old news only when a single earlier range holds all of it.
+    // Character codes that no longer map to Unicode or now show a missing glyph, written as "[41-43,50]": more of them
+    // is worse, fewer isn't. Runs of codes are written as one range, so a range is old news only when a single earlier
+    // range holds all of it.
     private static bool AddsCodes(string from, string to)
     {
         var known = CodeRanges(from).ToList();

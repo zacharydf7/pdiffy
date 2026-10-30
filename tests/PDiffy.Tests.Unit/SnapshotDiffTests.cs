@@ -844,6 +844,8 @@ public class SnapshotDiffTests
     [InlineData("fonts", "Arial TrueType embedded=yes to-unicode=yes", "Arial TrueType embedded=yes to-unicode=yes unmapped=[41]", true)]
     [InlineData("fonts", "Arial TrueType embedded=yes to-unicode=yes unmapped=[41]", "Arial TrueType embedded=yes to-unicode=yes unmapped=[41-43]", true)]
     [InlineData("fonts", "Arial TrueType embedded=yes to-unicode=yes unmapped=[41-43,50]", "Arial TrueType embedded=yes to-unicode=yes unmapped=[42,50]", false)]
+    [InlineData("fonts", "Arial TrueType embedded=yes to-unicode=yes", "Arial TrueType embedded=yes to-unicode=yes missing-glyphs=[01]", true)]
+    [InlineData("fonts", "Arial TrueType embedded=yes to-unicode=yes missing-glyphs=[01-02]", "Arial TrueType embedded=yes to-unicode=yes missing-glyphs=[02]", false)]
     [InlineData("fonts", "Arial TrueType embedded=yes to-unicode=no", "Arial TrueType embedded=no to-unicode=no", false)]
     [InlineData("settings", "version=1.7 encrypted=yes permissions=print,extract-for-accessibility", "version=1.7 encrypted=yes permissions=print", true)]
     [InlineData("settings", "version=1.7 encrypted=yes permissions=extract-for-accessibility", "version=1.7 encrypted=yes permissions=none", true)]
@@ -1159,6 +1161,21 @@ public class SnapshotDiffTests
             (ChangeKind.AttributeChanged, PdfSection.Settings), (ChangeKind.Added, PdfSection.Settings),
             (ChangeKind.AttributeChanged, PdfSection.Settings),
         ], changes.Select(change => (change.Kind, change.PdfSection)));
+    }
+
+    // The earlier release didn't list codes that show the missing glyph, or count a code mapped to U+FEFF as unmapped.
+    [Fact]
+    public void Compare_ShouldReportOnlyTheFontsNewCodes_WhenASnapshotFromBeforeMissingGlyphsIsCompared()
+    {
+        var cmap = TestFonts.CMap("2 beginbfchar <0000> <0030> <0041> <FEFF> endbfchar");
+        var current = TestFonts.OneFont(TestFonts.Type0, "<00000041> Tj", cmap, TestFonts.CidFont).ToSnapshot();
+        var earlier = current.Replace(" unmapped=[0041]", "").Replace(" missing-glyphs=[0000]", "");
+
+        var changes = SnapshotDiff.CompareSnapshots(earlier, current).Changes;
+
+        Assert.Equal([(ChangeKind.AttributeChanged, PdfSection.Fonts), (ChangeKind.AttributeChanged, PdfSection.Fonts)],
+            changes.Select(change => (change.Kind, change.PdfSection)));
+        Assert.All(changes, change => Assert.True(change.AffectsAccessibility));
     }
 
     [Fact]

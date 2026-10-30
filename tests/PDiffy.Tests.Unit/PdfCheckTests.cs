@@ -158,6 +158,21 @@ public class PdfCheckTests
         Assert.Equal(findings, pdf.Load().Check(PdfCheck.LinkText).Count);
     }
 
+    [Theory]
+    [InlineData("<41010102>", 1)]
+    [InlineData("<4142>", 0)]
+    public void Check_ShouldFindAFontShowingTheMissingGlyph_WhenItsEncodingSendsCodesThere(string text, int findings)
+    {
+        var font = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+
+        var found = TestFonts.OneFont(font, $"{text} Tj").Check(PdfCheck.NoMissingGlyphs);
+
+        Assert.Equal(findings, found.Count);
+        Assert.All(found, finding => Assert.Equal(
+            "fonts > Helvetica: Font Helvetica shows the missing-glyph box for 2 code(s)",
+            $"{finding.Path}: {finding.Message}"));
+    }
+
     [Fact]
     public void Check_ShouldFindTheFormFieldWithoutAnAccessibleName_WhenOnlyOneHasNone()
     {
@@ -1227,6 +1242,7 @@ public class PdfCheckTests
     [InlineData(PdfCheck.NoReferenceXObjects, PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.20")]
     [InlineData(PdfCheck.MeaningfulAltText, PdfCheckCategory.AltText, PdfCheckSeverity.Warning, "WCAG 2.2 1.1.1")]
     [InlineData(PdfCheck.LinkText, PdfCheckCategory.Annotations, PdfCheckSeverity.Warning, "WCAG 2.2 2.4.4")]
+    [InlineData(PdfCheck.NoMissingGlyphs, PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.8")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

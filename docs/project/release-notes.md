@@ -142,6 +142,11 @@ library does.
   (`both-names=no`). `PdfSettings` has `LayerConfigurations` and
   `ReferenceXObjects`, and `PdfEmbeddedFile` has `NamedBothWays`
   ([#75](https://github.com/zacharydf7/pdiffy/issues/75)).
+- `NoMissingGlyphs` finds a font whose text shows the missing-glyph box (.notdef), as its encoding or CID-to-glyph map
+  tells, and `FontsMapToUnicode` also finds codes its ToUnicode map sends to U+0000, U+FEFF or U+FFFE, even when the
+  font's encoding names them. Snapshots print `missing-glyphs=[...]` on a font's line, `PdfFont` has
+  `MissingGlyphCodes`, and loading no longer fails on a font that maps a code to U+FFFE
+  ([#76](https://github.com/zacharydf7/pdiffy/issues/76)).
 - The first warning from a standard other than PDF/UA, `MeaningfulAltText`, finds alt text that's a file name, such
   as `IMG_2041.jpg`, or a placeholder such as `image` or `graphic 3`. Its reference is WCAG 2.2 1.1.1, since PDF/UA
   doesn't check what alt text says ([#78](https://github.com/zacharydf7/pdiffy/issues/78)).

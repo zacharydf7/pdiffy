@@ -300,14 +300,28 @@ on Linux build servers, also install the fonts the document asks for.
 
 ## FontsMapToUnicode
 
-**Finds:** a font whose text uses character codes that don't map to Unicode. **Category:** `Fonts`. **Severity:**
-`Error`. **From:** ISO 14289-1 7.21.7.
+**Finds:** a font whose text uses character codes that don't map to Unicode, or that its ToUnicode map sends to
+U+0000, U+FEFF or U+FFFE, which give no text. **Category:** `Fonts`. **Severity:** `Error`. **From:** ISO 14289-1
+7.21.7.
 
 **Why it matters:** a screen reader, search and copy and paste all need to know which character each glyph is. Without
 the map, the text reads as nothing or as gibberish, though it looks right on screen.
 
 **How to fix it:** use fonts that come with a Unicode map, and generator settings that write a `ToUnicode` CMap for each
 font. A font that maps some codes but not others usually means a symbol or ligature the generator draws specially.
+
+## NoMissingGlyphs
+
+**Finds:** a font whose text shows its .notdef glyph, the empty box a font draws for a character it lacks. It finds the
+codes a simple font's encoding names `.notdef`, and in a CID font with an Identity encoding, CID 0 or a code its
+`CIDToGIDMap` sends to glyph 0. A glyph missing from the font file itself isn't found. **Category:** `Fonts`.
+**Severity:** `Error`. **From:** ISO 14289-1 7.21.8.
+
+**Why it matters:** the text a screen reader reads may be there, but sighted readers see empty boxes in its place, and
+the two no longer agree.
+
+**How to fix it:** use a font that has every character the text needs, or embed the whole font instead of a subset
+that leaves some out. Boxes often appear when text is pasted in from another font or uses a symbol the font lacks.
 
 ## LayerConfigurations
 

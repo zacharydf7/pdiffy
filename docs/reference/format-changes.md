@@ -16,15 +16,17 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### Checks
 
-- `PdfCheckSet.Latest` has 25 new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
+- `PdfCheckSet.Latest` has 26 new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
   `TocStructure`, `HeadingTypes`, `NoteIds`, `TableStructure`, `TableGrid`, `AnnotationTags`,
   `AnnotationDescriptions`, `TabOrder`, `LanguageTags`, `TextLanguage`, `FormulaAltText`, `MediaClips`,
   `ArtifactNesting`, `LayerConfigurations`, `EmbeddedFileNames`, `NoDynamicXfa`, `AccessibilityPermission`,
-  `NoReferenceXObjects` and the warnings `MeaningfulAltText` and `LinkText`, so a snapshot that records checks with it
-  prints `# checks: latest, 37 rules` and what they find
-  ([#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#75](https://github.com/zacharydf7/pdiffy/issues/75),
+  `NoReferenceXObjects`, `NoMissingGlyphs` and the warnings `MeaningfulAltText` and `LinkText`, so a snapshot that
+  records checks with it prints `# checks: latest, 38 rules` and what they find
+  ([#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#76](https://github.com/zacharydf7/pdiffy/issues/76),
   [#78](https://github.com/zacharydf7/pdiffy/issues/78), [#79](https://github.com/zacharydf7/pdiffy/issues/79)). A
-  release's own set, such as `PdfCheckSet.Version0_3`, doesn't change.
+  release's own set, such as `PdfCheckSet.Version0_3`, keeps its rules, but `FontsMapToUnicode`, in every set, now
+  also finds codes a font's ToUnicode map sends to U+0000, U+FEFF or U+FFFE, so a document with such a font can gain
+  a finding ([#76](https://github.com/zacharydf7/pdiffy/issues/76)).
 
 ### Document setup
 
@@ -46,6 +48,10 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   (`reference-xobjects=1`), and marks an embedded file that isn't named both as `F` and as `UF` (`both-names=no`)
   ([#75](https://github.com/zacharydf7/pdiffy/issues/75)). Snapshots of documents with layers change, since every
   such document has a default configuration, and so do those with such embedded files.
+- A font whose text shows the missing-glyph box prints the codes that do: `missing-glyphs=[0000]`, and a code its
+  ToUnicode map sends to U+0000, U+FEFF or U+FFFE is listed in `unmapped`, even when its encoding gives it a standard
+  glyph name ([#76](https://github.com/zacharydf7/pdiffy/issues/76)). Only snapshots of such fonts change, and new codes
+  in either list are flagged as affecting accessibility.
 - A file whose header says PDF 2.0 prints `version=2.0`. PDiffy read the version through PdfPig, which reads a
   header it doesn't know as 1.4, so such snapshots printed `version=1.4` and change.
 

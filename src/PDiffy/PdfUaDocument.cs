@@ -960,6 +960,14 @@ public sealed record PdfFont
 
     /// <summary>
     /// The character codes the font's text uses that don't map to Unicode, smallest first; empty when every code maps.
+    /// A code mapped to U+0000, U+FEFF or U+FFFE counts as unmapped, since it gives no text.
     /// </summary>
     public IReadOnlyList<int> UnmappedCodes { get; init => field = ValueList<int>.Of(value); } = ValueList<int>.Empty;
+
+    /// <summary>
+    /// The character codes the font's text uses that show its .notdef glyph, the empty box a font draws for a character
+    /// it lacks, smallest first. Only codes the font's encoding or CID-to-glyph map send there are found, not glyphs
+    /// missing from the font file.
+    /// </summary>
+    public IReadOnlyList<int> MissingGlyphCodes { get; init => field = ValueList<int>.Of(value); } = ValueList<int>.Empty;
 }

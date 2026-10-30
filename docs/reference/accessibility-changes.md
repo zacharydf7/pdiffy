@@ -16,7 +16,7 @@ failure lists it first tagged `[accessibility]`, when it is one of these:
 | The document is no longer marked as tagged, or the viewer no longer shows its title | `marked: yes -> no`, `display-doc-title: yes -> no` |
 | The document's title was removed or emptied | `title: "Trail Guide" -> (missing)`, `xmp-title: "Trail Guide" -> ""` |
 | A page's tab order is no longer the structure order | `tabs: S -> R` |
-| A font's text no longer maps to Unicode, or more of its character codes don't | `to-unicode: yes -> no`, `unmapped: [41] -> [41-43]` |
+| A font's text no longer maps to Unicode, or more of its character codes don't or show the missing-glyph box | `to-unicode: yes -> no`, `unmapped: [41] -> [41-43]`, `missing-glyphs: (missing) -> [01]` |
 | A document is newly encrypted, or its permissions changed, so screen readers can no longer extract its text | `permissions: (missing) -> print`, `permissions: print,extract-for-accessibility -> print` |
 
 Less untagged content doesn't count, except that a text line that loses more than half its words shows as removed and

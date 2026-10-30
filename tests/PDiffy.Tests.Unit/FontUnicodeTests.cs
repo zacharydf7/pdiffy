@@ -48,6 +48,97 @@ public class FontUnicodeTests
         Assert.Equal([0x42, 0x43, 0x44, 0x61], Assert.Single(document.Fonts).UnmappedCodes);
     }
 
+    // 0052 and 0071 land on U+FEFF and U+FFFE part way through their ranges, and 0080 and 0090 start ranges on U+FEFF
+    // and U+0000; 0060 and 0061 map to two and three characters.
+    [Fact]
+    public void Load_ShouldReportCodesMappedToAByteOrderMarkOrANoncharacter_WhenToUnicodeMapsThemThere()
+    {
+        var cmap = CMap("4 beginbfchar <0041> <FEFF> <0042> <fffe> <0060> <00660066> <0061> <006600660069> endbfchar "
+            + "4 beginbfrange <0050> <0053> <FEFD> <0070> <0071> <FFFD> <0080> <0081> <FEFF> <0090> <0091> <0000> endbfrange");
+
+        var document = OneFont(Type0, "<00410042005000510052005300600061007000710080008100900091> Tj", cmap, CidFont);
+
+        Assert.Equal([0x41, 0x42, 0x52, 0x71, 0x80, 0x90], Assert.Single(document.Fonts).UnmappedCodes);
+    }
+
+    // The encoding gives every code a standard name, but a reader uses the ToUnicode map's value instead: none for 41-43
+    // and 45-46, three characters for 44.
+    [Theory]
+    [InlineData("Type1")]
+    [InlineData("TrueType")]
+    public void Load_ShouldReportCodesMappedToNoText_WhenASimpleFontsEncodingWouldNameThem(string subtype)
+    {
+        var font = $"<< /Type /Font /Subtype /{subtype} /BaseFont /Helvetica /Encoding /WinAnsiEncoding "
+            + "/ToUnicode 6 0 R >>";
+        var cmap = CMap("4 beginbfchar <41> <FEFF> <42> <0000> <43> <> <44> <00660066006C> endbfchar "
+            + "1 beginbfrange <45> <46> <> endbfrange");
+
+        var document = OneFont(font, "(ABCDEFG) Tj", cmap);
+
+        Assert.Equal([0x41, 0x42, 0x43, 0x45, 0x46], Assert.Single(document.Fonts).UnmappedCodes);
+    }
+
+    [Fact]
+    public void Load_ShouldReportCodesMappedToNoText_WhenACidFontUsesAnAdobeCollection()
+    {
+        var font = Type0.Replace("/Identity-H", "/UniJIS-UCS2-H");
+        var descendant = CidFont.Replace("/Ordering (Identity)", "/Ordering (Japan1)");
+
+        var document = OneFont(font, "<00410042> Tj", CMap("1 beginbfchar <0041> <FEFF> endbfchar"), descendant);
+
+        Assert.Equal([0x41], Assert.Single(document.Fonts).UnmappedCodes);
+    }
+
+    [Fact]
+    public void Load_ShouldReadTheText_WhenToUnicodeMapsACodeToACharacterThatCantBeNormalized()
+    {
+        var cmap = CMap("2 beginbfchar <0041> <FFFE> <0042> <0042> endbfchar");
+
+        var document = OneFont(Type0, "<00410042> Tj", cmap, CidFont);
+
+        Assert.Equal("\uFFFDB", Assert.Single(document.Untagged).Text);
+    }
+
+    [Theory]
+    [InlineData("/Encoding /WinAnsiEncoding", "<4101>", new[] { 0x01 })]
+    [InlineData("/Encoding << /Differences [65 /.notdef] >>", "<4142>", new[] { 0x41 })]
+    [InlineData("/Encoding << /BaseEncoding /WinAnsiEncoding /Differences [66 /B] >>", "<0142>", new[] { 0x01 })]
+    [InlineData("/Encoding << /Differences [66 /B] >>", "<0142>", new int[0])]
+    [InlineData("", "<0141>", new int[0])]
+    public void Load_ShouldReportCodesShowingTheMissingGlyph_WhenASimpleFontsEncodingNamesThemNotdef(string encoding,
+        string text, int[] expected)
+    {
+        var font = $"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica {encoding} >>";
+
+        var document = OneFont(font, $"{text} Tj");
+
+        Assert.Equal(expected, Assert.Single(document.Fonts).MissingGlyphCodes);
+    }
+
+    [Theory]
+    [InlineData("/Identity-H", new[] { 0x0000 })]
+    [InlineData("/UniJIS-UCS2-H", new int[0])]
+    public void Load_ShouldReportCidZero_WhenACidFontsEncodingIsIdentity(string encoding, int[] expected)
+    {
+        var font = Type0.Replace("/Identity-H", encoding);
+
+        var document = OneFont(font, "<00000041> Tj", CMap(""), CidFont);
+
+        Assert.Equal(expected, Assert.Single(document.Fonts).MissingGlyphCodes);
+    }
+
+    // CID 0 draws glyph 5 and CID 2 glyph 7, but CID 1 draws glyph 0.
+    [Fact]
+    public void Load_ShouldReportCidsMappedToGlyphZero_WhenACidFontHasACidToGidMap()
+    {
+        var descendant = CidFont.Replace("/StemV 80 >> >>", "/StemV 80 >> /CIDToGIDMap 8 0 R >>");
+        var map = TestPdf.Stream(new string([(char)0, (char)5, (char)0, (char)0, (char)0, (char)7]));
+
+        var document = OneFont(Type0, "<000000010002> Tj", CMap(""), descendant, map);
+
+        Assert.Equal([0x0001], Assert.Single(document.Fonts).MissingGlyphCodes);
+    }
+
     [Fact]
     public void Load_ShouldCountEntriesBeforeTheCut_WhenToUnicodeIsTruncated()
     {
@@ -181,6 +272,7 @@ public class FontUnicodeTests
             new PdfFont
             {
                 Name = "Simple", Subtype = "TrueType", Embedded = true, HasToUnicode = false, UnmappedCodes = [0x2f],
+                MissingGlyphCodes = [0x01, 0x02],
             },
         };
         var document = Documents.Empty() with { Fonts = fonts };
@@ -190,7 +282,7 @@ public class FontUnicodeTests
         string[] expected =
         [
             "  Cid Type0 embedded=yes to-unicode=yes unmapped=[0041-0043,0050,0175]",
-            "  Simple TrueType embedded=yes to-unicode=no unmapped=[2f]",
+            "  Simple TrueType embedded=yes to-unicode=no unmapped=[2f] missing-glyphs=[01-02]",
         ];
         Assert.Equal(expected, SectionLines(snapshot, "fonts"));
     }

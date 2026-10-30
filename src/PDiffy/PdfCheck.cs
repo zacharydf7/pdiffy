@@ -181,6 +181,12 @@ public enum PdfCheck
     /// <see cref="LinkDescriptions"/> but doesn't say where the link goes.
     /// </summary>
     LinkText,
+
+    /// <summary>
+    /// No text shows a font's .notdef glyph, the empty box drawn for a character the font lacks, as far as the font's
+    /// encoding or CID-to-glyph map tells.
+    /// </summary>
+    NoMissingGlyphs,
 }
 
 /// <summary>
