@@ -56,6 +56,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.AnnotationDescriptions: AnnotationDescriptions(); break;
             case PdfCheck.TabOrder: TabOrder(); break;
             case PdfCheck.LanguageTags: LanguageTags(); break;
+            case PdfCheck.TextLanguage: TextLanguage(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -583,6 +584,98 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
+    // A document language gives every piece of text one, so only a document without one is checked, and only when
+    // something in it sets a language; otherwise DocumentLanguage reports the one fix. An element's language passes to
+    // what it holds, and marked content's to the text it covers. Bookmarks can't set one, so they need the document's,
+    // as does a field's name kept on the field.
+    private void TextLanguage()
+    {
+        if (!IsBlank(document.Document.Language)) return;
+        if (!Elements.Any(pair => !IsBlank(pair.Element.Language)
+            || pair.Element.MarkedSpans.Any(span => !IsBlank(span.Language)))) return;
+
+        foreach (var (element, path, language) in WithLanguages(document.Structure, StructurePaths.Root, null))
+        {
+            if (language is not null) continue;
+
+            var (type, page) = (element.TypeOrMapped, element.FirstPage);
+            if (HasTextWithoutLanguage(element) || !IsBlank(element.AltText) || !IsBlank(element.ActualText)
+                || !IsBlank(element.Expansion))
+            {
+                Add(PdfCheck.TextLanguage, page, path, $"{type}{On(page)} has text with no language");
+            }
+
+            if (element.MarkedSpans.Any(span => IsBlank(span.Language)
+                && (!IsBlank(span.AltText) || !IsBlank(span.ActualText) || !IsBlank(span.Expansion))))
+            {
+                Add(PdfCheck.TextLanguage, page, $"{path} > span",
+                    $"Marked content in {type}{On(page)} has alt text, replacement text or an expansion "
+                    + "with no language");
+            }
+
+            foreach (var annotation in element.Annotations.Where(HasText))
+            {
+                Add(PdfCheck.TextLanguage, annotation.Page, $"{path} > contents",
+                    $"{annotation.Subtype} annotation{On(annotation.Page)} in {type} has text with no language");
+            }
+        }
+
+        foreach (var annotation in document.Annotations.Where(a => a.Role != PdfContentRole.Tagged && HasText(a)))
+        {
+            Add(PdfCheck.TextLanguage, annotation.Page, Name(PdfSection.Annotations),
+                $"Untagged {annotation.Subtype} annotation{On(annotation.Page)} has text with no language");
+        }
+
+        // A field whose widgets are its kids, such as a radio group, keeps its name on the field, where no element's
+        // language reaches it.
+        var onWidgets = document.Annotations.Select(a => a.AccessibleName).OfType<string>().ToHashSet();
+        foreach (var field in document.FormFields)
+        {
+            if (field.AccessibleName is not { } name || IsBlank(name) || onWidgets.Contains(name)) continue;
+
+            Add(PdfCheck.TextLanguage, field.Page, $"{Name(PdfSection.Forms)} > {field.Name}",
+                $"Form field \"{field.Name}\" has an accessible name with no language");
+        }
+
+        if (document.Bookmarks.Count > 0)
+        {
+            Add(PdfCheck.TextLanguage, null, Name(PdfSection.Bookmarks), "Bookmark titles have no language");
+        }
+
+        if (document.Metadata.XmpHasDefaultLanguageText)
+        {
+            Add(PdfCheck.TextLanguage, null, $"{Name(PdfSection.Metadata)} > xmp",
+                "The XMP title or description is for the default language, and the document has none");
+        }
+    }
+
+    // Text that marked content gives a language of its own has one, so only the rest of the element's text counts.
+    private static bool HasTextWithoutLanguage(PdfStructureElement element)
+    {
+        if (element.Text is not { } text || IsBlank(text)) return false;
+
+        var covered = element.MarkedSpans.Where(span => !IsBlank(span.Language)).Select(span => span.Text);
+        return WithoutSpaces(text) != WithoutSpaces(string.Concat(covered));
+    }
+
+    // An annotation's text: its contents, or a widget's accessible name.
+    private static bool HasText(PdfAnnotation annotation) =>
+        !IsBlank(annotation.Contents) || !IsBlank(annotation.AccessibleName);
+
+    private static string WithoutSpaces(string text) => string.Concat(text.Where(c => !char.IsWhiteSpace(c)));
+
+    // Each element with the language it has, its own or the nearest one around it; null when none sets one.
+    private static IEnumerable<(PdfStructureElement Element, string Path, string? Language)> WithLanguages(
+        IReadOnlyList<PdfStructureElement> elements, string path, string? inherited)
+    {
+        foreach (var (element, elementPath) in StructurePaths.WithPaths(elements, path))
+        {
+            var language = IsBlank(element.Language) ? inherited : element.Language;
+            yield return (element, elementPath, language);
+            foreach (var child in WithLanguages(element.Children, elementPath, language)) yield return child;
+        }
+    }
+
     private static bool IsMalformed(string language) => language.Length > 0 && !LanguageTag.IsMatch(language);
 
     // The element an annotation is tagged with, and the clause that says so.
@@ -803,7 +896,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.AnnotationDescriptions =>
             new(PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.1"),
         PdfCheck.TabOrder => new(PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.3"),
-        PdfCheck.LanguageTags => new(PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
+        PdfCheck.LanguageTags or PdfCheck.TextLanguage =>
+            new(PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

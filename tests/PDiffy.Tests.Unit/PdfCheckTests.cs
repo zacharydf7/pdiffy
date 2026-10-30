@@ -806,6 +806,96 @@ public class PdfCheckTests
         ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
     }
 
+    // Text that has a language: a paragraph in German, a French section's paragraph and link, a paragraph whose text is
+    // all in French marked content, and a form field's widget in a Form in English. Text that has none: a paragraph, a
+    // figure's alt text, marked content's alt text, a link's contents, an untagged comment, an untagged widget's name,
+    // a bookmark and an XMP title for the default language.
+    private static TestPdf WithTextInManyPlaces(string? lang, string xmp = XmpTitle)
+    {
+        var pdf = new TestPdf { Lang = lang, Xmp = xmp };
+        pdf.AddPage().Tagged(0, "Hallo").Tagged(1, "Hello").Tagged(2, "Bonjour")
+            .Raw("/P << /MCID 3 >> BDC BT /F1 12 Tf 72 300 Td /Span << /Lang (fr-FR) >> BDC (Salut) Tj EMC ET EMC")
+            .Raw("/Figure << /MCID 4 /Alt (Ridge view) >> BDC EMC")
+            .Annotation("/Subtype /Text /Rect [0 0 10 10] /Contents (Note)")
+            .Annotation("/Subtype /Widget /Rect [0 0 10 10] /TU (Hiker name)");
+        pdf.Structure(new TestElement("P", 0) { Entries = "/Lang (de-DE)" }, new TestElement("P", 1),
+            new TestElement("Div", new TestElement("P", 2),
+                new TestElement("Link", new TestLink("https://a.example", "Map")))
+            {
+                Entries = "/Lang (fr-FR)",
+            },
+            new TestElement("P", 3), new TestElement("Figure") { Entries = "/Alt (Trail map)" },
+            new TestElement("Figure", 4), new TestElement("Link", new TestLink("https://example.com", "Trail map")),
+            new TestElement("Form", new TestAnnotation("/Subtype /Widget /TU (Emergency phone)"))
+            {
+                Entries = "/Lang (en-US)",
+            });
+        pdf.Bookmark("Safety", 1);
+        return pdf;
+    }
+
+    [Fact]
+    public void Check_ShouldFindTextWithNoLanguage_WhenTheDocumentHasNoneAndOnlySomeElementsSetOne()
+    {
+        var findings = WithTextInManyPlaces(lang: null).Load().Check(PdfCheck.TextLanguage);
+
+        Assert.Equal(
+        [
+            "structure > P[2]: P on p1 has text with no language",
+            "structure > Figure[1]: Figure has text with no language",
+            "structure > Figure[2] > span: Marked content in Figure on p1 has alt text, replacement text or an "
+                + "expansion with no language",
+            "structure > Link > contents: Link annotation on p1 in Link has text with no language",
+            "annotations: Untagged Text annotation on p1 has text with no language",
+            "annotations: Untagged Widget annotation on p1 has text with no language",
+            "bookmarks: Bookmark titles have no language",
+            "metadata > xmp: The XMP title or description is for the default language, and the document has none",
+        ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    // Built by hand: TestPdf's fields are their own widgets, so their names are on the widgets.
+    [Fact]
+    public void Check_ShouldFindAFieldsNameWithNoLanguage_WhenItIsKeptOnTheFieldAndNotOnAWidget()
+    {
+        var empty = Documents.Empty();
+        var document = empty with
+        {
+            Document = empty.Document with { Language = null },
+            Structure = [new PdfStructureElement { Type = "P", Language = "de-DE", Text = "Hallo" }],
+            FormFields = [new PdfFormField { Name = "trail", AccessibleName = "Trail choice", Page = 1 }],
+        };
+
+        var findings = document.Check(PdfCheck.TextLanguage);
+
+        Assert.Equal(["forms > trail: Form field \"trail\" has an accessible name with no language"],
+            findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Fact]
+    public void Check_ShouldFindNoXmpTextWithoutALanguage_WhenItsTitleNamesALanguage()
+    {
+        var xmp = "<dc:title><rdf:Alt><rdf:li xml:lang=\"en-US\">Guide</rdf:li></rdf:Alt></dc:title>";
+
+        var findings = WithTextInManyPlaces(lang: null, xmp).Load().Check(PdfCheck.TextLanguage);
+
+        Assert.DoesNotContain(findings, finding => finding.Path == "metadata > xmp");
+    }
+
+    [Fact]
+    public void Check_ShouldFindNoTextWithoutALanguage_WhenTheDocumentHasOne()
+    {
+        Assert.Empty(WithTextInManyPlaces(lang: "en-US").Load().Check(PdfCheck.TextLanguage));
+    }
+
+    // DocumentLanguage already reports the one fix.
+    [Fact]
+    public void Check_ShouldFindNoTextWithoutALanguage_WhenNothingSetsALanguage()
+    {
+        var document = OnePage(new TestPdf { Lang = null });
+
+        Assert.Empty(document.Check(PdfCheck.TextLanguage));
+    }
+
     [Fact]
     public void Check_ShouldFindNoRoleMapProblem_WhenAnElementHasNoType()
     {
@@ -869,6 +959,7 @@ public class PdfCheckTests
         "ISO 14289-1 7.18.1")]
     [InlineData(PdfCheck.TabOrder, PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.3")]
     [InlineData(PdfCheck.LanguageTags, PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.TextLanguage, PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

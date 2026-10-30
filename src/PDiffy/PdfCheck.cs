@@ -130,6 +130,13 @@ public enum PdfCheck
     /// such as "en-US", not "english" or "en_US".
     /// </summary>
     LanguageTags,
+
+    /// <summary>
+    /// In a document with no language of its own, every piece of text still has one: from the element it's in, an
+    /// element around it, or the marked content that covers it. Bookmark titles, and XMP metadata for the default
+    /// language, need the document's.
+    /// </summary>
+    TextLanguage,
 }
 
 /// <summary>

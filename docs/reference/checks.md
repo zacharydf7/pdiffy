@@ -32,6 +32,21 @@ treated as no language at all, so the text is read with whatever voice it falls 
 Generators usually take it from a culture or locale setting; an underscore (`en_US`) is a sign the value came from a
 platform locale name rather than a language tag.
 
+## TextLanguage
+
+**Finds:** in a document with no language of its own, text no language reaches: an element's text, alt text,
+replacement text or expansion when neither it, an element around it, nor the marked content covering the text sets a
+language; marked content's own alt text, replacement text or expansion; annotation contents and form field names
+outside such an element; bookmark titles; and an XMP title or description for the default language (`x-default`).
+A document that sets no language anywhere is left to [`DocumentLanguage`](#documentlanguage), since one document
+language fixes it all. **Category:** `Language`. **Severity:** `Error`. **From:** ISO 14289-1 7.2.
+
+**Why it matters:** a screen reader reads each piece of text in its language. Text that has none is read with
+whatever voice the reader falls back to, so a French passage can come out in an English accent.
+
+**How to fix it:** set the document language. Where a passage is in another language, also set it on that passage's
+element, such as `/Lang (fr-FR)` on its `P`, and its contents inherit it.
+
 ## DocumentTitle
 
 **Finds:** a document with no title, or one whose viewer shows the file name instead. **Category:** `Document`.

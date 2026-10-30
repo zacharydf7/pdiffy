@@ -124,6 +124,10 @@ library does.
   `S` ([#70](https://github.com/zacharydf7/pdiffy/issues/70)).
 - `LanguageTags` finds a document, element or marked-content language that isn't a well-formed language tag, such as
   `english` or `en_US` ([#71](https://github.com/zacharydf7/pdiffy/issues/71)).
+- `TextLanguage` finds text with no language in a document that has none of its own but sets some on its elements or
+  marked content: text and alt text no language reaches, annotation contents, form field names, bookmark titles and an
+  XMP title or description for the default language. `PdfMetadata` has `XmpHasDefaultLanguageText`
+  ([#72](https://github.com/zacharydf7/pdiffy/issues/72)).
 - Snapshots print `suspects=yes` and `parent=missing` when a document has them, and a PDF 2.0 file's
   `version` is now `2.0`, not `1.4`. `PdfDocumentInfo` has `Suspects` and `HasStructureTree`, `PdfMetadata` has
   `HasXmp` and `PdfUaIdPrefix`, and `PdfStructureElement` has `ParentMissing`

@@ -52,8 +52,23 @@ internal static class MetadataReader
             XmpLanguage = XmpValue(xml, DublinCore + "language"),
             PdfAConformance = pdfAPart is null ? null : pdfAPart + XmpValue(xml, PdfAId + "conformance"),
             XmpUnreadable = xmp is not null && xml is null, HasXmp = xmp is not null, PdfUaIdPrefix = OtherPrefix(xml),
+            XmpHasDefaultLanguageText = HasDefaultLanguageText(xml),
         };
     }
+
+    // A title or description item names its language with xml:lang, its own or one around it; x-default, or none,
+    // means the document's.
+    private static bool HasDefaultLanguageText(XDocument? xml)
+    {
+        if (xml is null) return false;
+
+        var properties = xml.Descendants(DublinCore + "title").Concat(xml.Descendants(DublinCore + "description"));
+        var items = properties.SelectMany(property => property.Descendants(Rdf + "li").DefaultIfEmpty(property));
+        return items.Any(item => !string.IsNullOrWhiteSpace(item.Value) && LanguageOf(item) is null or "x-default");
+    }
+
+    private static string? LanguageOf(XElement item) => item.AncestorsAndSelf()
+        .Select(element => element.Attribute(XNamespace.Xml + "lang")?.Value).FirstOrDefault(lang => lang is not null);
 
     // The prefix the pdfuaid properties are written with, as elements or as attributes of rdf:Description, when it
     // isn't the one PDF/UA names. LINQ to XML keeps the declarations, not the prefix each name was written with, so

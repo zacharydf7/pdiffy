@@ -338,6 +338,12 @@ public sealed record PdfMetadata
     /// null when it is, or when there are none. Snapshots leave it out, as it's how the XML is spelled.
     /// </summary>
     public string? PdfUaIdPrefix { get; init; }
+
+    /// <summary>
+    /// Whether the XMP title or description has text for the default language (xml:lang "x-default", or none), which
+    /// takes the document's language, rather than naming a language of its own. Snapshots leave it out.
+    /// </summary>
+    public bool XmpHasDefaultLanguageText { get; init; }
 }
 
 /// <summary>One role map entry: a custom structure type and the type it maps to.</summary>
