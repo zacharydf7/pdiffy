@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using PDiffy.Diffing;
@@ -19,6 +21,10 @@ internal static class SnapshotWorkflow
     public const string RunLogPrefix = "pdiffy-run-";
 
     private static readonly Lock RunLogLock = new();
+
+    // Replaced in tests, which can't open a browser.
+    internal static Action<string> OpenReport { get; set; } =
+        path => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
 
     public static void Verify(string received, SnapshotFiles files, string kind)
     {
@@ -49,8 +55,11 @@ internal static class SnapshotWorkflow
         File.WriteAllText(files.Received, received);
         if (diff is null) File.Delete(files.Report);
         else File.WriteAllText(files.Report, diff.ToHtml());
+        var openProblem = diff is not null && IsOn(Snapshot.OpenReportVariable) ? TryOpen(files.Report) : null;
         var formatChange = verified is null ? null : FormatChange(verified, received);
-        throw new SnapshotException(FailureMessage(received, files, diff, kind, formatChange));
+        var message = FailureMessage(received, files, diff, kind, formatChange);
+        throw new SnapshotException(openProblem is null ? message
+            : $"{message}{Environment.NewLine}Couldn't open the report: {openProblem}");
     }
 
     // Two calls with one name write one file, so in accept mode the last silently wins and the others fail next run. The
@@ -141,8 +150,23 @@ internal static class SnapshotWorkflow
     // other line separators, such as U+2028 in alt text, are part of the content.
     private static string Normalize(string text) => text.Replace("\r\n", "\n");
 
-    internal static bool AcceptMode() =>
-        Environment.GetEnvironmentVariable(Snapshot.AcceptVariable) is "1" or "true" && !OnCi();
+    internal static bool AcceptMode() => IsOn(Snapshot.AcceptVariable);
+
+    private static bool IsOn(string variable) => Environment.GetEnvironmentVariable(variable) is "1" or "true" && !OnCi();
+
+    // Opening the report is a convenience: without a browser to open it, the failure says why and still names it.
+    private static string? TryOpen(string report)
+    {
+        try
+        {
+            OpenReport(report);
+            return null;
+        }
+        catch (Win32Exception problem)
+        {
+            return problem.Message;
+        }
+    }
 
     // CI and TF_BUILD are what most build servers (GitHub Actions, Bitbucket, GitLab, Azure DevOps) set.
     private static bool OnCi() =>

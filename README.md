@@ -92,6 +92,7 @@ What happens on each run:
 | Snapshot matches | Deletes any received file or report left from an earlier run | Passes |
 | `PDIFFY_ACCEPT=1` is set | Writes the snapshot as the new verified file | Passes |
 | `PDIFFY_ACCEPT=1` is set on a build server (`CI` or `TF_BUILD` is set) | Ignores it | Fails as usual |
+| Snapshot differs and `PDIFFY_OPEN_REPORT=1` is set, not on a build server | Also opens the report in the default browser | Fails as usual |
 
 To accept a change, review the received file, then copy it over the verified one, run the tests again with `PDIFFY_ACCEPT=1`, or run `pdiffy accept` (see [Command line](#command-line)); a failing test prints the `dotnet pdiffy accept` command for its received file, ready to paste. Either way the change shows up in code review as a diff of the `.verified.pdfua.txt` file.
 

@@ -4,7 +4,8 @@ namespace PDiffy.Tests.Unit;
 // one collection, so they never run at once; each test gets its own folder and puts everything back afterwards.
 public abstract class SnapshotFolderTests : IDisposable
 {
-    private static readonly string[] Variables = [Snapshot.AcceptVariable, Snapshot.RunLogVariable, "CI", "TF_BUILD"];
+    private static readonly string[] Variables =
+        [Snapshot.AcceptVariable, Snapshot.RunLogVariable, Snapshot.OpenReportVariable, "CI", "TF_BUILD"];
 
     private readonly Dictionary<string, string?> _savedVariables =
         Variables.ToDictionary(name => name, Environment.GetEnvironmentVariable);
@@ -12,6 +13,7 @@ public abstract class SnapshotFolderTests : IDisposable
     private readonly Action<SnapshotOptions>? _savedPdfDefaults = PdfSnapshot.DefaultOptions;
     private readonly Action<DocxSnapshotOptions>? _savedDocxDefaults = DocxSnapshot.DefaultOptions;
     private readonly Action<TextSnapshotOptions>? _savedTextDefaults = Snapshot.DefaultOptions;
+    private readonly Action<string> _savedOpenReport = SnapshotWorkflow.OpenReport;
 
     protected SnapshotFolderTests()
     {
@@ -27,6 +29,7 @@ public abstract class SnapshotFolderTests : IDisposable
         PdfSnapshot.DefaultOptions = _savedPdfDefaults;
         DocxSnapshot.DefaultOptions = _savedDocxDefaults;
         Snapshot.DefaultOptions = _savedTextDefaults;
+        SnapshotWorkflow.OpenReport = _savedOpenReport;
         foreach (var (name, value) in _savedVariables) Environment.SetEnvironmentVariable(name, value);
         if (Directory.Exists(Folder)) Directory.Delete(Folder, recursive: true);
         GC.SuppressFinalize(this);

@@ -22,6 +22,12 @@ public static class Snapshot
     public const string RunLogVariable = "PDIFFY_RUN_LOG";
 
     /// <summary>
+    /// Set PDIFFY_OPEN_REPORT=1 to open the HTML report of each snapshot that differs from its verified file, in the
+    /// default browser. Ignored on CI.
+    /// </summary>
+    public const string OpenReportVariable = "PDIFFY_OPEN_REPORT";
+
+    /// <summary>
     /// The folder that holds snapshot files, for every kind of snapshot. When null, each snapshot sits next to the test
     /// file that made it. A call's <c>directory</c> argument overrides it.
     /// </summary>

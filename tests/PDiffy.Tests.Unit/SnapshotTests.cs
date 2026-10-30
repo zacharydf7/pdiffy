@@ -46,6 +46,40 @@ public sealed class SnapshotTests : SnapshotFolderTests
             File.ReadAllLines(log));
     }
 
+    [Theory]
+    [InlineData("1", null, true, true)]
+    [InlineData(null, null, true, false)]
+    [InlineData("1", "true", true, false)]
+    [InlineData("1", null, false, false)]
+    public void Verify_ShouldOpenTheReportOnlyWhenAskedToLocally_WhenTheSnapshotFails(string? openReport, string? ci,
+        bool hasVerified, bool opens)
+    {
+        var opened = new List<string>();
+        SnapshotWorkflow.OpenReport = opened.Add;
+        Environment.SetEnvironmentVariable(Snapshot.OpenReportVariable, openReport);
+        Environment.SetEnvironmentVariable("CI", ci);
+        Directory.CreateDirectory(Folder);
+        if (hasVerified) File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "one\n");
+
+        Assert.Throws<SnapshotException>(() => Snapshot.Verify("two\n", "Export"));
+
+        Assert.Equal(opens ? [Path.Combine(Folder, "Export.diff.html")] : [], opened);
+    }
+
+    [Fact]
+    public void Verify_ShouldFailWithItsMessageAndSayWhy_WhenTheReportCannotBeOpened()
+    {
+        SnapshotWorkflow.OpenReport = _ => throw new System.ComponentModel.Win32Exception("No browser");
+        Environment.SetEnvironmentVariable(Snapshot.OpenReportVariable, "1");
+        Directory.CreateDirectory(Folder);
+        File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "one\n");
+
+        var error = Assert.Throws<SnapshotException>(() => Snapshot.Verify("two\n", "Export"));
+
+        Assert.StartsWith("The text's snapshot differs from the verified one.", error.Message);
+        Assert.EndsWith($"{Environment.NewLine}Couldn't open the report: No browser", error.Message);
+    }
+
     [Fact]
     public async Task VerifyAsync_ShouldPass_WhenTheVerifiedFileHasAByteOrderMarkAndCrlfLineEndings()
     {

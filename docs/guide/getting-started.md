@@ -92,6 +92,7 @@ Add these to `.gitignore`, since they only exist while a test is failing:
 | Snapshot matches | Deletes any received file or report left from an earlier run | Passes |
 | `PDIFFY_ACCEPT=1` is set | Writes the snapshot as the new verified file | Passes |
 | `PDIFFY_ACCEPT=1` is set on a build server | Ignores it | Fails as usual |
+| Snapshot differs and `PDIFFY_OPEN_REPORT=1` is set, not on a build server | Also opens the report in the default browser | Fails as usual |
 
 ## Keep snapshots in one folder
 
