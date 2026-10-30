@@ -33,6 +33,40 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public void Verify_ShouldThrowRightAway_WhenThereIsNoVerifiedFile()
+    {
+        var error = Assert.Throws<SnapshotException>(() => PdfSnapshot.Verify(Pdf("Hello"), "Guide"));
+
+        Assert.StartsWith("New PDF snapshot.", error.Message);
+        Assert.Equal(SnapshotOf("Hello"), File.ReadAllText(Path.Combine(Folder, "Guide.received.pdfua.txt")));
+    }
+
+    [Fact]
+    public void Verify_ShouldPass_WhenGivenTheStreamBytesOrLoadedDocumentOfAMatchingPdf()
+    {
+        Directory.CreateDirectory(Folder);
+        File.WriteAllText(Path.Combine(Folder, "Guide.verified.pdfua.txt"), SnapshotOf("Hello"));
+        var pdf = Pdf("Hello");
+
+        PdfSnapshot.Verify(pdf, "Guide");
+        PdfSnapshot.Verify(pdf.ToArray(), "Guide");
+        PdfSnapshot.Verify(PdfUaDocument.Load(pdf), "Guide");
+
+        Assert.False(File.Exists(Path.Combine(Folder, "Guide.received.pdfua.txt")));
+    }
+
+    [Fact]
+    public void VerifyAsync_ShouldThrowAtTheCall_WhenTheSnapshotDiffersAndTheCallIsNotAwaited()
+    {
+        Directory.CreateDirectory(Folder);
+        File.WriteAllText(Path.Combine(Folder, "Guide.verified.pdfua.txt"), SnapshotOf("Hello"));
+
+        var error = Assert.Throws<SnapshotException>(() => { _ = PdfSnapshot.VerifyAsync(Pdf("Goodbye"), "Guide"); });
+
+        Assert.StartsWith("The PDF's snapshot differs from the verified one.", error.Message);
+    }
+
+    [Fact]
     public async Task VerifyAsync_ShouldPass_WhenGivenTheBytesOrTheLoadedDocumentOfAMatchingPdf()
     {
         Directory.CreateDirectory(Folder);

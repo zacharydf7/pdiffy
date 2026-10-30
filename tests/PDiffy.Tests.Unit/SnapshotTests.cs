@@ -16,6 +16,20 @@ public sealed class SnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public void Verify_ShouldThrowRightAway_WhenTheTextOrJsonDiffers()
+    {
+        Directory.CreateDirectory(Folder);
+        File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "one\n");
+        File.WriteAllText(Path.Combine(Folder, "Job.verified.json"), "{\n  \"a\": 1\n}");
+
+        var text = Assert.Throws<SnapshotException>(() => Snapshot.Verify("two\n", "Export"));
+        var json = Assert.Throws<SnapshotException>(() => Snapshot.VerifyJson("""{"a":2}""", "Job"));
+
+        Assert.StartsWith("The text's snapshot differs from the verified one.", text.Message);
+        Assert.StartsWith("The JSON's snapshot differs from the verified one.", json.Message);
+    }
+
+    [Fact]
     public async Task VerifyAsync_ShouldPass_WhenTheVerifiedFileHasAByteOrderMarkAndCrlfLineEndings()
     {
         Directory.CreateDirectory(Folder);

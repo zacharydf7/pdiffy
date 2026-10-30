@@ -3,6 +3,7 @@
 [`Snapshot.VerifyAsync`](xref:PDiffy.Snapshot.VerifyAsync*) and
 [`Snapshot.VerifyJsonAsync`](xref:PDiffy.Snapshot.VerifyJsonAsync*) check other output the same way as PDFs, with the
 same received and verified files, accept mode and report. A test project can keep every kind of snapshot in one place.
+`Snapshot.Verify` and `Snapshot.VerifyJson` are the synchronous versions, for a test that isn't async.
 
 ## Text
 

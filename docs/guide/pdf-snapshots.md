@@ -15,6 +15,10 @@ await PdfSnapshot.VerifyAsync(pdf);
 | `configure` | [Ignore or scrub](options.md) what the test doesn't care about | Everything is compared |
 | `directory` | Keep this snapshot in another folder | [`Snapshot.Directory`](xref:PDiffy.Snapshot.Directory), else the test file's folder |
 
+[`PdfSnapshot.Verify`](xref:PDiffy.PdfSnapshot.Verify*) does the same synchronously, with the same parameters, for a
+test that isn't async. `VerifyAsync` does its work before it returns, so a failure throws at the call even if a `void`
+test forgets the `await`.
+
 A stream is read from its start wherever the generator left it, and its position is put back afterwards, so a test
 can load it, assert on it and snapshot it. A stream that can't seek, such as a network response, is copied first. Pass
 the loaded document instead to read the PDF only once:

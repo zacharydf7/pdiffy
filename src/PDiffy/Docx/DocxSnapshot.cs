@@ -33,19 +33,26 @@ public static class DocxSnapshot
     /// [CallerMemberName] parameter from a helper.</param>
     /// <param name="variant">Added to the name, default or not, as <c>{name}.{variant}</c>, so each row of a theory gets
     /// its own snapshot and keeps the test's name: <c>variant: trail</c>.</param>
-    public static async Task VerifyAsync(Stream docx, string? name = null, Action<DocxSnapshotOptions>? configure = null,
+    // The work is done before returning, so a failure throws at the call even when the caller forgets await.
+    public static Task VerifyAsync(Stream docx, string? name = null, Action<DocxSnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "",
-        [CallerMemberName] string testName = "", string? variant = null) =>
-        await VerifyAsync(DocxDocument.Load(docx), name, configure, directory, testFile, testName, variant);
+        [CallerMemberName] string testName = "", string? variant = null)
+    {
+        Verify(docx, name, configure, directory, testFile, testName, variant);
+        return Task.CompletedTask;
+    }
 
     /// <summary>Compares the snapshot of a DOCX in a byte array with the verified one, as for a stream.</summary>
     /// <param name="docx">The DOCX to check, as bytes.</param>
     /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{DocxSnapshotOptions}?, string?, string, string, string?)"
     ///     path="/param[@name!='docx']"/>
-    public static async Task VerifyAsync(byte[] docx, string? name = null, Action<DocxSnapshotOptions>? configure = null,
+    public static Task VerifyAsync(byte[] docx, string? name = null, Action<DocxSnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "",
-        [CallerMemberName] string testName = "", string? variant = null) =>
-        await VerifyAsync(DocxDocument.Load(docx), name, configure, directory, testFile, testName, variant);
+        [CallerMemberName] string testName = "", string? variant = null)
+    {
+        Verify(docx, name, configure, directory, testFile, testName, variant);
+        return Task.CompletedTask;
+    }
 
     /// <summary>
     /// Compares the snapshot of a DOCX already loaded with the verified one, as for a stream, so a test that also asserts
@@ -54,7 +61,43 @@ public static class DocxSnapshot
     /// <param name="docx">The DOCX to check, already loaded with <see cref="DocxDocument.Load(Stream)"/>.</param>
     /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{DocxSnapshotOptions}?, string?, string, string, string?)"
     ///     path="/param[@name!='docx']"/>
-    public static async Task VerifyAsync(DocxDocument docx, string? name = null, Action<DocxSnapshotOptions>? configure = null,
+    public static Task VerifyAsync(DocxDocument docx, string? name = null, Action<DocxSnapshotOptions>? configure = null,
+        string? directory = null, [CallerFilePath] string testFile = "",
+        [CallerMemberName] string testName = "", string? variant = null)
+    {
+        Verify(docx, name, configure, directory, testFile, testName, variant);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// The synchronous version of <c>VerifyAsync</c>, for a test that isn't async: on a mismatch it writes the received
+    /// file and the report, and throws.
+    /// </summary>
+    /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{DocxSnapshotOptions}?, string?, string, string, string?)"
+    ///     path="/param"/>
+    public static void Verify(Stream docx, string? name = null, Action<DocxSnapshotOptions>? configure = null,
+        string? directory = null, [CallerFilePath] string testFile = "",
+        [CallerMemberName] string testName = "", string? variant = null) =>
+        Verify(DocxDocument.Load(docx), name, configure, directory, testFile, testName, variant);
+
+    /// <summary>
+    /// The synchronous version of <c>VerifyAsync</c>, for a test that isn't async: on a mismatch it writes the received
+    /// file and the report, and throws.
+    /// </summary>
+    /// <inheritdoc cref="VerifyAsync(byte[], string?, Action{DocxSnapshotOptions}?, string?, string, string, string?)"
+    ///     path="/param"/>
+    public static void Verify(byte[] docx, string? name = null, Action<DocxSnapshotOptions>? configure = null,
+        string? directory = null, [CallerFilePath] string testFile = "",
+        [CallerMemberName] string testName = "", string? variant = null) =>
+        Verify(DocxDocument.Load(docx), name, configure, directory, testFile, testName, variant);
+
+    /// <summary>
+    /// The synchronous version of <c>VerifyAsync</c>, for a test that isn't async: on a mismatch it writes the received
+    /// file and the report, and throws.
+    /// </summary>
+    /// <inheritdoc cref="VerifyAsync(DocxDocument, string?, Action{DocxSnapshotOptions}?, string?, string, string, string?)"
+    ///     path="/param"/>
+    public static void Verify(DocxDocument docx, string? name = null, Action<DocxSnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "",
         [CallerMemberName] string testName = "", string? variant = null)
     {
@@ -64,6 +107,6 @@ public static class DocxSnapshot
             configure?.Invoke(options);
         });
         var files = SnapshotWorkflow.Files(name, variant, Extension, directory, testFile, testName);
-        await SnapshotWorkflow.VerifyAsync(received, files, "DOCX");
+        SnapshotWorkflow.Verify(received, files, "DOCX");
     }
 }

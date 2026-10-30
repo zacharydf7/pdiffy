@@ -27,6 +27,28 @@ public sealed class DocxSnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public void Verify_ShouldThrowRightAway_WhenThereIsNoVerifiedFile()
+    {
+        var error = Assert.Throws<SnapshotException>(() => DocxSnapshot.Verify(Docx("Hello"), "Guide"));
+
+        Assert.StartsWith("New DOCX snapshot.", error.Message);
+    }
+
+    [Fact]
+    public void Verify_ShouldPass_WhenGivenTheStreamBytesOrLoadedDocumentOfAMatchingDocx()
+    {
+        Directory.CreateDirectory(Folder);
+        var verified = DocxDocument.Load(Docx("Hello")).ToSnapshot();
+        File.WriteAllText(Path.Combine(Folder, "Guide.verified.docx.txt"), verified);
+
+        DocxSnapshot.Verify(Docx("Hello"), "Guide");
+        DocxSnapshot.Verify(Docx("Hello").ToArray(), "Guide");
+        DocxSnapshot.Verify(DocxDocument.Load(Docx("Hello")), "Guide");
+
+        Assert.False(File.Exists(Path.Combine(Folder, "Guide.received.docx.txt")));
+    }
+
+    [Fact]
     public async Task VerifyAsync_ShouldPass_WhenGivenTheBytesOrTheLoadedDocumentOfAMatchingDocx()
     {
         Directory.CreateDirectory(Folder);

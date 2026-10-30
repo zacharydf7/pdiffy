@@ -65,7 +65,22 @@ public static class Snapshot
     /// [CallerMemberName] parameter from a helper.</param>
     /// <param name="variant">Added to the name, default or not, as <c>{name}.{variant}</c>, so each row of a theory gets
     /// its own snapshot and keeps the test's name: <c>variant: trail</c>.</param>
+    // The work is done before returning, so a failure throws at the call even when the caller forgets await.
     public static Task VerifyAsync(string text, string? name = null, Action<TextSnapshotOptions>? configure = null,
+        string extension = "txt", string? directory = null, [CallerFilePath] string testFile = "",
+        [CallerMemberName] string testName = "", string? variant = null)
+    {
+        Verify(text, name, configure, extension, directory, testFile, testName, variant);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// The synchronous version of <c>VerifyAsync</c>, for a test that isn't async: on a mismatch it writes the received
+    /// file and the report, and throws.
+    /// </summary>
+    /// <inheritdoc cref="VerifyAsync(string, string?, Action{TextSnapshotOptions}?, string, string?, string, string, string?)"
+    ///     path="/param"/>
+    public static void Verify(string text, string? name = null, Action<TextSnapshotOptions>? configure = null,
         string extension = "txt", string? directory = null, [CallerFilePath] string testFile = "",
         [CallerMemberName] string testName = "", string? variant = null)
     {
@@ -73,7 +88,7 @@ public static class Snapshot
         DefaultOptions?.Invoke(options);
         configure?.Invoke(options);
         var files = SnapshotWorkflow.Files(name, variant, extension, directory, testFile, testName);
-        return SnapshotWorkflow.VerifyAsync(Scrub(text, options), files, "text");
+        SnapshotWorkflow.Verify(Scrub(text, options), files, "text");
     }
 
     /// <summary>
@@ -98,11 +113,25 @@ public static class Snapshot
         string? directory = null, [CallerFilePath] string testFile = "", [CallerMemberName] string testName = "",
         string? variant = null)
     {
+        VerifyJson(json, name, configure, directory, testFile, testName, variant);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// The synchronous version of <c>VerifyJsonAsync</c>, for a test that isn't async: on a mismatch it writes the
+    /// received file and the report, and throws.
+    /// </summary>
+    /// <inheritdoc cref="VerifyJsonAsync(string, string?, Action{TextSnapshotOptions}?, string?, string, string, string?)"
+    ///     path="/param"/>
+    public static void VerifyJson(string json, string? name = null, Action<TextSnapshotOptions>? configure = null,
+        string? directory = null, [CallerFilePath] string testFile = "", [CallerMemberName] string testName = "",
+        string? variant = null)
+    {
         var options = new TextSnapshotOptions().ScrubJsonValues();
         DefaultOptions?.Invoke(options);
         configure?.Invoke(options);
         var files = SnapshotWorkflow.Files(name, variant, "json", directory, testFile, testName);
-        return SnapshotWorkflow.VerifyAsync(Scrub(Indent(json, files.Name), options), files, "JSON");
+        SnapshotWorkflow.Verify(Scrub(Indent(json, files.Name), options), files, "JSON");
     }
 
     private static string Scrub(string text, TextSnapshotOptions options) =>

@@ -34,19 +34,26 @@ public static class PdfSnapshot
     /// [CallerMemberName] parameter from a helper.</param>
     /// <param name="variant">Added to the name, default or not, as <c>{name}.{variant}</c>, so each row of a theory gets
     /// its own snapshot and keeps the test's name: <c>variant: trail</c>.</param>
-    public static async Task VerifyAsync(Stream pdf, string? name = null, Action<SnapshotOptions>? configure = null,
+    // The work is done before returning, so a failure throws at the call even when the caller forgets await.
+    public static Task VerifyAsync(Stream pdf, string? name = null, Action<SnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "",
-        [CallerMemberName] string testName = "", string? variant = null) =>
-        await VerifyAsync(PdfUaDocument.Load(pdf), name, configure, directory, testFile, testName, variant);
+        [CallerMemberName] string testName = "", string? variant = null)
+    {
+        Verify(pdf, name, configure, directory, testFile, testName, variant);
+        return Task.CompletedTask;
+    }
 
     /// <summary>Compares the snapshot of a PDF in a byte array with the verified one, as for a stream.</summary>
     /// <param name="pdf">The PDF to check, as bytes.</param>
     /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{SnapshotOptions}?, string?, string, string, string?)"
     ///     path="/param[@name!='pdf']"/>
-    public static async Task VerifyAsync(byte[] pdf, string? name = null, Action<SnapshotOptions>? configure = null,
+    public static Task VerifyAsync(byte[] pdf, string? name = null, Action<SnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "",
-        [CallerMemberName] string testName = "", string? variant = null) =>
-        await VerifyAsync(PdfUaDocument.Load(pdf), name, configure, directory, testFile, testName, variant);
+        [CallerMemberName] string testName = "", string? variant = null)
+    {
+        Verify(pdf, name, configure, directory, testFile, testName, variant);
+        return Task.CompletedTask;
+    }
 
     /// <summary>
     /// Compares the snapshot of a PDF already loaded with the verified one, as for a stream, so a test that also asserts
@@ -55,7 +62,43 @@ public static class PdfSnapshot
     /// <param name="pdf">The PDF to check, already loaded with <see cref="PdfUaDocument.Load(Stream)"/>.</param>
     /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{SnapshotOptions}?, string?, string, string, string?)"
     ///     path="/param[@name!='pdf']"/>
-    public static async Task VerifyAsync(PdfUaDocument pdf, string? name = null, Action<SnapshotOptions>? configure = null,
+    public static Task VerifyAsync(PdfUaDocument pdf, string? name = null, Action<SnapshotOptions>? configure = null,
+        string? directory = null, [CallerFilePath] string testFile = "",
+        [CallerMemberName] string testName = "", string? variant = null)
+    {
+        Verify(pdf, name, configure, directory, testFile, testName, variant);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// The synchronous version of <c>VerifyAsync</c>, for a test that isn't async: on a mismatch it writes the received
+    /// file and the report, and throws.
+    /// </summary>
+    /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{SnapshotOptions}?, string?, string, string, string?)"
+    ///     path="/param"/>
+    public static void Verify(Stream pdf, string? name = null, Action<SnapshotOptions>? configure = null,
+        string? directory = null, [CallerFilePath] string testFile = "",
+        [CallerMemberName] string testName = "", string? variant = null) =>
+        Verify(PdfUaDocument.Load(pdf), name, configure, directory, testFile, testName, variant);
+
+    /// <summary>
+    /// The synchronous version of <c>VerifyAsync</c>, for a test that isn't async: on a mismatch it writes the received
+    /// file and the report, and throws.
+    /// </summary>
+    /// <inheritdoc cref="VerifyAsync(byte[], string?, Action{SnapshotOptions}?, string?, string, string, string?)"
+    ///     path="/param"/>
+    public static void Verify(byte[] pdf, string? name = null, Action<SnapshotOptions>? configure = null,
+        string? directory = null, [CallerFilePath] string testFile = "",
+        [CallerMemberName] string testName = "", string? variant = null) =>
+        Verify(PdfUaDocument.Load(pdf), name, configure, directory, testFile, testName, variant);
+
+    /// <summary>
+    /// The synchronous version of <c>VerifyAsync</c>, for a test that isn't async: on a mismatch it writes the received
+    /// file and the report, and throws.
+    /// </summary>
+    /// <inheritdoc cref="VerifyAsync(PdfUaDocument, string?, Action{SnapshotOptions}?, string?, string, string, string?)"
+    ///     path="/param"/>
+    public static void Verify(PdfUaDocument pdf, string? name = null, Action<SnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "",
         [CallerMemberName] string testName = "", string? variant = null)
     {
@@ -65,7 +108,7 @@ public static class PdfSnapshot
             configure?.Invoke(options);
         });
         var files = SnapshotWorkflow.Files(name, variant, Extension, directory, testFile, testName);
-        await SnapshotWorkflow.VerifyAsync(received, files, "PDF");
+        SnapshotWorkflow.Verify(received, files, "PDF");
     }
 }
 

@@ -15,7 +15,8 @@ public async Task Notes_ShouldMatchApprovedSnapshot_WhenGenerated()
 
 Snapshots are saved as `{name}.verified.docx.txt`. The `name`, `variant`, `configure` and `directory` parameters work as for
 [PDF snapshots](pdf-snapshots.md#naming-and-folders), and the document can be a stream, a `byte[]` or a `DocxDocument`
-already loaded, read the same way as [a PDF](pdf-snapshots.md).
+already loaded, read the same way as [a PDF](pdf-snapshots.md). `DocxSnapshot.Verify` is the synchronous version, for
+a test that isn't async.
 
 ## What a snapshot looks like
 

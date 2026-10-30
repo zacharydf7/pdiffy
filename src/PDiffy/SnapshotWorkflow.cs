@@ -15,10 +15,10 @@ internal static class SnapshotWorkflow
     // case are one file on Windows and macOS.
     private static readonly ConcurrentDictionary<string, string> ReceivedThisRun = new(StringComparer.OrdinalIgnoreCase);
 
-    public static async Task VerifyAsync(string received, SnapshotFiles files, string kind)
+    public static void Verify(string received, SnapshotFiles files, string kind)
     {
         CheckNotVerifiedBefore(received, files);
-        var verified = File.Exists(files.Verified) ? Normalize(await File.ReadAllTextAsync(files.Verified)) : null;
+        var verified = File.Exists(files.Verified) ? Normalize(File.ReadAllText(files.Verified)) : null;
         var diff = verified is null || received == verified ? null : SnapshotDiff.Compare(verified, received);
 
         // A difference the snapshot's tolerances allow passes too, and leaves the verified file as it is, even in accept
@@ -33,16 +33,16 @@ internal static class SnapshotWorkflow
         if (AcceptMode())
         {
             Directory.CreateDirectory(files.Folder);
-            await File.WriteAllTextAsync(files.Verified, received);
+            File.WriteAllText(files.Verified, received);
             File.Delete(files.Received);
             File.Delete(files.Report);
             return;
         }
 
         Directory.CreateDirectory(files.Folder);
-        await File.WriteAllTextAsync(files.Received, received);
+        File.WriteAllText(files.Received, received);
         if (diff is null) File.Delete(files.Report);
-        else await File.WriteAllTextAsync(files.Report, diff.ToHtml());
+        else File.WriteAllText(files.Report, diff.ToHtml());
         var formatChange = verified is null ? null : FormatChange(verified, received);
         throw new SnapshotException(FailureMessage(files, diff, kind, formatChange));
     }
