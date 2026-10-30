@@ -94,6 +94,9 @@ library does.
   ([#59](https://github.com/zacharydf7/pdiffy/issues/59)).
 - `pdiffy findings --since <commit>` compares the count with the snapshots at an earlier commit, such as
   `15 fewer than main (18 fixed, 3 new)` ([#60](https://github.com/zacharydf7/pdiffy/issues/60)).
+- A new rule, `RoleMap`, in the new `Structure` category, finds custom structure types that don't map to a standard
+  one, mappings that loop back on themselves and remapped standard types
+  ([#62](https://github.com/zacharydf7/pdiffy/issues/62)).
 - `--checks` on `pdiffy <before> <after>` and `pdiffy compare` also compares what the checks find, so comparing two
   versions of a document lists the problems the new one introduces or fixes
   ([#61](https://github.com/zacharydf7/pdiffy/issues/61)).

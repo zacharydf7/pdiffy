@@ -441,6 +441,7 @@ public async Task TrailMap_ShouldPassTheAccessibilityChecks_WhenGenerated()
 | `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
 | `NoEmbeddedFiles` | Each embedded file | `HouseRules` | House rule |
+| `RoleMap` | A custom structure type that doesn't map to a standard one, a mapping that loops back on itself, and a standard type that's remapped | `Structure` | 7.1 |
 
 `Check()` applies every rule PDiffy has, so an upgrade that adds rules can fail a test that passed. To choose when that happens, pass a set: `document.Check(PdfCheckSet.Version0_3)` applies only the rules 0.3 shipped, whatever later releases add, while `PdfCheckSet.Latest` grows with each release, as .NET analyzers do with `AnalysisLevel`. `Only` and `Except` narrow a set: `PdfCheckSet.Latest.Only(PdfCheckCategory.Tables)` or `PdfCheckSet.Latest.Except(PdfCheck.HeadingLevels)`.
 

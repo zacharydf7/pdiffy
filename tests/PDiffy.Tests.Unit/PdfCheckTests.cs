@@ -260,6 +260,57 @@ public class PdfCheckTests
         Assert.Equal($"The document runs an action when it opens: {action}", finding.Message);
     }
 
+    // Each mapping is "Custom=Standard"; each expected finding is "path: message".
+    [Theory]
+    [InlineData("Para", new[] { "Para=P" }, new string[0])]
+    [InlineData("Para", new[] { "Para=Body", "Body=P" }, new string[0])]
+    [InlineData("P", new[] { "P=P" }, new string[0])]
+    [InlineData("Aside", new[] { "Aside=Note" }, new string[0])]
+    [InlineData("Para", new[] { "Para=Aside" },
+        new[] { "role-map > Para: Structure type Para, used by 1 element(s), doesn't map to a standard type" })]
+    [InlineData("Para", new string[0],
+        new[] { "role-map > Para: Structure type Para, used by 1 element(s), doesn't map to a standard type" })]
+    [InlineData("Para", new[] { "Para=Body" },
+        new[] { "role-map > Para: Structure type Para, used by 1 element(s), doesn't map to a standard type" })]
+    [InlineData("A", new[] { "A=B", "B=A" },
+        new[]
+        {
+            "role-map > A > loop: Structure type A maps back to itself: A -> B -> A",
+            "role-map > B > loop: Structure type B maps back to itself: B -> A -> B",
+            "role-map > A: Structure type A, used by 1 element(s), doesn't map to a standard type",
+        })]
+    [InlineData("A", new[] { "A=B", "B=C", "C=B" },
+        new[]
+        {
+            "role-map > B > loop: Structure type B maps back to itself: B -> C -> B",
+            "role-map > C > loop: Structure type C maps back to itself: C -> B -> C",
+            "role-map > A: Structure type A, used by 1 element(s), doesn't map to a standard type",
+        })]
+    [InlineData("P", new[] { "P=Span" },
+        new[] { "role-map > P > standard: Standard structure type P is remapped to Span" })]
+    [InlineData("Para", new[] { "Para=P", "P=Span" },
+        new[] { "role-map > P > standard: Standard structure type P is remapped to Span" })]
+    public void Check_ShouldFindUnmappedTypesLoopsAndRemappedStandardTypes_WhenTheRoleMapHasThem(string type,
+        string[] mappings, string[] expected)
+    {
+        var pdf = new TestPdf();
+        foreach (var mapping in mappings) pdf.RoleMap(mapping.Split('=')[0], mapping.Split('=')[1]);
+        pdf.AddPage().Tagged(0, "Hello", type);
+        pdf.Structure(new TestElement(type, 0));
+
+        var findings = pdf.Load().Check(PdfCheck.RoleMap);
+
+        Assert.Equal(expected, findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Fact]
+    public void Check_ShouldFindNoRoleMapProblem_WhenAnElementHasNoType()
+    {
+        var document = Documents.Empty() with { Structure = [new PdfStructureElement { Type = StructureTypes.None }] };
+
+        Assert.Empty(document.Check(PdfCheck.RoleMap));
+    }
+
     [Fact]
     public void Check_ShouldApplyEveryCheckInTheirOrder_WhenGivenNoneOrGivenThemTwiceOutOfOrder()
     {
@@ -300,6 +351,7 @@ public class PdfCheckTests
     [InlineData(PdfCheck.FontsMapToUnicode, PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7")]
     [InlineData(PdfCheck.NoActions, PdfCheckCategory.HouseRules, PdfCheckSeverity.Warning, null)]
     [InlineData(PdfCheck.NoEmbeddedFiles, PdfCheckCategory.HouseRules, PdfCheckSeverity.Warning, null)]
+    [InlineData(PdfCheck.RoleMap, PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

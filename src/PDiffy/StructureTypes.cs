@@ -5,14 +5,21 @@ namespace PDiffy;
 /// <summary>What <see cref="StructureType"/> lists, for checking a type a test asks for.</summary>
 internal static class StructureTypes
 {
+    // The type of an element that has none (no /S).
+    public const string None = "(none)";
+
     // PDF 2.0 adds standard types that are never role-mapped; StructureType lists only PDF 1.7's for now (#115).
     private static readonly string[] Pdf2Types =
         ["DocumentFragment", "Aside", "Title", "FENote", "Sub", "Em", "Strong", "Artifact"];
 
-    private static readonly string[] Standard = typeof(StructureType)
+    private static readonly string[] Pdf17Types = typeof(StructureType)
         .GetFields(BindingFlags.Public | BindingFlags.Static)
-        .Where(field => field.IsLiteral).Select(field => (string)field.GetRawConstantValue()!)
-        .Concat(Pdf2Types).ToArray();
+        .Where(field => field.IsLiteral).Select(field => (string)field.GetRawConstantValue()!).ToArray();
+
+    private static readonly string[] Standard = [.. Pdf17Types, .. Pdf2Types];
+
+    // PDF/UA-1 builds on PDF 1.7, so only its types are standard there.
+    public static bool IsStandardInPdf17(string type) => Pdf17Types.Contains(type);
 
     public static bool IsKnown(string type, IReadOnlyList<PdfRoleMapping> roleMap) =>
         Standard.Contains(type) || roleMap.Any(mapping => mapping.Custom == type || mapping.Standard == type);

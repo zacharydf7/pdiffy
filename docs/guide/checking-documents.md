@@ -57,6 +57,7 @@ conforms.
 | `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
 | `NoEmbeddedFiles` | Each embedded file | `HouseRules` | House rule |
+| `RoleMap` | A custom structure type that doesn't map to a standard one, a mapping that loops back on itself, and a standard type that's remapped | `Structure` | 7.1 |
 
 `Check()` applies every rule PDiffy has, so an upgrade that adds rules can fail a test that passed. To choose when that
 happens, pass a [`PdfCheckSet`](xref:PDiffy.PdfCheckSet): a release's own set, such as `PdfCheckSet.Version0_3`, keeps
@@ -81,7 +82,7 @@ await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Check(PdfCheckS
 
 ```text
 # pdfua-snapshot v1
-# checks: latest, 12 rules
+# checks: latest, 13 rules
 ...
 checks
   FigureAltText p2 structure > Document > Figure[2]

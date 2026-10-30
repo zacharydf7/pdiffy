@@ -29,6 +29,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.FontsMapToUnicode: FontsMapToUnicode(); break;
             case PdfCheck.NoActions: NoActions(); break;
             case PdfCheck.NoEmbeddedFiles: NoEmbeddedFiles(); break;
+            case PdfCheck.RoleMap: RoleMap(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -210,6 +211,59 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
+    // Each problem is reported at the role map entry it's fixed in, once per type. A chain of mappings stops at the
+    // first standard type, so a custom type mapped to a remapped standard type still maps to a standard one.
+    private void RoleMap()
+    {
+        var map = new Dictionary<string, string>();
+        foreach (var mapping in document.RoleMap) map.TryAdd(mapping.Custom, mapping.Standard);
+
+        var roleMap = Name(PdfSection.RoleMap);
+        foreach (var (type, target) in map)
+        {
+            if (StructureTypes.IsStandardInPdf17(type) && target != type)
+            {
+                Add(PdfCheck.RoleMap, null, $"{roleMap} > {type} > standard",
+                    $"Standard structure type {type} is remapped to {target}");
+            }
+            else if (!StructureTypes.IsStandardInPdf17(type)
+                && Chain(type, map) is [.., var last] chain && last == type)
+            {
+                Add(PdfCheck.RoleMap, null, $"{roleMap} > {type} > loop",
+                    $"Structure type {type} maps back to itself: {string.Join(" -> ", chain)}");
+            }
+        }
+
+        // An element with no type can't be mapped, so it's not a role map problem.
+        var used = Elements.Select(pair => pair.Element.Type)
+            .Where(type => type != StructureTypes.None && !StructureTypes.IsStandardInPdf17(type));
+        foreach (var (type, count) in used.CountBy(type => type))
+        {
+            if (Chain(type, map) is [.., var last] && StructureTypes.IsStandardInPdf17(last)) continue;
+
+            Add(PdfCheck.RoleMap, null, $"{roleMap} > {type}",
+                $"Structure type {type}, used by {count} element(s), doesn't map to a standard type");
+        }
+    }
+
+    // The type and the types it maps to in turn, up to the first standard type, a type with no mapping, or the first
+    // type seen twice, which ends the chain when it loops.
+    private static List<string> Chain(string type, Dictionary<string, string> map)
+    {
+        var chain = new List<string> { type };
+        var seen = new HashSet<string> { type };
+        var current = type;
+        while (map.TryGetValue(current, out var next))
+        {
+            chain.Add(next);
+            if (StructureTypes.IsStandardInPdf17(next) || !seen.Add(next)) break;
+
+            current = next;
+        }
+
+        return chain;
+    }
+
     // A destination prints as its page (p1 Fit, or p? Fit for a page that can't be found), as GoTo and the page, or
     // as named and its name. GoToR and GoToE open another file, so they don't count.
     private static bool IsPageDestination(string action) =>
@@ -268,6 +322,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.HeadingLevels => new(PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.2"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
+        PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),
         PdfCheck.NoActions or PdfCheck.NoEmbeddedFiles =>
             new(PdfCheckCategory.HouseRules, PdfCheckSeverity.Warning, null),
         _ => throw new ArgumentOutOfRangeException(nameof(check), check, "Every check needs a rule."),

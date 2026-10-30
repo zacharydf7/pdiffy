@@ -14,6 +14,13 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ## Next release
 
+### Checks
+
+- `PdfCheckSet.Latest` has a new rule, `RoleMap`, so a snapshot that records checks with it prints
+  `# checks: latest, 13 rules` and any role map problems the document has
+  ([#62](https://github.com/zacharydf7/pdiffy/issues/62)). A release's own set, such as `PdfCheckSet.Version0_3`,
+  doesn't change.
+
 ### Accessibility flags
 
 - A new problem in the `checks` section from a rule that isn't a house rule is flagged as affecting

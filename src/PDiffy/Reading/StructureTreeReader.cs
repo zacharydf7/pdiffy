@@ -58,7 +58,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
     private (PdfStructureElement Element, List<(int Page, IReadOnlyList<Letter> Letters)> AllPieces) ReadElement(
         DictionaryToken element, int? inheritedPage, int depth)
     {
-        var type = objects.Name(element, "S") ?? "(none)";
+        var type = objects.Name(element, "S") ?? StructureTypes.None;
         var page = pages.NumberOf(element.Data.GetValueOrDefault("Pg")) ?? inheritedPage;
         var pieces = new List<(int Page, IReadOnlyList<Letter> Letters)>();
         var allPieces = new List<(int Page, IReadOnlyList<Letter> Letters)>();
@@ -247,7 +247,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         {
             if (objects.Text(element, "ID") is { } id && referenced.Contains(id) && !_namesById.ContainsKey(id))
             {
-                var type = objects.Name(element, "S") ?? "(none)";
+                var type = objects.Name(element, "S") ?? StructureTypes.None;
                 countByType[type] = countByType.GetValueOrDefault(type) + 1;
                 _namesById[id] = type + countByType[type];
             }

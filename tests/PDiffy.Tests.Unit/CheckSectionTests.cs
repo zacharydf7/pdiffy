@@ -78,7 +78,7 @@ public class CheckSectionTests
             document.ToSnapshot(options => options.Check(PdfCheckSet.Latest)));
 
         Assert.Equal(["header", "checks"], diff.Changes.Select(change => change.SectionName).Distinct());
-        Assert.Equal("+ # checks: latest, 12 rules", diff.Changes[0].Detail);
+        Assert.Equal($"+ # checks: {PdfCheckSet.Latest}", diff.Changes[0].Detail);
         Assert.All(diff.Changes.Skip(1), change => Assert.Equal(ChangeKind.Added, change.Kind));
     }
 

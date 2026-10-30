@@ -52,6 +52,12 @@ public enum PdfCheck
 
     /// <summary>The document has no embedded files.</summary>
     NoEmbeddedFiles,
+
+    /// <summary>
+    /// Every custom structure type maps to a standard one, no mapping loops back on itself, and no standard type is
+    /// remapped, so assistive technology knows what each element is.
+    /// </summary>
+    RoleMap,
 }
 
 /// <summary>
@@ -71,6 +77,9 @@ public enum PdfCheckCategory
 
     /// <summary>Content that's neither tagged nor marked as an artifact.</summary>
     Content,
+
+    /// <summary>The structure tree and its types, such as the role map.</summary>
+    Structure,
 
     /// <summary>Headings and their levels.</summary>
     Headings,

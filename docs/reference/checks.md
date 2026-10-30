@@ -139,3 +139,19 @@ it can be lost to some readers.
 
 **How to fix it:** put the information in the document itself, or leave the attachment out if it isn't needed. A
 document that needs an attachment, such as the source data, can leave this rule out of the set it checks.
+
+## RoleMap
+
+**Finds:** a custom structure type that doesn't map to a standard one, a mapping that loops back on itself, and a
+standard type that's remapped. **Category:** `Structure`. **Severity:** `Error`. **From:** ISO 14289-1 7.1.
+
+**Why it matters:** assistive technology only knows the standard types, such as `P`, `H1` and `Table`. A custom type,
+such as `Callout`, means nothing to it unless the role map says which standard type it stands for, so an element of an
+unmapped type may be read as plain text or skipped. A loop never reaches a standard type, and remapping a standard
+type, such as `P` to `Span`, changes what every element of that type is.
+
+**How to fix it:** map each custom type to the standard type closest in meaning, such as `Callout` to `Div` or
+`BodyText` to `P`, in the structure tree root's `/RoleMap`. A chain of custom types is fine as long as it ends at a
+standard one. Leave the standard types out of the role map. Most generators build it from their style names, so the
+fix is usually a style mapping setting. The finding's path names the type, with `loop` or `standard` after it for the
+other two problems: `role-map > Callout`, `role-map > Callout > loop`, `role-map > P > standard`.
