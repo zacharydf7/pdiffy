@@ -157,7 +157,8 @@ CI shows what changed; accepting is done on a developer machine, so the change g
 Now and then, run `pdiffy coverage --all` to see how many snapshots still compare each section, in case tests have
 drifted into ignoring the same thing everywhere, and [`pdiffy unused`](../reference/command-line.md#unused) to find
 the snapshots of renamed or deleted tests. When snapshots record checks,
-`pdiffy findings --all --markdown "$GITHUB_STEP_SUMMARY"` puts a count of their problems, by rule, on the job's page.
+`pdiffy findings --all --markdown "$GITHUB_STEP_SUMMARY"` puts a count of their problems, by rule, on the job's page;
+in a pull request, `--since origin/main` adds how many it fixed and introduced.
 
 ## See also
 

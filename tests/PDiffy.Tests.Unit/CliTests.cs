@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Text;
 using PDiffy.Cli;
 using PDiffy.Tests.Unit.Pdfs;
 
@@ -9,7 +11,16 @@ public sealed class CliTests : IDisposable
     private readonly StringWriter _output = new();
     private readonly StringWriter _error = new();
 
-    public void Dispose() => Directory.Delete(_folder, recursive: true);
+    // Git makes its object files read-only, which Windows won't delete.
+    public void Dispose()
+    {
+        foreach (var file in Directory.EnumerateFiles(_folder, "*", SearchOption.AllDirectories))
+        {
+            File.SetAttributes(file, FileAttributes.Normal);
+        }
+
+        Directory.Delete(_folder, recursive: true);
+    }
 
     [Fact]
     public void Run_ShouldPrintTheChangesAndReturnOne_WhenTwoSnapshotFilesDiffer()
@@ -591,6 +602,101 @@ public sealed class CliTests : IDisposable
 
         Assert.Equal(Commands.Same, exitCode);
         Assert.Equal("No verified snapshots record checks.\n", _output.ToString());
+    }
+
+    [Fact]
+    public void Run_ShouldCompareTheCountsWithTheEarlierCommit_WhenAskedForFindingsSinceOne()
+    {
+        CommitFindingsThenChangeThem();
+        var markdown = Path.Combine(_folder, "findings.md");
+
+        var exitCode = Commands.Run(["findings", _folder, "--since", "HEAD", "--markdown", markdown], _output, _error);
+
+        Assert.Equal(Commands.Same, exitCode);
+        Assert.Equal("2 problem(s) in 1 snapshot(s)\n1 fewer than HEAD (2 fixed, 1 new)\n"
+            + "by rule: FigureAltText 1, HeadingLevels 1\n", _output.ToString());
+        Assert.Contains("\n1 fewer than HEAD (2 fixed, 1 new)\n", File.ReadAllText(markdown));
+    }
+
+    [Theory]
+    [InlineData("", true, "4 problem(s) in 2 snapshot(s)\nas many as HEAD (2 fixed, 2 new)\n")]
+    [InlineData("Maps/Map.verified.pdfua.txt", false,
+        "2 problem(s) in 1 snapshot(s)\n1 more than HEAD (0 fixed, 1 new)\n")]
+    public void Run_ShouldCompareTheSameSnapshotsAtTheCommit_WhenAskedForFindingsSinceOneWithAllOrAFile(string target,
+        bool all, string expected)
+    {
+        CommitFindingsThenChangeThem();
+        string[] args =
+            ["findings", Path.Combine(_folder, target), "--since", "HEAD", .. all ? ["--all"] : (string[])[]];
+
+        Commands.Run(args, _output, _error);
+
+        Assert.StartsWith(expected, _output.ToString());
+    }
+
+    [Fact]
+    public void Run_ShouldCompareTheSameSnapshotsAtTheCommit_WhenAskedForFindingsSinceOneInAFolderTypedInAnotherCase()
+    {
+        Assert.SkipUnless(NamesIgnoreCase(), "The test folder's file names respect case.");
+        CommitFindingsThenChangeThem();
+
+        Commands.Run(["findings", Path.Combine(_folder, "maps"), "--since", "HEAD"], _output, _error);
+
+        Assert.StartsWith("2 problem(s) in 1 snapshot(s)\n1 more than HEAD (0 fixed, 1 new)\n", _output.ToString());
+    }
+
+    // Guide goes from 3 findings to 2 (2 fixed, 1 new) and Maps/Map from 1 to 2 (1 new). Guide is saved with a byte
+    // order mark, as some editors save files.
+    private void CommitFindingsThenChangeThem()
+    {
+        var header = "# pdfua-snapshot v1\n# checks: latest, 12 rules\nchecks\n  FigureAltText p1 structure > Figure\n";
+        var guide = Path.Combine(_folder, "Guide.verified.pdfua.txt");
+        File.WriteAllText(guide, header + "  FigureAltText p2 structure > Figure\n  TableHeaders p2 structure > TH\n",
+            Encoding.UTF8);
+        Write("Maps/Map.verified.pdfua.txt", header);
+        Git("init", "-q");
+        Git("add", ".");
+        Git("commit", "-q", "-m", "Approve");
+        File.WriteAllText(guide, header + "  HeadingLevels p3 structure > H3\n", Encoding.UTF8);
+        Write("Maps/Map.verified.pdfua.txt", header + "  FigureAltText p2 structure > Figure\n");
+    }
+
+    [Fact]
+    public void Run_ShouldSayWhyAndGiveThePlainCounts_WhenAskedForFindingsSinceACommitGitCannotRead()
+    {
+        Write("Guide.verified.pdfua.txt", "# pdfua-snapshot v1\n# checks: latest, 12 rules\nchecks\n  (none)\n");
+
+        var exitCode = Commands.Run(["findings", _folder, "--since", "main"], _output, _error);
+
+        Assert.Equal(Commands.Same, exitCode);
+        Assert.StartsWith("0 problem(s) in 1 snapshot(s)\ncan't compare with main: ", _output.ToString());
+    }
+
+    [Fact]
+    public void Run_ShouldReturnTwo_WhenAskedForFindingsSinceNoCommit()
+    {
+        var exitCode = Commands.Run(["findings", _folder, "--since"], _output, _error);
+
+        Assert.Equal(Commands.UsageError, exitCode);
+        Assert.Contains("--since needs a commit", _error.ToString());
+    }
+
+    // The test folder as a repository of its own, committing as a test user so no global setting is needed.
+    private void Git(params string[] args)
+    {
+        var start = new ProcessStartInfo("git")
+        {
+            WorkingDirectory = _folder,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        string[] settings = ["-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false"];
+        foreach (var arg in settings.Concat(args)) start.ArgumentList.Add(arg);
+        using var git = Process.Start(start)!;
+        var error = git.StandardError.ReadToEndAsync();
+        git.StandardOutput.ReadToEnd();
+        git.WaitForExit();
+        Assert.True(git.ExitCode == 0, error.Result);
     }
 
     [Fact]

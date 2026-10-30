@@ -620,8 +620,10 @@ pdiffy coverage --all
 
 # Count the check findings the verified snapshots hold, by rule and by snapshot, without regenerating any document:
 # "120 problem(s) in 34 snapshot(s)". Only snapshots that record a checks section count. Always exits with 0;
-# --markdown and --html work as for report.
+# --markdown and --html work as for report. --since also reads the snapshots at an earlier commit, with git, and says
+# how the count changed: "15 fewer than main (18 fixed, 3 new)".
 pdiffy findings --all
+pdiffy findings --all --since main --markdown "$GITHUB_STEP_SUMMARY"
 
 # List the snapshots no test used, such as those of renamed or deleted tests: run every test, passing, with
 # PDIFFY_RUN_LOG set to the full path of an empty folder, then give that folder to unused. --delete deletes them.

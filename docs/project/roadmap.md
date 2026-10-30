@@ -101,7 +101,7 @@ Findings are recorded in an opt-in `checks` section, so a new problem fails a te
 | [#51](https://github.com/zacharydf7/pdiffy/issues/51) | Catalog of the machine-checkable PDF/UA-1 rules | Open |
 | [#52](https://github.com/zacharydf7/pdiffy/issues/52)-[#54](https://github.com/zacharydf7/pdiffy/issues/54) | Severity, categories and rule sets per release | Done |
 | [#55](https://github.com/zacharydf7/pdiffy/issues/55)-[#57](https://github.com/zacharydf7/pdiffy/issues/57) | The `checks` section, its diff and the report | Done |
-| [#58](https://github.com/zacharydf7/pdiffy/issues/58)-[#61](https://github.com/zacharydf7/pdiffy/issues/61) | Help pages and command-line counts | Partly done: #58, #59 |
+| [#58](https://github.com/zacharydf7/pdiffy/issues/58)-[#61](https://github.com/zacharydf7/pdiffy/issues/61) | Help pages and command-line counts | Partly done: #58-#60 |
 | [#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#77](https://github.com/zacharydf7/pdiffy/issues/77) | PDF/UA rules | Open |
 | [#78](https://github.com/zacharydf7/pdiffy/issues/78)-[#80](https://github.com/zacharydf7/pdiffy/issues/80) | Warnings: placeholder alt text, vague link text, jumpy reading order | Open |
 | [#81](https://github.com/zacharydf7/pdiffy/issues/81) | Checks for Word documents | Open |

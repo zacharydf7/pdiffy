@@ -26,8 +26,9 @@ public static class Commands
                                                             Summarize received snapshots
           pdiffy coverage [<files or folders>] [--all] [--markdown <coverage.md>]
                                                             Count what the verified snapshots compare
-          pdiffy findings [<files or folders>] [--all] [--html <findings.html>] [--markdown <findings.md>]
-                                                            Count the check findings the verified snapshots hold
+          pdiffy findings [<files or folders>] [--all] [--since <commit>] [--html <findings.html>]
+                 [--markdown <findings.md>]                 Count the check findings the verified snapshots hold;
+                                                            --since compares them with an earlier commit
           pdiffy unused [<folders>] --run-log <folder> [--all] [--delete]
                                                             List or delete snapshots no test used in a run
           pdiffy --version                                  Print the version and the snapshot formats it writes
@@ -168,12 +169,25 @@ public static class Commands
         return Same;
     }
 
-    // A summary, not a gate: the approved snapshots already hold their findings, so nothing is regenerated.
+    // A summary, not a gate: the approved snapshots already hold their findings, so nothing is regenerated. When git
+    // can't read the earlier commit, the summary says why and gives the plain counts.
     private static int Findings(string[] args, TextWriter output)
     {
-        var (targets, html, markdown) = SummaryOptions(args);
-        var verified = SnapshotFileSearch.Find(targets, args.Contains("--all"), SnapshotFiles.VerifiedPart);
+        var since = Array.IndexOf(args, "--since");
+        if (since == args.Length - 1) throw new ArgumentException("--since needs a commit, branch or tag.");
+
+        var reference = since < 0 ? null : args[since + 1];
+        var (targets, html, markdown) = SummaryOptions(since < 0 ? args : [.. args[..since], .. args[(since + 2)..]]);
+        var includeSubfolders = args.Contains("--all");
+        var verified = SnapshotFileSearch.Find(targets, includeSubfolders, SnapshotFiles.VerifiedPart);
         var counts = FindingCounts.Of(verified);
+        if (reference is not null)
+        {
+            var (earlier, problem) = GitSnapshots.At(reference, targets, includeSubfolders, SnapshotFiles.VerifiedPart);
+            counts.Note = earlier is null ? $"can't compare with {reference}: {problem}"
+                : counts.ChangeSince(FindingCounts.Of(earlier), reference);
+        }
+
         output.Write(counts.ToText());
         if (html is not null) File.WriteAllText(html, counts.ToHtml());
         if (markdown is not null) File.AppendAllText(markdown, counts.ToMarkdown());

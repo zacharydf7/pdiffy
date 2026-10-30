@@ -236,7 +236,7 @@ when a target is missing or isn't a verified snapshot.
 ## Findings
 
 ```text
-pdiffy findings [<files or folders>] [--all] [--html <findings.html>] [--markdown <findings.md>]
+pdiffy findings [<files or folders>] [--all] [--since <commit>] [--html <findings.html>] [--markdown <findings.md>]
 ```
 
 A snapshot that records [checks](../guide/checking-documents.md#approve-findings-with-the-snapshot) holds its
@@ -248,6 +248,7 @@ out.
 |---|---|
 | `<files or folders>` | Which verified snapshots to count. The current folder by default |
 | `--all` | Includes every folder under each folder |
+| `--since <commit>` | Also counts the same snapshots at a commit, branch or tag, read with git, and says how the count changed |
 | `--html <file>` | Saves a page with the counts by rule, each linked to its [help](checks.md), and by snapshot |
 | `--markdown <file>` | Adds the same tables to the end of the file, such as GitHub's `$GITHUB_STEP_SUMMARY` |
 
@@ -258,6 +259,19 @@ by rule: UntaggedContent 61, FigureAltText 30, TableHeaders 18, HeadingLevels 11
 
 Rules are listed most found first, and the tables list the snapshots with the most problems first. It's a summary, not
 a gate: `findings` exits with `0`, or with `2` when a target is missing or isn't a verified snapshot.
+
+With `--since`, a line under the first says whether things are getting better, which suits a pull request's job
+summary:
+
+```text
+120 problem(s) in 34 snapshot(s)
+15 fewer than main (18 fixed, 3 new)
+```
+
+A finding is fixed when the snapshot had it at that commit and doesn't now, and new the other way round, so the
+findings of a renamed snapshot count as both. When git isn't on the path or can't read the commit, the line says so
+and the counts are printed as usual. In a CI checkout, fetch the branch first, such as
+`git fetch origin main --depth 1` and `--since origin/main`.
 
 ## Unused
 

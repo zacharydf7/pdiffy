@@ -32,7 +32,7 @@ internal static class SnapshotFileSearch
     // A target spelled as the file system has it, so tests/Snaps and tests/snaps reach the same files where names
     // ignore case (Windows, and macOS by default). A name is respelled only when the volume finds it as typed, so where
     // names respect case a wrong-case target still isn't found. Files found in a folder are already spelled this way.
-    private static string SpelledOnDisk(string target)
+    internal static string SpelledOnDisk(string target)
     {
         var path = Path.GetFullPath(target);
         var root = Path.GetPathRoot(path)!;
