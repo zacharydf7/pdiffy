@@ -249,7 +249,7 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
 
     private void AddScript(List<FormScript> scripts, FormScriptTrigger trigger, IToken? action)
     {
-        foreach (var chained in objects.Chain(action).Where(chained => objects.Name(chained, "S") == "JavaScript"))
+        foreach (var chained in objects.Chain(action).Where(objects.RunsScript))
         {
             var script = ScriptText(objects.Get(chained, "JS"));
             var hash = script is null ? null : Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(script)))[..16];

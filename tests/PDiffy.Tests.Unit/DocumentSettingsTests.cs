@@ -74,7 +74,8 @@ public class DocumentSettingsTests
     [Theory]
     [InlineData("/Names << /JavaScript << /Names [(init) << /S /JavaScript /JS (x) >>] >> >>")]
     [InlineData("/OpenAction << /S /URI /URI (https://example.com) /Next << /S /JavaScript /JS (x) >> >>")]
-    public void Load_ShouldReportJavaScript_WhenANameTreeOrChainedActionHasIt(string catalogEntries)
+    [InlineData("/OpenAction << /S /Rendition /OP 0 /JS (x) >>")]
+    public void Load_ShouldReportJavaScript_WhenANameTreeOrOpenActionHasIt(string catalogEntries)
     {
         var pdf = new TestPdf().CatalogEntries(catalogEntries);
         pdf.AddPage();
@@ -89,6 +90,8 @@ public class DocumentSettingsTests
     [InlineData("", "/Subtype /Link /Rect [0 0 9 9] /A << /S /URI /URI (https://example.com) "
         + "/Next [<< /S /JavaScript /JS (x) >>] >>", true)]
     [InlineData("", "/Subtype /Screen /Rect [0 0 9 9] /AA << /PO << /S /JavaScript /JS (x) >> >>", true)]
+    [InlineData("", "/Subtype /Screen /Rect [0 0 9 9] /A << /S /Rendition /OP 0 /JS (x) >>", true)]
+    [InlineData("", "/Subtype /Screen /Rect [0 0 9 9] /A << /S /Rendition /OP 0 >>", false)]
     [InlineData("/AA << /O << /S /JavaScript /JS (x) >> >>", null, true)]
     [InlineData("", "/Subtype /Link /Rect [0 0 9 9] /A << /S /URI /URI (https://example.com) >>", false)]
     public void Load_ShouldReportJavaScript_WhenGivenAnAnnotationOrPageAction(string pageEntries, string? annotation,

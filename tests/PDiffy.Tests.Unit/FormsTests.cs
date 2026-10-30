@@ -298,6 +298,17 @@ public class FormsTests
     }
 
     [Fact]
+    public void Load_ShouldListARenditionsScript_WhenAWidgetPlaysMediaWithJavaScript()
+    {
+        var pdf = new TestPdf().FormField("tour", "/FT /Btn /Ff 65536 /A << /S /Rendition /OP 0 /JS (play()) >>");
+        pdf.AddPage();
+
+        var script = Assert.Single(Assert.Single(pdf.Load().FormFields).Scripts);
+
+        Assert.Equal(FormScriptTrigger.Activate, script.Trigger);
+    }
+
+    [Fact]
     public void Load_ShouldListAChainedScriptUnderTheSameTrigger_WhenAnActionRunsAnotherAfterIt()
     {
         var pdf = new TestPdf().FormField("total", "/FT /Tx /AA << /Bl << /S /SubmitForm /Next << /S /JavaScript /JS (log()) >> >> >>");

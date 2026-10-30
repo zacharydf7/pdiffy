@@ -17,8 +17,10 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 ### PDF (`pdfua-snapshot v1`, unchanged)
 
 - `javascript=` in `settings` now also says `yes` when a link or other annotation, a page's open or close actions, or a
-  bookmark runs JavaScript, including JavaScript chained after another action with `/Next`. Only snapshots of
-  documents with such scripts change. `PdfCheck.NoActions` and `pdiffy check` now report them.
+  bookmark runs JavaScript, including JavaScript chained after another action with `/Next`. A Rendition action (which
+  plays media) with a script of its own (`/JS`) now counts as JavaScript too, wherever it runs, and a form field lists
+  it in `scripts=`. Only snapshots of documents with such scripts change. `PdfCheck.NoActions` and `pdiffy check` now
+  report them.
 - The open action reads its destination the way links do: a named destination is looked up and prints its page
   (`open-action="GoTo p2 Fit"`, not `"GoTo named intro"`), positions are whole points with `-` for one the viewer
   keeps, an XYZ view's zoom prints only when it sets one (`p1 XYZ 72 720`, not `p1 XYZ 72 720 0`), and a page given as

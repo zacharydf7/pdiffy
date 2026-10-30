@@ -36,6 +36,14 @@ internal sealed class PdfObjects(PdfDocument document)
 
     public bool Boolean(DictionaryToken owner, string key) => Get(owner, key) is BooleanToken boolean && boolean.Data;
 
+    /// <summary>Whether an action runs JavaScript: a JavaScript action, or a Rendition action with a /JS script.</summary>
+    public bool RunsScript(DictionaryToken action) => Name(action, "S") switch
+    {
+        "JavaScript" => true,
+        "Rendition" => action.Data.ContainsKey("JS"),
+        _ => false,
+    };
+
     /// <summary>The items of an array, or the value itself when it is a single item. Items are not resolved.</summary>
     public IReadOnlyList<IToken> Items(IToken? value) => Resolve(value) switch
     {

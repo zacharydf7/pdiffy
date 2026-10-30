@@ -23,9 +23,8 @@ internal static class ActionScripts
             .Any(bookmark => Runs(objects, bookmark.Data.GetValueOrDefault("A")));
     }
 
-    // Whether an action, or one it chains through /Next, is JavaScript.
-    private static bool Runs(PdfObjects objects, IToken? action) =>
-        objects.Chain(action).Any(chained => objects.Name(chained, "S") == "JavaScript");
+    // Whether an action, or one it chains through /Next, runs JavaScript.
+    private static bool Runs(PdfObjects objects, IToken? action) => objects.Chain(action).Any(objects.RunsScript);
 
     // /AA maps each event, such as a page opening (/O), to an action.
     private static bool AnyEventRuns(PdfObjects objects, DictionaryToken owner) =>

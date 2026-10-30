@@ -33,7 +33,7 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
             OpenActions = openActions,
             // The catalog's /AA actions (run on close, save and print) are always JavaScript.
             HasJavaScript = names?.Data.ContainsKey("JavaScript") == true || catalog.Data.ContainsKey("AA")
-                || objects.Chain(openAction).Any(action => objects.Name(action, "S") == "JavaScript"),
+                || objects.Chain(openAction).Any(objects.RunsScript),
             HasAdditionalActions = catalog.Data.ContainsKey("AA"),
             IsEncrypted = document.IsEncrypted,
             Permissions = document.IsEncrypted ? reader.ReadPermissions(document) : null,
