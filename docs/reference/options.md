@@ -42,7 +42,7 @@ appears; the rest of each line is still compared.
 
 | Field | Leaves out |
 |---|---|
-| `Language` | The document's language, each structure element's language and the XMP language |
+| `Language` | The document's language, each structure element's language, languages set on marked content inside elements, and the XMP language |
 | `PdfVersion` | The PDF version in the file header and the catalog |
 | `OpenAction` | What happens when the file opens |
 | `Permissions` | What an encrypted document allows |
@@ -53,7 +53,7 @@ appears; the rest of each line is still compared.
 | `Producer`, `Creator` | Whether each is present |
 | `CustomInfo` | Info entries other than the standard ones |
 | `PageBoxes` | The crop, bleed, trim and art boxes and the user unit of each page |
-| `AltText`, `ActualText` | Alternate and replacement text on structure elements |
+| `AltText`, `ActualText` | Alternate and replacement text on structure elements and on marked content inside them |
 | `Positions` | Where text, images, paths and annotations are, the size of images, paths and annotations, and the positions a link or bookmark opens its page at |
 | `Colors` | Text color and path fill and stroke colors |
 | `FontNames`, `FontSizes` | The font and size of each text run in the layout |

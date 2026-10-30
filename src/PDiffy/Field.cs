@@ -3,7 +3,10 @@ namespace PDiffy;
 /// <summary>A detail that <see cref="SnapshotOptions.Ignore(Field[])"/> leaves out of the snapshot wherever it appears.</summary>
 public enum Field
 {
-    /// <summary>The document's language, each structure element's language and the XMP language.</summary>
+    /// <summary>
+    /// The document's language, each structure element's language, languages set on marked content inside elements, and
+    /// the XMP language.
+    /// </summary>
     Language,
 
     /// <summary>The PDF version in the file header and the catalog.</summary>
@@ -45,10 +48,10 @@ public enum Field
     /// <summary>The crop, bleed, trim and art boxes and the user unit of each page.</summary>
     PageBoxes,
 
-    /// <summary>Alternate text on structure elements, such as a figure's description.</summary>
+    /// <summary>Alternate text on structure elements and marked content inside them, such as a figure's description.</summary>
     AltText,
 
-    /// <summary>Replacement text on structure elements.</summary>
+    /// <summary>Replacement text on structure elements and marked content inside them.</summary>
     ActualText,
 
     /// <summary>

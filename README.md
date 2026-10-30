@@ -580,8 +580,8 @@ pdiffy coverage --all
 | `role-map` | Each custom tag type and the standard type it maps to |
 | `pages` | Size (named when standard, such as `letter` or `a4`), rotation, tab order; crop, bleed, trim and art boxes, user unit and transparency group when set; pages that couldn't be read; page label ranges |
 | `bookmarks` | The outline tree, with each bookmark's target: a page and the view it opens at, a web address or another file. Or `unreadable` when it nests more than 256 deep or loops back on itself |
-| `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, links, how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), how many child elements are nested more than 256 deep and left out (`unread-children`), and the element's text |
-| `artifacts` | Text marked as an artifact (headers, footers, page numbers), per page |
+| `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, links, the language, replacement text, alt text and expansion that marked content inside it sets (`span-lang=[fr-FR]`, `span-actual=["fi"]`), how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), how many child elements are nested more than 256 deep and left out (`unread-children`), and the element's text |
+| `artifacts` | Text marked as an artifact (headers, footers, page numbers), per page, with its kind when it gives one (`type=Pagination subtype=Footer`) |
 | `untagged` | Text that is neither tagged nor marked as an artifact (including tagged text that no structure element points to), and a count of such images and paths per page |
 | `fonts` | Each font: name, type, whether it's embedded, whether it has a Unicode map, and the character codes its text uses that don't map to Unicode (that text can't be copied, searched or read aloud) |
 | `annotations` | Every annotation (links, comments, form widgets and so on), page by page in the order each page lists them: type, `tagged` or `untagged`, rectangle, flags (such as `print` or `hidden`), where a link goes (a web address, or a page and the view it opens at, or another file), contents and accessible name |
@@ -594,7 +594,7 @@ Each `Section` value leaves out one section from the table above. Each `Field` v
 
 | Field | Leaves out |
 |---|---|
-| `Language` | The document's language, each structure element's language and the XMP language |
+| `Language` | The document's language, each structure element's language, languages set on marked content inside elements, and the XMP language |
 | `PdfVersion` | The PDF version in the file header and the catalog |
 | `OpenAction` | What happens when the file opens |
 | `Permissions` | What an encrypted document allows |
@@ -605,7 +605,7 @@ Each `Section` value leaves out one section from the table above. Each `Field` v
 | `Producer`, `Creator` | Whether each is present |
 | `CustomInfo` | Info entries other than the standard ones |
 | `PageBoxes` | The crop, bleed, trim and art boxes and the user unit of each page |
-| `AltText`, `ActualText` | Alternate and replacement text on structure elements |
+| `AltText`, `ActualText` | Alternate and replacement text on structure elements and on marked content inside them |
 | `Positions` | Where text, images, paths and annotations are, the size of images, paths and annotations, and the positions a link or bookmark opens its page at |
 | `Colors` | Text color and path fill and stroke colors |
 | `FontNames`, `FontSizes` | The font and size of each text run in the layout |
@@ -649,7 +649,7 @@ In a PDF snapshot, a change's `AffectsAccessibility` is true, and a failure list
 | A structure element's type changed, such as a heading becoming a paragraph (a header cell's generated name, such as `TH1` becoming `TH2`, doesn't count) | `type: H2 -> P` |
 | A structure element moved in reading order | `moved` in `structure` |
 | Alt text, replacement text, an expansion, a table header's scope, a cell's headers or a form field's or annotation's accessible name was removed or emptied, or a cell's headers point at a header that isn't there | `alt: "Logo" -> (missing)`, `actual: "fi" -> (missing)`, `scope: Column -> (missing)`, `tu: "Name" -> ""`, `headers: [TH1] -> [?h2]` |
-| The document's or an element's language changed or was removed | `lang: en-US -> en-GB` |
+| The document's or an element's language changed or was removed, or one set on marked content inside an element | `lang: en-US -> en-GB`, `span-lang: [fr-FR] -> [de-DE]` |
 | Something was added to the untagged content: a line, words in a line, or more images or paths. Less untagged content doesn't count, except that a text line that loses more than half its words shows as removed and added, and the added line counts | `added`, `"Page 1 {+Draft+}"` or `images: 1 -> 2` in `untagged` |
 | An annotation became untagged | `... tagged ... -> ... untagged ...` in `annotations` |
 | Text, an image or a path that was tagged is now an artifact (decoration) or untagged, so a screen reader skips it | `p1 text tagged ... -> p1 text artifact ...` in `layout` |
@@ -726,6 +726,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | `pdfua-snapshot v1`, unchanged version: marked content inside an element that sets its own language, replacement text, alt text or expansion is recorded on the element (`span-lang=[fr-FR]`, `span-actual=["fi"]`), and an artifact prints its kind (`type=Pagination subtype=Footer`). Snapshots with such marked content or typed artifacts change, and typed artifacts are common. A new `span-lang` key is flagged as affecting accessibility, like any language change |
 | Next | `pdfua-snapshot v1`, unchanged version: letter-spaced text no longer gets a space between every letter, since a gap counts as a space only when it's wider than the line's letter spacing (read from its narrowest gaps, up to a quarter of an em). Snapshots of documents with letter-spaced text change |
 | Next | `pdfua-snapshot v1`, unchanged version: text drawn at an angle is read along its own baseline, so it keeps its words and stays one layout run, which prints `angle=90`. Snapshots of documents with rotated text change |
 | Next | `pdfua-snapshot v1`, unchanged version: links print where they go (`dest=p3 view=XYZ view-at=72,720`, `zoom=` when set, a named destination looked up, `file=` for another file) instead of `dest=yes`, and bookmarks print their view, web address or file (a bookmark to another file prints `file="..." dest=p1` instead of `-> p1`). Snapshots of documents with internal links or bookmarks change |

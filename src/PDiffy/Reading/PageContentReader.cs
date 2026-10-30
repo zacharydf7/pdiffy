@@ -15,16 +15,25 @@ internal sealed class ContentOwners
     public List<(IPdfImage Image, ContentOwner Owner)> Images { get; } = [];
 }
 
-/// <summary>What one page's content stream says: the letters behind each MCID, the artifacts, untagged text, and who owns what.</summary>
-internal sealed record PageContent(IReadOnlyDictionary<int, List<Letter>> LettersByMcid, IReadOnlyList<string> Artifacts,
-    string? UntaggedText, ContentOwners Owners);
+/// <summary>
+/// What one page's content stream says: the letters behind each MCID, the marked content in each that sets its own
+/// language or replacement text, the artifacts, untagged text, and who owns what.
+/// </summary>
+internal sealed record PageContent(IReadOnlyDictionary<int, List<Letter>> LettersByMcid,
+    IReadOnlyDictionary<int, List<MarkedSpan>> SpansByMcid, IReadOnlyList<PageText> Artifacts, string? UntaggedText,
+    ContentOwners Owners);
 
 internal sealed class PageContentReader
 {
     private readonly ContentOwners _owners = new();
-    private readonly List<string> _artifacts = [];
+    private readonly List<PageText> _artifacts = [];
+    private readonly Dictionary<int, List<MarkedSpan>> _spansByMcid = [];
 
-    public static PageContent Read(Page page) => new PageContentReader().ReadPage(page);
+    public static PageContent Read(Page page) => new PageContentReader(page.Number).ReadPage(page);
+
+    private readonly int _pageNumber;
+
+    private PageContentReader(int pageNumber) => _pageNumber = pageNumber;
 
     private PageContent ReadPage(Page page)
     {
@@ -58,7 +67,7 @@ internal sealed class PageContentReader
         }
 
         var untaggedText = TextJoiner.Join(untagged);
-        return new PageContent(lettersByMcid, _artifacts, untaggedText.Length > 0 ? untaggedText : null, _owners);
+        return new PageContent(lettersByMcid, _spansByMcid, _artifacts, untaggedText.Length > 0 ? untaggedText : null, _owners);
     }
 
     // Marked content without its own MCID belongs to the nearest enclosing MCID, if there is one. Children go on the
@@ -79,16 +88,22 @@ internal sealed class PageContentReader
             var text = TextJoiner.Join(letters);
             if (text.Length > 0)
             {
-                _artifacts.Add(text);
+                var kind = markedContent as ArtifactMarkedContentElement;
+                _artifacts.Add(new PageText(_pageNumber, text)
+                {
+                    Type = kind?.Type is { } type and not ArtifactMarkedContentElement.ArtifactType.Unknown ? type.ToString() : null,
+                    Subtype = kind?.SubType,
+                });
             }
 
             return;
         }
 
         var mcid = markedContent.MarkedContentIdentifier >= 0 ? markedContent.MarkedContentIdentifier : enclosingMcid;
-        if (mcid is not null)
+        if (mcid is int owner)
         {
             Own(markedContent, new ContentOwner(IsArtifact: false, mcid));
+            if (Span(markedContent) is { } span) SpansOf(owner).Add(span);
         }
 
         // Pushed last to first, so they're visited first to last.
@@ -96,6 +111,34 @@ internal sealed class PageContentReader
         {
             pending.Push((child, mcid));
         }
+    }
+
+    // Marked content that says something of its own about its text, such as a word in another language.
+    private static MarkedSpan? Span(MarkedContentElement markedContent)
+    {
+        var span = new MarkedSpan
+        {
+            Language = NonEmpty(markedContent.Language),
+            ActualText = NonEmpty(markedContent.ActualText),
+            // PdfPig 0.1.16 leaves AlternateDescription empty for /Alt, so it's read from the property list.
+            AltText = NonEmpty(markedContent.AlternateDescription)
+                ?? NonEmpty(PdfObjects.TextOf(markedContent.Properties?.Data.GetValueOrDefault("Alt"))),
+            Expansion = NonEmpty(markedContent.ExpandedForm),
+        };
+        return span == new MarkedSpan() ? null : span;
+    }
+
+    private static string? NonEmpty(string? value) => string.IsNullOrEmpty(value) ? null : value;
+
+    private List<MarkedSpan> SpansOf(int mcid)
+    {
+        if (!_spansByMcid.TryGetValue(mcid, out var spans))
+        {
+            spans = [];
+            _spansByMcid[mcid] = spans;
+        }
+
+        return spans;
     }
 
     // PdfPig gives each marked-content element only its direct letters, images and paths.

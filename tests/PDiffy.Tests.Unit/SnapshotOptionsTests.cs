@@ -104,9 +104,10 @@ public class SnapshotOptionsTests
     [Fact]
     public void ToSnapshot_ShouldLeaveOutEveryCopy_WhenAFieldAppearsInSeveralPlaces()
     {
-        var snapshot = Full().ToSnapshot(o => o.Ignore(Field.Title, Field.Author, Field.Subject, Field.Language, Field.LinkTargets));
+        var snapshot = Full().ToSnapshot(o => o.Ignore(Field.Title, Field.Author, Field.Subject, Field.Language, Field.LinkTargets,
+            Field.AltText, Field.ActualText));
 
-        Assert.DoesNotMatch(@"\s(title|xmp-title|author|xmp-creator|subject|xmp-description|lang|xmp-language|uri|action|file|dest|view|view-at)=", snapshot);
+        Assert.DoesNotMatch(@"\s(title|xmp-title|author|xmp-creator|subject|xmp-description|lang|span-lang|xmp-language|uri|action|file|dest|view|view-at|alt|actual|span-alt|span-actual)=", snapshot);
     }
 
     [Theory]
@@ -287,7 +288,11 @@ public class SnapshotOptionsTests
         ],
         Structure =
         [
-            new StructureElement { Type = "Figure", Lang = "en-US", Alt = "Logo", ActualText = "Logo" },
+            new StructureElement
+            {
+                Type = "Figure", Lang = "en-US", Alt = "Logo", ActualText = "Logo",
+                MarkedSpans = [new MarkedSpan { Language = "fr-FR", ActualText = "fi", AltText = "ligature" }],
+            },
             new StructureElement
             {
                 Type = "Link",

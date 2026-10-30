@@ -162,6 +162,21 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
         foreach (var child in bookmark.Children) WriteBookmark(child, depth + 1);
     }
 
+    // What marked content inside the element says of its own text, in reading order: span-lang=[fr], span-actual=["fi"].
+    private void AppendMarkedSpans(StringBuilder line, IReadOnlyList<MarkedSpan> spans)
+    {
+        if (!options.Ignores(Field.Language)) Key(line, "span-lang", Bracketed(spans.Select(span => span.Language)));
+        if (!options.Ignores(Field.ActualText)) Key(line, "span-actual", Bracketed(spans.Select(span => QuoteIfPresent(span.ActualText))));
+        if (!options.Ignores(Field.AltText)) Key(line, "span-alt", Bracketed(spans.Select(span => QuoteIfPresent(span.AltText))));
+        Key(line, "span-expansion", Bracketed(spans.Select(span => QuoteIfPresent(span.Expansion))));
+    }
+
+    private static string? Bracketed(IEnumerable<string?> values)
+    {
+        var present = values.OfType<string>().ToList();
+        return present.Count > 0 ? $"[{string.Join(",", present)}]" : null;
+    }
+
     private void WriteStructure(IReadOnlyList<StructureElement> structure)
     {
         if (structure.Count == 0) Line(1, None);
@@ -195,6 +210,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
             AppendAnnotationDetails(line, annotation);
         }
 
+        AppendMarkedSpans(line, element.MarkedSpans);
         Key(line, "mcids-without-page", element.McidsWithoutPage > 0 ? element.McidsWithoutPage.ToString() : null);
         Key(line, "unread-children", element.UnreadChildren > 0 ? element.UnreadChildren.ToString() : null);
         if (element.Text is not null) line.Append(' ').Append(Quote(element.Text));
@@ -205,7 +221,13 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
     private void WritePageTexts(IReadOnlyList<PageText> texts)
     {
         if (texts.Count == 0) Line(1, None);
-        foreach (var text in texts) Line(1, $"p{text.Page} {Quote(text.Text)}");
+        foreach (var text in texts)
+        {
+            var line = new StringBuilder($"p{text.Page}");
+            Key(line, "type", text.Type);
+            Key(line, "subtype", text.Subtype);
+            Line(1, line.Append(' ').Append(Quote(text.Text)).ToString());
+        }
     }
 
     // Untagged text, then a count of untagged images and paths, page by page. The layout section lists each graphic.

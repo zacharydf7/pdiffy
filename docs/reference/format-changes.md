@@ -30,6 +30,12 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   the narrowest gaps on each line, up to a quarter of an em, from lines with at least three gaps, so a letter-spaced
   word of three letters or fewer still prints a space between its letters. Snapshots of documents with letter-spaced
   text change.
+- Marked content inside a structure element that sets its own language, replacement text, alt text or expansion is
+  recorded on the element (`span-lang=[fr-FR]`, `span-actual=["fi"]`, `span-alt=`, `span-expansion=`), and an
+  artifact prints its kind when it gives one (`p1 type=Pagination subtype=Footer "Page 1"`). Snapshots of documents
+  with such marked content or typed artifacts change; typed artifacts are common, so many `artifacts` sections change.
+  A new `span-lang` key is flagged as affecting accessibility, like any language change, so it shows as
+  `[accessibility]` when an older approved snapshot meets the new one.
 
 ### Word (`docx-snapshot v1`, unchanged)
 
@@ -55,7 +61,8 @@ list of changes can see different pairings.
 ### Accessibility flags
 
 No snapshot changes, but more changes are flagged as
-[affecting accessibility](accessibility-changes.md): tagged content made an artifact or untagged, `marked` or
+[affecting accessibility](accessibility-changes.md): a language set on marked content inside an element changed,
+tagged content made an artifact or untagged, `marked` or
 `display-doc-title` turned off, the title removed, replacement text or an expansion removed, a page's tab order no
 longer `S`, a font's text no longer mapping to Unicode, and permissions that stop text extraction for accessibility.
 Tests that assert on `AffectsAccessibility` can fail where they passed.

@@ -20,6 +20,8 @@ public class MutationTests
         { "tagged text made untagged", new Sample { NoteTagged = false }, Section.Untagged, ChangeKind.Added, true },
         { "tagged text made an artifact", new Sample { NoteArtifact = true }, Section.Layout, ChangeKind.Changed, true },
         { "artifact made tagged", new Sample { FooterTagged = true }, Section.Artifacts, ChangeKind.Removed, false },
+        { "artifact kind", new Sample { FooterKind = "Header" }, Section.Artifacts, ChangeKind.AttributeChanged, false },
+        { "span language", new Sample { SpanLang = "de-DE" }, Section.Structure, ChangeKind.AttributeChanged, true },
         { "document language", new Sample { DocumentLang = "en-GB" }, Section.Document, ChangeKind.AttributeChanged, true },
         { "element language", new Sample { ElementLang = "fr-FR" }, Section.Structure, ChangeKind.AttributeChanged, true },
         { "link target", new Sample { LinkUri = "https://example.com/b" }, Section.Annotations, ChangeKind.AttributeChanged, false },
@@ -59,6 +61,8 @@ public class MutationTests
         public bool NoteTagged { get; init; } = true;
         public bool NoteArtifact { get; init; }
         public bool FooterTagged { get; init; }
+        public string FooterKind { get; init; } = "Footer";
+        public string SpanLang { get; init; } = "fr-FR";
         public string DocumentLang { get; init; } = "en-US";
         public string ElementLang { get; init; } = "es-ES";
         public string LinkUri { get; init; } = "https://example.com/a";
@@ -85,7 +89,8 @@ public class MutationTests
         else if (sample.NoteTagged) page.Tagged(4, "Pack light");
         else page.Untagged("Pack light");
         if (sample.FooterTagged) page.Tagged(5, "Page 1");
-        else page.Artifact("Page 1");
+        else page.Artifact("Page 1", $"/Type /Pagination /Subtype /{sample.FooterKind}");
+        page.Raw($"/P << /MCID 10 >> BDC BT /F1 12 Tf 72 150 Td (Say ) Tj /Span << /Lang ({sample.SpanLang}) >> BDC (bonjour) Tj EMC ET EMC");
         pdf.AddPage().Tagged(0, "Safety");
 
         var paragraphs = new[] { new TestElement("P", 1), new TestElement("P", 2) { Entries = $"/Lang ({sample.ElementLang})" } };
@@ -96,6 +101,7 @@ public class MutationTests
         elements.AddRange(paragraphs);
         elements.Add(new TestElement("Figure", 3) { Entries = alt });
         elements.Add(new TestElement("P", 6));
+        elements.Add(new TestElement("P", 10));
         elements.Add(new TestElement("Table",
             new TestElement("TR", new TestElement("TH", 7) { Entries = $"/ID (h-trail) /A << /O /Table {scope} >>" }),
             new TestElement("TR", new TestElement("TD", 8) { Entries = $"/A << /O /Table /Headers [{sample.Headers}] >>" })));

@@ -365,6 +365,36 @@ public class PdfUaDocumentLoadTests
     }
 
     [Fact]
+    public void Load_ShouldRecordWhatMarkedContentSaysOfItsText_WhenSpansSetLanguageOrReplacementText()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("/P << /MCID 0 >> BDC BT /F1 12 Tf 72 400 Td (Say ) Tj /Span << /Lang (fr-FR) >> BDC (bonjour) Tj EMC "
+            + "/Span << /ActualText (fi) /Alt (ligature) /E (Mount) >> BDC (x) Tj EMC ET EMC");
+        pdf.Structure(new TestElement("P", 0));
+
+        var document = pdf.Load();
+
+        var element = Assert.Single(document.Structure);
+        Assert.Equal(["fr-FR", null], element.MarkedSpans.Select(span => span.Language));
+        Assert.Equal((null, "fi", "ligature", "Mount"), (element.MarkedSpans[1].Language, element.MarkedSpans[1].ActualText,
+            element.MarkedSpans[1].AltText, element.MarkedSpans[1].Expansion));
+        Assert.Contains("P p1 span-lang=[fr-FR] span-actual=[\"fi\"] span-alt=[\"ligature\"] span-expansion=[\"Mount\"] ",
+            document.ToSnapshot());
+    }
+
+    [Fact]
+    public void Load_ShouldRecordAnArtifactsKind_WhenItSaysWhatKindItIs()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Artifact("Page 1", "/Type /Pagination /Subtype /Footer").Artifact("Draft");
+
+        var document = pdf.Load();
+
+        Assert.Equal([("Pagination", "Footer"), (null, null)], document.Artifacts.Select(text => (text.Type, text.Subtype)));
+        Assert.Contains("artifacts\n  p1 type=Pagination subtype=Footer \"Page 1\"\n  p1 \"Draft\"\n", document.ToSnapshot());
+    }
+
+    [Fact]
     public void Load_ShouldReadWhereEachBookmarkGoes_WhenTheyHaveDifferentTargets()
     {
         var pdf = new TestPdf().Bookmark("Intro", 1, "/XYZ 72 700 0")

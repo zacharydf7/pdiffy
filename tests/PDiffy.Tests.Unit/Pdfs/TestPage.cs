@@ -37,6 +37,9 @@ internal sealed class TestPage(double width, double height, int rotate, string? 
 
     public TestPage Artifact(string text) => Raw($"/Artifact BMC {TextLine(text)} EMC");
 
+    /// <summary>An artifact that says what kind it is, such as "/Type /Pagination /Subtype /Footer".</summary>
+    public TestPage Artifact(string text, string properties) => Raw($"/Artifact << {properties} >> BDC {TextLine(text)} EMC");
+
     public TestPage Untagged(string text) => Raw(TextLine(text));
 
     /// <summary>

@@ -17,7 +17,8 @@ internal static class PdfPigReader
 
         var (pages, readable) = ReadPages(document, objects);
         var structure = StructureTreeReader.Read(objects, catalog, pageTree, destinations,
-            (page, mcid) => readable.TryGetValue(page, out var read) ? read.Content.LettersByMcid.GetValueOrDefault(mcid) : null);
+            (page, mcid) => readable.TryGetValue(page, out var read) ? read.Content.LettersByMcid.GetValueOrDefault(mcid) : null,
+            (page, mcid) => readable.TryGetValue(page, out var read) ? read.Content.SpansByMcid.GetValueOrDefault(mcid) : null);
         var loose = CollectLooseContent(readable, structure.ReferencedMcids);
         var (bookmarks, bookmarksUnreadable) = NavigationReader.ReadBookmarks(document, objects, catalog);
         var layouts = readable.OrderBy(pair => pair.Key)
@@ -118,7 +119,7 @@ internal static class PdfPigReader
         var loose = new LooseContent([], []);
         foreach (var (number, (_, content)) in readable.OrderBy(pair => pair.Key))
         {
-            loose.Artifacts.AddRange(content.Artifacts.Select(text => new PageText(number, text)));
+            loose.Artifacts.AddRange(content.Artifacts);
             if (content.UntaggedText is not null)
             {
                 loose.Untagged.Add(new PageText(number, content.UntaggedText));

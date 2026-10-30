@@ -499,6 +499,21 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowOnlyTheNewKeys_WhenASnapshotFromBeforeMarkedSpansMeetsOneWithThem()
+    {
+        var before = SnapshotText.Header + "structure\n  P p1 \"Say bonjour\"\nartifacts\n  p1 \"Page 1\"\n";
+        var after = SnapshotText.Header + "structure\n  P p1 span-lang=[fr-FR] \"Say bonjour\"\n"
+            + "artifacts\n  p1 type=Pagination subtype=Footer \"Page 1\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
+        Assert.Equal(["span-lang: (missing) -> [fr-FR]", "type: (missing) -> Pagination", "subtype: (missing) -> Footer"],
+            changes.Select(change => change.Detail));
+        Assert.Equal([true, false, false], changes.Select(change => change.AffectsAccessibility));
+    }
+
+    [Fact]
     public void Compare_ShouldReportOneBookmarkChanged_WhenABookmarkToAnotherFileLosesItsPage()
     {
         var before = SnapshotText.Header + "bookmarks\n  \"Atlas\" -> p1\n";
@@ -537,6 +552,9 @@ public class SnapshotDiffTests
     [InlineData("structure", "TH1 p1 scope=Column \"Trail\"", "TH2 p1 scope=Column \"Trail\"", false)]
     [InlineData("structure", "TD p1 headers=[TH1] \"Ridgeline\"", "TD p1 headers=[?h-other] \"Ridgeline\"", true)]
     [InlineData("document", "marked=yes lang=en-US", "marked=yes lang=en-GB", true)]
+    [InlineData("structure", "P p1 span-lang=[fr-FR] \"Say bonjour\"", "P p1 span-lang=[de-DE] \"Say bonjour\"", true)]
+    [InlineData("artifacts", "p1 type=Pagination subtype=Footer \"Page 1\"", "p1 type=Pagination subtype=Header \"Page 1\"", false)]
+    [InlineData("structure", "P p1 span-actual=[\"fi\"] \"fine\"", "P p1 \"fine\"", true)]
     [InlineData("untagged", "p1 images=1 paths=1", "p1 images=2 paths=1", true)]
     [InlineData("untagged", "p1 images=1 paths=1", "p1 images=2 paths=2", true)]
     [InlineData("untagged", "p1 images=2 paths=3", "p1 images=1 paths=1", false)]

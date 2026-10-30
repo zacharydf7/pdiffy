@@ -210,6 +210,9 @@ public sealed record StructureElement
     /// </summary>
     public int UnreadChildren { get; init; }
 
+    /// <summary>Marked content in the element that sets its own language, replacement text, alt text or expansion.</summary>
+    public IReadOnlyList<MarkedSpan> MarkedSpans { get; init; } = [];
+
     public string? Text { get; init; }
 }
 
@@ -242,7 +245,27 @@ public sealed record Annotation
     public string? AccessibleName { get; init; }
 }
 
-public sealed record PageText(int Page, string Text);
+/// <summary>
+/// Text on a page that no structure element holds: an artifact or untagged text. An artifact can say what kind it is,
+/// in <see cref="Type"/> (Pagination, Layout, Page or Background) and <see cref="Subtype"/> (such as Header or Footer).
+/// </summary>
+public sealed record PageText(int Page, string Text)
+{
+    public string? Type { get; init; }
+    public string? Subtype { get; init; }
+}
+
+/// <summary>
+/// What marked content inside a structure element says about its own text: its language, replacement text, alt text
+/// or expansion, which a screen reader uses instead of the element's.
+/// </summary>
+public sealed record MarkedSpan
+{
+    public string? Language { get; init; }
+    public string? ActualText { get; init; }
+    public string? AltText { get; init; }
+    public string? Expansion { get; init; }
+}
 
 /// <summary>
 /// A font. <see cref="UnmappedCodes"/> lists the character codes its text uses that don't map to Unicode: that text can't

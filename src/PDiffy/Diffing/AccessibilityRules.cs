@@ -6,7 +6,8 @@ namespace PDiffy.Diffing;
 internal static class AccessibilityRules
 {
     // Keys whose value going missing or empty takes something away from a screen reader.
-    private static readonly HashSet<string> RemovableKeys = ["alt", "actual", "expansion", "scope", "headers", "tu"];
+    private static readonly HashSet<string> RemovableKeys =
+        ["alt", "actual", "expansion", "span-alt", "span-actual", "span-expansion", "scope", "headers", "tu"];
 
     public static bool Affects(SnapshotChange change)
     {
@@ -20,7 +21,7 @@ internal static class AccessibilityRules
             ChangeKind.Moved => section == Section.Structure,
             ChangeKind.Changed => IsTypeChange(before, after) || HidesTagged(section, Role(before), Role(after)),
             ChangeKind.AttributeChanged => KeyOf(before) is var key
-                && (key == "lang" || TakesAway(key, after) || Loses(section, key, ValueOf(before), after)),
+                && (key is "lang" or "span-lang" || TakesAway(key, after) || Loses(section, key, ValueOf(before), after)),
             _ => false,
         };
     }
