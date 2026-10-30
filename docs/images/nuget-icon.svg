@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="PDiffy">
+  <title>PDiffy</title>
+  <rect width="256" height="256" rx="56" fill="#0F1C3F"/>
+  <g transform="translate(30 30) scale(0.8)">
+  <path d="M76 40H158L198 80V120A48 48 0 0 1 150 168H112V206A14 14 0 0 1 98 220H76A14 14 0 0 1 62 206V54A14 14 0 0 1 76 40Z" transform="translate(-20 -18)" fill="#19B4F2"/>
+  <path d="M76 40H158L198 80V120A48 48 0 0 1 150 168H112V206A14 14 0 0 1 98 220H76A14 14 0 0 1 62 206V54A14 14 0 0 1 76 40Z" fill="#0F1C3F" stroke="#FFFFFF" stroke-width="10" stroke-linejoin="round" paint-order="stroke"/>
+  <path d="M160 40L198 78H176A16 16 0 0 1 160 62Z" fill="#19B4F2"/>
+  <rect x="82" y="70" width="56" height="14" rx="7" fill="#EEF1F6"/>
+  <rect x="78" y="94" width="78" height="20" rx="10" fill="#FF6A4D"/>
+  <rect x="86" y="100" width="56" height="8" rx="4" fill="#EEF1F6"/>
+  <circle cx="172" cy="104" r="10" fill="#FF6A4D"/>
+  <rect x="82" y="124" width="74" height="14" rx="7" fill="#EEF1F6"/>
+  <rect x="82" y="148" width="20" height="14" rx="7" fill="#EEF1F6"/>
+  </g>
+</svg>

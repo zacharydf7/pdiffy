@@ -20,7 +20,7 @@
       "_appName": "PDiffy",
       "_appTitle": "PDiffy",
       "_appLogoPath": "images/logo.svg",
-      "_appFaviconPath": "images/logo.svg",
+      "_appFaviconPath": "images/mark.svg",
       "_appFooter": "PDiffy is MIT licensed. <a href=\"https://github.com/zacharydf7/pdiffy\">Source on GitHub</a> · <a href=\"https://www.nuget.org/packages/PDiffy\">NuGet</a>",
       "_enableSearch": true,
       "_disableContribution": true,

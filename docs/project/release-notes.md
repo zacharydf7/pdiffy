@@ -68,6 +68,10 @@ library does.
   first, and `SnapshotDiff.CompareFiles(beforePath, afterPath)` compares two files the way `pdiffy before after`
   does. `CompareTo` names its parameter `after`.
 
+### Look and docs
+
+- A new logo and NuGet package icon, and a redesigned docs site in the logo's colors.
+
 ### Checks
 
 - Each `PdfCheckFinding` has a `Severity` (`Error` or `Warning`) and a `Reference` to the PDF/UA-1 clause its
