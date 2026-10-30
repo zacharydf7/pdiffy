@@ -23,12 +23,13 @@ public static class Snapshot
 
     /// <summary>
     /// A folder in the test project, for <see cref="Directory"/>: <c>Snapshot.ProjectFolder("Snapshots")</c>. PDiffy's
-    /// build file records the project's folder when the test project builds, so this is right with any output folder,
-    /// runtime or build server, unlike a path worked out from the output folder.
+    /// build file records the project's folder when the test project builds, so this is right with any output folder or
+    /// runtime, as long as the tests run in the checkout that built them, unlike a path worked out from the output folder.
     /// </summary>
     /// <param name="parts">The folders under the project folder, if any.</param>
     /// <exception cref="SnapshotException">
-    /// The project's folder wasn't recorded, because PDiffy's build file didn't run.
+    /// The project's folder wasn't recorded, because PDiffy's build file didn't run or the project sets
+    /// <c>GenerateAssemblyInfo</c> to false.
     /// </exception>
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static string ProjectFolder(params string[] parts)

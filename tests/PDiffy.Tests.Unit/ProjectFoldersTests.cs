@@ -14,7 +14,8 @@ public sealed class ProjectFoldersTests : IDisposable
     [InlineData("/_/tests/Trails/Maps", "tests/Trails", "tests/Trails/Maps")]
     [InlineData("/_/tests/Trails", "tests/Trails", "tests/Trails")]
     [InlineData("/_/Docs", "", "Docs")]
-    public void Find_ShouldFindTheFolderUnderItsProject_WhenTheBuildMappedItsPath(string mapped, string project, string expected)
+    public void Find_ShouldFindTheFolderUnderItsProject_WhenTheBuildMappedItsPath(string mapped, string project,
+        string expected)
     {
         var found = ProjectFolders.Find(mapped, [Repo(project)]);
 
@@ -41,5 +42,6 @@ public sealed class ProjectFoldersTests : IDisposable
         Directory.Delete(_root, recursive: true);
     }
 
-    private string Repo(string path) => Path.Combine([_root, "repo", .. path.Split('/', StringSplitOptions.RemoveEmptyEntries)]);
+    private string Repo(string path) =>
+        Path.Combine([_root, "repo", .. path.Split('/', StringSplitOptions.RemoveEmptyEntries)]);
 }

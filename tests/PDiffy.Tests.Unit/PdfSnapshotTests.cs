@@ -164,8 +164,8 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
         Directory.CreateDirectory(folder);
         try
         {
-            await Assert.ThrowsAsync<SnapshotException>(
-                () => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide", testFile: $"/_/tests/PDiffy.Tests.Unit/obj/{inside}/GuideTests.cs"));
+            var mapped = $"/_/tests/PDiffy.Tests.Unit/obj/{inside}/GuideTests.cs";
+            await Assert.ThrowsAsync<SnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide", testFile: mapped));
 
             Assert.True(File.Exists(Path.Combine(folder, "Guide.received.pdfua.txt")));
         }
