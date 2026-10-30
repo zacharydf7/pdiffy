@@ -88,7 +88,7 @@ Each ends with `at=N`, the position in the paragraph's text where it sits.
 | `unsupported <element> hash=...` | Something PDiffy doesn't read yet |
 
 Tables, rows and cells list their own tracked changes (`table-format`, `row-insert`, `cell-delete` and so on) under
-their line. See [`DocxRevision`](xref:PDiffy.DocxRevision) for every kind.
+their line. See [`DocxRevisionKind`](xref:PDiffy.DocxRevisionKind) for every kind.
 
 ## Rules
 

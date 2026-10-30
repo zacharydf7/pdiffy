@@ -36,7 +36,7 @@ internal static class AnnotationReader
         var type = action is null ? null : objects.Name(action, "S");
         return new PdfAnnotation
         {
-            Subtype = objects.Name(annotation, "Subtype") ?? "(none)",
+            Subtype = objects.Name(annotation, "Subtype") ?? PdfAnnotationTypes.None,
             Page = page,
             X = rect.X,
             Y = rect.Y,

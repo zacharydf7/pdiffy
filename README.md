@@ -46,7 +46,7 @@ Assert.Equal("en-US", document.Document.Language);
 
 The examples below are xUnit tests, but PDiffy works with any test framework. `ReportGenerator` stands in for whatever produces your PDFs.
 
-`StructureType`, `PdfContentRole`, `PdfTextRenderMode`, `PdfAnnotationFlags`, `PdfFormFieldType`, `PdfFormFieldFlags`, `PdfPermissions`, `PdfPageModes` and `PdfPageLayouts` list every option, so no PDF knowledge is needed to filter or assert on the model.
+Enums and constant classes list every option, so no PDF knowledge is needed to filter or assert on the model. `StructureType` lists the tag types, and `PdfAnnotationTypes`, `PdfActionTypes`, `PdfDestinationViews`, `PdfTabOrders`, `PdfTableScopes`, `PdfListNumberings`, `PdfPageLabelStyles`, `PdfArtifactTypes`, `PdfArtifactSubtypes`, `PdfFontTypes`, `PdfFileRelationships`, `PdfPageModes` and `PdfPageLayouts` the other names a PDF writes; `PdfContentRole`, `PdfTextRenderMode`, `PdfAnnotationFlags`, `PdfFormFieldType`, `PdfFormFieldFlags` and `PdfPermissions` are enums.
 
 ### Approve a snapshot and compare against it
 
@@ -224,8 +224,10 @@ Anything in a paragraph, or between paragraphs, tables, rows and cells, that PDi
 ```csharp
 DocxDocument notes = DocxDocument.Load("notes.docx");
 Assert.All(notes.Images(), image => Assert.NotNull(image.AltText));
-Assert.Empty(notes.Revisions());
+Assert.DoesNotContain(notes.Revisions(), revision => revision.Kind == DocxRevisionKind.Delete);
 ```
+
+Kinds PDiffy decides are enums: `DocxRevisionKind`, `DocxFormKind` and `DocxNoteKind`. Values PDiffy copies from the file stay strings, so a value outside the standard list still comes through, and classes list the standard ones: `DocxAlignments` (where `"both"` means justified), `DocxStyleTypes`, `DocxSectionBreaks`, `DocxHeaderFooterKinds`, `DocxBreakKinds`, `DocxGraphicKinds`, `DocxUnderlines`, `DocxHighlights`, `DocxRunVerticalAligns`, `DocxCellMerges`, `DocxCellVerticalAligns`, `DocxTextDirections` and `DocxProtections`.
 
 ### Use a profile for what a test guards
 
@@ -465,7 +467,7 @@ public async Task TrailMap_ShouldBeReadableByScreenReaders_WhenGenerated()
     Assert.DoesNotContain(document.TextRuns, run => run.Role == PdfContentRole.Untagged);
 
     // Every link has a description a screen reader can announce.
-    Assert.All(document.Annotations.Where(annotation => annotation.Subtype == "Link"),
+    Assert.All(document.Annotations.Where(annotation => annotation.Subtype == PdfAnnotationTypes.Link),
         link => Assert.False(string.IsNullOrWhiteSpace(link.Contents)));
 }
 ```

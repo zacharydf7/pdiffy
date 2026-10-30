@@ -201,7 +201,7 @@ public class DocxDocumentTests
         var document = new TestDocx { Body = body }.Load();
 
         var revision = Assert.Single(document.Revisions());
-        Assert.Equal(("section-format", "Di"), (revision.Kind, revision.Author));
+        Assert.Equal((DocxRevisionKind.SectionFormat, "Di"), (revision.Kind, revision.Author));
         Assert.Single(document.PageSetups);
         Assert.Contains("\n    section-format author=\"Di\"\n", document.ToSnapshot());
     }

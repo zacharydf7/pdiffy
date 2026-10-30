@@ -45,14 +45,15 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
 
         if (pPr?.Element(W + "pPrChange") is { } change) content.Inlines.Add(new DocxRevision
         {
-            Kind = "paragraph-format", Text = "", Author = Attr(change, "author"), Position = 0,
+            Kind = DocxRevisionKind.ParagraphFormat, Text = "", Author = Attr(change, "author"), Position = 0,
         });
     }
 
-    private static readonly Dictionary<string, string> MarkKinds = new()
+    private static readonly Dictionary<string, DocxRevisionKind> MarkKinds = new()
     {
-        ["ins"] = "paragraph-insert", ["del"] = "paragraph-delete", ["moveTo"] = "paragraph-move-to", ["moveFrom"] = "paragraph-move-from",
-        ["rPrChange"] = "paragraph-mark-format",
+        ["ins"] = DocxRevisionKind.ParagraphInsert, ["del"] = DocxRevisionKind.ParagraphDelete,
+        ["moveTo"] = DocxRevisionKind.ParagraphMoveTo, ["moveFrom"] = DocxRevisionKind.ParagraphMoveFrom,
+        ["rPrChange"] = DocxRevisionKind.ParagraphMarkFormat,
     };
 
     // A run inside the paragraph's properties (w:pPr) isn't allowed there, and Word may drop or move it; every such run
@@ -162,7 +163,7 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
     {
         var (start, index) = (content.Text.Length, content.Inlines.Count);
         ReadContent(insertion, content);
-        var kind = insertion.Name.LocalName == "ins" ? "insert" : "move-to";
+        var kind = insertion.Name.LocalName == "ins" ? DocxRevisionKind.Insert : DocxRevisionKind.MoveTo;
         var text = content.Text.ToString(start, content.Text.Length - start);
         content.Inlines.Insert(index, new DocxRevision
         {
@@ -174,7 +175,7 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
     private static void ReadDeletion(XElement deletion, ParagraphContent content)
     {
         var text = string.Concat(deletion.Descendants().Where(item => item.Name == W + "delText" || item.Name == W + "t").Select(item => item.Value));
-        var kind = deletion.Name.LocalName == "del" ? "delete" : "move-from";
+        var kind = deletion.Name.LocalName == "del" ? DocxRevisionKind.Delete : DocxRevisionKind.MoveFrom;
         content.Inlines.Add(new DocxRevision
         {
             Kind = kind, Text = text, Author = Attr(deletion, "author"), Position = content.Text.Length,
@@ -298,8 +299,9 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
                 case "footnoteReference" or "endnoteReference" when Integer(item, "id") is int id:
                     content.Inlines.Add(new DocxNoteReference
                     {
-                        Kind = item.Name.LocalName == "footnoteReference" ? "footnote" : "endnote", Id = id,
-                        Position = position,
+                        Kind = item.Name.LocalName == "footnoteReference" ? DocxNoteKind.Footnote
+                            : DocxNoteKind.Endnote,
+                        Id = id, Position = position,
                     });
                     break;
                 case "commentReference" when Integer(item, "id") is int id:
@@ -323,7 +325,7 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         // A run whose formatting changed with tracking on is a tracked change of its text.
         if (rPr?.Element(W + "rPrChange") is { } change) content.Inlines.Insert(index, new DocxRevision
         {
-            Kind = "format", Text = text.ToString(), Author = Attr(change, "author"), Position = start,
+            Kind = DocxRevisionKind.Format, Text = text.ToString(), Author = Attr(change, "author"), Position = start,
         });
 
         if (text.Length == 0) return;

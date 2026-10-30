@@ -13,19 +13,21 @@ internal static class FormReader
     private static readonly XNamespace W15 = "http://schemas.microsoft.com/office/word/2012/wordml";
 
     // The property that names a content control's kind; a control with none of them holds rich text.
-    private static readonly (string Element, string Kind)[] Kinds =
+    private static readonly (string Element, DocxFormKind Kind)[] Kinds =
     [
-        ("text", "text"), ("dropDownList", "dropdown"), ("comboBox", "combobox"), ("date", "date"), ("picture", "picture"),
-        ("docPartObj", "gallery"), ("docPartList", "gallery"), ("group", "group"), ("citation", "citation"),
-        ("bibliography", "bibliography"), ("equation", "equation"),
+        ("text", DocxFormKind.Text), ("dropDownList", DocxFormKind.Dropdown), ("comboBox", DocxFormKind.Combobox),
+        ("date", DocxFormKind.Date), ("picture", DocxFormKind.Picture), ("docPartObj", DocxFormKind.Gallery),
+        ("docPartList", DocxFormKind.Gallery), ("group", DocxFormKind.Group), ("citation", DocxFormKind.Citation),
+        ("bibliography", DocxFormKind.Bibliography), ("equation", DocxFormKind.Equation),
     ];
 
-    public static (string Kind, string? Name, string? Title) Describe(XElement? sdtPr)
+    public static (DocxFormKind Kind, string? Name, string? Title) Describe(XElement? sdtPr)
     {
-        var kind = sdtPr?.Element(W14 + "checkbox") is not null ? "checkbox"
-            : sdtPr?.Element(W15 + "repeatingSection") is not null ? "repeating-section"
-            : sdtPr?.Element(W15 + "repeatingSectionItem") is not null ? "repeating-section-item"
-            : Kinds.FirstOrDefault(entry => sdtPr?.Element(W + entry.Element) is not null).Kind ?? "rich-text";
+        var kind = sdtPr?.Element(W14 + "checkbox") is not null ? DocxFormKind.Checkbox
+            : sdtPr?.Element(W15 + "repeatingSection") is not null ? DocxFormKind.RepeatingSection
+            : sdtPr?.Element(W15 + "repeatingSectionItem") is not null ? DocxFormKind.RepeatingSectionItem
+            : Kinds.Where(entry => sdtPr?.Element(W + entry.Element) is not null)
+                .Select(entry => (DocxFormKind?)entry.Kind).FirstOrDefault() ?? DocxFormKind.RichText;
         return (kind, Attr(sdtPr?.Element(W + "tag"), "val"), Attr(sdtPr?.Element(W + "alias"), "val"));
     }
 
@@ -53,10 +55,12 @@ internal static class FormReader
         var dropDown = data.Element(W + "ddList");
         var entries = dropDown?.Elements(W + "listEntry").Select(entry => Attr(entry, "val") ?? "").ToList() ?? [];
         var (kind, value) = checkBox is not null
-            ? ("legacy-checkbox", YesNo(IsOn(checkBox.Element(W + "checked") ?? checkBox.Element(W + "default"))))
+            ? (DocxFormKind.LegacyCheckbox,
+                YesNo(IsOn(checkBox.Element(W + "checked") ?? checkBox.Element(W + "default"))))
             : dropDown is not null
-                ? ("legacy-dropdown", entries.ElementAtOrDefault(Integer(dropDown.Element(W + "result"), "val") ?? 0))
-                : ("legacy-text", result);
+                ? (DocxFormKind.LegacyDropdown,
+                    entries.ElementAtOrDefault(Integer(dropDown.Element(W + "result"), "val") ?? 0))
+                : (DocxFormKind.LegacyText, result);
         return new DocxForm
         {
             Kind = kind, Position = position, Name = Attr(data.Element(W + "name"), "val"), Value = value,

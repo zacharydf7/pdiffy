@@ -56,6 +56,13 @@ Constants and flags that list every option, so you never need to know PDF names:
 | <xref:PDiffy.PdfFormFieldType>, <xref:PDiffy.PdfFormFieldFlags> | Form field types and flags |
 | <xref:PDiffy.PdfPermissions> | What an encrypted document allows |
 | <xref:PDiffy.PdfPageModes>, <xref:PDiffy.PdfPageLayouts> | How the file opens |
+| <xref:PDiffy.PdfAnnotationTypes>, <xref:PDiffy.PdfActionTypes>, <xref:PDiffy.PdfDestinationViews> | Annotation types, link actions and the views a destination shows |
+| <xref:PDiffy.PdfTabOrders> | A page's tab order |
+| <xref:PDiffy.PdfTableScopes>, <xref:PDiffy.PdfListNumberings> | Table header scopes and list numbering |
+| <xref:PDiffy.PdfPageLabelStyles> | Page label numbering, such as roman numerals |
+| <xref:PDiffy.PdfArtifactTypes>, <xref:PDiffy.PdfArtifactSubtypes> | Artifact kinds, such as `Pagination` and `Header` |
+| <xref:PDiffy.PdfFontTypes> | Font types, such as `TrueType` |
+| <xref:PDiffy.PdfFileRelationships> | How an attached file relates to the document |
 
 ## The Word model
 
@@ -68,3 +75,16 @@ Constants and flags that list every option, so you never need to know PDF names:
 | <xref:PDiffy.DocxBlock> | A paragraph, table, content control or inserted document: <xref:PDiffy.DocxParagraph>, <xref:PDiffy.DocxTable>, <xref:PDiffy.DocxControl>, <xref:PDiffy.DocxInserted> |
 | <xref:PDiffy.DocxInline> | Something inside a paragraph, such as a <xref:PDiffy.DocxLink>, <xref:PDiffy.DocxField>, <xref:PDiffy.DocxImage> or <xref:PDiffy.DocxRevision> |
 | <xref:PDiffy.DocxHeaderFooter>, <xref:PDiffy.DocxNote> | Headers, footers, notes and comments |
+
+| Type | Lists |
+|---|---|
+| <xref:PDiffy.DocxRevisionKind> | Every kind of tracked change |
+| <xref:PDiffy.DocxFormKind> | Content control and legacy form field kinds |
+| <xref:PDiffy.DocxNoteKind> | Footnotes, endnotes and comments |
+| <xref:PDiffy.DocxAlignments> | Paragraph alignment, where `both` means justified |
+| <xref:PDiffy.DocxStyleTypes> | Style types |
+| <xref:PDiffy.DocxSectionBreaks>, <xref:PDiffy.DocxHeaderFooterKinds>, <xref:PDiffy.DocxBreakKinds> | How sections start, header and footer kinds, and page and column breaks |
+| <xref:PDiffy.DocxGraphicKinds> | Pictures, shapes, charts and other drawings |
+| <xref:PDiffy.DocxUnderlines>, <xref:PDiffy.DocxHighlights>, <xref:PDiffy.DocxRunVerticalAligns> | Underlines, highlight colors, superscript and subscript |
+| <xref:PDiffy.DocxCellMerges>, <xref:PDiffy.DocxCellVerticalAligns>, <xref:PDiffy.DocxTextDirections> | Merged cells, where a cell's text sits and which way it runs |
+| <xref:PDiffy.DocxProtections> | What editing a protected document allows |

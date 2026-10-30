@@ -48,8 +48,9 @@ internal sealed class DocxReader
         var sections = main.Descendants(W + "sectPr").Where(sectPr => sectPr.Parent?.Name != W + "sectPrChange").ToList();
         var headers = reader.HeadersAndFooters(sections, "headerReference");
         var footers = reader.HeadersAndFooters(sections, "footerReference");
-        var notes = reader.Notes("/footnotes", "footnote").Concat(reader.Notes("/endnotes", "endnote"))
-            .Concat(reader.Notes("/comments", "comment")).ToList();
+        var notes = reader.Notes("/footnotes", "footnote", DocxNoteKind.Footnote)
+            .Concat(reader.Notes("/endnotes", "endnote", DocxNoteKind.Endnote))
+            .Concat(reader.Notes("/comments", "comment", DocxNoteKind.Comment)).ToList();
         var core = package.Xml(package.Related("", "/core-properties"))?.Root;
         return new DocxDocument
         {
@@ -65,12 +66,12 @@ internal sealed class DocxReader
     }
 
     // Footnotes, endnotes and comments, each read like the body. The separator lines Word keeps as notes are left out.
-    private List<DocxNote> Notes(string relationship, string kind)
+    private List<DocxNote> Notes(string relationship, string element, DocxNoteKind kind)
     {
         var part = _package.Related(_part, relationship);
         if (_package.Xml(part)?.Root is not { } root) return [];
         var reader = new DocxReader(_styles, _numbering, _package, part!, _usedStyles, _depth);
-        return root.Elements(W + kind).Where(note => Attr(note, "type") is null or "normal")
+        return root.Elements(W + element).Where(note => Attr(note, "type") is null or "normal")
             .Select(note => new DocxNote
             {
                 Kind = kind, Id = Integer(note, "id") ?? 0, Author = NonEmpty(Attr(note, "author")),
@@ -93,7 +94,7 @@ internal sealed class DocxReader
                     : new DocxReader(_styles, _numbering, _package, target!, _usedStyles, _depth).Blocks(root).ToList();
                 found.Add(new DocxHeaderFooter
                 {
-                    Section = i + 1, Kind = Attr(item, "type") ?? "default", Blocks = blocks,
+                    Section = i + 1, Kind = Attr(item, "type") ?? DocxHeaderFooterKinds.Default, Blocks = blocks,
                 });
             }
         }
@@ -113,7 +114,8 @@ internal sealed class DocxReader
             Language = styles.Language,
             CompatibilityMode = Integer(compat, "val"),
             TrackChanges = IsOn(settings?.Element(W + "trackRevisions")),
-            Protection = IsTrue(Attr(protection, "enforcement")) ? Attr(protection, "edit") ?? "readOnly" : null,
+            Protection = IsTrue(Attr(protection, "enforcement"))
+                ? Attr(protection, "edit") ?? DocxProtections.ReadOnly : null,
             EvenAndOddHeaders = IsOn(settings?.Element(W + "evenAndOddHeaders")),
             HasCreatedDate = core?.Element(DcTerms + "created") is not null,
             HasModifiedDate = core?.Element(DcTerms + "modified") is not null,
@@ -147,7 +149,7 @@ internal sealed class DocxReader
             Revision = sectPr.Element(W + "sectPrChange") is { } change
                 ? new DocxRevision
                 {
-                    Kind = "section-format", Text = "", Author = Attr(change, "author"), Position = 0,
+                    Kind = DocxRevisionKind.SectionFormat, Text = "", Author = Attr(change, "author"), Position = 0,
                 }
                 : null,
         };
@@ -200,8 +202,8 @@ internal sealed class DocxReader
             Between = between,
             Revisions =
             [
-                .. Changes(properties, [("tblPrChange", "table-format")]),
-                .. Changes(table.Element(W + "tblGrid"), [("tblGridChange", "table-grid")]),
+                .. Changes(properties, [("tblPrChange", DocxRevisionKind.TableFormat)]),
+                .. Changes(table.Element(W + "tblGrid"), [("tblGridChange", DocxRevisionKind.TableGrid)]),
             ],
         };
     }
@@ -294,14 +296,14 @@ internal sealed class DocxReader
             Revisions =
             [
                 .. Changes(properties, RowChanges),
-                .. Changes(row.Element(W + "tblPrEx"), [("tblPrExChange", "row-table-format")]),
+                .. Changes(row.Element(W + "tblPrEx"), [("tblPrExChange", DocxRevisionKind.RowTableFormat)]),
             ],
             Controls = controls, Between = between,
         };
     }
 
     // A table, row or cell changed with tracking on keeps who did it in its properties.
-    private static List<DocxRevision> Changes(XElement? properties, (string Element, string Kind)[] kinds)
+    private static List<DocxRevision> Changes(XElement? properties, (string Element, DocxRevisionKind Kind)[] kinds)
     {
         var revisions = new List<DocxRevision>();
         foreach (var (element, kind) in kinds)
@@ -318,12 +320,16 @@ internal sealed class DocxReader
         return revisions;
     }
 
-    private static readonly (string Element, string Kind)[] RowChanges =
-        [("ins", "row-insert"), ("del", "row-delete"), ("trPrChange", "row-format")];
+    private static readonly (string Element, DocxRevisionKind Kind)[] RowChanges =
+        [
+            ("ins", DocxRevisionKind.RowInsert), ("del", DocxRevisionKind.RowDelete),
+            ("trPrChange", DocxRevisionKind.RowFormat),
+        ];
 
-    private static readonly (string Element, string Kind)[] CellChanges =
+    private static readonly (string Element, DocxRevisionKind Kind)[] CellChanges =
     [
-        ("cellIns", "cell-insert"), ("cellDel", "cell-delete"), ("cellMerge", "cell-merge"), ("tcPrChange", "cell-format"),
+        ("cellIns", DocxRevisionKind.CellInsert), ("cellDel", DocxRevisionKind.CellDelete),
+        ("cellMerge", DocxRevisionKind.CellMerge), ("tcPrChange", DocxRevisionKind.CellFormat),
     ];
 
     // A vMerge with no val continues the merge above it.

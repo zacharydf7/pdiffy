@@ -235,7 +235,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
 
     private static string Name(PdfSection section) => SnapshotWriter.Name(section);
 
-    private static bool IsLink(PdfAnnotation annotation) => annotation.Subtype == "Link";
+    private static bool IsLink(PdfAnnotation annotation) => annotation.Subtype == PdfAnnotationTypes.Link;
 
     private static bool IsBlank(string? text) => string.IsNullOrWhiteSpace(text);
 

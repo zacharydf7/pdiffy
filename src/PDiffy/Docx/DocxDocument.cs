@@ -187,7 +187,10 @@ public sealed record DocxInfo
     /// <summary>Whether Track Changes is on, so Word records later edits as tracked changes.</summary>
     public bool TrackChanges { get; init; }
 
-    /// <summary>What editing is restricted to, such as "readOnly" or "forms", or null when the document isn't protected.</summary>
+    /// <summary>
+    /// What editing is restricted to, such as "readOnly" or "forms" (<see cref="DocxProtections"/>), or null when the
+    /// document isn't protected.
+    /// </summary>
     public string? Protection { get; init; }
 
     /// <summary>Whether even and odd pages get different headers and footers.</summary>
@@ -244,8 +247,11 @@ public sealed record PageSetup
     /// <summary>How many columns the text is set in.</summary>
     public int Columns { get; init; } = 1;
 
-    /// <summary>How the section starts: "nextPage", "continuous", "evenPage", "oddPage" or "nextColumn".</summary>
-    public string Break { get; init; } = "nextPage";
+    /// <summary>
+    /// How the section starts: "nextPage", "continuous", "evenPage", "oddPage" or "nextColumn", as in
+    /// <see cref="DocxSectionBreaks"/>.
+    /// </summary>
+    public string Break { get; init; } = DocxSectionBreaks.NextPage;
 
     /// <summary>The number the section's first page gets, or null when numbering carries on from before.</summary>
     public int? PageNumberStart { get; init; }
@@ -256,21 +262,27 @@ public sealed record PageSetup
     /// <summary>Whether the first page has its own header and footer.</summary>
     public bool TitlePage { get; init; }
 
-    /// <summary>The kinds of header the section has: "default", "first" or "even".</summary>
+    /// <summary>
+    /// The kinds of header the section has: "default", "first" or "even" (<see cref="DocxHeaderFooterKinds"/>).
+    /// </summary>
     public IReadOnlyList<string> Headers
     {
         get;
         init => field = ValueList<string>.Of(value);
     } = ValueList<string>.Empty;
 
-    /// <summary>The kinds of footer the section has: "default", "first" or "even".</summary>
+    /// <summary>
+    /// The kinds of footer the section has: "default", "first" or "even" (<see cref="DocxHeaderFooterKinds"/>).
+    /// </summary>
     public IReadOnlyList<string> Footers
     {
         get;
         init => field = ValueList<string>.Of(value);
     } = ValueList<string>.Empty;
 
-    /// <summary>A tracked change to the section's settings ("section-format"), or null.</summary>
+    /// <summary>
+    /// A tracked change to the section's settings (<see cref="DocxRevisionKind.SectionFormat"/>), or null.
+    /// </summary>
     public DocxRevision? Revision { get; init; }
 }
 
@@ -284,7 +296,7 @@ public sealed record DocxStyle
     /// <summary>The style's id, such as "Heading1", which paragraphs, runs and tables refer to it by.</summary>
     public required string Id { get; init; }
 
-    /// <summary>"paragraph", "character", "table" or "numbering".</summary>
+    /// <summary>"paragraph", "character", "table" or "numbering", as in <see cref="DocxStyleTypes"/>.</summary>
     public required string Type { get; init; }
 
     /// <summary>The style's name as the file stores it, such as "heading 1", or null when it has none.</summary>
@@ -332,13 +344,13 @@ public sealed record RunFormat
     /// <summary>Whether the text is italic.</summary>
     public bool Italic { get; init; }
 
-    /// <summary>The underline kind, such as "single" or "double".</summary>
+    /// <summary>The underline kind, such as "single" or "double"; <see cref="DocxUnderlines"/> lists them.</summary>
     public string? Underline { get; init; }
 
     /// <summary>A hex color such as "FF0000"; null means automatic or not set.</summary>
     public string? Color { get; init; }
 
-    /// <summary>A highlight color name, such as "yellow".</summary>
+    /// <summary>A highlight color name, such as "yellow"; <see cref="DocxHighlights"/> lists them.</summary>
     public string? Highlight { get; init; }
 
     /// <summary>Text shown in capitals, whatever case it's typed in.</summary>
@@ -350,7 +362,7 @@ public sealed record RunFormat
     /// <summary>Text struck through with one line.</summary>
     public bool Strike { get; init; }
 
-    /// <summary>"superscript" or "subscript".</summary>
+    /// <summary>"superscript" or "subscript", as in <see cref="DocxRunVerticalAligns"/>.</summary>
     public string? VerticalAlign { get; init; }
 
     /// <summary>Text struck through with two lines.</summary>
@@ -376,7 +388,10 @@ public sealed record ParagraphFormat
     {
     }
 
-    /// <summary>"left", "center", "right", "both" (justified) and so on, as Word writes it.</summary>
+    /// <summary>
+    /// "left", "center", "right", "both" (justified) and so on, as Word writes it; <see cref="DocxAlignments"/> lists
+    /// them.
+    /// </summary>
     public string? Align { get; init; }
 
     /// <summary>How far the paragraph is indented from the left margin.</summary>
@@ -639,13 +654,11 @@ public sealed record DocxStrayText : DocxInline
 }
 
 /// <summary>
-/// A tracked change and who made it: "insert", "delete", "move-to" or "move-from" with the text it covers; "format" for a
-/// run whose formatting changed, with its text; or "paragraph-insert", "paragraph-delete", "paragraph-move-to",
-/// "paragraph-move-from", "paragraph-format" or "paragraph-mark-format" for the paragraph itself, with no text;
-/// "table-format" or "table-grid" for a table (<see cref="DocxTable.Revisions"/>); "row-insert", "row-delete",
-/// "row-format" or "row-table-format" for a row (<see cref="DocxRow.Revisions"/>); "cell-insert", "cell-delete",
-/// "cell-merge" or "cell-format" for a cell (<see cref="DocxCell.Revisions"/>); "section-format" for a section's
-/// settings (<see cref="PageSetup.Revision"/>). Tables, rows, cells and sections have no text and no position.
+/// A tracked change and who made it. An insertion, deletion, move or run format change covers text; the paragraph
+/// kinds are about the paragraph itself, with no text; table, row and cell kinds are on
+/// <see cref="DocxTable.Revisions"/>, <see cref="DocxRow.Revisions"/> and <see cref="DocxCell.Revisions"/>, and
+/// <see cref="DocxRevisionKind.SectionFormat"/> on <see cref="PageSetup.Revision"/>. Tables, rows, cells and sections
+/// have no text and no position.
 /// </summary>
 public sealed record DocxRevision : DocxInline
 {
@@ -653,8 +666,8 @@ public sealed record DocxRevision : DocxInline
     {
     }
 
-    /// <summary>What changed, one of the kinds the summary lists, such as "insert" or "row-delete".</summary>
-    public required string Kind { get; init; }
+    /// <summary>What changed, such as an insertion or a deleted row.</summary>
+    public required DocxRevisionKind Kind { get; init; }
 
     /// <summary>
     /// The text inserted, deleted, moved or reformatted, empty for the other kinds. Deleted and moved-away text isn't
@@ -673,8 +686,8 @@ public sealed record DocxNoteReference : DocxInline
     {
     }
 
-    /// <summary>"footnote" or "endnote".</summary>
-    public required string Kind { get; init; }
+    /// <summary>Whether it refers to a footnote or an endnote.</summary>
+    public required DocxNoteKind Kind { get; init; }
 
     /// <summary>The <see cref="DocxNote.Id"/> of the note of the same kind that this refers to.</summary>
     public required int Id { get; init; }
@@ -687,14 +700,15 @@ public sealed record DocxCommentReference : DocxInline
     {
     }
 
-    /// <summary>The <see cref="DocxNote.Id"/> of the note of kind "comment" that this refers to.</summary>
+    /// <summary>
+    /// The <see cref="DocxNote.Id"/> of the <see cref="DocxNoteKind.Comment"/> note that this refers to.
+    /// </summary>
     public required int Id { get; init; }
 }
 
 /// <summary>
-/// A form control in the text: a content control (Kind "text", "rich-text", "dropdown", "combobox", "date", "checkbox"
-/// and so on) or a legacy form field (Kind "legacy-text", "legacy-checkbox" or "legacy-dropdown"). Name is a content
-/// control's tag or a legacy field's name; a check box's Value is "yes" or "no".
+/// A form control in the text: a content control or a legacy form field, as its <see cref="Kind"/> says. Name is a
+/// content control's tag or a legacy field's name; a check box's Value is "yes" or "no".
 /// </summary>
 public sealed record DocxForm : DocxInline
 {
@@ -702,12 +716,8 @@ public sealed record DocxForm : DocxInline
     {
     }
 
-    /// <summary>
-    /// A content control's "text", "rich-text", "dropdown", "combobox", "date", "checkbox", "picture", "gallery",
-    /// "group", "citation", "bibliography", "equation", "repeating-section" or "repeating-section-item", or a legacy
-    /// field's kind.
-    /// </summary>
-    public required string Kind { get; init; }
+    /// <summary>The kind of content control, or of legacy form field.</summary>
+    public required DocxFormKind Kind { get; init; }
 
     /// <summary>A content control's tag or a legacy form field's name, or null when it has none.</summary>
     public string? Name { get; init; }
@@ -731,7 +741,10 @@ public sealed record DocxBreak : DocxInline
     {
     }
 
-    /// <summary>"page" or "column". A line break isn't a DocxBreak but \n in the paragraph's text.</summary>
+    /// <summary>
+    /// "page" or "column", as in <see cref="DocxBreakKinds"/>. A line break isn't a DocxBreak but \n in the paragraph's
+    /// text.
+    /// </summary>
     public required string Kind { get; init; }
 }
 
@@ -807,8 +820,9 @@ public sealed record DocxImage : DocxInline
     /// <summary>
     /// "image" for a picture, "object" for an embedded or linked object such as a spreadsheet, "control" for an ActiveX
     /// control; otherwise what the graphic is, such as "chart", "diagram" or "shape".
+    /// <see cref="DocxGraphicKinds"/> lists them.
     /// </summary>
-    public string Kind { get; init; } = "image";
+    public string Kind { get; init; } = DocxGraphicKinds.Image;
 
     /// <summary>The file a linked object shows, which the document doesn't contain; null when it's embedded.</summary>
     public string? Source { get; init; }
@@ -933,8 +947,8 @@ public sealed record DocxNote
     {
     }
 
-    /// <summary>"footnote", "endnote" or "comment".</summary>
-    public required string Kind { get; init; }
+    /// <summary>Whether it's a footnote, an endnote or a comment.</summary>
+    public required DocxNoteKind Kind { get; init; }
 
     /// <summary>
     /// The note's id, which <see cref="DocxNoteReference.Id"/> or <see cref="DocxCommentReference.Id"/> refers to it
@@ -956,12 +970,8 @@ public sealed record DocxControl : DocxBlock
     {
     }
 
-    /// <summary>
-    /// "rich-text" when the control sets no other kind; otherwise "text", "dropdown", "combobox", "date", "checkbox",
-    /// "picture", "gallery", "group", "citation", "bibliography", "equation", "repeating-section" or
-    /// "repeating-section-item".
-    /// </summary>
-    public required string Kind { get; init; }
+    /// <summary>The kind of control: <see cref="DocxFormKind.RichText"/> when the control sets no other kind.</summary>
+    public required DocxFormKind Kind { get; init; }
 
     /// <summary>The control's tag.</summary>
     public string? Name { get; init; }
@@ -990,7 +1000,10 @@ public sealed record DocxHeaderFooter
     /// </summary>
     public required int Section { get; init; }
 
-    /// <summary>"first" for the section's first page, "even" for even pages, or "default" for the rest.</summary>
+    /// <summary>
+    /// "first" for the section's first page, "even" for even pages, or "default" for the rest, as in
+    /// <see cref="DocxHeaderFooterKinds"/>.
+    /// </summary>
     public required string Kind { get; init; }
 
     /// <summary>Its paragraphs, tables and other blocks, or null when its part can't be found.</summary>
@@ -1087,7 +1100,10 @@ public sealed record DocxTable : DocxBlock
         init => field = ValueList<DocxBetween>.Of(value);
     } = ValueList<DocxBetween>.Empty;
 
-    /// <summary>Tracked changes to the table's properties ("table-format") or its columns ("table-grid").</summary>
+    /// <summary>
+    /// Tracked changes to the table's properties (<see cref="DocxRevisionKind.TableFormat"/>) or its columns
+    /// (<see cref="DocxRevisionKind.TableGrid"/>).
+    /// </summary>
     public IReadOnlyList<DocxRevision> Revisions
     {
         get;
@@ -1117,7 +1133,8 @@ public sealed record DocxRow
     public bool CantSplit { get; init; }
 
     /// <summary>
-    /// Tracked changes to the row: "row-insert", "row-delete", "row-format", or "row-table-format" for the table
+    /// Tracked changes to the row: <see cref="DocxRevisionKind.RowInsert"/>, <see cref="DocxRevisionKind.RowDelete"/>,
+    /// <see cref="DocxRevisionKind.RowFormat"/>, or <see cref="DocxRevisionKind.RowTableFormat"/> for the table
     /// properties the row sets for itself.
     /// </summary>
     public IReadOnlyList<DocxRevision> Revisions
@@ -1175,7 +1192,10 @@ public sealed record DocxCell
     /// <summary>How many columns of the table's grid the cell covers, 1 unless it's merged across.</summary>
     public int Span { get; init; } = 1;
 
-    /// <summary>"restart" or "continue", or null when it isn't merged with the cells above or below it.</summary>
+    /// <summary>
+    /// "restart" or "continue" (<see cref="DocxCellMerges"/>), or null when it isn't merged with the cells above or
+    /// below it.
+    /// </summary>
     public string? Merge { get; init; }
 
     /// <summary>The fill color in upper-case hex, such as "D9E2F3", or null when the cell has no fill.</summary>
@@ -1200,13 +1220,23 @@ public sealed record DocxCell
         init => field = ValueList<string>.Of(value);
     } = ValueList<string>.Empty;
 
-    /// <summary>Where the text sits in the cell as Word writes it, such as "center" or "bottom".</summary>
+    /// <summary>
+    /// Where the text sits in the cell as Word writes it, such as "center" or "bottom";
+    /// <see cref="DocxCellVerticalAligns"/> lists them.
+    /// </summary>
     public string? VerticalAlign { get; init; }
 
-    /// <summary>The direction of the cell's text when the cell sets one, as Word writes it, such as "btLr".</summary>
+    /// <summary>
+    /// The direction of the cell's text when the cell sets one, as Word writes it, such as "btLr";
+    /// <see cref="DocxTextDirections"/> lists them.
+    /// </summary>
     public string? TextDirection { get; init; }
 
-    /// <summary>Tracked changes to the cell: "cell-insert", "cell-delete", "cell-merge" or "cell-format".</summary>
+    /// <summary>
+    /// Tracked changes to the cell: <see cref="DocxRevisionKind.CellInsert"/>,
+    /// <see cref="DocxRevisionKind.CellDelete"/>, <see cref="DocxRevisionKind.CellMerge"/> or
+    /// <see cref="DocxRevisionKind.CellFormat"/>.
+    /// </summary>
     public IReadOnlyList<DocxRevision> Revisions
     {
         get;

@@ -24,7 +24,8 @@ internal sealed class DocxSnapshotWriter
         string? language)
     {
         (_snapshot, _options, _scrubbing, _language) = (snapshot, options, scrubbing, language);
-        _styleLayouts = document.Styles.Where(style => style.Type == "paragraph").ToDictionary(style => style.Id, style => style.Paragraph);
+        _styleLayouts = document.Styles.Where(style => style.Type == DocxStyleTypes.Paragraph)
+            .ToDictionary(style => style.Id, style => style.Paragraph);
     }
 
     public static string Write(DocxDocument document, DocxSnapshotOptions options) =>
@@ -104,7 +105,7 @@ internal sealed class DocxSnapshotWriter
     // A tracked change to a whole table, row, cell or section: its kind and who made it.
     private string RevisionLine(DocxRevision revision)
     {
-        var line = new StringBuilder(revision.Kind);
+        var line = new StringBuilder(SnapshotWriter.Name(revision.Kind));
         if (Shows(DocxDetail.RevisionAuthors)) Key(line, "author", Quote(revision.Author));
         return line.ToString();
     }
@@ -173,7 +174,7 @@ internal sealed class DocxSnapshotWriter
         if (notes.Count == 0) Line(depth, None);
         foreach (var note in notes)
         {
-            var line = new StringBuilder($"{note.Kind} {note.Id}");
+            var line = new StringBuilder($"{SnapshotWriter.Name(note.Kind)} {note.Id}");
             if (Shows(DocxDetail.CommentAuthors)) Key(line, "author", Quote(note.Author));
             Line(depth, line.ToString());
             WriteBlocks(note.Blocks, depth + 1);
@@ -186,7 +187,7 @@ internal sealed class DocxSnapshotWriter
     // A control around a cell is marked "around", since one inside the cell prints at the same depth.
     private void WriteControl(DocxControl control, int depth, bool around = false)
     {
-        var line = new StringBuilder($"Control {control.Kind}");
+        var line = new StringBuilder($"Control {SnapshotWriter.Name(control.Kind)}");
         Key(line, "name", Quote(control.Name));
         Key(line, "title", Quote(control.Title));
         if (around) line.Append(" around");
@@ -287,23 +288,25 @@ internal sealed class DocxSnapshotWriter
                 break;
             case DocxRevision revision:
                 // Deleted and moved-away text isn't in the paragraph's text, so no result sits in it.
-                var shown = revision.Kind is "insert" or "move-to" or "format";
+                var shown = revision.Kind
+                    is DocxRevisionKind.Insert or DocxRevisionKind.MoveTo or DocxRevisionKind.Format;
                 var revisionText = shown ? WithoutResults(revision.Text, revision.Position, results) : revision.Text;
-                line.Append($"{revision.Kind} {Quote(revisionText)}");
+                line.Append($"{SnapshotWriter.Name(revision.Kind)} {Quote(revisionText)}");
                 if (Shows(DocxDetail.RevisionAuthors)) Key(line, "author", Quote(revision.Author));
                 break;
             case DocxNoteReference note:
-                line.Append($"note {note.Kind} {note.Id}");
+                line.Append($"note {SnapshotWriter.Name(note.Kind)} {note.Id}");
                 break;
             case DocxCommentReference comment:
                 line.Append($"comment {comment.Id}");
                 break;
             case DocxForm form:
-                line.Append($"form {form.Kind}");
+                line.Append($"form {SnapshotWriter.Name(form.Kind)}");
                 Key(line, "name", Quote(form.Name));
                 Key(line, "title", Quote(form.Title));
                 // A content control's value is the paragraph text it covers; a check box's and a legacy field's aren't.
-                var coversText = form.Kind != "checkbox" && !form.Kind.StartsWith("legacy-", StringComparison.Ordinal);
+                var coversText = form.Kind is not (DocxFormKind.Checkbox or DocxFormKind.LegacyText
+                    or DocxFormKind.LegacyCheckbox or DocxFormKind.LegacyDropdown);
                 var value = coversText && form.Value is { } text ? WithoutResults(text, form.Position, results) : form.Value;
                 Key(line, "value", Quote(value));
                 Key(line, "items", form.Items.Count > 0 ? string.Join(",", form.Items.Select(Quote)) : null);
@@ -327,7 +330,8 @@ internal sealed class DocxSnapshotWriter
                 if (image.Decorative) line.Append(" decorative");
                 Key(line, "type", image.Type);
                 Key(line, "source", Quote(image.Source));
-                var hasData = image.Kind is "image" or "object" or "control" && image.Source is null;
+                var hasData = image.Kind is DocxGraphicKinds.Image or DocxGraphicKinds.Object
+                    or DocxGraphicKinds.Control && image.Source is null;
                 if (hasData && Shows(DocxDetail.ImageHashes)) Key(line, "hash", image.Hash ?? Missing);
                 break;
             case DocxMath math:

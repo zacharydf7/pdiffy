@@ -107,6 +107,9 @@ Assert.All(notes.Images(), image => Assert.NotNull(image.AltText));
 // No tracked changes shipped.
 Assert.Empty(notes.Revisions());
 
+// Nothing is deleted in a tracked change.
+Assert.DoesNotContain(notes.Revisions(), revision => revision.Kind == DocxRevisionKind.Delete);
+
 // The first paragraph uses the Title style.
 Assert.Equal("Title", notes.Paragraphs().First().Style);
 ```
@@ -119,6 +122,13 @@ Assert.Equal("Title", notes.Paragraphs().First().Style);
 | [`Body`](xref:PDiffy.DocxDocument.Body), [`Headers`](xref:PDiffy.DocxDocument.Headers), [`Footers`](xref:PDiffy.DocxDocument.Footers), [`Notes`](xref:PDiffy.DocxDocument.Notes) | The content, as blocks |
 | [`Styles`](xref:PDiffy.DocxDocument.Styles), [`Lists`](xref:PDiffy.DocxDocument.Lists), [`PageSetups`](xref:PDiffy.DocxDocument.PageSetups) | Styles in use, lists and section setups |
 | [`CompareTo(other)`](xref:PDiffy.DocxDocument.CompareTo*) | A [comparison](comparing.md) with another document |
+
+Kinds PDiffy decides are enums: [`DocxRevisionKind`](xref:PDiffy.DocxRevisionKind),
+[`DocxFormKind`](xref:PDiffy.DocxFormKind) and [`DocxNoteKind`](xref:PDiffy.DocxNoteKind). Values PDiffy copies from the
+file stay strings, so a value outside the standard list still comes through, and classes such as
+[`DocxAlignments`](xref:PDiffy.DocxAlignments) (where `"both"` means justified) and
+[`DocxStyleTypes`](xref:PDiffy.DocxStyleTypes) list the standard ones; the
+[API reference](../api/index.md#the-word-model) lists them all.
 
 ## See also
 

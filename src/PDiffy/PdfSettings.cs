@@ -134,7 +134,7 @@ public sealed record PdfEmbeddedFile
 
     /// <summary>
     /// How the file relates to the document, such as <c>Source</c>, <c>Data</c> or <c>Supplement</c>; null when it
-    /// doesn't say.
+    /// doesn't say. <see cref="PdfFileRelationships"/> lists them.
     /// </summary>
     public required string? Relationship { get; init; }
 

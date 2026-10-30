@@ -40,8 +40,8 @@ public class DocxNotesAndFormsTests
         Assert.Equal("new text", Assert.Single(document.Paragraphs()).Text);
         DocxRevision[] revisions =
         [
-            new() { Kind = "insert", Text = "new ", Author = "Ann", Position = 0 },
-            new() { Kind = "delete", Text = "old ", Author = "Bob", Position = 4 },
+            new() { Kind = DocxRevisionKind.Insert, Text = "new ", Author = "Ann", Position = 0 },
+            new() { Kind = DocxRevisionKind.Delete, Text = "old ", Author = "Bob", Position = 4 },
         ];
         Assert.Equal(revisions, document.Revisions());
     }
@@ -62,11 +62,11 @@ public class DocxNotesAndFormsTests
 
         DocxRevision[] expected =
         [
-            new() { Kind = "move-from", Text = "Up", Author = "Bob", Position = 0 },
-            new() { Kind = "move-to", Text = "Down", Author = "Bob", Position = 0 },
-            new() { Kind = "format", Text = "!", Author = "Cy", Position = 4 },
-            new() { Kind = "paragraph-insert", Text = "", Author = "Ann", Position = 5 },
-            new() { Kind = "paragraph-format", Text = "", Author = "Ann", Position = 0 },
+            new() { Kind = DocxRevisionKind.MoveFrom, Text = "Up", Author = "Bob", Position = 0 },
+            new() { Kind = DocxRevisionKind.MoveTo, Text = "Down", Author = "Bob", Position = 0 },
+            new() { Kind = DocxRevisionKind.Format, Text = "!", Author = "Cy", Position = 4 },
+            new() { Kind = DocxRevisionKind.ParagraphInsert, Text = "", Author = "Ann", Position = 5 },
+            new() { Kind = DocxRevisionKind.ParagraphFormat, Text = "", Author = "Ann", Position = 0 },
         ];
         Assert.Equal(expected, revisions);
     }
@@ -81,7 +81,8 @@ public class DocxNotesAndFormsTests
 
         var revision = Assert.Single(docx.Load().Revisions());
 
-        Assert.Equal(new DocxRevision { Kind = "paragraph-mark-format", Text = "", Author = "Ana", Position = 0 },
+        Assert.Equal(
+            new DocxRevision { Kind = DocxRevisionKind.ParagraphMarkFormat, Text = "", Author = "Ana", Position = 0 },
             revision);
     }
 
@@ -143,7 +144,7 @@ public class DocxNotesAndFormsTests
 
         var form = Assert.IsType<DocxForm>(Assert.Single(Assert.Single(docx.Load().Paragraphs()).Inlines));
 
-        Assert.Equal(("checkbox", "Agree", "yes"), (form.Kind, form.Name, form.Value));
+        Assert.Equal((DocxFormKind.Checkbox, "Agree", "yes"), (form.Kind, form.Name, form.Value));
     }
 
     [Fact]
@@ -161,10 +162,11 @@ public class DocxNotesAndFormsTests
     }
 
     [Theory]
-    [InlineData("""<w:checkBox><w:default w:val="0"/><w:checked/></w:checkBox>""", "FORMCHECKBOX", "", "legacy-checkbox", "yes")]
-    [InlineData("""<w:ddList><w:result w:val="1"/><w:listEntry w:val="Red"/><w:listEntry w:val="Blue"/></w:ddList>""", "FORMDROPDOWN", "", "legacy-dropdown", "Blue")]
-    [InlineData("""<w:textInput/>""", "FORMTEXT", "Jane", "legacy-text", "Jane")]
-    public void Load_ShouldReadALegacyFormField_WhenAFieldHasFormData(string data, string code, string result, string kind, string value)
+    [InlineData("""<w:checkBox><w:default w:val="0"/><w:checked/></w:checkBox>""", "FORMCHECKBOX", "", DocxFormKind.LegacyCheckbox, "yes")]
+    [InlineData("""<w:ddList><w:result w:val="1"/><w:listEntry w:val="Red"/><w:listEntry w:val="Blue"/></w:ddList>""", "FORMDROPDOWN", "", DocxFormKind.LegacyDropdown, "Blue")]
+    [InlineData("""<w:textInput/>""", "FORMTEXT", "Jane", DocxFormKind.LegacyText, "Jane")]
+    public void Load_ShouldReadALegacyFormField_WhenAFieldHasFormData(string data, string code, string result,
+        DocxFormKind kind, string value)
     {
         var docx = new TestDocx
         {

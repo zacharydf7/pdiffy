@@ -112,7 +112,11 @@ public class DocxTableTests
 
         var document = new TestDocx { Body = body }.Load();
 
-        Assert.Equal([("row-insert", "Ana"), ("row-delete", "Bo"), ("row-format", "Cy")],
+        Assert.Equal(
+            [
+                (DocxRevisionKind.RowInsert, "Ana"), (DocxRevisionKind.RowDelete, "Bo"),
+                (DocxRevisionKind.RowFormat, "Cy"),
+            ],
             document.Revisions().Select(revision => (revision.Kind, revision.Author)));
         Assert.Contains("    Row\n      row-insert author=\"Ana\"\n      Cell\n", document.ToSnapshot());
     }
@@ -132,10 +136,12 @@ public class DocxTableTests
 
         var document = new TestDocx { Body = body }.Load();
 
-        (string, string?)[] expected =
+        (DocxRevisionKind, string?)[] expected =
         [
-            ("table-format", "Ana"), ("table-grid", "Bo"), ("row-table-format", "Cy"), ("cell-insert", "Di"),
-            ("cell-format", "Ed"), ("cell-delete", "Fay"), ("cell-merge", "Gus"),
+            (DocxRevisionKind.TableFormat, "Ana"), (DocxRevisionKind.TableGrid, "Bo"),
+            (DocxRevisionKind.RowTableFormat, "Cy"), (DocxRevisionKind.CellInsert, "Di"),
+            (DocxRevisionKind.CellFormat, "Ed"), (DocxRevisionKind.CellDelete, "Fay"),
+            (DocxRevisionKind.CellMerge, "Gus"),
         ];
         Assert.Equal(expected, document.Revisions().Select(revision => (revision.Kind, revision.Author)));
         Assert.Contains("  Table widths=144\n    table-format author=\"Ana\"\n    table-grid author=\"Bo\"\n    Row\n"
@@ -153,7 +159,8 @@ public class DocxTableTests
 
         var revisions = new TestDocx { Body = body }.Load().Revisions();
 
-        Assert.Equal(["insert", "cell-delete"], revisions.Select(revision => revision.Kind));
+        Assert.Equal([DocxRevisionKind.Insert, DocxRevisionKind.CellDelete],
+            revisions.Select(revision => revision.Kind));
     }
 
     [Fact]

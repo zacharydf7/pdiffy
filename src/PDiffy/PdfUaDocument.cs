@@ -356,6 +356,7 @@ public sealed record PdfPage
     /// <summary>
     /// The tab order of the page's links and form fields: "R" (rows), "C" (columns) or "S" (structure order, which
     /// PDF/UA requires on a page with annotations), or another name the PDF writes; null when the page doesn't set one.
+    /// <see cref="PdfTabOrders"/> lists the standard ones.
     /// </summary>
     public required string? Tabs { get; init; }
 
@@ -451,7 +452,7 @@ public sealed record PdfPageLabelRange
 
     /// <summary>
     /// The numbering: "D" (1, 2, 3), "R" (I, II, III), "r" (i, ii, iii), "A" (A, B, C) or "a" (a, b, c); null for
-    /// labels that are only the prefix.
+    /// labels that are only the prefix. <see cref="PdfPageLabelStyles"/> lists them.
     /// </summary>
     public required string? Style { get; init; }
 
@@ -507,7 +508,10 @@ public sealed record PdfDestination
     /// <summary>The page, counted from 1; null when the PDF points at something that isn't a page.</summary>
     public int? Page { get; init; }
 
-    /// <summary>The view type, such as XYZ (a position), Fit (the whole page) or FitH (the page's width).</summary>
+    /// <summary>
+    /// The view type, such as XYZ (a position), Fit (the whole page) or FitH (the page's width).
+    /// <see cref="PdfDestinationViews"/> lists them.
+    /// </summary>
     public string? View { get; init; }
 
     /// <summary>The view's positions, such as the left and top of an XYZ view.</summary>
@@ -591,7 +595,10 @@ public sealed record PdfStructureElement
     /// <summary>The element's title, a name for it that isn't part of the page's text; null when it has none.</summary>
     public string? Title { get; init; }
 
-    /// <summary>A table header cell's scope: "Row", "Column" or "Both"; null when it doesn't set one.</summary>
+    /// <summary>
+    /// A table header cell's scope: "Row", "Column" or "Both", as in <see cref="PdfTableScopes"/>; null when it doesn't
+    /// set one.
+    /// </summary>
     public string? Scope { get; init; }
 
     /// <summary>
@@ -610,7 +617,10 @@ public sealed record PdfStructureElement
     /// <summary>How many columns a table cell spans; null when it doesn't say, which means 1.</summary>
     public int? ColSpan { get; init; }
 
-    /// <summary>A list's numbering, such as "Decimal", "Disc" or "UpperRoman"; null when it doesn't set one.</summary>
+    /// <summary>
+    /// A list's numbering, such as "Decimal", "Disc" or "UpperRoman"; null when it doesn't set one.
+    /// <see cref="PdfListNumberings"/> lists them.
+    /// </summary>
     public string? ListNumbering { get; init; }
 
     /// <summary>A table's summary of its purpose and layout; null when it has none.</summary>
@@ -710,7 +720,8 @@ public sealed record PdfAnnotation
     }
 
     /// <summary>
-    /// The kind of annotation, such as "Link", "Widget" or "Text"; "(none)" when the PDF doesn't say.
+    /// The kind of annotation, such as "Link", "Widget" or "Text"; "(none)" (<see cref="PdfAnnotationTypes.None"/>)
+    /// when the PDF doesn't say. <see cref="PdfAnnotationTypes"/> lists the standard ones.
     /// </summary>
     public required string Subtype { get; init; }
 
@@ -746,6 +757,7 @@ public sealed record PdfAnnotation
     /// <summary>
     /// The type of action it runs, such as "GoTo", "Launch" or "JavaScript"; null when it has no action or its action
     /// opens a web address (<see cref="Uri"/>), and "URI" for a web-address action that names no address.
+    /// <see cref="PdfActionTypes"/> lists the standard ones.
     /// </summary>
     public string? Action { get; init; }
 
@@ -781,14 +793,14 @@ public sealed record PdfPageText
     public required string Text { get; init; }
 
     /// <summary>
-    /// The artifact's kind: "Pagination", "Layout", "Page" or "Background"; null for untagged text and when it doesn't
-    /// say.
+    /// The artifact's kind: "Pagination", "Layout", "Page" or "Background", as in <see cref="PdfArtifactTypes"/>; null
+    /// for untagged text and when it doesn't say.
     /// </summary>
     public string? Type { get; init; }
 
     /// <summary>
     /// The artifact's subtype, such as "Header", "Footer" or "Watermark"; null for untagged text and when it doesn't
-    /// say.
+    /// say. <see cref="PdfArtifactSubtypes"/> lists the standard ones.
     /// </summary>
     public string? Subtype { get; init; }
 }
@@ -842,6 +854,7 @@ public sealed record PdfFont
 
     /// <summary>
     /// The font's type, such as "Type1", "TrueType", "Type0" or "Type3"; null when the PDF leaves it out.
+    /// <see cref="PdfFontTypes"/> lists them.
     /// </summary>
     public required string? Subtype { get; init; }
 

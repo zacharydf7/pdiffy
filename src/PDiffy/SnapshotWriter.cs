@@ -275,7 +275,8 @@ internal sealed partial class SnapshotWriter(PdfSnapshotOptions options)
     {
         var subtype = font.Subtype is null ? "" : " " + font.Subtype;
         var line = $"{font.Name}{subtype} embedded={YesNo(font.Embedded)} to-unicode={YesNo(font.HasToUnicode)}";
-        return font.UnmappedCodes.Count == 0 ? line : $"{line} unmapped=[{CodeRanges(font.UnmappedCodes, font.Subtype == "Type0" ? 4 : 2)}]";
+        var width = font.Subtype == PdfFontTypes.Type0 ? 4 : 2;
+        return font.UnmappedCodes.Count == 0 ? line : $"{line} unmapped=[{CodeRanges(font.UnmappedCodes, width)}]";
     }
 
     // Hex codes, with runs of consecutive codes shortened to first-last: [0041-0043,0050].

@@ -47,6 +47,12 @@ library does.
   for them too, where it was `false`, so the JSON from `ToJson`, `pdiffy <before> <after> --json` and
   `pdiffy compare --json` is now `version` 2
   ([#94](https://github.com/zacharydf7/pdiffy/issues/94)).
+- Word kinds PDiffy decides are enums, so a typo no longer compiles: `DocxRevision.Kind` is a `DocxRevisionKind`,
+  `DocxForm.Kind` and `DocxControl.Kind` a `DocxFormKind`, and `DocxNote.Kind` and `DocxNoteReference.Kind` a
+  `DocxNoteKind`. Snapshots print them as before ([#93](https://github.com/zacharydf7/pdiffy/issues/93)).
+- Values PDiffy copies from the file stay strings, and new classes list their standard values, such as
+  `PdfAnnotationTypes.Link`, `PdfTableScopes.Column` and `DocxAlignments.Justified` (`"both"`); the
+  [API reference](../api/index.md) lists them all.
 
 ## 0.4.0 (2026-10-30)
 

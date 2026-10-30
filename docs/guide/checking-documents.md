@@ -8,8 +8,8 @@ once into a model you can assert on, with no PDF knowledge needed: enums and con
 - **Untagged and artifact content:** [`TextRuns`](xref:PDiffy.PdfUaDocument.TextRuns),
   [`Untagged`](xref:PDiffy.PdfUaDocument.Untagged) and [`Artifacts`](xref:PDiffy.PdfUaDocument.Artifacts), with roles
   listed in [`PdfContentRole`](xref:PDiffy.PdfContentRole).
-- **Links and comments:** [`Annotations`](xref:PDiffy.PdfUaDocument.Annotations), with flags listed in
-  [`PdfAnnotationFlags`](xref:PDiffy.PdfAnnotationFlags).
+- **Links and comments:** [`Annotations`](xref:PDiffy.PdfUaDocument.Annotations), with types listed in
+  [`PdfAnnotationTypes`](xref:PDiffy.PdfAnnotationTypes) and flags in [`PdfAnnotationFlags`](xref:PDiffy.PdfAnnotationFlags).
 - **Form fields:** [`FormFields`](xref:PDiffy.PdfUaDocument.FormFields), with types and flags listed in
   [`PdfFormFieldType`](xref:PDiffy.PdfFormFieldType) and [`PdfFormFieldFlags`](xref:PDiffy.PdfFormFieldFlags).
 - **How the file opens and what it allows:** [`Settings`](xref:PDiffy.PdfUaDocument.Settings), with options listed in
@@ -78,7 +78,7 @@ public async Task TrailMap_ShouldBeReadableByScreenReaders_WhenGenerated()
     Assert.DoesNotContain(document.TextRuns, run => run.Role == PdfContentRole.Untagged);
 
     // Every link has a description a screen reader can announce.
-    Assert.All(document.Annotations.Where(annotation => annotation.Subtype == "Link"),
+    Assert.All(document.Annotations.Where(annotation => annotation.Subtype == PdfAnnotationTypes.Link),
         link => Assert.False(string.IsNullOrWhiteSpace(link.Contents)));
 }
 ```

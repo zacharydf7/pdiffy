@@ -31,7 +31,7 @@ internal sealed partial class DrawingReader(DocxPackage package, string part,
         var imagePart = embed is null ? null : package.Target(part, embed);
         return new DocxImage
         {
-            Position = position, Kind = blip is null ? GraphicKind(frame) : "image",
+            Position = position, Kind = blip is null ? GraphicKind(frame) : DocxGraphicKinds.Image,
             Floating = frame.Name.LocalName == "anchor", Width = Emus(extent, "cx"), Height = Emus(extent, "cy"),
             AltText = NonEmpty((string?)properties?.Attribute("descr")),
             Title = NonEmpty((string?)properties?.Attribute("title")),
@@ -50,7 +50,7 @@ internal sealed partial class DrawingReader(DocxPackage package, string part,
         var style = (string?)shape.Attribute("style") ?? "";
         return new DocxImage
         {
-            Position = position, Kind = data is null ? "shape" : "image",
+            Position = position, Kind = data is null ? DocxGraphicKinds.Shape : DocxGraphicKinds.Image,
             Floating = style.Contains("position:absolute", StringComparison.Ordinal),
             Width = StylePoints(style, "width"), Height = StylePoints(style, "height"),
             AltText = NonEmpty((string?)shape.Attribute("alt")),
@@ -72,7 +72,8 @@ internal sealed partial class DrawingReader(DocxPackage package, string part,
         var style = (string?)shape?.Attribute("style") ?? "";
         return new DocxImage
         {
-            Position = position, Kind = isControl ? "control" : "object", Width = StylePoints(style, "width"),
+            Position = position, Kind = isControl ? DocxGraphicKinds.Control : DocxGraphicKinds.Object,
+            Width = StylePoints(style, "width"),
             Height = StylePoints(style, "height"), AltText = NonEmpty((string?)shape?.Attribute("alt")),
             Type = NonEmpty((string?)ole?.Attribute("ProgID") ?? Attr(control, "name")),
             Source = linked ? target : null,
