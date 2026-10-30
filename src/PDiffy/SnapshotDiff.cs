@@ -6,7 +6,10 @@ namespace PDiffy;
 /// <summary>What kind of difference a <see cref="SnapshotChange"/> is.</summary>
 public enum ChangeKind
 {
+    /// <summary>A line, with everything under it, that only the later snapshot has, such as a new paragraph.</summary>
     Added,
+
+    /// <summary>A line, with everything under it, that only the earlier snapshot has.</summary>
     Removed,
 
     /// <summary>The same element, with everything under it, at a new position in reading order.</summary>
@@ -31,6 +34,16 @@ public enum ChangeKind
 /// says what changed. <see cref="Section"/> is null for the snapshot's first lines (format version and options), for blank
 /// lines, and for every change in text without sections.
 /// </summary>
+/// <param name="Kind">What kind of difference it is.</param>
+/// <param name="Section">The PDF snapshot section the change is in. Besides the cases listed above, it's null for every
+/// change in a DOCX snapshot.</param>
+/// <param name="Path">Where the change is, as described above; "header" for the snapshot's first lines, "pages" for
+/// pages inserted or removed, and "whitespace" when only blank lines or line endings differ.</param>
+/// <param name="Page">The page the changed line is on, counted from 1, as its first "p3" word says (the later
+/// snapshot's, for a line both have); null when the line names no page. For pages inserted or removed, the first such
+/// page.</param>
+/// <param name="Detail">What changed, such as <c>type: H2 -> H3</c>, <c>alt: "Trail map" -> (missing)</c> or
+/// <c>reading position 3 -> 5</c>; for a line added or removed, the line itself. It can run over several lines.</param>
 public sealed record SnapshotChange(ChangeKind Kind, Section? Section, string Path, int? Page, string Detail)
 {
     /// <summary>
@@ -59,8 +72,13 @@ public sealed class SnapshotDiff
         Changes = changes;
     }
 
+    /// <summary>
+    /// Every change, in snapshot order; <see cref="Describe"/> lists those that can affect accessibility first. A
+    /// number that differs by no more than <see cref="SnapshotOptions.Tolerate"/> allows isn't a change.
+    /// </summary>
     public IReadOnlyList<SnapshotChange> Changes { get; }
 
+    /// <summary>Whether there are no changes: the snapshots match, or differ only within their tolerances.</summary>
     public bool IsEmpty => Changes.Count == 0;
 
     /// <summary>
@@ -187,6 +205,7 @@ public sealed class SnapshotDiff
     /// </summary>
     public string ToJson() => DiffJson.Write(this);
 
+    /// <summary>The same summary as <see cref="Describe"/>, with every change listed.</summary>
     public override string ToString() => Describe(int.MaxValue);
 
     internal bool IsSectioned => SnapshotTree.IsSectioned(_before) && SnapshotTree.IsSectioned(_after);

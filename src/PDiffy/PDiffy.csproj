@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <Description>Document-aware testing for PDF and Word files in .NET. Semantic snapshots, comparisons and checks built on what a document says (tag structure, text, alt text, reading order, tables, links, fonts, forms, styles and layout), not how the file is encoded. A failing test explains which element changed and on which page. Text and JSON snapshots use the same workflow.</Description>
-    <!-- Ships the doc comments for IntelliSense. Comments describe only what needs explaining, so a member or parameter
-         without one doesn't fail the build. -->
+    <!-- Ships the doc comments for IntelliSense, and fails the build on a public member without a summary. The build
+         doesn't check a positional record's parameters, so give each a <param> on the record. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+    <NoWarn>$(NoWarn);CS1573</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

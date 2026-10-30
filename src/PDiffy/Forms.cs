@@ -4,28 +4,74 @@ namespace PDiffy;
 [Flags]
 public enum AnnotationFlags
 {
+    /// <summary>No flags set: the viewer shows the annotation on screen but leaves it off printouts.</summary>
     None = 0,
+
+    /// <summary>
+    /// A viewer that doesn't know the annotation's type hides it instead of drawing its stored appearance.
+    /// </summary>
     Invisible = 1 << 0,
+
+    /// <summary>The viewer doesn't show or print the annotation, and the user can't interact with it.</summary>
     Hidden = 1 << 1,
+
+    /// <summary>The viewer prints the annotation with the page; without this flag it's left off printouts.</summary>
     Print = 1 << 2,
+
+    /// <summary>The annotation keeps its size when the user zooms the page.</summary>
     NoZoom = 1 << 3,
+
+    /// <summary>The annotation stays upright when the user rotates the page.</summary>
     NoRotate = 1 << 4,
+
+    /// <summary>
+    /// The viewer doesn't show the annotation on screen or let the user use it, but may still print it.
+    /// </summary>
     NoView = 1 << 5,
+
+    /// <summary>
+    /// The user can't interact with the annotation, though it still shows and prints. A form field's widget uses
+    /// <see cref="FormFieldFlags.ReadOnly"/> instead.
+    /// </summary>
     ReadOnly = 1 << 6,
+
+    /// <summary>The user can't move, resize or delete the annotation, though its contents can still change.</summary>
     Locked = 1 << 7,
+
+    /// <summary>Reverses <see cref="NoView"/> for events such as the pointer passing over the annotation.</summary>
     ToggleNoView = 1 << 8,
+
+    /// <summary>The user can't change the annotation's contents, but can still move, resize or delete it.</summary>
     LockedContents = 1 << 9,
 }
 
+/// <summary>What kind of control a form field is.</summary>
 public enum FormFieldType
 {
+    /// <summary>A box the user types text into.</summary>
     Text,
+
+    /// <summary>A check box, on or off.</summary>
     Checkbox,
+
+    /// <summary>A set of radio buttons, of which at most one is on.</summary>
     RadioButton,
+
+    /// <summary>A button that runs an action when pressed and holds no value.</summary>
     PushButton,
+
+    /// <summary>
+    /// A drop-down list of choices, which takes typed text too when <see cref="FormFieldFlags.Editable"/>.
+    /// </summary>
     ComboBox,
+
+    /// <summary>A scrolling list of choices.</summary>
     ListBox,
+
+    /// <summary>A field that holds a digital signature.</summary>
     Signature,
+
+    /// <summary>A field whose type is missing or isn't one PDF defines.</summary>
     Unknown,
 }
 
@@ -33,22 +79,62 @@ public enum FormFieldType
 [Flags]
 public enum FormFieldFlags
 {
+    /// <summary>No options set.</summary>
     None = 0,
+
+    /// <summary>The user can't change the field's value.</summary>
     ReadOnly = 1 << 0,
+
+    /// <summary>The field must have a value before the form can be submitted.</summary>
     Required = 1 << 1,
+
+    /// <summary>The field's value isn't sent when the form is submitted.</summary>
     NoExport = 1 << 2,
+
+    /// <summary>A text field that wraps its text onto more than one line.</summary>
     Multiline = 1 << 3,
+
+    /// <summary>
+    /// A text field that shows what's typed as dots or asterisks and doesn't save its value in the file.
+    /// </summary>
     Password = 1 << 4,
+
+    /// <summary>A text field that holds a file's path; submitting the form sends that file's contents.</summary>
     FileSelect = 1 << 5,
+
+    /// <summary>The viewer doesn't spell-check text typed into a text field or editable combo box.</summary>
     DoNotSpellCheck = 1 << 6,
+
+    /// <summary>A text field that doesn't scroll, so it takes no more text than fits in it.</summary>
     DoNotScroll = 1 << 7,
+
+    /// <summary>A text field split into <see cref="FormField.MaxLength"/> equal boxes, one character in each.</summary>
     Comb = 1 << 8,
+
+    /// <summary>A text field whose value is formatted rich text rather than plain text.</summary>
     RichText = 1 << 9,
+
+    /// <summary>Radio buttons that always keep one on: clicking the one that's on doesn't turn it off.</summary>
     NoToggleToOff = 1 << 10,
+
+    /// <summary>Radio buttons with the same export value turn on and off together.</summary>
     RadiosInUnison = 1 << 11,
+
+    /// <summary>A combo box that also lets the user type a value that isn't in its list.</summary>
     Editable = 1 << 12,
+
+    /// <summary>
+    /// The choices should be kept in alphabetical order. It tells the tool that edits the form; a viewer shows them in
+    /// the order the file lists them.
+    /// </summary>
     Sort = 1 << 13,
+
+    /// <summary>A list box that lets the user pick more than one choice.</summary>
     MultiSelect = 1 << 14,
+
+    /// <summary>
+    /// A combo box or list box that saves a choice as soon as it's picked, not when the field loses focus.
+    /// </summary>
     CommitOnSelectionChange = 1 << 15,
 }
 
@@ -58,13 +144,34 @@ public enum FormFieldFlags
 /// </summary>
 public sealed record FormField
 {
+    /// <summary>The field's full name, or <c>(unnamed)</c> when neither it nor its parents have one.</summary>
     public required string Name { get; init; }
+
+    /// <summary>What kind of control the field is.</summary>
     public FormFieldType Type { get; init; }
+
+    /// <summary>The page number, from 1, of the field's first widget; null when its page can't be found.</summary>
     public int? Page { get; init; }
+
+    /// <summary>The field's tooltip text (/TU), which a screen reader announces; null when it has none.</summary>
     public string? AccessibleName { get; init; }
+
+    /// <summary>
+    /// The field's value as text, or its parent's when it sets none; null when there's none. A check box or radio
+    /// button holds the name of the state it's in (<c>Off</c> or an export value), and a list with several choices
+    /// picked joins them with ", ".
+    /// </summary>
     public string? Value { get; init; }
+
+    /// <summary>
+    /// The text shown for each choice of a combo box or list box, in order; empty when there are none.
+    /// </summary>
     public IReadOnlyList<string> Options { get; init; } = [];
+
+    /// <summary>The most characters a text field takes, or its parent's limit; null when there's no limit.</summary>
     public int? MaxLength { get; init; }
+
+    /// <summary>The options set on the field. Only those that apply to its <see cref="Type"/> are read.</summary>
     public FormFieldFlags Flags { get; init; }
 
     /// <summary>The value a reset puts back.</summary>
@@ -135,6 +242,8 @@ public enum FormFieldAlignment
 /// A script on a form field: when it runs, and a hash of its JavaScript, so any edit to it shows. The hash is null when
 /// the script's stream is damaged and can't be read.
 /// </summary>
+/// <param name="Trigger">The event that runs the script, such as a value changing or the field getting focus.</param>
+/// <param name="Hash">The first 16 hex digits of a SHA-256 of the script's text, such as "9c1e5a07b3d24f68".</param>
 public sealed record FormScript(FormScriptTrigger Trigger, string? Hash);
 
 /// <summary>When a form field's script runs.</summary>
@@ -201,8 +310,13 @@ public sealed record SignatureInfo
     /// </summary>
     public bool? CoversWholeFile { get; init; }
 
+    /// <summary>Whether the signature gives a reason for signing.</summary>
     public bool HasReason { get; init; }
+
+    /// <summary>Whether the signature says where it was signed.</summary>
     public bool HasLocation { get; init; }
+
+    /// <summary>Whether the signature records when it was signed. The time itself is left out.</summary>
     public bool HasSigningTime { get; init; }
 
     /// <summary>What a certifying signature still allows to change; null for a signature that doesn't certify.</summary>
@@ -212,7 +326,12 @@ public sealed record SignatureInfo
 /// <summary>What a certifying signature allows to change after signing without invalidating it.</summary>
 public enum SignatureCertification
 {
+    /// <summary>No changes at all.</summary>
     NoChanges = 1,
+
+    /// <summary>Filling in form fields and adding signatures, the default for a certifying signature.</summary>
     FormFilling = 2,
+
+    /// <summary>Filling in form fields and adding signatures, and adding, editing or deleting annotations.</summary>
     FormFillingAndAnnotations = 3,
 }

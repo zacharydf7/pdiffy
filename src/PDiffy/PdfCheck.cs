@@ -59,6 +59,13 @@ public enum PdfCheck
 /// snapshot section and the item: for a structure element, the path a snapshot diff shows, such as
 /// "structure > Document > Figure[2]".
 /// </summary>
+/// <param name="Check">The rule that found it.</param>
+/// <param name="Page">The page number, counted from 1; null when the finding is about the whole document, such as a
+/// missing language or a font that isn't embedded.</param>
+/// <param name="Path">Where it is: a section's name alone, such as "metadata", or with the item, such as
+/// "fonts > Helvetica" or "forms > trail.name".</param>
+/// <param name="Message">What's wrong, as a sentence with no closing period, such as "Font Helvetica isn't
+/// embedded".</param>
 public sealed record CheckFinding(PdfCheck Check, int? Page, string Path, string Message)
 {
     /// <summary>Such as "FigureAltText: Figure on p2 has no alt text (structure > Document > Figure[2])".</summary>
