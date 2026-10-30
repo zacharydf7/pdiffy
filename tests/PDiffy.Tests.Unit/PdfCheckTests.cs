@@ -650,6 +650,57 @@ public class PdfCheckTests
     }
 
     [Fact]
+    public void Check_ShouldFindNothing_WhenEachAnnotationIsTaggedWithItsElement()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Tagged(0, "Trail map");
+        pdf.Structure(new TestElement("Link", 0, new TestLink("https://example.com", "Trail map")),
+            new TestElement("Form", new TestAnnotation("/Subtype /Widget")),
+            new TestElement("Form", new TestAnnotation("/Subtype /Widget"), new TestAnnotation("/Subtype /Widget"))
+            {
+                Entries = "/A << /O /PrintField /Role /rb >>",
+            },
+            new TestElement("Annot", new TestAnnotation("/Subtype /Text /Contents (Note)")));
+
+        Assert.Empty(pdf.Load().Check(PdfCheck.AnnotationTags));
+    }
+
+    [Fact]
+    public void Check_ShouldFindAnnotationsInTheWrongElementAndTrapNets_WhenTheDocumentHasThem()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Tagged(0, "Trail map").Tagged(1, "Name").Annotation("/Subtype /TrapNet /Rect [0 0 10 10]")
+            .Annotation("/Subtype /Link /Rect [0 0 10 10] /Contents (Map)")
+            .Annotation("/Subtype /Widget /Rect [0 0 10 10]").Annotation("/Subtype /Text /Rect [0 0 10 10] /F 2");
+        pdf.Structure(new TestElement("P", 0, new TestLink("https://example.com", "Trail map")),
+            new TestElement("P", new TestAnnotation("/Subtype /Widget")),
+            new TestElement("P", new TestAnnotation("/Subtype /Text /Contents (Note)")),
+            new TestElement("Form", new TestAnnotation("/Subtype /Widget"), new TestAnnotation("/Subtype /Widget")),
+            new TestElement("Form", 1, new TestAnnotation("/Subtype /Widget")),
+            new TestElement("Artifact", new TestAnnotation("/Subtype /PrinterMark")),
+            new TestElement("P", new TestAnnotation("/Subtype /TrapNet")));
+
+        var findings = pdf.Load().Check(PdfCheck.AnnotationTags);
+
+        Assert.Equal(
+        [
+            "structure > P[1]: Link annotation on p1 is tagged with P, not Link (ISO 14289-1 7.18.5)",
+            "structure > P[2]: Widget annotation on p1 is tagged with P, not Form (ISO 14289-1 7.18.4)",
+            "structure > P[3]: Text annotation on p1 is tagged with P, not Annot (ISO 14289-1 7.18.1)",
+            "structure > Form[1]: Form on p1 sets no field role, so it should hold one widget and nothing else "
+                + "(ISO 14289-1 7.18.4)",
+            "structure > Form[2]: Form on p1 sets no field role, so it should hold one widget and nothing else "
+                + "(ISO 14289-1 7.18.4)",
+            "structure > Artifact: PrinterMark annotation on p1 is tagged, but printer marks are artifacts "
+                + "(ISO 14289-1 7.18.8)",
+            "annotations: Untagged Link annotation on p1 isn't in Link (ISO 14289-1 7.18.5)",
+            "annotations: Untagged Widget annotation on p1 isn't in Form (ISO 14289-1 7.18.4)",
+            "annotations: TrapNet annotation on p1, which PDF/UA doesn't allow (ISO 14289-1 7.18.2)",
+            "annotations: TrapNet annotation on p1, which PDF/UA doesn't allow (ISO 14289-1 7.18.2)",
+        ], findings.Select(finding => $"{finding.Path}: {finding.Message} ({finding.Reference})"));
+    }
+
+    [Fact]
     public void Check_ShouldFindNoRoleMapProblem_WhenAnElementHasNoType()
     {
         var document = Documents.Empty() with { Structure = [new PdfStructureElement { Type = StructureTypes.None }] };
@@ -707,6 +758,7 @@ public class PdfCheckTests
     [InlineData(PdfCheck.NoteIds, PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.9")]
     [InlineData(PdfCheck.TableStructure, PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     [InlineData(PdfCheck.TableGrid, PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.AnnotationTags, PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

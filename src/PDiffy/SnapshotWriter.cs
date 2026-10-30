@@ -238,6 +238,7 @@ internal sealed partial class SnapshotWriter(PdfSnapshotOptions options)
         Key(line, "rowspan", element.RowSpan?.ToString());
         Key(line, "colspan", element.ColSpan?.ToString());
         Key(line, "numbering", element.ListNumbering);
+        Key(line, "field-role", element.FieldRole);
         Key(line, "summary", QuoteIfPresent(element.Summary));
         Key(line, PdfDetail.ImageContents, "images", Bracketed(element.ImageHashes));
         foreach (var annotation in element.Annotations)

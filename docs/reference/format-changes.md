@@ -16,10 +16,10 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### Checks
 
-- `PdfCheckSet.Latest` has ten new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
-  `TocStructure`, `HeadingTypes`, `NoteIds`, `TableStructure` and `TableGrid`, so a snapshot that records checks with
-  it prints `# checks: latest, 22 rules` and what they find
-  ([#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#68](https://github.com/zacharydf7/pdiffy/issues/68)). A release's own set, such as `PdfCheckSet.Version0_3`,
+- `PdfCheckSet.Latest` has eleven new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
+  `TocStructure`, `HeadingTypes`, `NoteIds`, `TableStructure`, `TableGrid` and `AnnotationTags`, so a snapshot that
+  records checks with it prints `# checks: latest, 23 rules` and what they find
+  ([#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#69](https://github.com/zacharydf7/pdiffy/issues/69)). A release's own set, such as `PdfCheckSet.Version0_3`,
   doesn't change.
 
 ### Document setup
@@ -27,6 +27,9 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 - The `document` line prints `suspects=yes` when MarkInfo says the tags may be unreliable, and a structure element with
   no parent entry gets `parent=missing` ([#63](https://github.com/zacharydf7/pdiffy/issues/63)). Only snapshots of
   such documents change.
+- A Form element prints the kind of field it tags, from its PrintField Role attribute: `field-role=cb`
+  ([#69](https://github.com/zacharydf7/pdiffy/issues/69)). Only snapshots of documents whose Form elements set one
+  change.
 - A file whose header says PDF 2.0 prints `version=2.0`. PDiffy read the version through PdfPig, which reads a
   header it doesn't know as 1.4, so such snapshots printed `version=1.4` and change.
 

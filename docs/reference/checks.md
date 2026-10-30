@@ -65,6 +65,23 @@ numbers, rules and backgrounds, is marked as an artifact, so a screen reader doe
 page", as PDF/UA-1 asks. Visible link text in its `Link` element, or alt text on that element, also passes this check,
 but not that clause of the standard.
 
+## AnnotationTags
+
+**Finds:** a link annotation not tagged with a `Link` element, a form field's widget not tagged with `Form`, any other
+annotation not tagged with `Annot`, and any of them not tagged at all, unless it's hidden or a pop-up; a `Form` that
+sets no field role (PrintField `Role`) and holds anything but one widget; a `TrapNet` annotation; and a tagged
+`PrinterMark`. **Category:** `Annotations`. **Severity:** `Error`.
+**From:** ISO 14289-1 7.18, with each finding naming its clause: 7.18.1, 7.18.2, 7.18.4, 7.18.5 or 7.18.8.
+
+**Why it matters:** a screen reader announces an annotation by the element that tags it: "link", "check box", "comment".
+Tagged with the wrong element, a link reads as a paragraph and a form field may not be offered for filling in. Trap
+networks and printer marks are for print production, and a reader shouldn't come across them at all.
+
+**How to fix it:** tag each link annotation with its `Link` element, each widget with its own `Form`, and comments,
+stamps and other annotations with `Annot`. A `Form` for a group of widgets, such as radio buttons, sets its PrintField
+`Role`; a `Form` without one holds just its widget, with the field's label in an element of its own. Leave printer
+marks out of the structure tree, and remove trap networks from the file.
+
 ## FormFieldNames
 
 **Finds:** a form field with no accessible name (tooltip). **Category:** `Forms`. **Severity:** `Error`. **From:**

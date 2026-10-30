@@ -102,7 +102,7 @@ Findings are recorded in an opt-in `checks` section, so a new problem fails a te
 | [#52](https://github.com/zacharydf7/pdiffy/issues/52)-[#54](https://github.com/zacharydf7/pdiffy/issues/54) | Severity, categories and rule sets per release | Done |
 | [#55](https://github.com/zacharydf7/pdiffy/issues/55)-[#57](https://github.com/zacharydf7/pdiffy/issues/57) | The `checks` section, its diff and the report | Done |
 | [#58](https://github.com/zacharydf7/pdiffy/issues/58)-[#61](https://github.com/zacharydf7/pdiffy/issues/61) | Help pages and command-line counts | Done |
-| [#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#77](https://github.com/zacharydf7/pdiffy/issues/77) | PDF/UA rules | Partly done: #62-#68 |
+| [#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#77](https://github.com/zacharydf7/pdiffy/issues/77) | PDF/UA rules | Partly done: #62-#69 |
 | [#78](https://github.com/zacharydf7/pdiffy/issues/78)-[#80](https://github.com/zacharydf7/pdiffy/issues/80) | Warnings: placeholder alt text, vague link text, jumpy reading order | Open |
 | [#81](https://github.com/zacharydf7/pdiffy/issues/81) | Checks for Word documents | Open |
 

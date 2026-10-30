@@ -660,6 +660,12 @@ public sealed record PdfStructureElement
     /// </summary>
     public string? ListNumbering { get; init; }
 
+    /// <summary>
+    /// What kind of field a Form element tags, from its PrintField Role attribute, such as "cb" (check box), "rb"
+    /// (radio button), "pb" (push button) or "tv" (text); null when it doesn't set one.
+    /// </summary>
+    public string? FieldRole { get; init; }
+
     /// <summary>A table's summary of its purpose and layout; null when it has none.</summary>
     public string? Summary { get; init; }
 

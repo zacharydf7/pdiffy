@@ -19,3 +19,9 @@ internal sealed record TestMcr(int Mcid, int Page);
 
 /// <summary>A link annotation on the element's page, added to the element as an object reference.</summary>
 internal sealed record TestLink(string Uri, string Contents);
+
+/// <summary>
+/// An annotation with raw entries, such as "/Subtype /Widget", on the element's page, added to the element as an object
+/// reference.
+/// </summary>
+internal sealed record TestAnnotation(string Entries);

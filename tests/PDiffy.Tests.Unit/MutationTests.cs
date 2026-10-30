@@ -40,6 +40,7 @@ public class MutationTests
         { "bookmark target page", new Sample { BookmarkPage = 1 }, PdfSection.Bookmarks, ChangeKind.Changed, false },
         { "tags marked as unreliable", new Sample { MarkInfo = "/Marked true /Suspects true" }, PdfSection.Document, ChangeKind.AttributeChanged, false },
         { "parent entry left out", new Sample { FigureWithoutParent = true }, PdfSection.Structure, ChangeKind.AttributeChanged, false },
+        { "form field role", new Sample { FieldRole = "cb" }, PdfSection.Structure, ChangeKind.AttributeChanged, false },
     };
 
     [Theory]
@@ -88,6 +89,7 @@ public class MutationTests
         public int BookmarkPage { get; init; } = 2;
         public string MarkInfo { get; init; } = "/Marked true";
         public bool FigureWithoutParent { get; init; }
+        public string FieldRole { get; init; } = "rb";
     }
 
     // Page 1 has a heading, two paragraphs, a figure, a note, a footer, a styled line, a table, a link, a link to page 2
@@ -123,6 +125,7 @@ public class MutationTests
         elements.Add(new TestElement("Link", 9, new TestLink(sample.LinkUri, "Trail database")));
         if (sample.NoteTagged && !sample.NoteArtifact) elements.Add(new TestElement("Note", 4));
         if (sample.FooterTagged) elements.Add(new TestElement("P", 5));
+        elements.Add(new TestElement("Form") { Entries = $"/A << /O /PrintField /Role /{sample.FieldRole} >>" });
         elements.Add(new TestElement("P", 0) { Page = 2 });
         pdf.Structure(new TestElement("Document", [.. elements]));
         pdf.Bookmark("Safety", sample.BookmarkPage);

@@ -160,6 +160,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
             RowSpan = FirstAttribute(attributes, a => objects.Integer(a, "RowSpan")),
             ColSpan = FirstAttribute(attributes, a => objects.Integer(a, "ColSpan")),
             ListNumbering = FirstAttribute(attributes, a => objects.Name(a, "ListNumbering")),
+            FieldRole = FirstAttribute(attributes, a => objects.Name(a, "Role")),
             Summary = FirstAttribute(attributes, a => objects.Text(a, "Summary")),
             Annotations = annotations,
             McidsWithoutPage = mcidsWithoutPage,

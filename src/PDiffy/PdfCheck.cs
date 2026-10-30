@@ -108,6 +108,13 @@ public enum PdfCheck
     /// every row has as many columns as the first.
     /// </summary>
     TableGrid,
+
+    /// <summary>
+    /// Each annotation is tagged with the element for it: a link with Link, a form field's widget with Form, any other
+    /// with Annot. A Form that sets no field role holds one widget and nothing else, there are no TrapNet annotations,
+    /// and printer marks aren't tagged.
+    /// </summary>
+    AnnotationTags,
 }
 
 /// <summary>

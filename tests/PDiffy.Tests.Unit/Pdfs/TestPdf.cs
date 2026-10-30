@@ -213,6 +213,11 @@ internal sealed class TestPdf
                     annotations[pageIndex].Add(annotation);
                     kids.Add($"<< /Type /OBJR /Obj {annotation} 0 R /Pg {page} 0 R >>");
                     break;
+                case TestAnnotation other:
+                    var tagged = Add($"<< /Type /Annot /Rect [0 0 10 10] {other.Entries} >>");
+                    annotations[pageIndex].Add(tagged);
+                    kids.Add($"<< /Type /OBJR /Obj {tagged} 0 R /Pg {page} 0 R >>");
+                    break;
             }
         }
 

@@ -115,6 +115,10 @@ library does.
 - `TableGrid` lays each table out as a grid, counting row and column spans, and finds cells that overlap, a cell that
   spans past the last row, and a row with a different number of columns from the first
   ([#68](https://github.com/zacharydf7/pdiffy/issues/68)).
+- `AnnotationTags` finds annotations tagged with the wrong element, or not tagged at all (a link not in Link, a widget
+  not in Form, another annotation not in Annot), a Form with no field role that holds anything but one widget, TrapNet
+  annotations, and tagged printer marks. Each finding names its own clause of 7.18. Snapshots print a Form element's `field-role=`, and
+  `PdfStructureElement` has `FieldRole` ([#69](https://github.com/zacharydf7/pdiffy/issues/69)).
 - Snapshots print `suspects=yes` and `parent=missing` when a document has them, and a PDF 2.0 file's
   `version` is now `2.0`, not `1.4`. `PdfDocumentInfo` has `Suspects` and `HasStructureTree`, `PdfMetadata` has
   `HasXmp` and `PdfUaIdPrefix`, and `PdfStructureElement` has `ParentMissing`

@@ -1089,6 +1089,21 @@ public class SnapshotDiffTests
         Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
     }
 
+    // The earlier release didn't print a Form element's field role.
+    [Fact]
+    public void Compare_ShouldReportOnlyTheFieldRole_WhenASnapshotFromBeforeFieldRolesIsCompared()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage();
+        pdf.Structure(new TestElement("Form") { Entries = "/A << /O /PrintField /Role /cb >>" });
+        var current = pdf.Load().ToSnapshot();
+        var earlier = current.Replace(" field-role=cb", "");
+
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(earlier, current).Changes);
+
+        Assert.Equal((PdfSection.Structure, ChangeKind.AttributeChanged), (change.PdfSection, change.Kind));
+    }
+
     [Fact]
     public void Compare_ShouldReportTheShiftOnceAndOnlyTheNewPagesContent_WhenAPageIsInserted()
     {

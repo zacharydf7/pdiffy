@@ -57,6 +57,7 @@ conforms.
 | `NoteIds` | A note with no ID, and a note with the ID of an earlier one | `Structure` | 7.9 |
 | `TableStructure` | A row, cell or row group outside where a table has them, one holding what it can't, a second THead, TFoot or Caption, a THead or TFoot with no TBody, and a caption that isn't first or last | `Tables` | 7.2 |
 | `TableGrid` | Cells that overlap, a cell that spans past the last row, and a row with a different number of columns from the first, counting spans | `Tables` | 7.2 |
+| `AnnotationTags` | A link not tagged with Link, a widget not tagged with Form, another annotation not tagged with Annot (or not tagged at all), a Form with no field role that holds anything but one widget, a TrapNet annotation, and a tagged printer mark | `Annotations` | 7.18 |
 | `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |
 | `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
@@ -91,7 +92,7 @@ await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Check(PdfCheckS
 
 ```text
 # pdfua-snapshot v1
-# checks: latest, 22 rules
+# checks: latest, 23 rules
 ...
 checks
   FigureAltText p2 structure > Document > Figure[2]

@@ -41,6 +41,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.NoteIds: NoteIds(); break;
             case PdfCheck.TableStructure: TableStructure(); break;
             case PdfCheck.TableGrid: TableGrid(); break;
+            case PdfCheck.AnnotationTags: AnnotationTags(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -453,6 +454,70 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
+    // A pop-up belongs to the annotation it opens from, so it isn't tagged on its own, and a hidden annotation has
+    // nothing to read. A printer mark mustn't be tagged, and a TrapNet mustn't be there at all, which is reported once.
+    private void AnnotationTags()
+    {
+        foreach (var (element, path) in Elements)
+        {
+            var type = element.TypeOrMapped;
+            var tagged = element.Annotations
+                .Where(a => a.Subtype is not (PdfAnnotationTypes.Popup or PdfAnnotationTypes.TrapNet));
+            foreach (var (subtype, page) in tagged.Select(a => (a.Subtype, a.Page)))
+            {
+                if (subtype == PdfAnnotationTypes.PrinterMark)
+                {
+                    Add(PdfCheck.AnnotationTags, page, path,
+                        $"PrinterMark annotation{On(page)} is tagged, but printer marks are artifacts",
+                        "ISO 14289-1 7.18.8");
+                    continue;
+                }
+
+                var (expected, clause) = TagFor(subtype);
+                if (type != expected)
+                {
+                    Add(PdfCheck.AnnotationTags, page, path,
+                        $"{subtype} annotation{On(page)} is tagged with {type}, not {expected}", clause);
+                }
+            }
+
+            if (type == StructureType.Form && element.FieldRole is null && !HoldsOnlyAWidget(element))
+            {
+                Add(PdfCheck.AnnotationTags, element.FirstPage, path,
+                    $"Form{On(element.FirstPage)} sets no field role, so it should hold one widget and nothing else",
+                    "ISO 14289-1 7.18.4");
+            }
+        }
+
+        var untagged = document.Annotations.Where(a => a.Role != PdfContentRole.Tagged
+            && !a.Flags.HasFlag(PdfAnnotationFlags.Hidden) && a.Subtype is not (PdfAnnotationTypes.Popup
+                or PdfAnnotationTypes.PrinterMark or PdfAnnotationTypes.TrapNet));
+        foreach (var annotation in untagged)
+        {
+            var (expected, clause) = TagFor(annotation.Subtype);
+            Add(PdfCheck.AnnotationTags, annotation.Page, Name(PdfSection.Annotations),
+                $"Untagged {annotation.Subtype} annotation{On(annotation.Page)} isn't in {expected}", clause);
+        }
+
+        foreach (var trapNet in document.Annotations.Where(a => a.Subtype == PdfAnnotationTypes.TrapNet))
+        {
+            Add(PdfCheck.AnnotationTags, trapNet.Page, Name(PdfSection.Annotations),
+                $"TrapNet annotation{On(trapNet.Page)}, which PDF/UA doesn't allow", "ISO 14289-1 7.18.2");
+        }
+    }
+
+    // The element an annotation is tagged with, and the clause that says so.
+    private static (string Element, string Clause) TagFor(string subtype) => subtype switch
+    {
+        PdfAnnotationTypes.Link => (StructureType.Link, "ISO 14289-1 7.18.5"),
+        PdfAnnotationTypes.Widget => (StructureType.Form, "ISO 14289-1 7.18.4"),
+        _ => (StructureType.Annotation, "ISO 14289-1 7.18.1"),
+    };
+
+    private static bool HoldsOnlyAWidget(PdfStructureElement form) =>
+        form.Annotations is [{ Subtype: PdfAnnotationTypes.Widget }] && form.Children.Count == 0 && IsBlank(form.Text)
+        && form.ImageHashes.Count == 0;
+
     // HTML's cap on a cell's column span, so a hostile span can't make the grid huge.
     private const int MaxColumnSpan = 1000;
 
@@ -655,6 +720,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.NoteIds => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.9"),
         PdfCheck.TableStructure or PdfCheck.TableGrid =>
             new(PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
+        PdfCheck.AnnotationTags => new(PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),
