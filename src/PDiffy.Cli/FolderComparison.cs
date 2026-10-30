@@ -29,7 +29,7 @@ internal sealed class FolderComparison
 
     public int NotCompared { get; }
 
-    public static FolderComparison Run(string before, string after, PdfProfile profile)
+    public static FolderComparison Run(string before, string after, PdfProfile profile, bool checks)
     {
         var (beforeFiles, afterFiles) = (FilesIn(before), FilesIn(after));
         var paths = beforeFiles.Keys.Union(afterFiles.Keys).ToList();
@@ -38,7 +38,7 @@ internal sealed class FolderComparison
         foreach (var path in paths.Where(path => ComparedExtensions.Contains(Path.GetExtension(path))))
         {
             var (beforeFile, afterFile) = (beforeFiles.GetValueOrDefault(path), afterFiles.GetValueOrDefault(path));
-            var difference = Compare(path, beforeFile, afterFile, profile);
+            var difference = Compare(path, beforeFile, afterFile, profile, checks);
             if (difference is null) unchanged++;
             else differences.Add(difference);
         }
@@ -116,13 +116,14 @@ internal sealed class FolderComparison
     private static SummaryRow RowOf(FileDifference file) => new(NameOf(file.Status), file.Path, file.Diff, file.Problem);
 
     // A file that can't be read is a difference, so one damaged document doesn't stop the rest being compared.
-    private static FileDifference? Compare(string path, string? before, string? after, PdfProfile profile)
+    private static FileDifference? Compare(string path, string? before, string? after, PdfProfile profile,
+        bool checks)
     {
         if (before is null) return new FileDifference(path, FileStatus.Added);
         if (after is null) return new FileDifference(path, FileStatus.Removed);
         try
         {
-            var diff = Commands.CompareFiles(before, after, profile);
+            var diff = Commands.CompareFiles(before, after, profile, checks);
             return diff.IsEmpty ? null : new FileDifference(path, FileStatus.Changed, diff);
         }
         catch (Exception problem)

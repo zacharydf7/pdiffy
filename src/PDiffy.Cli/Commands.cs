@@ -17,8 +17,9 @@ public static class Commands
           pdiffy <before> <after> [--html <report.html>]   Compare two PDFs, two DOCX files or two snapshot files
                  [--json [<changes.json>]]                  --json prints the changes as JSON instead, or saves them
                  [--profile <profile>]                      content, accessibility, layout or strict (the default)
+                 [--checks]                                 --checks also compares what the checks find in PDFs
           pdiffy compare <before> <after> [--html <index.html>] [--json [<changes.json>]] [--profile <profile>]
-                                                            Compare two folders, file by file
+                 [--checks]                                 Compare two folders, file by file
           pdiffy snapshot <file.pdf|file.docx> [<out>]      Print or save a PDF's or DOCX's snapshot
           pdiffy check <file.pdf>                           Run every built-in check on a PDF
           pdiffy accept [<files or folders>] [--all]        Accept received snapshots as verified
@@ -76,7 +77,7 @@ public static class Commands
     {
         if (CompareOptions.Parse(options) is not { } parsed) return ShowUsage(error);
 
-        var diff = CompareFiles(before, after, parsed.Profile);
+        var diff = CompareFiles(before, after, parsed.Profile, parsed.Checks);
         if (parsed.PrintJson) output.Write(diff.ToJson());
         else output.WriteLine(diff.Describe(int.MaxValue));
         if (parsed.Json is not null) File.WriteAllText(parsed.Json, diff.ToJson());
@@ -93,7 +94,7 @@ public static class Commands
     {
         if (CompareOptions.Parse(options) is not { } parsed) return ShowUsage(error);
 
-        var comparison = FolderComparison.Run(before, after, parsed.Profile);
+        var comparison = FolderComparison.Run(before, after, parsed.Profile, parsed.Checks);
         if (parsed.PrintJson) output.Write(comparison.ToJson());
         else output.Write(comparison.ToText());
         if (parsed.Json is not null) File.WriteAllText(parsed.Json, comparison.ToJson());
@@ -245,12 +246,13 @@ public static class Commands
         return unused.Count == 0 || delete ? Same : Different;
     }
 
-    // A snapshot file is compared as it is, which a profile can't change. A Word document takes the profile of the same
-    // name, or Strict when there's none.
-    internal static SnapshotDiff CompareFiles(string before, string after, PdfProfile profile)
+    // A snapshot file is compared as it is, which neither a profile nor checks can change. A Word document takes the
+    // profile of the same name, or Strict when there's none; checks are for PDFs only.
+    internal static SnapshotDiff CompareFiles(string before, string after, PdfProfile profile, bool checks)
     {
         var docxProfile = Enum.TryParse<DocxProfile>(profile.ToString(), out var named) ? named : DocxProfile.Strict;
-        return SnapshotDiff.CompareFiles(before, after, options => options.Use(profile),
+        return SnapshotDiff.CompareFiles(before, after,
+            options => (checks ? options.Check(PdfCheckSet.Latest) : options).Use(profile),
             options => options.Use(docxProfile));
     }
 
@@ -276,12 +278,12 @@ public static class Commands
     }
 
     /// <summary>The options both compare commands take.</summary>
-    private sealed record CompareOptions(string? Html, string? Json, bool PrintJson, PdfProfile Profile)
+    private sealed record CompareOptions(string? Html, string? Json, bool PrintJson, PdfProfile Profile, bool Checks)
     {
         // Null when an option is unknown or is missing its value.
         public static CompareOptions? Parse(string[] options)
         {
-            var parsed = new CompareOptions(null, null, false, PdfProfile.Strict);
+            var parsed = new CompareOptions(null, null, false, PdfProfile.Strict, false);
             for (var i = 0; i < options.Length; i++)
             {
                 var value = i + 1 < options.Length && !options[i + 1].StartsWith("--", StringComparison.Ordinal)
@@ -290,6 +292,7 @@ public static class Commands
                 if (options[i] == "--html" && value is not null) parsed = parsed with { Html = options[++i] };
                 else if (options[i] == "--json" && value is not null) parsed = parsed with { Json = options[++i] };
                 else if (options[i] == "--json") parsed = parsed with { PrintJson = true };
+                else if (options[i] == "--checks") parsed = parsed with { Checks = true };
                 // Only a name: Enum.TryParse also takes numbers and comma lists, which would pick another profile.
                 else if (options[i] == "--profile"
                     && Enum.GetNames<PdfProfile>().Contains(value, StringComparer.OrdinalIgnoreCase)

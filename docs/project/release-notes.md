@@ -94,6 +94,9 @@ library does.
   ([#59](https://github.com/zacharydf7/pdiffy/issues/59)).
 - `pdiffy findings --since <commit>` compares the count with the snapshots at an earlier commit, such as
   `15 fewer than main (18 fixed, 3 new)` ([#60](https://github.com/zacharydf7/pdiffy/issues/60)).
+- `--checks` on `pdiffy <before> <after>` and `pdiffy compare` also compares what the checks find, so comparing two
+  versions of a document lists the problems the new one introduces or fixes
+  ([#61](https://github.com/zacharydf7/pdiffy/issues/61)).
 - Each finding has a `HelpUrl` to its rule's entry on the new [Check rules](../reference/checks.md) page: what it
   finds, why it matters to someone using assistive technology, and how to fix it
   ([#58](https://github.com/zacharydf7/pdiffy/issues/58)).

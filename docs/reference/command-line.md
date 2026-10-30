@@ -42,7 +42,7 @@ exit with `0`.
 ## Compare
 
 ```text
-pdiffy <before> <after> [--html <report.html>] [--json [<changes.json>]] [--profile <profile>]
+pdiffy <before> <after> [--html <report.html>] [--json [<changes.json>]] [--profile <profile>] [--checks]
 ```
 
 Prints what changed between two files, the same summary a failing test shows, and exits with `0` when nothing did and
@@ -54,6 +54,7 @@ Prints what changed between two files, the same summary a failing test shows, an
 | `--json` | Prints only the changes as [JSON](../guide/comparing.md#json-output), instead of the summary, so a script can read them from the pipe |
 | `--json <file>` | Saves the JSON to a file, and prints the summary as usual |
 | `--profile <profile>` | Leaves out what a [profile](options.md#pdf-profiles) leaves out: `content`, `accessibility`, `layout` or `strict` (the default). A Word document uses the [Word profile](options.md#word-profiles) of the same name, or `strict` when there's none. A snapshot file is compared as it is |
+| `--checks` | Also runs the latest [checks](checks.md) on both PDFs and compares what they find, so the summary lists each problem the new version introduces (`+ new problem DocumentTitle`) or fixes. Word documents and snapshot files are compared as they are |
 
 Each input can be:
 
@@ -67,12 +68,13 @@ pdiffy guide-v1.pdf guide-v2.pdf --html report.html
 pdiffy guide-v1.pdf guide-v2.pdf --json > changes.json
 pdiffy TrailMap.verified.pdfua.txt TrailMap.received.pdfua.txt
 pdiffy guide-v1.pdf guide-v2.pdf --profile content
+pdiffy guide-v1.pdf guide-v2.pdf --checks
 ```
 
 ## Compare folders
 
 ```text
-pdiffy compare <before> <after> [--html <index.html>] [--json [<changes.json>]] [--profile <profile>]
+pdiffy compare <before> <after> [--html <index.html>] [--json [<changes.json>]] [--profile <profile>] [--checks]
 ```
 
 Compares two folders, such as the documents two releases generate, file by file. Files are paired by their path inside
@@ -97,6 +99,7 @@ the rest being compared.
 | `--json` | Prints only the result as JSON, instead of the summary |
 | `--json <file>` | Saves the JSON to a file, and prints the summary as usual |
 | `--profile <profile>` | Leaves out what the profile leaves out, as when comparing two files |
+| `--checks` | Also compares what the checks find in each pair of PDFs, as when comparing two files |
 
 The JSON has one entry per file that differs, each with its `path`, its `status` and either its `changes`, in the same
 shape as [comparing two files](../guide/comparing.md#json-output), or the `problem` that stopped it being read:

@@ -590,9 +590,12 @@ pdiffy guide-v1.pdf guide-v2.pdf --json changes.json
 # Compare only what a profile guards: content, accessibility, layout or strict (the default).
 pdiffy guide-v1.pdf guide-v2.pdf --profile content
 
+# Also run the checks on both PDFs and list the problems the new version introduces or fixes.
+pdiffy guide-v1.pdf guide-v2.pdf --checks
+
 # Compare two folders file by file, such as the documents two releases generate. Files pair by their path inside each
 # folder; one line per file that changed, was added or removed, or can't be read. --html saves an index page with a
-# report for each changed file, and --json and --profile work as above.
+# report for each changed file, and --json, --profile and --checks work as above.
 pdiffy compare release-1.4/out release-1.5/out
 pdiffy compare release-1.4/out release-1.5/out --html compare/index.html
 

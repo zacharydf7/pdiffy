@@ -64,6 +64,8 @@ dotnet pdiffy compare before after --html upgrade.html --profile accessibility
 
 `pdiffy compare` pairs the files by their path inside each folder and exits with `1` when anything changed. The
 `accessibility` profile leaves out how content looks, so only what assistive technology gets is compared; leave it out
-to compare everything. `--html` saves a page with a row per file that differs and, next to it, each changed file's
-report, accessibility changes first. See [the command reference](../reference/command-line.md#compare-folders) for
-every option, and [Compare two documents](comparing.md) for doing the same from a test with `CompareTo`.
+to compare everything. `--checks` also runs the [checks](../reference/checks.md) on each pair and lists the problems
+the upgrade introduces or fixes, such as `+ new problem FontsMapToUnicode`. `--html` saves a page with a row per file
+that differs and, next to it, each changed file's report, accessibility changes first. See
+[the command reference](../reference/command-line.md#compare-folders) for every option, and
+[Compare two documents](comparing.md) for doing the same from a test with `CompareTo`.

@@ -447,6 +447,34 @@ public sealed class CliTests : IDisposable
         Assert.Equal(expected, exitCode);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Run_ShouldListNewProblemsOnlyWithChecks_WhenComparingPdfs(bool checks)
+    {
+        var before = WritePdf("before.pdf", "Hello", title: "Guide");
+        var after = WritePdf("after.pdf", "Hello");
+
+        Commands.Run([before, after, .. checks ? ["--checks"] : (string[])[]], _output, _error);
+
+        Assert.Equal(checks, _output.ToString().Contains("+ new problem DocumentTitle"));
+    }
+
+    // The content profile leaves out the title, so only the checks see that it's gone.
+    [Theory]
+    [InlineData(true, Commands.Different)]
+    [InlineData(false, Commands.Same)]
+    public void Run_ShouldCompareWhatTheChecksFindOnlyWithChecks_WhenComparingFolders(bool checks, int expected)
+    {
+        WritePdf("before/guide.pdf", "Hello", title: "Guide");
+        WritePdf("after/guide.pdf", "Hello");
+        string[] args = ["compare", Folder("before"), Folder("after"), "--profile", "content"];
+
+        var exitCode = Commands.Run([.. args, .. checks ? ["--checks"] : (string[])[]], _output, _error);
+
+        Assert.Equal(expected, exitCode);
+    }
+
     [Fact]
     public void Run_ShouldLeaveOutWhatTheProfileLeavesOut_WhenGivenAProfile()
     {
