@@ -1141,6 +1141,26 @@ public class SnapshotDiffTests
         Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
     }
 
+    // The earlier release didn't print layer configurations or count reference XObjects.
+    [Fact]
+    public void Compare_ShouldReportOnlyTheLayerConfigurationAndTheReferenceCount_WhenComparedWithAnEarlierSnapshot()
+    {
+        var pdf = new TestPdf().CatalogEntries(" /OCProperties << /OCGs [] /D << /Name (Screen) >> >>"
+            + " /Names << /EmbeddedFiles << /Names [(data.xml) << /Type /Filespec /F (data.xml) >>] >> >>");
+        pdf.AddPage().ReferenceForm();
+        var current = pdf.Load().ToSnapshot();
+        var earlier = current.Replace("  layer-config \"Screen\"\n", "").Replace(" reference-xobjects=1", "")
+            .Replace(" both-names=no", "");
+
+        var changes = SnapshotDiff.CompareSnapshots(earlier, current).Changes;
+
+        Assert.Equal(
+        [
+            (ChangeKind.AttributeChanged, PdfSection.Settings), (ChangeKind.Added, PdfSection.Settings),
+            (ChangeKind.AttributeChanged, PdfSection.Settings),
+        ], changes.Select(change => (change.Kind, change.PdfSection)));
+    }
+
     [Fact]
     public void Compare_ShouldReportTheShiftOnceAndOnlyTheNewPagesContent_WhenAPageIsInserted()
     {

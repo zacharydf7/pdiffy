@@ -974,6 +974,87 @@ public class PdfCheckTests
     }
 
     [Fact]
+    public void Check_ShouldFindUnnamedLayerConfigurationsAndOnesThatChangeLayersByThemselves_WhenTheDocumentHasThem()
+    {
+        var document = OnePage(new TestPdf().CatalogEntries(
+            " /OCProperties << /OCGs [] /D << /AS [] >> /Configs [<< /Name (Print) >> << >>] >>"));
+
+        var findings = document.Check(PdfCheck.LayerConfigurations);
+
+        Assert.Equal(
+        [
+            "settings > layer-config: An optional-content configuration has no name",
+            "settings > layer-config > auto-state: Optional-content configuration (unnamed) turns layers on or off by "
+                + "itself (AS)",
+            "settings > layer-config: An optional-content configuration has no name",
+        ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Fact]
+    public void Check_ShouldFindTheEmbeddedFileNamedOneWay_WhenOnlyOneOfTwoHasBothNames()
+    {
+        var document = OnePage(new TestPdf().CatalogEntries(" /Names << /EmbeddedFiles << /Names [(a.xml) << /Type "
+            + "/Filespec /F (a.xml) /UF (a.xml) >> (b.xml) << /Type /Filespec /F (b.xml) >>] >> >>"));
+
+        var findings = document.Check(PdfCheck.EmbeddedFileNames);
+
+        Assert.Equal(["settings > b.xml: Embedded file b.xml isn't named both as F and as UF"],
+            findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Theory]
+    [InlineData(" /NeedsRendering true", 1)]
+    [InlineData("", 0)]
+    public void Check_ShouldFindADynamicXfaForm_WhenTheCatalogAsksTheViewerToBuildThePages(string entries, int expected)
+    {
+        var document = OnePage(new TestPdf().CatalogEntries($"{entries} /AcroForm << /Fields [] /XFA [] >>"));
+
+        var findings = document.Check(PdfCheck.NoDynamicXfa);
+
+        Assert.Equal(expected, findings.Count);
+        Assert.All(findings, finding => Assert.Equal("forms > xfa: The form is a dynamic XFA form",
+            $"{finding.Path}: {finding.Message}"));
+    }
+
+    // /O and /U are the standard security handler's hashes (revision 3, 128-bit RC4) for empty passwords, this /ID and
+    // each /P: -3388 sets bit 10 (extract for accessibility), and -3900 is the same with it cleared.
+    [Theory]
+    [InlineData(-3900, "5FD6921A1CFF9657277210A70C29CD1E", 1)]
+    [InlineData(-3388, "E2B62D625B527B35FC4A69438DF367F8", 0)]
+    public void Check_ShouldFindEncryptionThatStopsAccessibilityExtraction_WhenThePermissionIsntGiven(int permissions,
+        string userHash, int expected)
+    {
+        var id = string.Concat(Enumerable.Repeat("01", 16));
+        var document = RawPdf.LoadWithTrailer($"/Encrypt 4 0 R /ID [<{id}> <{id}>]",
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+            $"<< /Filter /Standard /V 2 /R 3 /Length 128 /P {permissions} "
+                + "/O <36451BD39D753B7C1D10922C28E6665AA4F3353FB0348B536893E3B1DB5C579B> "
+                + $"/U <{userHash}00000000000000000000000000000000> >>");
+
+        var findings = document.Check(PdfCheck.AccessibilityPermission);
+
+        Assert.Equal(expected, findings.Count);
+        Assert.All(findings, finding => Assert.Equal(
+            "settings > permissions: The encryption doesn't let assistive technology extract the text",
+            $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Fact]
+    public void Check_ShouldFindReferenceXObjects_WhenAPageHasOne()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Tagged(0, "Map").ReferenceForm();
+        pdf.Structure(new TestElement("P", 0));
+
+        var findings = pdf.Load().Check(PdfCheck.NoReferenceXObjects);
+
+        Assert.Equal(["settings > reference-xobjects: The pages' resources hold 1 reference XObject(s)"],
+            findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Fact]
     public void Check_ShouldFindNoRoleMapProblem_WhenAnElementHasNoType()
     {
         var document = Documents.Empty() with { Structure = [new PdfStructureElement { Type = StructureTypes.None }] };
@@ -1040,6 +1121,12 @@ public class PdfCheckTests
     [InlineData(PdfCheck.FormulaAltText, PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.7")]
     [InlineData(PdfCheck.MediaClips, PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.18.6.2")]
     [InlineData(PdfCheck.ArtifactNesting, PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.1")]
+    [InlineData(PdfCheck.LayerConfigurations, PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 7.10")]
+    [InlineData(PdfCheck.EmbeddedFileNames, PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 7.11")]
+    [InlineData(PdfCheck.NoDynamicXfa, PdfCheckCategory.Forms, PdfCheckSeverity.Error, "ISO 14289-1 7.15")]
+    [InlineData(PdfCheck.AccessibilityPermission, PdfCheckCategory.Document, PdfCheckSeverity.Error,
+        "ISO 14289-1 7.16")]
+    [InlineData(PdfCheck.NoReferenceXObjects, PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.20")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

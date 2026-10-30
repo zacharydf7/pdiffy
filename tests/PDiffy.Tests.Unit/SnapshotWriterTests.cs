@@ -287,6 +287,7 @@ public class SnapshotWriterTests
                 EmbeddedFiles = [new PdfEmbeddedFile
                 {
                     Name = "data.xml", FileName = "data.xml", Description = null, Relationship = "Data", Size = 5,
+                    NamedBothWays = true,
                     Hash = "2cf24dba5fb0a30e",
                 }],
             },

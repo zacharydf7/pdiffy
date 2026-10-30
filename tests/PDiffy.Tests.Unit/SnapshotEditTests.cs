@@ -122,8 +122,9 @@ public class SnapshotEditTests
 
     private static IEnumerable<(string Name, string Snapshot)> Snapshots()
     {
-        yield return ("PDF",
-            MutationTests.Build(new MutationTests.Sample()).ToSnapshot(o => o.Check(PdfCheckSet.Latest)));
+        // Without its attachment: a renamed embedded file reads as one removed and another added (#162).
+        yield return ("PDF", MutationTests.Build(new MutationTests.Sample { AttachmentNames = null })
+            .ToSnapshot(o => o.Check(PdfCheckSet.Latest)));
         yield return ("docs sample PDF", DocsSampleTests.Guide(revised: true).Load().ToSnapshot());
         var pdfSharp = new PdfSharpPdf().Artifact("Page 1").Heading("Trail Guide").Paragraph("Pack ", "water")
             .Figure("Trail map").NewPage().Paragraph("Ask a ranger.");

@@ -60,6 +60,11 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.FormulaAltText: FormulaAltText(); break;
             case PdfCheck.MediaClips: MediaClips(); break;
             case PdfCheck.ArtifactNesting: ArtifactNesting(); break;
+            case PdfCheck.LayerConfigurations: LayerConfigurations(); break;
+            case PdfCheck.EmbeddedFileNames: EmbeddedFileNames(); break;
+            case PdfCheck.NoDynamicXfa: NoDynamicXfa(); break;
+            case PdfCheck.AccessibilityPermission: AccessibilityPermission(); break;
+            case PdfCheck.NoReferenceXObjects: NoReferenceXObjects(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -137,6 +142,62 @@ internal sealed class PdfChecker(PdfUaDocument document)
                 Add(PdfCheck.ArtifactNesting, page.Number, $"{Name(PdfSection.Pages)} > artifacts-holding-tagged",
                     $"Page {page.Number} has {page.ArtifactsHoldingTaggedContent} artifact(s) holding tagged content");
             }
+        }
+    }
+
+    private void LayerConfigurations()
+    {
+        foreach (var configuration in document.Settings.LayerConfigurations)
+        {
+            var name = configuration.Name is { } named && !IsBlank(named) ? $"\"{named}\"" : null;
+            if (name is null)
+            {
+                Add(PdfCheck.LayerConfigurations, null, Setting("layer-config"),
+                    "An optional-content configuration has no name");
+            }
+
+            if (configuration.ChangesLayersByItself)
+            {
+                Add(PdfCheck.LayerConfigurations, null, $"{Setting("layer-config")} > auto-state",
+                    $"Optional-content configuration {name ?? "(unnamed)"} turns layers on or off by itself (AS)");
+            }
+        }
+    }
+
+    private void EmbeddedFileNames()
+    {
+        foreach (var file in document.Settings.EmbeddedFiles.Where(file => !file.NamedBothWays))
+        {
+            Add(PdfCheck.EmbeddedFileNames, null, Setting(file.Name),
+                $"Embedded file {file.Name} isn't named both as F and as UF");
+        }
+    }
+
+    private void NoDynamicXfa()
+    {
+        if (document.Form?.Xfa == PdfXfaForm.Dynamic)
+        {
+            Add(PdfCheck.NoDynamicXfa, null, $"{Name(PdfSection.Forms)} > xfa", "The form is a dynamic XFA form");
+        }
+    }
+
+    private void AccessibilityPermission()
+    {
+        var settings = document.Settings;
+        if (settings.IsEncrypted && settings.Permissions is { } permissions
+            && !permissions.HasFlag(PdfPermissions.ExtractForAccessibility))
+        {
+            Add(PdfCheck.AccessibilityPermission, null, Setting("permissions"),
+                "The encryption doesn't let assistive technology extract the text");
+        }
+    }
+
+    private void NoReferenceXObjects()
+    {
+        if (document.Settings.ReferenceXObjects > 0)
+        {
+            Add(PdfCheck.NoReferenceXObjects, null, Setting("reference-xobjects"),
+                $"The pages' resources hold {document.Settings.ReferenceXObjects} reference XObject(s)");
         }
     }
 
@@ -946,6 +1007,11 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.FormulaAltText => new(PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.7"),
         PdfCheck.MediaClips => new(PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.18.6.2"),
         PdfCheck.ArtifactNesting => new(PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),
+        PdfCheck.LayerConfigurations => new(PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 7.10"),
+        PdfCheck.EmbeddedFileNames => new(PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 7.11"),
+        PdfCheck.NoDynamicXfa => new(PdfCheckCategory.Forms, PdfCheckSeverity.Error, "ISO 14289-1 7.15"),
+        PdfCheck.AccessibilityPermission => new(PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 7.16"),
+        PdfCheck.NoReferenceXObjects => new(PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.20"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

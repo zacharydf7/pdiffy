@@ -135,6 +135,13 @@ library does.
 - `ArtifactNesting` finds an artifact inside tagged content, and an artifact holding tagged content, page by page.
   Snapshots print the counts on the page's line, and `PdfPage` has `ArtifactsInTaggedContent` and
   `ArtifactsHoldingTaggedContent` ([#73](https://github.com/zacharydf7/pdiffy/issues/73)).
+- Five rules for rarer PDF/UA requirements: `LayerConfigurations` (each optional-content configuration has a name
+  and no `AS`), `EmbeddedFileNames` (each embedded file is named as `F` and as `UF`), `NoDynamicXfa`,
+  `AccessibilityPermission` (encryption lets assistive technology extract the text) and `NoReferenceXObjects`.
+  Snapshots list layer configurations, count reference XObjects and mark an embedded file named only one way
+  (`both-names=no`). `PdfSettings` has `LayerConfigurations` and
+  `ReferenceXObjects`, and `PdfEmbeddedFile` has `NamedBothWays`
+  ([#75](https://github.com/zacharydf7/pdiffy/issues/75)).
 - Snapshots print `suspects=yes` and `parent=missing` when a document has them, and a PDF 2.0 file's
   `version` is now `2.0`, not `1.4`. `PdfDocumentInfo` has `Suspects` and `HasStructureTree`, `PdfMetadata` has
   `HasXmp` and `PdfUaIdPrefix`, and `PdfStructureElement` has `ParentMissing`

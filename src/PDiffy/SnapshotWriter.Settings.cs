@@ -16,10 +16,16 @@ internal sealed partial class SnapshotWriter
         line.Append($" javascript={YesNo(settings.HasJavaScript)} additional-actions={YesNo(settings.HasAdditionalActions)}");
         line.Append($" encrypted={YesNo(settings.IsEncrypted)}");
         if (settings.Permissions is { } permissions) Key(line, PdfDetail.Permissions, "permissions", FlagNames(permissions) ?? "none");
+        Key(line, "reference-xobjects", settings.ReferenceXObjects > 0 ? settings.ReferenceXObjects.ToString() : null);
         WriteKeys(line);
 
         foreach (var preference in settings.ViewerPreferences) Line(1, $"viewer {preference.Name}={preference.Value}");
         foreach (var layer in settings.Layers) Line(1, $"layer {Quote(layer.Name)} {(layer.VisibleByDefault ? "visible" : "hidden")}");
+        foreach (var configuration in settings.LayerConfigurations)
+        {
+            var name = configuration.Name is null ? Missing : Quote(configuration.Name);
+            Line(1, $"layer-config {name}{(configuration.ChangesLayersByItself ? " auto-state=yes" : "")}");
+        }
         foreach (var file in settings.EmbeddedFiles) Line(1, FormatEmbeddedFile(file));
     }
 
@@ -27,6 +33,7 @@ internal sealed partial class SnapshotWriter
     {
         var line = new StringBuilder($"embedded-file {Quote(file.Name)}");
         Key(line, "file", QuoteIfPresent(file.FileName));
+        if (!file.NamedBothWays) line.Append(" both-names=no");
         Key(line, "description", QuoteIfPresent(file.Description));
         Key(line, "relationship", file.Relationship);
         Key(line, PdfDetail.EmbeddedFileContents, "size", file.Size?.ToString());

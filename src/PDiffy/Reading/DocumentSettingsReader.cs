@@ -39,6 +39,7 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
             Permissions = document.IsEncrypted ? reader.ReadPermissions(document) : null,
             ViewerPreferences = objects.Settings(objects.Dictionary(catalog, "ViewerPreferences"), "DisplayDocTitle"),
             Layers = reader.ReadLayers(catalog),
+            LayerConfigurations = reader.ReadLayerConfigurations(catalog),
             EmbeddedFiles = names is null ? [] : reader.ReadEmbeddedFiles(names.Data.GetValueOrDefault("EmbeddedFiles")),
         };
     }
@@ -93,6 +94,21 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
         }
 
         return permissions;
+    }
+
+    // The default configuration (/D), then the others (/Configs).
+    private List<PdfLayerConfiguration> ReadLayerConfigurations(DictionaryToken catalog)
+    {
+        if (objects.Dictionary(catalog, "OCProperties") is not { } properties) return [];
+
+        var configurations = objects.Items(properties.Data.GetValueOrDefault("Configs"))
+            .Prepend(properties.Data.GetValueOrDefault("D"));
+        return configurations.Select(objects.Resolve).OfType<DictionaryToken>().Select(configuration =>
+            new PdfLayerConfiguration
+            {
+                Name = objects.Text(configuration, "Name"),
+                ChangesLayersByItself = configuration.Data.ContainsKey("AS"),
+            }).ToList();
     }
 
     // A layer is visible by default unless the default configuration turns it off, or turns everything off and not it back on.
@@ -155,6 +171,7 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
                 Name = name, FileName = objects.FileName(specification),
                 Description = objects.Text(specification, "Desc"),
                 Relationship = objects.Name(specification, "AFRelationship"), Size = contents?.Length, Hash = hash,
+                NamedBothWays = specification.Data.ContainsKey("F") && specification.Data.ContainsKey("UF"),
             };
             files.Add(file with { Unreadable = stream is not null && contents is null });
         }

@@ -37,7 +37,7 @@ Sections always appear in this order. Each can be left out with [`PdfSection`](x
 | Section | Contents |
 |---|---|
 | `document` | Whether the PDF is tagged, and `suspects=yes` when it says its tags may be unreliable; its language, whether the viewer shows the title, page count |
-| `settings` | PDF version, page mode and layout, what happens when the file opens, whether it has JavaScript (in document-level scripts, the open action, document actions, form fields, links and other annotations, page actions or bookmarks) or document actions, encryption and what it permits; viewer preferences, optional-content layers and embedded files |
+| `settings` | PDF version, page mode and layout, what happens when the file opens, whether it has JavaScript (in document-level scripts, the open action, document actions, form fields, links and other annotations, page actions or bookmarks) or document actions, encryption and what it permits; viewer preferences, optional-content layers and their configurations (`layer-config`), embedded files (`both-names=no` when one isn't named both as `F` and as `UF`), and how many reference XObjects the pages' resources hold (`reference-xobjects`), when any do |
 | `metadata` | Title, author, subject, keywords; whether dates, producer and creator are present; PDF/UA identifier; XMP title, creator, description, language and PDF/A conformance, or `xmp=unreadable`; every other Info entry (such as a company name or classification label) |
 | `role-map` | Each custom tag type and the standard type it maps to |
 | `pages` | Size (named when standard, such as `letter` or `a4`), rotation, tab order; crop, bleed, trim and art boxes, user unit and transparency group when set; how many artifacts sit inside tagged content (`artifacts-in-tagged`) and how many hold tagged content (`artifacts-holding-tagged`), when any do; pages that couldn't be read; page label ranges |
@@ -59,7 +59,7 @@ Sections always appear in this order. Each can be left out with [`PdfSection`](x
 - When anything is ignored, the next lines list it: `# ignored sections: ...` and `# ignored fields: ...`. With
   `Tolerate`, `# tolerances: ...` follows, such as `# tolerances: positions 1pt`, with `OnlyPages`,
   `# only pages: ...`, and with `Check`, `# checks: ...`, the rule set and how many rules it has, such as
-  `# checks: latest, 30 rules`. Comparing two snapshots applies the tolerances their header lists.
+  `# checks: latest, 35 rules`. Comparing two snapshots applies the tolerances their header lists.
 
 ### Lines and keys
 

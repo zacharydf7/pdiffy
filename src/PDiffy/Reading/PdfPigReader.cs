@@ -38,6 +38,7 @@ internal static class PdfPigReader
             Settings = settings with
             {
                 PdfVersion = headerVersion ?? settings.PdfVersion,
+                ReferenceXObjects = ReferenceXObjects.Count(objects, pageTree),
                 HasJavaScript = settings.HasJavaScript || formFields.Any(field => field.Scripts.Count > 0)
                     || ActionScripts.AnyIn(objects, pageTree, catalog),
             },

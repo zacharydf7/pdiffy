@@ -16,11 +16,12 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### Checks
 
-- `PdfCheckSet.Latest` has eighteen new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
+- `PdfCheckSet.Latest` has 23 new rules, `RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`,
   `TocStructure`, `HeadingTypes`, `NoteIds`, `TableStructure`, `TableGrid`, `AnnotationTags`,
-  `AnnotationDescriptions`, `TabOrder`, `LanguageTags`, `TextLanguage`, `FormulaAltText`, `MediaClips` and
-  `ArtifactNesting`, so a snapshot that records checks with it prints `# checks: latest, 30 rules` and what they find
-  ([#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#74](https://github.com/zacharydf7/pdiffy/issues/74)). A release's own set, such as `PdfCheckSet.Version0_3`,
+  `AnnotationDescriptions`, `TabOrder`, `LanguageTags`, `TextLanguage`, `FormulaAltText`, `MediaClips`,
+  `ArtifactNesting`, `LayerConfigurations`, `EmbeddedFileNames`, `NoDynamicXfa`, `AccessibilityPermission` and
+  `NoReferenceXObjects`, so a snapshot that records checks with it prints `# checks: latest, 35 rules` and what they
+  find ([#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#75](https://github.com/zacharydf7/pdiffy/issues/75)). A release's own set, such as `PdfCheckSet.Version0_3`,
   doesn't change.
 
 ### Document setup
@@ -38,6 +39,11 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 - A page whose artifacts and tagged content nest in each other prints how many artifacts do: `artifacts-in-tagged=1`,
   `artifacts-holding-tagged=1` ([#73](https://github.com/zacharydf7/pdiffy/issues/73)). Only snapshots of such pages
   change.
+- The `settings` section lists each optional-content configuration, by name, with `auto-state=yes` when it turns
+  layers on or off by itself (`layer-config "Screen"`), counts the reference XObjects in the pages' resources
+  (`reference-xobjects=1`), and marks an embedded file that isn't named both as `F` and as `UF` (`both-names=no`)
+  ([#75](https://github.com/zacharydf7/pdiffy/issues/75)). Snapshots of documents with layers change, since every
+  such document has a default configuration, and so do those with such embedded files.
 - A file whose header says PDF 2.0 prints `version=2.0`. PDiffy read the version through PdfPig, which reads a
   header it doesn't know as 1.4, so such snapshots printed `version=1.4` and change.
 

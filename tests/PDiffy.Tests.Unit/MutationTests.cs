@@ -45,6 +45,9 @@ public class MutationTests
         { "media clip alt text removed", new Sample { MediaAlt = null }, PdfSection.Annotations, ChangeKind.AttributeChanged, true },
         { "artifact moved inside tagged content", new Sample { ArtifactInTagged = true }, PdfSection.Pages, ChangeKind.AttributeChanged, false },
         { "tagged content moved inside an artifact", new Sample { ArtifactHoldsTagged = true }, PdfSection.Pages, ChangeKind.AttributeChanged, false },
+        { "layer configuration renamed", new Sample { LayerConfig = "Print" }, PdfSection.Settings, ChangeKind.TextChanged, false },
+        { "reference XObject added", new Sample { ReferenceForm = true }, PdfSection.Settings, ChangeKind.AttributeChanged, false },
+        { "embedded file named one way", new Sample { AttachmentNames = "/F (data.xml)" }, PdfSection.Settings, ChangeKind.AttributeChanged, false },
     };
 
     [Theory]
@@ -97,18 +100,28 @@ public class MutationTests
         public string? MediaAlt { get; init; } = "Trail tour";
         public bool ArtifactInTagged { get; init; }
         public bool ArtifactHoldsTagged { get; init; }
+        public string LayerConfig { get; init; } = "Screen";
+        public bool ReferenceForm { get; init; }
+        public string? AttachmentNames { get; init; } = "/F (data.xml) /UF (data.xml)";
     }
 
     // Page 1 has a heading, two paragraphs, a figure, a note, a footer, a styled line, a table, a link, a link to page 2
     // and two form fields, one signed; page 2 has the paragraph the bookmark points to and a Screen annotation's video.
     internal static PdfUaDocument Build(Sample sample)
     {
-        var pdf = new TestPdf { Lang = sample.DocumentLang, MarkInfo = sample.MarkInfo };
+        var pdf = new TestPdf { Lang = sample.DocumentLang, MarkInfo = sample.MarkInfo }
+            .CatalogEntries($" /OCProperties << /OCGs [] /D << /Name ({sample.LayerConfig}) >> >>");
+        if (sample.AttachmentNames is not null)
+        {
+            pdf.CatalogEntries(" /Names << /EmbeddedFiles << /Names [(data.xml) << /Type /Filespec "
+                + $"{sample.AttachmentNames} /Desc (Trail counts by month) /AFRelationship /Data >>] >> >>");
+        }
         var page = pdf.AddPage().Tagged(0, "Elevation", sample.Heading).Tagged(1, "Go with a guide").Tagged(2, "Avoid shortcuts")
             .TaggedImage(3, sample.ImageGray)
             .Raw($"/P << /MCID 6 >> BDC q BT /F1 {sample.FontSize} Tf {sample.TextColor} {sample.TextAt} Td (Styled) Tj ET Q EMC")
             .Tagged(7, "Trail", "TH").Tagged(8, "Ridgeline", "TD").Tagged(9, "example.com", "Link")
             .Annotation($"/Subtype /Link /Rect [72 200 172 220] /Dest [{{page{sample.LinkPage}}} /XYZ 72 720 0] /Contents (Safety)");
+        if (sample.ReferenceForm) page.ReferenceForm();
         if (sample.NoteArtifact) page.Artifact("Pack light");
         else if (sample.NoteTagged) page.Tagged(4, "Pack light");
         else page.Untagged("Pack light");

@@ -280,6 +280,61 @@ the map, the text reads as nothing or as gibberish, though it looks right on scr
 **How to fix it:** use fonts that come with a Unicode map, and generator settings that write a `ToUnicode` CMap for each
 font. A font that maps some codes but not others usually means a symbol or ligature the generator draws specially.
 
+## LayerConfigurations
+
+**Finds:** an optional-content configuration (a set of layers a viewer can switch to) with no name, and one that turns
+layers on or off by itself, such as by zoom or for printing (`/AS`). **Category:** `Document`. **Severity:** `Error`.
+**From:** ISO 14289-1 7.10.
+
+**Why it matters:** a viewer lists configurations by name, so one without a name can't be chosen or announced. Layers
+that appear and disappear on their own change what a reader gets without them doing anything.
+
+**How to fix it:** give each configuration in `/OCProperties` a `/Name`, and leave out `/AS`.
+
+## EmbeddedFileNames
+
+**Finds:** a file in the document's list of embedded files (`/EmbeddedFiles`) whose file specification doesn't give
+its name both as `/F` and as `/UF` (Unicode). Files attached through a comment (a FileAttachment annotation) aren't
+read yet.
+**Category:** `Document`. **Severity:** `Error`. **From:** ISO 14289-1 7.11.
+
+**Why it matters:** a viewer and a screen reader show and announce the attachment by its name, and `/UF` is the one
+that holds any character; without both, a name can be lost or garbled.
+
+**How to fix it:** write both entries in each file specification, with the same name.
+
+## NoDynamicXfa
+
+**Finds:** a dynamic XFA form, one the viewer builds its pages from as the file opens (`/NeedsRendering`).
+**Category:** `Forms`. **Severity:** `Error`. **From:** ISO 14289-1 7.15.
+
+**Why it matters:** the pages of a dynamic XFA form don't exist until a viewer that supports XFA builds them, so most
+viewers and screen readers see nothing, or only a "please wait" page.
+
+**How to fix it:** export the form as a static PDF form (AcroForm), with tagged fields.
+
+## AccessibilityPermission
+
+**Finds:** an encrypted document whose permissions don't let assistive technology extract its text (bit 10 of `/P`).
+**Category:** `Document`. **Severity:** `Error`. **From:** ISO 14289-1 7.16.
+
+**Why it matters:** a screen reader gets the text the same way copying does. With that permission off, it gets
+nothing, however well the document is tagged.
+
+**How to fix it:** keep "content accessibility" (extraction for accessibility) allowed in the generator's security
+settings. It can stay on even when copying is off.
+
+## NoReferenceXObjects
+
+**Finds:** a reference XObject, a form that shows a page of another file (`/Ref`), in the pages' resources or the
+forms in them, drawn or not. Annotation appearances aren't read yet. **Category:** `Content`.
+**Severity:** `Error`. **From:** ISO 14289-1 7.20.
+
+**Why it matters:** the page it shows lives in another file, outside this document's tags, so a reader can't reach it,
+and most viewers only show the form's own fallback drawing.
+
+**How to fix it:** import the page's content into the document instead of referring to it.
+
 ## NoActions
 
 **Finds:** JavaScript, actions run on events such as closing or printing, and an open action that does more than go

@@ -65,6 +65,11 @@ conforms.
 | `FormulaAltText` | A formula with no alt text or replacement text | `AltText` | 7.7 |
 | `MediaClips` | A media clip a Screen annotation plays with no content type or no alternate text | `AltText` | 7.18.6.2 |
 | `ArtifactNesting` | An artifact inside tagged content, or an artifact holding tagged content, page by page | `Content` | 7.1 |
+| `LayerConfigurations` | An optional-content configuration with no name, or one that turns layers on or off by itself (`AS`) | `Document` | 7.10 |
+| `EmbeddedFileNames` | A file in the document's list of embedded files not named both as `F` and as `UF` | `Document` | 7.11 |
+| `NoDynamicXfa` | A dynamic XFA form | `Forms` | 7.15 |
+| `AccessibilityPermission` | Encryption that doesn't let assistive technology extract the text | `Document` | 7.16 |
+| `NoReferenceXObjects` | A reference XObject, which shows a page of another file, in the pages' resources | `Content` | 7.20 |
 | `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |
 | `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
@@ -99,7 +104,7 @@ await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Check(PdfCheckS
 
 ```text
 # pdfua-snapshot v1
-# checks: latest, 30 rules
+# checks: latest, 35 rules
 ...
 checks
   FigureAltText p2 structure > Document > Figure[2]

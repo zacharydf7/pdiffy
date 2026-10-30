@@ -67,6 +67,39 @@ public sealed record PdfSettings
         get;
         init => field = ValueList<PdfEmbeddedFile>.Of(value);
     } = ValueList<PdfEmbeddedFile>.Empty;
+
+    /// <summary>
+    /// The optional-content configurations: the default one, then the others a viewer can switch to; empty when the
+    /// document has no layers.
+    /// </summary>
+    public IReadOnlyList<PdfLayerConfiguration> LayerConfigurations
+    {
+        get;
+        init => field = ValueList<PdfLayerConfiguration>.Of(value);
+    } = ValueList<PdfLayerConfiguration>.Empty;
+
+    /// <summary>
+    /// How many reference XObjects (form XObjects that show a page of another file, /Ref) are in the pages' resources
+    /// and the resources of the forms in them, whether or not the pages draw them.
+    /// </summary>
+    public int ReferenceXObjects { get; init; }
+}
+
+/// <summary>An optional-content configuration: which layers a viewer shows, under a name it lists.</summary>
+public sealed record PdfLayerConfiguration
+{
+    internal PdfLayerConfiguration()
+    {
+    }
+
+    /// <summary>The name a viewer lists it under; null when it has none.</summary>
+    public string? Name { get; init; }
+
+    /// <summary>
+    /// Whether it turns layers on or off by itself, such as by zoom or for printing (an /AS entry), which PDF/UA
+    /// doesn't allow.
+    /// </summary>
+    public bool ChangesLayersByItself { get; init; }
 }
 
 /// <summary>The standard values of <see cref="PdfSettings.PageMode"/>.</summary>
@@ -148,6 +181,12 @@ public sealed record PdfEmbeddedFile
     /// Whether the contents are damaged, which leaves <see cref="Size"/> and <see cref="Hash"/> null.
     /// </summary>
     public bool Unreadable { get; init; }
+
+    /// <summary>
+    /// Whether its file specification gives the file name both ways PDF/UA asks: as /F and as /UF (Unicode).
+    /// Snapshots print <c>both-names=no</c> when it doesn't.
+    /// </summary>
+    public bool NamedBothWays { get; init; }
 }
 
 /// <summary>What an encrypted document lets a reader do.</summary>

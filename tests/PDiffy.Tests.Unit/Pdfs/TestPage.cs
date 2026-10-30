@@ -7,6 +7,7 @@ internal sealed class TestPage(double width, double height, int rotate, string? 
 {
     private readonly StringBuilder _content = new();
     private readonly List<string> _imagePixels = [];
+    private int _referenceForms;
     private readonly List<string> _annotations = [];
     private readonly List<string> _layers = [];
     private string _pageEntries = "";
@@ -50,6 +51,13 @@ internal sealed class TestPage(double width, double height, int rotate, string? 
         Raw($"/Figure << /MCID {mcid} >> BDC {DrawImage(gray, y)} EMC");
 
     public TestPage UntaggedImage(string gray = "80") => Raw(DrawImage(gray));
+
+    /// <summary>A reference XObject in the page's resources: a form that draws a page of another file (/Ref).</summary>
+    public TestPage ReferenceForm()
+    {
+        _referenceForms++;
+        return this;
+    }
 
     public TestPage ArtifactImage(string gray = "80") => Raw($"/Artifact BMC {DrawImage(gray)} EMC");
 
@@ -106,7 +114,11 @@ internal sealed class TestPage(double width, double height, int rotate, string? 
                 fonts += $" /F2 {AddDamagedFont(pdf)} 0 R";
             }
 
-            var images = string.Concat(_imagePixels.Select((gray, i) => $" /Im{i + 1} {AddImage(pdf, gray)} 0 R"));
+            var referenceForm = pdf.StreamObject(
+                "/Type /XObject /Subtype /Form /BBox [0 0 10 10] /Ref << /F (map.pdf) /Page 0 >>", "");
+            var images = string.Concat(_imagePixels.Select((gray, i) => $" /Im{i + 1} {AddImage(pdf, gray)} 0 R"))
+                + string.Concat(Enumerable.Range(1, _referenceForms)
+                    .Select(i => $" /Ref{i} {pdf.Add(referenceForm)} 0 R"));
             var xObjects = images.Length == 0 ? "" : $" /XObject <<{images} >>";
             var groups = string.Concat(_layers.Select((name, i) =>
                 $" /L{i + 1} {pdf.Add($"<< /Type /OCG /Name ({name}) >>")} 0 R"));

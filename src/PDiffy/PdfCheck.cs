@@ -148,6 +148,27 @@ public enum PdfCheck
 
     /// <summary>No artifact sits inside tagged content, and no artifact holds tagged content.</summary>
     ArtifactNesting,
+
+    /// <summary>
+    /// Every optional-content configuration has a name and doesn't turn layers on or off by itself (/AS).
+    /// </summary>
+    LayerConfigurations,
+
+    /// <summary>
+    /// Every file in the document's list of embedded files has a specification that names it both as /F and as /UF.
+    /// </summary>
+    EmbeddedFileNames,
+
+    /// <summary>The document has no dynamic XFA form, which builds its pages as it opens.</summary>
+    NoDynamicXfa,
+
+    /// <summary>An encrypted document lets assistive technology extract its text.</summary>
+    AccessibilityPermission,
+
+    /// <summary>
+    /// No reference XObject, which shows a page of another file, is in the pages' resources or the forms in them.
+    /// </summary>
+    NoReferenceXObjects,
 }
 
 /// <summary>

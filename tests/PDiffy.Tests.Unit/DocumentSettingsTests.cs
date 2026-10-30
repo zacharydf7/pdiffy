@@ -42,8 +42,9 @@ public class DocumentSettingsTests
         Assert.Equal([new PdfEmbeddedFile
         {
             Name = "data.xml", FileName = "data.xml", Description = "Lab data", Relationship = "Data", Size = 5,
-            Hash = "2cf24dba5fb0a30e",
+            Hash = "2cf24dba5fb0a30e", NamedBothWays = true,
         }], settings.EmbeddedFiles);
+        Assert.Equal([new PdfLayerConfiguration()], settings.LayerConfigurations);
     }
 
     [Fact]
