@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using PDiffy.Diffing;
+using PDiffy.Tests.Unit.Pdfs;
 
 namespace PDiffy.Tests.Unit;
 
@@ -1065,6 +1066,27 @@ public class SnapshotDiffTests
 
         Assert.Equal([null, PdfSection.Structure], changes.Select(change => change.PdfSection));
         Assert.Equal("header", changes[0].Path);
+    }
+
+    // What an upgrading user sees for a document with suspect tags, an element without a parent entry and a PDF 2.0
+    // header: the earlier release printed neither key, and read the version as 1.4.
+    [Fact]
+    public void Compare_ShouldReportOnlyTheNewKeysAndTheVersion_WhenASnapshotFromBeforeTheDocumentSetupReadsIsCompared()
+    {
+        var pdf = new TestPdf { MarkInfo = "/Marked true /Suspects true" };
+        pdf.AddPage().Tagged(0, "Hello");
+        pdf.Structure(new TestElement("P", 0) { WithoutParent = true });
+        var bytes = pdf.Build();
+        "%PDF-2.0"u8.ToArray().CopyTo(bytes, 0);
+        var current = PdfUaDocument.Load(bytes).ToSnapshot();
+        var earlier = current.Replace(" suspects=yes", "").Replace(" parent=missing", "")
+            .Replace("version=2.0", "version=1.4");
+
+        var changes = SnapshotDiff.CompareSnapshots(earlier, current).Changes;
+
+        Assert.Equal([PdfSection.Document, PdfSection.Settings, PdfSection.Structure],
+            changes.Select(change => change.PdfSection));
+        Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
     }
 
     [Fact]

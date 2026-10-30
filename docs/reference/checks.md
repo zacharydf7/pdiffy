@@ -155,3 +155,43 @@ type, such as `P` to `Span`, changes what every element of that type is.
 standard one. Leave the standard types out of the role map. Most generators build it from their style names, so the
 fix is usually a style mapping setting. The finding's path names the type, with `loop` or `standard` after it for the
 other two problems: `role-map > Callout`, `role-map > Callout > loop`, `role-map > P > standard`.
+
+## XmpMetadata
+
+**Finds:** a document with no XMP metadata, XMP that can't be read, XMP that doesn't say the document is PDF/UA-1
+(`pdfuaid:part` 1) or says so with another prefix than `pdfuaid`, and XMP with no title (`dc:title`).
+**Category:** `Document`. **Severity:** `Error`. **From:** ISO 14289-1 5, and 7.1 for a missing XMP stream or title.
+
+**Why it matters:** the PDF/UA identifier is how a viewer, a library catalog or a checker knows the document claims
+to be accessible, and the XMP title is the one PDF/UA asks for. [`DocumentTitle`](#documenttitle) also accepts the
+Info dictionary's title, which viewers show, so a document can pass it and still fail here.
+
+**How to fix it:** turn on PDF/UA output in the generator, which writes the XMP stream with
+`<pdfuaid:part>1</pdfuaid:part>` and a `dc:title`. XML lets any prefix stand for a namespace, but PDF/UA names
+`pdfuaid`, and some checkers look for it.
+
+## TaggedPdf
+
+**Finds:** a document that isn't marked as tagged (MarkInfo `Marked`), one that says its tags may be unreliable
+(MarkInfo `Suspects`), one with no structure tree, and structure elements with no parent entry (`P`).
+**Category:** `Structure`. **Severity:** `Error`. **From:** ISO 14289-1 7.1, and 6.2 for a document that isn't
+marked.
+
+**Why it matters:** assistive technology only uses the tags of a document marked as tagged, and treats suspect tags
+as guesses. Without a structure tree there's nothing to read but the raw text, and a tool that walks up the tree
+from an element without a parent can't tell where it belongs.
+
+**How to fix it:** turn on tagged output in the generator. `Suspects` is set by tools that add tags after the fact;
+check the tags, then clear it. An element without a parent entry is a generator bug: each `StructElem` needs a `/P`
+pointing to the element or root that holds it.
+
+## PdfVersion
+
+**Finds:** a file header past PDF 1.7, such as `%PDF-2.0`, and a catalog `/Version` past it, which upgrades the file.
+**Category:** `Document`. **Severity:** `Error`. **From:** ISO 14289-1 6.1.
+
+**Why it matters:** PDF/UA-1 is defined on PDF 1.7. A PDF 2.0 file follows PDF/UA-2, whose rules differ, so checks
+written for PDF/UA-1 may not apply to it.
+
+**How to fix it:** write PDF 1.7 for PDF/UA-1, or, for a PDF 2.0 file, check it against PDF/UA-2 and leave this rule
+out of the set.

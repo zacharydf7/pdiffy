@@ -164,6 +164,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
             McidsWithoutPage = mcidsWithoutPage,
             McidsInXObject = mcidsInXObject,
             UnreadChildren = unreadChildren,
+            ParentMissing = !element.Data.ContainsKey("P"),
             MarkedSpans = spans,
             ImageHashes = images,
             TextRuns = textRuns,

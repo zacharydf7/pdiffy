@@ -22,11 +22,13 @@ internal static class MetadataReader
         var markInfo = objects.Dictionary(catalog, "MarkInfo");
         var viewerPreferences = objects.Dictionary(catalog, "ViewerPreferences");
         var marked = markInfo is not null && objects.Boolean(markInfo, "Marked");
+        var suspects = markInfo is not null && objects.Boolean(markInfo, "Suspects");
         var displayDocTitle = viewerPreferences is not null && objects.Boolean(viewerPreferences, "DisplayDocTitle");
         return new PdfDocumentInfo
         {
-            Marked = marked, Language = objects.Text(catalog, "Lang"), DisplayDocTitle = displayDocTitle,
-            PageCount = pageCount,
+            Marked = marked, Suspects = suspects, Language = objects.Text(catalog, "Lang"),
+            DisplayDocTitle = displayDocTitle, PageCount = pageCount,
+            HasStructureTree = objects.Dictionary(catalog, "StructTreeRoot") is not null,
         };
     }
 
@@ -49,8 +51,21 @@ internal static class MetadataReader
             XmpDescription = XmpValue(xml, DublinCore + "description"),
             XmpLanguage = XmpValue(xml, DublinCore + "language"),
             PdfAConformance = pdfAPart is null ? null : pdfAPart + XmpValue(xml, PdfAId + "conformance"),
-            XmpUnreadable = xmp is not null && xml is null,
+            XmpUnreadable = xmp is not null && xml is null, HasXmp = xmp is not null, PdfUaIdPrefix = OtherPrefix(xml),
         };
+    }
+
+    // The prefix the pdfuaid properties are written with, as elements or as attributes of rdf:Description, when it
+    // isn't the one PDF/UA names. LINQ to XML keeps the declarations, not the prefix each name was written with, so
+    // this is the prefix in scope.
+    private static string? OtherPrefix(XDocument? xml)
+    {
+        if (xml is null) return null;
+
+        var elements = xml.Descendants().Where(element => element.Name.Namespace == PdfUaId);
+        var owners = xml.Descendants().Where(element => element.Attributes().Any(a => a.Name.Namespace == PdfUaId));
+        return elements.Concat(owners).Select(element => element.GetPrefixOfNamespace(PdfUaId) ?? "")
+            .FirstOrDefault(prefix => prefix != "pdfuaid");
     }
 
     private static XDocument? ReadXmp(XmpMetadata xmp)

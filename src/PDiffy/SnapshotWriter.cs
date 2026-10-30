@@ -83,6 +83,7 @@ internal sealed partial class SnapshotWriter(PdfSnapshotOptions options)
     private void WriteDocument(PdfDocumentInfo info)
     {
         var line = new StringBuilder($"marked={YesNo(info.Marked)}");
+        if (info.Suspects) line.Append(" suspects=yes");
         Key(line, PdfDetail.Language, "lang", info.Language ?? Missing);
         line.Append($" display-doc-title={YesNo(info.DisplayDocTitle)} pages={info.PageCount}");
         Line(1, line.ToString());
@@ -249,6 +250,7 @@ internal sealed partial class SnapshotWriter(PdfSnapshotOptions options)
         Key(line, "mcids-without-page", element.McidsWithoutPage > 0 ? element.McidsWithoutPage.ToString() : null);
         Key(line, "mcids-in-xobject", element.McidsInXObject > 0 ? element.McidsInXObject.ToString() : null);
         Key(line, "unread-children", element.UnreadChildren > 0 ? element.UnreadChildren.ToString() : null);
+        if (element.ParentMissing) line.Append(" parent=missing");
         if (element.Text is not null) line.Append(' ').Append(Quote(element.Text));
         Line(depth, line.ToString());
         foreach (var child in element.Children) WriteElement(child, depth + 1);

@@ -530,13 +530,15 @@ public sealed class CliTests : IDisposable
         string[] objects =
         [
             "<< /Type /Catalog /Pages 2 0 R /Lang (en-US) /MarkInfo << /Marked true >> "
-                + "/ViewerPreferences << /DisplayDocTitle true >> /StructTreeRoot 5 0 R >>",
+                + "/ViewerPreferences << /DisplayDocTitle true >> /StructTreeRoot 5 0 R /Metadata 8 0 R >>",
             "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
             "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
             TestPdf.Stream(""),
             "<< /Type /StructTreeRoot /K [6 0 R] >>",
             "<< /Type /StructElem /S /Figure /P 5 0 R /Alt (Logo) >>",
             "<< /Title (Logo) >>",
+            TestPdf.Stream(TestPdf.XmpPacket("<pdfuaid:part>1</pdfuaid:part>"
+                + "<dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">Logo</rdf:li></rdf:Alt></dc:title>")),
         ];
         var path = Path.Combine(_folder, "logo.pdf");
         File.WriteAllBytes(path, RawPdf.Build(objects, catalog: 1, "/Info 7 0 R"));

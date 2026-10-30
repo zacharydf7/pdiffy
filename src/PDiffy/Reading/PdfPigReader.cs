@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.RegularExpressions;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Exceptions;
@@ -11,6 +13,7 @@ internal static class PdfPigReader
     public static PdfUaDocument Read(Stream pdf)
     {
         var fileLength = pdf.Length;
+        var headerVersion = HeaderVersion(pdf);
         using var document = Open(pdf);
         var objects = new PdfObjects(document);
         var catalog = document.Structure.Catalog.CatalogDictionary;
@@ -34,6 +37,7 @@ internal static class PdfPigReader
             Metadata = MetadataReader.ReadMetadata(document, objects),
             Settings = settings with
             {
+                PdfVersion = headerVersion ?? settings.PdfVersion,
                 HasJavaScript = settings.HasJavaScript || formFields.Any(field => field.Scripts.Count > 0)
                     || ActionScripts.AnyIn(objects, pageTree, catalog),
             },
@@ -53,6 +57,18 @@ internal static class PdfPigReader
             Images = layouts.SelectMany(layout => layout.Images).ToList(),
             Paths = layouts.SelectMany(layout => layout.Paths).ToList(),
         };
+    }
+
+    // PdfPig reads a header version it doesn't know, such as 2.0, as 1.4, so the header is read here. It can follow up
+    // to 1024 bytes of something else.
+    private static string? HeaderVersion(Stream pdf)
+    {
+        var start = pdf.Position;
+        var buffer = new byte[1024];
+        var read = pdf.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false);
+        pdf.Position = start;
+        var header = Regex.Match(Encoding.ASCII.GetString(buffer, 0, read), @"%PDF-(\d\.\d)");
+        return header.Success ? header.Groups[1].Value : null;
     }
 
     // A file PdfPig can't open fails the way input that isn't a PDF does, so callers see one exception type.

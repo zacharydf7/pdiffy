@@ -442,6 +442,9 @@ public async Task TrailMap_ShouldPassTheAccessibilityChecks_WhenGenerated()
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
 | `NoEmbeddedFiles` | Each embedded file | `HouseRules` | House rule |
 | `RoleMap` | A custom structure type that doesn't map to a standard one, a mapping that loops back on itself, and a standard type that's remapped | `Structure` | 7.1 |
+| `XmpMetadata` | No XMP metadata, or XMP that doesn't say the document is PDF/UA-1 with the `pdfuaid` prefix, or has no `dc:title` | `Document` | 5, 7.1 |
+| `TaggedPdf` | A document that isn't marked as tagged, says its tags may be unreliable (`Suspects`), has no structure tree, or has elements with no parent entry | `Structure` | 6.2, 7.1 |
+| `PdfVersion` | A file header or catalog version past PDF 1.7 | `Document` | 6.1 |
 
 `Check()` applies every rule PDiffy has, so an upgrade that adds rules can fail a test that passed. To choose when that happens, pass a set: `document.Check(PdfCheckSet.Version0_3)` applies only the rules 0.3 shipped, whatever later releases add, while `PdfCheckSet.Latest` grows with each release, as .NET analyzers do with `AnalysisLevel`. `Only` and `Except` narrow a set: `PdfCheckSet.Latest.Only(PdfCheckCategory.Tables)` or `PdfCheckSet.Latest.Except(PdfCheck.HeadingLevels)`.
 
@@ -639,13 +642,13 @@ pdiffy unused tests --all --run-log artifacts/run-log
 
 | Section | Contents |
 |---|---|
-| `document` | Whether the PDF is tagged, its language, whether the viewer shows the title, page count |
+| `document` | Whether the PDF is tagged, and `suspects=yes` when it says its tags may be unreliable; its language, whether the viewer shows the title, page count |
 | `settings` | PDF version, page mode and layout, what happens when the file opens, whether it has JavaScript (in document-level scripts, the open action, document actions, form fields, links and other annotations, page actions or bookmarks) or document actions, encryption and what it permits; viewer preferences, optional-content layers and embedded files |
 | `metadata` | Title, author, subject, keywords; whether dates, producer and creator are present; PDF/UA identifier; XMP title, creator, description, language and PDF/A conformance, or `xmp=unreadable`; every other Info entry (such as a company name or classification label) |
 | `role-map` | Each custom tag type and the standard type it maps to |
 | `pages` | Size (named when standard, such as `letter` or `a4`), rotation, tab order; crop, bleed, trim and art boxes, user unit and transparency group when set; pages that couldn't be read; page label ranges |
 | `bookmarks` | The outline tree, with each bookmark's target: a page and the view it opens at, a web address or another file. Or `unreadable` when it nests more than 256 deep, loops back on itself or has a damaged item, such as one without a title |
-| `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, links, the hashes of the images it draws (`images=[3f9c0a1b2d4e5f60]`, the same hash as its layout line), the language, replacement text, alt text and expansion that marked content inside it sets, each with the text it covers unless that's all of the element's text (`span-lang=[fr-FR:"bonjour"]`, `span-expansion=["Mount":"Mt."]`), how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), how many point into a form XObject (`mcids-in-xobject`), how many child elements are nested more than 256 deep and left out (`unread-children`), and the element's text |
+| `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, links, the hashes of the images it draws (`images=[3f9c0a1b2d4e5f60]`, the same hash as its layout line), the language, replacement text, alt text and expansion that marked content inside it sets, each with the text it covers unless that's all of the element's text (`span-lang=[fr-FR:"bonjour"]`, `span-expansion=["Mount":"Mt."]`), how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), how many point into a form XObject (`mcids-in-xobject`), how many child elements are nested more than 256 deep and left out (`unread-children`), `parent=missing` when it has no parent entry, and the element's text |
 | `artifacts` | Text marked as an artifact (headers, footers, page numbers), per page, with its kind when it gives one (`type=Pagination subtype=Footer`) |
 | `untagged` | Text that is neither tagged nor marked as an artifact, one line per line of text (and tagged text that no structure element points to, one line per marked-content ID), and a count of such images and paths per page |
 | `fonts` | Each font: name, type, whether it's embedded, whether it has a Unicode map, and the character codes its text uses that don't map to Unicode (that text can't be copied, searched or read aloud) |
@@ -796,6 +799,8 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | `pdfua-snapshot v1`, unchanged version: the document line prints `suspects=yes` when MarkInfo says the tags may be unreliable, a structure element with no parent entry gets `parent=missing`, and a file whose header says PDF 2.0 prints `version=2.0`, not `1.4`. Only snapshots of such documents change |
+| Next | `pdfua-snapshot v1`, unchanged version: `PdfCheckSet.Latest` has four new rules (`RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`), so a snapshot that records checks with it prints `# checks: latest, 16 rules` and what they find. A release's own set doesn't change |
 | Next | No snapshot changes. A new problem in the `checks` section from a rule that isn't a house rule is flagged as affecting accessibility |
 | Next | `pdfua-snapshot v1`, unchanged version: a test can opt into a `checks` section, with `Check(PdfCheckSet)`, that lists what the checks find, and a `# checks: ...` header line. Snapshots without the option don't change |
 | Next | `pdfua-snapshot v1`, unchanged version: an element whose marked content is in a form XObject reads its text from the form alone. A form numbers its MCIDs apart from the page, and before, both the page's element and the form's printed the text of both when the two used the same MCID. Only snapshots of documents whose forms reuse the page's MCIDs change, and text a form tags that no element points to now shows in `untagged` |

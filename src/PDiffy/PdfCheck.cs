@@ -58,6 +58,23 @@ public enum PdfCheck
     /// remapped, so assistive technology knows what each element is.
     /// </summary>
     RoleMap,
+
+    /// <summary>
+    /// The document has XMP metadata that says it's PDF/UA-1, with the "pdfuaid" prefix PDF/UA names, and gives its
+    /// title (dc:title). <see cref="DocumentTitle"/> also accepts the Info dictionary's title, which viewers show.
+    /// </summary>
+    XmpMetadata,
+
+    /// <summary>
+    /// The document is marked as tagged, doesn't say its tags may be unreliable (Suspects), has a structure tree, and
+    /// every structure element has a parent entry.
+    /// </summary>
+    TaggedPdf,
+
+    /// <summary>
+    /// The file header and any catalog /Version say 1.0 to 1.7, the versions PDF/UA-1 builds on.
+    /// </summary>
+    PdfVersion,
 }
 
 /// <summary>
@@ -133,8 +150,9 @@ public sealed record PdfCheckFinding
     public required PdfCheckSeverity Severity { get; init; }
 
     /// <summary>
-    /// The clause the rule comes from, such as "ISO 14289-1 7.3" (PDF/UA-1), or null for a house rule. It says where
-    /// the rule comes from; it doesn't say the document conforms to the standard.
+    /// The clause the finding comes from, such as "ISO 14289-1 7.3" (PDF/UA-1), or null for a house rule: its rule's,
+    /// or another one when a rule covers more than one clause. It says where the rule comes from; it doesn't say the
+    /// document conforms to the standard.
     /// </summary>
     public required string? Reference { get; init; }
 

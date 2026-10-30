@@ -97,6 +97,14 @@ library does.
 - A new rule, `RoleMap`, in the new `Structure` category, finds custom structure types that don't map to a standard
   one, mappings that loop back on themselves and remapped standard types
   ([#62](https://github.com/zacharydf7/pdiffy/issues/62)).
+- Three more rules check how the document is set up for PDF/UA: `XmpMetadata` (XMP that says the document is
+  PDF/UA-1 and gives its title, as PDF/UA asks; `DocumentTitle` still accepts an Info title), `TaggedPdf` (marked as
+  tagged, no `Suspects`, a structure tree, and a parent entry on every element) and `PdfVersion` (a header of PDF 1.7
+  or earlier) ([#63](https://github.com/zacharydf7/pdiffy/issues/63)).
+- Snapshots print `suspects=yes` and `parent=missing` when a document has them, and a PDF 2.0 file's
+  `version` is now `2.0`, not `1.4`. `PdfDocumentInfo` has `Suspects` and `HasStructureTree`, `PdfMetadata` has
+  `HasXmp` and `PdfUaIdPrefix`, and `PdfStructureElement` has `ParentMissing`
+  ([#63](https://github.com/zacharydf7/pdiffy/issues/63)).
 - `--checks` on `pdiffy <before> <after>` and `pdiffy compare` also compares what the checks find, so comparing two
   versions of a document lists the problems the new one introduces or fixes
   ([#61](https://github.com/zacharydf7/pdiffy/issues/61)).

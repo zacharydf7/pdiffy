@@ -1,3 +1,4 @@
+using System.Text;
 using PDiffy.Tests.Unit.Pdfs;
 
 namespace PDiffy.Tests.Unit;
@@ -303,6 +304,118 @@ public class PdfCheckTests
         Assert.Equal(expected, findings.Select(finding => $"{finding.Path}: {finding.Message}"));
     }
 
+    private const string XmpTitle = "<dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">Guide</rdf:li></rdf:Alt></dc:title>";
+
+    // Each expected finding is "path: message".
+    [Theory]
+    [InlineData("1", XmpTitle, new string[0])]
+    [InlineData(null, null, new[] { "metadata > xmp: The document has no XMP metadata" })]
+    [InlineData(null, "<dc:title>", new[] { "metadata > xmp: The XMP metadata can't be read" })]
+    [InlineData(null, XmpTitle,
+        new[] { "metadata > pdfuaid-part: The XMP doesn't say the document is PDF/UA (pdfuaid:part)" })]
+    [InlineData("2", XmpTitle, new[] { "metadata > pdfuaid-part: The XMP says PDF/UA part 2, not 1" })]
+    [InlineData("1", null, new[] { "metadata > xmp-title: The XMP has no title (dc:title)" })]
+    [InlineData(null, "<rdf:Description pdfuaid:part=\"1\"/>" + XmpTitle, new string[0])]
+    [InlineData(null, "<rdf:Description xmlns:ua=\"http://www.aiim.org/pdfua/ns/id/\" ua:part=\"1\"/>" + XmpTitle,
+        new[]
+        {
+            "metadata > pdfuaid-prefix: The XMP writes its PDF/UA identification with the prefix \"ua\", not \"pdfuaid\"",
+        })]
+    [InlineData(null, "<ua:part xmlns:ua=\"http://www.aiim.org/pdfua/ns/id/\">1</ua:part>" + XmpTitle,
+        new[]
+        {
+            "metadata > pdfuaid-prefix: The XMP writes its PDF/UA identification with the prefix \"ua\", not \"pdfuaid\"",
+        })]
+    public void Check_ShouldFindMissingOrWrongXmp_WhenTheMetadataLacksWhatPdfUaAsks(string? part, string? xmp,
+        string[] expected)
+    {
+        var document = OnePage(new TestPdf { PdfUaPart = part, Xmp = xmp });
+
+        var findings = document.Check(PdfCheck.XmpMetadata);
+
+        Assert.Equal(expected, findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    // Built by hand, since TestPdf's XMP declares the pdfuaid prefix, which would be in scope.
+    [Fact]
+    public void Check_ShouldFindTheIdentifierWithoutAPrefix_WhenTheXmpWritesItInADefaultNamespace()
+    {
+        var xmp = "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">"
+            + "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"><rdf:Description>"
+            + "<part xmlns=\"http://www.aiim.org/pdfua/ns/id/\">1</part></rdf:Description></rdf:RDF></x:xmpmeta>";
+        var document = RawPdf.Load("<< /Type /Catalog /Pages 2 0 R /Metadata 3 0 R >>",
+            "<< /Type /Pages /Kids [] /Count 0 >>",
+            $"<< /Type /Metadata /Subtype /XML /Length {xmp.Length} >>\nstream\n{xmp}\nendstream");
+
+        var findings = document.Check(PdfCheck.XmpMetadata)
+            .Where(finding => finding.Path == "metadata > pdfuaid-prefix");
+
+        Assert.Equal(["The XMP writes its PDF/UA identification without a prefix, not \"pdfuaid\""],
+            findings.Select(finding => finding.Message));
+    }
+
+    [Fact]
+    public void Check_ShouldFindUnmarkedSuspectAndParentlessTags_WhenTheDocumentHasThem()
+    {
+        var pdf = new TestPdf { MarkInfo = "/Marked false /Suspects true" };
+        pdf.AddPage().Tagged(0, "Hello");
+        pdf.Structure(new TestElement("P", 0) { WithoutParent = true });
+
+        var findings = pdf.Load().Check(PdfCheck.TaggedPdf);
+
+        Assert.Equal(
+        [
+            "document > marked: The document isn't marked as tagged (MarkInfo Marked)",
+            "document > suspects: The document says its tags may not be reliable (MarkInfo Suspects)",
+            "structure > P: P on p1 has no parent entry (P)",
+        ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Fact]
+    public void Check_ShouldGiveEachFindingItsOwnClause_WhenARuleCoversMoreThanOne()
+    {
+        var document = OnePage(new TestPdf { MarkInfo = "/Marked false", PdfUaPart = "2" });
+
+        var findings = document.Check(PdfCheck.XmpMetadata, PdfCheck.TaggedPdf);
+
+        Assert.Equal(
+        [
+            ("metadata > pdfuaid-part", "ISO 14289-1 5"), ("metadata > xmp-title", "ISO 14289-1 7.1"),
+            ("document > marked", "ISO 14289-1 6.2"),
+        ], findings.Select(finding => (finding.Path, finding.Reference)));
+    }
+
+    [Fact]
+    public void Check_ShouldFindNoStructureTree_WhenTheCatalogHasNone()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Untagged("Hello");
+
+        var findings = pdf.Load().Check(PdfCheck.TaggedPdf);
+
+        Assert.Equal(["structure: The document has no structure tree"], findings.Select(f => $"{f.Path}: {f.Message}"));
+    }
+
+    [Theory]
+    [InlineData("1.7", "", new string[0])]
+    [InlineData("2.0", "",
+        new[] { "settings > version: The file header says PDF 2.0; PDF/UA-1 files are PDF 1.0 to 1.7" })]
+    [InlineData("1.7", "/Version /2.0",
+        new[] { "settings > catalog-version: The catalog says PDF 2.0; PDF/UA-1 files are PDF 1.0 to 1.7" })]
+    public void Check_ShouldFindAVersionPastPdf17_WhenTheHeaderOrCatalogSaysPdf20(string header, string catalogEntries,
+        string[] expected)
+    {
+        var pdf = new TestPdf().CatalogEntries(catalogEntries);
+        pdf.AddPage().Tagged(0, "Hello");
+        pdf.Structure(new TestElement("P", 0));
+        var bytes = pdf.Build();
+        Encoding.ASCII.GetBytes($"%PDF-{header}").CopyTo(bytes, 0);
+
+        var findings = PdfUaDocument.Load(new MemoryStream(bytes)).Check(PdfCheck.PdfVersion);
+
+        Assert.Equal(expected, findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
     [Fact]
     public void Check_ShouldFindNoRoleMapProblem_WhenAnElementHasNoType()
     {
@@ -319,7 +432,7 @@ public class PdfCheckTests
         var all = document.Check();
 
         Assert.Equal(document.Check([.. Enum.GetValues<PdfCheck>().Reverse(), PdfCheck.DocumentLanguage]), all);
-        Assert.Equal([PdfCheck.DocumentLanguage, PdfCheck.DocumentTitle, PdfCheck.FontsEmbedded],
+        Assert.Equal([PdfCheck.DocumentLanguage, PdfCheck.DocumentTitle, PdfCheck.FontsEmbedded, PdfCheck.XmpMetadata],
             all.Select(finding => finding.Check));
     }
 
@@ -352,6 +465,9 @@ public class PdfCheckTests
     [InlineData(PdfCheck.NoActions, PdfCheckCategory.HouseRules, PdfCheckSeverity.Warning, null)]
     [InlineData(PdfCheck.NoEmbeddedFiles, PdfCheckCategory.HouseRules, PdfCheckSeverity.Warning, null)]
     [InlineData(PdfCheck.RoleMap, PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1")]
+    [InlineData(PdfCheck.XmpMetadata, PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 5")]
+    [InlineData(PdfCheck.TaggedPdf, PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1")]
+    [InlineData(PdfCheck.PdfVersion, PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 6.1")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

@@ -38,6 +38,8 @@ public class MutationTests
         { "form no longer redrawn by the viewer", new Sample { FormEntries = "" }, PdfSection.Forms, ChangeKind.Removed, false },
         { "signature removed", new Sample { SignatureEntries = "/FT /Sig" }, PdfSection.Forms, ChangeKind.AttributeChanged, false },
         { "bookmark target page", new Sample { BookmarkPage = 1 }, PdfSection.Bookmarks, ChangeKind.Changed, false },
+        { "tags marked as unreliable", new Sample { MarkInfo = "/Marked true /Suspects true" }, PdfSection.Document, ChangeKind.AttributeChanged, false },
+        { "parent entry left out", new Sample { FigureWithoutParent = true }, PdfSection.Structure, ChangeKind.AttributeChanged, false },
     };
 
     [Theory]
@@ -84,13 +86,15 @@ public class MutationTests
         public string SignatureEntries { get; init; } =
             "/FT /Sig /V << /Type /Sig /SubFilter /adbe.pkcs7.detached /Reason (Approved) /Reference [<< /TransformMethod /DocMDP >>] >>";
         public int BookmarkPage { get; init; } = 2;
+        public string MarkInfo { get; init; } = "/Marked true";
+        public bool FigureWithoutParent { get; init; }
     }
 
     // Page 1 has a heading, two paragraphs, a figure, a note, a footer, a styled line, a table, a link, a link to page 2
     // and two form fields, one signed; page 2 has the paragraph the bookmark points to.
     internal static PdfUaDocument Build(Sample sample)
     {
-        var pdf = new TestPdf { Lang = sample.DocumentLang };
+        var pdf = new TestPdf { Lang = sample.DocumentLang, MarkInfo = sample.MarkInfo };
         var page = pdf.AddPage().Tagged(0, "Elevation", sample.Heading).Tagged(1, "Go with a guide").Tagged(2, "Avoid shortcuts")
             .TaggedImage(3, sample.ImageGray)
             .Raw($"/P << /MCID 6 >> BDC q BT /F1 {sample.FontSize} Tf {sample.TextColor} {sample.TextAt} Td (Styled) Tj ET Q EMC")
@@ -110,7 +114,7 @@ public class MutationTests
         var scope = sample.Scope is null ? "" : $"/Scope /{sample.Scope}";
         var elements = new List<TestElement> { new(sample.Heading, 0) };
         elements.AddRange(paragraphs);
-        elements.Add(new TestElement("Figure", 3) { Entries = alt });
+        elements.Add(new TestElement("Figure", 3) { Entries = alt, WithoutParent = sample.FigureWithoutParent });
         elements.Add(new TestElement("P", 6));
         elements.Add(new TestElement("P", 10));
         elements.Add(new TestElement("Table",

@@ -230,6 +230,17 @@ public sealed record PdfDocumentInfo
     /// <summary>Whether the PDF says it's tagged (MarkInfo's Marked).</summary>
     public required bool Marked { get; init; }
 
+    /// <summary>
+    /// Whether MarkInfo says the tags may not be reliable (Suspects), as a tool that guessed them sets it.
+    /// </summary>
+    public bool Suspects { get; init; }
+
+    /// <summary>
+    /// Whether the catalog has a structure tree root (StructTreeRoot). A snapshot shows a missing root as an empty
+    /// structure section, as it does an empty tree.
+    /// </summary>
+    public bool HasStructureTree { get; init; }
+
     /// <summary>The document's default language, such as "en-US"; null when it doesn't set one.</summary>
     public required string? Language { get; init; }
 
@@ -315,6 +326,18 @@ public sealed record PdfMetadata
 
     /// <summary>Set when the XMP isn't well-formed XML, has a DTD or nests more than 256 deep; the XMP values are then null.</summary>
     public bool XmpUnreadable { get; init; }
+
+    /// <summary>
+    /// Whether the catalog has an XMP metadata stream. A snapshot can't tell a missing one from one with none of the
+    /// values it prints.
+    /// </summary>
+    public bool HasXmp { get; init; }
+
+    /// <summary>
+    /// The prefix the XMP writes its PDF/UA identification properties with, when it isn't the "pdfuaid" PDF/UA names;
+    /// null when it is, or when there are none. Snapshots leave it out, as it's how the XML is spelled.
+    /// </summary>
+    public string? PdfUaIdPrefix { get; init; }
 }
 
 /// <summary>One role map entry: a custom structure type and the type it maps to.</summary>
@@ -657,6 +680,12 @@ public sealed record PdfStructureElement
     /// untagged.
     /// </summary>
     public int UnreadChildren { get; init; }
+
+    /// <summary>
+    /// Set when the element has no parent entry (/P), which PDF/UA requires, so a tool that walks up the tree from it
+    /// can't place it.
+    /// </summary>
+    public bool ParentMissing { get; init; }
 
     /// <summary>Marked content in the element that sets its own language, replacement text, alt text or expansion.</summary>
     public IReadOnlyList<PdfMarkedSpan> MarkedSpans

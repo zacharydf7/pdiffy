@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace PDiffy;
 
 /// <summary>Applies <see cref="PdfCheck"/> rules to a document's model, one method per rule.</summary>
@@ -30,6 +32,9 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.NoActions: NoActions(); break;
             case PdfCheck.NoEmbeddedFiles: NoEmbeddedFiles(); break;
             case PdfCheck.RoleMap: RoleMap(); break;
+            case PdfCheck.XmpMetadata: XmpMetadata(); break;
+            case PdfCheck.TaggedPdf: TaggedPdf(); break;
+            case PdfCheck.PdfVersion: PdfVersion(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -246,6 +251,84 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
+    // Without readable XMP there's nothing else to check in it.
+    private void XmpMetadata()
+    {
+        var metadata = document.Metadata;
+        var path = Name(PdfSection.Metadata);
+        if (!metadata.HasXmp || metadata.XmpUnreadable)
+        {
+            Add(PdfCheck.XmpMetadata, null, $"{path} > xmp",
+                metadata.HasXmp ? "The XMP metadata can't be read" : "The document has no XMP metadata",
+                "ISO 14289-1 7.1");
+            return;
+        }
+
+        if (metadata.PdfUaPart != "1")
+        {
+            Add(PdfCheck.XmpMetadata, null, $"{path} > pdfuaid-part", metadata.PdfUaPart is null
+                ? "The XMP doesn't say the document is PDF/UA (pdfuaid:part)"
+                : $"The XMP says PDF/UA part {metadata.PdfUaPart}, not 1");
+        }
+
+        if (metadata.PdfUaIdPrefix is { } prefix)
+        {
+            var spelled = prefix.Length == 0 ? "without a prefix" : $"with the prefix \"{prefix}\"";
+            Add(PdfCheck.XmpMetadata, null, $"{path} > pdfuaid-prefix",
+                $"The XMP writes its PDF/UA identification {spelled}, not \"pdfuaid\"");
+        }
+
+        if (IsBlank(metadata.XmpTitle))
+        {
+            Add(PdfCheck.XmpMetadata, null, $"{path} > xmp-title", "The XMP has no title (dc:title)",
+                "ISO 14289-1 7.1");
+        }
+    }
+
+    private void TaggedPdf()
+    {
+        var info = document.Document;
+        var section = Name(PdfSection.Document);
+        if (!info.Marked)
+        {
+            Add(PdfCheck.TaggedPdf, null, $"{section} > marked",
+                "The document isn't marked as tagged (MarkInfo Marked)", "ISO 14289-1 6.2");
+        }
+
+        if (info.Suspects)
+        {
+            Add(PdfCheck.TaggedPdf, null, $"{section} > suspects",
+                "The document says its tags may not be reliable (MarkInfo Suspects)");
+        }
+
+        if (!info.HasStructureTree)
+        {
+            Add(PdfCheck.TaggedPdf, null, Name(PdfSection.Structure), "The document has no structure tree");
+        }
+
+        foreach (var (element, path) in Elements.Where(pair => pair.Element.ParentMissing))
+        {
+            Add(PdfCheck.TaggedPdf, element.FirstPage, path,
+                $"{element.Type}{On(element.FirstPage)} has no parent entry (P)");
+        }
+    }
+
+    // PDF 2.0 is for PDF/UA-2. A catalog /Version later than the header upgrades the file, so it counts too.
+    private void PdfVersion()
+    {
+        var settings = document.Settings;
+        var versions = new[] { ("version", "file header", settings.PdfVersion),
+            ("catalog-version", "catalog", settings.CatalogVersion) };
+        foreach (var (key, where, version) in versions)
+        {
+            if (!double.TryParse(version, NumberStyles.Float, CultureInfo.InvariantCulture, out var number)) continue;
+            if (number <= 1.7) continue;
+
+            Add(PdfCheck.PdfVersion, null, $"{Name(PdfSection.Settings)} > {key}",
+                $"The {where} says PDF {version}; PDF/UA-1 files are PDF 1.0 to 1.7");
+        }
+    }
+
     // The type and the types it maps to in turn, up to the first standard type, a type with no mapping, or the first
     // type seen twice, which ends the chain when it loops.
     private static List<string> Chain(string type, Dictionary<string, string> map)
@@ -299,13 +382,14 @@ internal sealed class PdfChecker(PdfUaDocument document)
 
     private static string On(int? page) => page is int number ? $" on p{number}" : "";
 
-    private void Add(PdfCheck check, int? page, string path, string message)
+    // A rule that covers more than one clause names the finding's own, so it can be matched with a validator's report.
+    private void Add(PdfCheck check, int? page, string path, string message, string? clause = null)
     {
         var (category, severity, reference) = RuleOf(check);
         _findings.Add(new PdfCheckFinding
         {
-            Check = check, Category = category, Severity = severity, Reference = reference, Page = page, Path = path,
-            Message = message,
+            Check = check, Category = category, Severity = severity, Reference = clause ?? reference, Page = page,
+            Path = path, Message = message,
         });
     }
 
@@ -323,6 +407,9 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),
+        PdfCheck.XmpMetadata => new(PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 5"),
+        PdfCheck.TaggedPdf => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),
+        PdfCheck.PdfVersion => new(PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 6.1"),
         PdfCheck.NoActions or PdfCheck.NoEmbeddedFiles =>
             new(PdfCheckCategory.HouseRules, PdfCheckSeverity.Warning, null),
         _ => throw new ArgumentOutOfRangeException(nameof(check), check, "Every check needs a rule."),

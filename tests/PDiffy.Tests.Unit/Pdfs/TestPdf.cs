@@ -20,6 +20,9 @@ internal sealed class TestPdf
     public string? Title { get; init; }
     public string? PdfUaPart { get; init; }
 
+    /// <summary>The entries of the catalog's MarkInfo dictionary.</summary>
+    public string MarkInfo { get; init; } = "/Marked true";
+
     /// <summary>Raw XMP properties, such as "&lt;dc:language&gt;...&lt;/dc:language&gt;", using the rdf, pdfuaid, pdfaid and dc prefixes.</summary>
     public string? Xmp { get; init; }
 
@@ -104,7 +107,7 @@ internal sealed class TestPdf
         var pageObjects = _pages.Select(_ => Reserve()).ToList();
         var annotations = _pages.Select(_ => new List<int>()).ToList();
 
-        var catalogEntries = $"/Type /Catalog /Pages {pagesNode} 0 R /MarkInfo << /Marked true >> "
+        var catalogEntries = $"/Type /Catalog /Pages {pagesNode} 0 R /MarkInfo << {MarkInfo} >> "
             + "/ViewerPreferences << /DisplayDocTitle true >>" + _catalogEntries;
         if (Lang is not null) catalogEntries += $" /Lang ({Lang})";
 
@@ -214,7 +217,8 @@ internal sealed class TestPdf
         }
 
         var pageEntry = element.Page is null ? "" : $" /Pg {page} 0 R";
-        Set(number, $"<< /Type /StructElem /S /{element.Type} /P {parent} 0 R{pageEntry} /K [{string.Join(" ", kids)}] "
+        var parentEntry = element.WithoutParent ? "" : $" /P {parent} 0 R";
+        Set(number, $"<< /Type /StructElem /S /{element.Type}{parentEntry}{pageEntry} /K [{string.Join(" ", kids)}] "
             + $"{element.Entries} >>");
         return number;
     }
@@ -236,12 +240,12 @@ internal sealed class TestPdf
     }
 
     // The rdf:Description declares the rdf, pdfuaid, pdfaid and dc prefixes, so properties can use them directly.
-    private int AddXmp(string properties)
-    {
-        var xml = "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">"
-            + "<rdf:Description xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\" xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\" "
-            + $"xmlns:dc=\"http://purl.org/dc/elements/1.1/\">{properties}</rdf:Description></rdf:RDF></x:xmpmeta>";
-        return Add(StreamObject("/Type /Metadata /Subtype /XML", xml));
-    }
+    private int AddXmp(string properties) => Add(StreamObject("/Type /Metadata /Subtype /XML", XmpPacket(properties)));
+
+    /// <summary>An XMP packet holding the properties, which can use the rdf, pdfuaid, pdfaid and dc prefixes.</summary>
+    internal static string XmpPacket(string properties) =>
+        "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"><rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">"
+        + "<rdf:Description xmlns:pdfuaid=\"http://www.aiim.org/pdfua/ns/id/\" xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\" "
+        + $"xmlns:dc=\"http://purl.org/dc/elements/1.1/\">{properties}</rdf:Description></rdf:RDF></x:xmpmeta>";
 
 }

@@ -9,6 +9,9 @@ internal sealed record TestElement(string Type, params object[] Kids)
 {
     public int? Page { get; init; } = 1;
     public string Entries { get; init; } = "";
+
+    /// <summary>Leaves out the parent entry (/P), which PDF/UA requires.</summary>
+    public bool WithoutParent { get; init; }
 }
 
 /// <summary>A marked-content reference: an MCID on a page that can differ from the element's own.</summary>
