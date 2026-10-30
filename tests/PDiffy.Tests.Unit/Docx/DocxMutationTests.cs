@@ -27,6 +27,12 @@ public class DocxMutationTests
         { "list restart", new Sample { SecondItemList = 2 }, DocxSection.Body, ChangeKind.AttributeChanged },
         { "header row flag", new Sample { HeaderRow = false }, DocxSection.Body, ChangeKind.Changed },
         { "cell merge", new Sample { CellSpan = 2 }, DocxSection.Body, ChangeKind.AttributeChanged },
+        { "table alt text", new Sample { TableFormat = "<w:tblCaption w:val=\"Trails\"/>" }, DocxSection.Body, ChangeKind.AttributeChanged },
+        { "row height", new Sample { RowFormat = "<w:trHeight w:val=\"400\"/>" }, DocxSection.Body, ChangeKind.AttributeChanged },
+        { "row kept on one page", new Sample { RowFormat = "<w:cantSplit/>" }, DocxSection.Body, ChangeKind.AttributeChanged },
+        { "cell alignment", new Sample { CellFormat = "<w:vAlign w:val=\"center\"/>" }, DocxSection.Body, ChangeKind.AttributeChanged },
+        { "cell text direction", new Sample { CellFormat = "<w:textDirection w:val=\"btLr\"/>" }, DocxSection.Body,
+            ChangeKind.AttributeChanged },
         { "image alt text", new Sample { ImageAlt = "Store logo" }, DocxSection.Body, ChangeKind.AttributeChanged },
         { "image bytes", new Sample { ImageBytes = [0x89, 0x50, 0x4E, 0x47, 9, 9, 9] }, DocxSection.Body, ChangeKind.AttributeChanged },
         { "field result", new Sample { PageResult = "4" }, DocxSection.Body, ChangeKind.AttributeChanged },
@@ -64,6 +70,9 @@ public class DocxMutationTests
         public int SecondItemList { get; init; } = 1;
         public bool HeaderRow { get; init; } = true;
         public int CellSpan { get; init; } = 1;
+        public string TableFormat { get; init; } = "";
+        public string RowFormat { get; init; } = "";
+        public string CellFormat { get; init; } = "";
         public string ImageAlt { get; init; } = "Park logo";
         public byte[] ImageBytes { get; init; } = Logo;
         public string PageResult { get; init; } = "3";
@@ -94,9 +103,9 @@ public class DocxMutationTests
         var insert = sample.TrackedInsert ? """<w:ins w:id="10" w:author="Ann"><w:r><w:t xml:space="preserve"> daily</w:t></w:r></w:ins>""" : "";
         var comment = sample.Comment ? """<w:r><w:commentReference w:id="0"/></w:r>""" : "";
         // A cell spanning both columns replaces the second cell, as Word merges them.
-        var span = sample.CellSpan == 1 ? "" : $"""<w:tcPr><w:gridSpan w:val="{sample.CellSpan}"/></w:tcPr>""";
+        var span = sample.CellSpan == 1 ? "" : $"""<w:gridSpan w:val="{sample.CellSpan}"/>""";
         var secondCell = sample.CellSpan == 1 ? "<w:tc><w:p><w:r><w:t>Stage</w:t></w:r></w:p></w:tc>" : "";
-        var header = sample.HeaderRow ? "<w:trPr><w:tblHeader/></w:trPr>" : "";
+        var header = sample.HeaderRow ? "<w:tblHeader/>" : "";
         var body = $"""
             <w:p><w:pPr><w:pStyle w:val="{sample.Style}"/><w:jc w:val="{sample.Alignment}"/><w:ind w:left="{sample.IndentTwips}"/>
                 <w:spacing w:after="{sample.SpacingAfterTwips}"/>{sample.ParagraphFormat}</w:pPr>
@@ -106,8 +115,8 @@ public class DocxMutationTests
             <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Ridgeline</w:t></w:r></w:p>
             <w:p><w:pPr><w:numPr><w:ilvl w:val="{sample.SecondItemLevel}"/><w:numId w:val="{sample.SecondItemList}"/></w:numPr></w:pPr>
               <w:r><w:t>Cedars</w:t></w:r></w:p>
-            <w:tbl><w:tblGrid><w:gridCol w:w="2880"/><w:gridCol w:w="2880"/></w:tblGrid>
-              <w:tr>{header}<w:tc>{span}<w:p><w:r><w:t>Trail</w:t></w:r></w:p></w:tc>{secondCell}</w:tr></w:tbl>
+            <w:tbl><w:tblPr>{sample.TableFormat}</w:tblPr><w:tblGrid><w:gridCol w:w="2880"/><w:gridCol w:w="2880"/></w:tblGrid>
+              <w:tr><w:trPr>{header}{sample.RowFormat}</w:trPr><w:tc><w:tcPr>{span}{sample.CellFormat}</w:tcPr><w:p><w:r><w:t>Trail</w:t></w:r></w:p></w:tc>{secondCell}</w:tr></w:tbl>
             <w:p><w:r><w:drawing xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
                 xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
               <wp:inline><wp:extent cx="1524000" cy="508000"/><wp:docPr id="1" name="Picture 1" descr="{sample.ImageAlt}"/>

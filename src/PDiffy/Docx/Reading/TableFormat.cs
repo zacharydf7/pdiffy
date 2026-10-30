@@ -5,8 +5,9 @@ using static PDiffy.Docx.Reading.DocxXml;
 namespace PDiffy.Docx.Reading;
 
 /// <summary>
-/// Reads the widths, margins, borders and shading of tables, cells and paragraphs (w:tblW, w:tcW, w:tblCellMar, w:tcMar,
-/// w:tblBorders, w:tcBorders, w:pBdr, w:shd) into the short forms <see cref="DocxTable"/> describes.
+/// Reads the widths, margins, borders and shading of tables, cells and paragraphs, and the heights of rows (w:tblW, w:tcW,
+/// w:tblCellMar, w:tcMar, w:tblBorders, w:tcBorders, w:pBdr, w:shd, w:trHeight) into the short forms
+/// <see cref="DocxTable"/> describes.
 /// </summary>
 internal static class TableFormat
 {
@@ -34,6 +35,15 @@ internal static class TableFormat
         var line = $"{Side(side)}:{Attr(side, "val") ?? "none"}:{Points((Integer(side, "sz") ?? 0) / 8.0)}";
         return Attr(side, "color") is { } color and not "auto" ? $"{line}:{color.ToUpperInvariant()}" : line;
     }).ToList() ?? [];
+
+    // A row height is at least its value unless the rule says "exact", or "auto" (sized by Word, the value ignored).
+    public static string? Height(XElement? height) => Attr(height, "hRule") switch
+    {
+        _ when height is null => null,
+        "auto" => "auto",
+        "exact" => $"{Points(Twips(height, "val") ?? 0)}-exact",
+        _ => Points(Twips(height, "val") ?? 0),
+    };
 
     // A fill color in hex; "auto" is no fill.
     public static string? Shading(XElement? shading) =>

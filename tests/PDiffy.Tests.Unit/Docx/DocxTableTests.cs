@@ -60,6 +60,31 @@ public class DocxTableTests
             """.ReplaceLineEndings("\n"), snapshot);
     }
 
+    [Fact]
+    public void ToSnapshot_ShouldRecordAltTextRowHeightsAndCellLayout_WhenATableSetsThem()
+    {
+        var body = """
+            <w:tbl><w:tblPr><w:tblCaption w:val="Trail lengths"/><w:tblDescription w:val="Each trail and its length"/></w:tblPr>
+              <w:tr><w:trPr><w:trHeight w:val="400"/><w:cantSplit/></w:trPr>
+                <w:tc><w:tcPr><w:vAlign w:val="center"/><w:textDirection w:val="btLr"/></w:tcPr><w:p/></w:tc></w:tr>
+              <w:tr><w:trPr><w:trHeight w:val="400" w:hRule="exact"/></w:trPr><w:tc><w:p/></w:tc></w:tr>
+              <w:tr><w:trPr><w:trHeight w:val="400" w:hRule="auto"/></w:trPr><w:tc><w:p/></w:tc></w:tr></w:tbl>
+            """;
+
+        var snapshot = new TestDocx { Body = body }.Load().ToSnapshot();
+
+        Assert.Contains("""
+              Table caption="Trail lengths" description="Each trail and its length"
+                Row height=20 split=no
+                  Cell valign=center text-direction=btLr
+                    P
+                Row height=20-exact
+                  Cell
+                    P
+                Row height=auto
+            """.ReplaceLineEndings("\n"), snapshot);
+    }
+
     [Theory]
     [InlineData("w:w=\"2500\" w:type=\"pct\"", "50%")]
     [InlineData("w:w=\"50%\" w:type=\"pct\"", "50%")]

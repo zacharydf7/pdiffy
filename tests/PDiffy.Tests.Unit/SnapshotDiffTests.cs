@@ -446,6 +446,21 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowOnlyTheNewKeys_WhenADocxSnapshotFromBeforeTableAltTextMeetsOneWithIt()
+    {
+        var before = "# docx-snapshot v1\nbody\n  Table widths=144\n    Row\n      Cell\n        P \"Trail\"\n"
+            + "    Row\n      Cell\n        P \"Length\"\n";
+        var after = "# docx-snapshot v1\nbody\n  Table widths=144 caption=\"Trails\"\n    Row height=20 split=no\n      Cell valign=center\n"
+            + "        P \"Trail\"\n    Row height=20\n      Cell\n        P \"Length\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Equal(["caption: (missing) -> \"Trails\"", "height: (missing) -> 20", "split: (missing) -> no",
+            "valign: (missing) -> center", "height: (missing) -> 20"], changes.Select(change => change.Detail));
+        Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
+    }
+
+    [Fact]
     public void Compare_ShouldReportOneBookmarkChanged_WhenABookmarkToAnotherFileLosesItsPage()
     {
         var before = SnapshotText.Header + "bookmarks\n  \"Atlas\" -> p1\n";

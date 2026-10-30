@@ -58,9 +58,9 @@ Sections always appear in this order. Each can be left out with [`DocxSection`](
 |---|---|
 | `P ... "text"` | A paragraph: its style, list item and label, layout that differs from its style (such as `align=`, `indent-left=`, `rtl-paragraph`, `borders=` or `shading=`), then its text |
 | `span "text" ...` | Part of the paragraph whose formatting differs from the paragraph's, such as `bold`, `font=`, `hidden` (text Word doesn't show or print), `double-strike`, `rtl` (right to left) or `lang=fr-FR` |
-| `Table ...` | A table: style, grid widths, width, cell margins, borders |
-| `Row` / `Row header` | A table row; a header row repeats on each page |
-| `Cell ...` | A cell: span, merge, shading, width, margins, borders |
+| `Table ...` | A table: style, grid widths, width, cell margins, borders, and its alt text (`caption=`, `description=`) |
+| `Row` / `Row header` | A table row; a header row repeats on each page. Its height (`height=20`, `height=20-exact` or `height=auto`) and `split=no` when it's kept on one page |
+| `Cell ...` | A cell: span, merge, shading, width, margins, borders, vertical alignment (`valign=`), text direction (`text-direction=`) |
 | `Control <kind> ...` | A content control, with its tag (`name=`) and title. Under a cell, `around` marks one around the cell |
 | `Inserted <kind>` | An inserted document (`w:altChunk`); a DOCX is read in place, other formats by hash |
 | `bookmark "Name"` | A bookmark between blocks, rows or cells; `columns=0-2` for a table-column bookmark |

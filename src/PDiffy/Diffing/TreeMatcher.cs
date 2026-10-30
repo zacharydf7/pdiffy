@@ -293,11 +293,12 @@ internal sealed class TreeMatcher(string name, Section? section,
     private static (double Text, double All) Likeness(SnapshotLine old, SnapshotLine line) =>
         (Similarity(old, line), Overlap(old.AllWords, line.AllWords));
 
-    // Only text words count when both lines have text, so type, page and style alone never make two lines the same.
+    // Only text words count when both lines have text, so type, page and style alone never make two lines the same. A
+    // line without text of its own, such as a table row, is told apart by the text under it, else by its own words.
     private static double Similarity(SnapshotLine first, SnapshotLine second) =>
-        first.TextWords.Count > 0 && second.TextWords.Count > 0
-            ? Overlap(first.TextWords, second.TextWords)
-            : Overlap(first.AllWords, second.AllWords);
+        first.TextWords.Count > 0 && second.TextWords.Count > 0 ? Overlap(first.TextWords, second.TextWords)
+        : first.SubtreeWords.Count > 0 && second.SubtreeWords.Count > 0 ? Overlap(first.SubtreeWords, second.SubtreeWords)
+        : Overlap(first.AllWords, second.AllWords);
 
     // A one-word value, such as a number in a table cell, replaced on a line that is otherwise the same.
     private static bool IsValueChange(SnapshotLine old, SnapshotLine line) =>

@@ -34,6 +34,8 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   style that sets them prints `rtl-paragraph`, `borders=top:single:0.5` and `shading=FFFF00`. A border set on a
   paragraph replaces only that side of its style's, and `nil` or `none` removes it. Only snapshots of documents with
   such paragraphs or styles change.
+- A table's alt text (`caption=`, `description=`), a row's height and `split=no` (kept on one page), and a cell's vertical alignment
+  and text direction are read. Only snapshots of documents with tables that set them change.
 
 ### Accessibility flags
 

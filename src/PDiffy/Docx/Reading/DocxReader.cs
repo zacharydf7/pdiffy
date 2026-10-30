@@ -184,6 +184,8 @@ internal sealed class DocxReader
             Width = TableFormat.Width(properties?.Element(W + "tblW")),
             CellMargins = TableFormat.Margins(properties?.Element(W + "tblCellMar")),
             Borders = TableFormat.Borders(properties?.Element(W + "tblBorders")),
+            Caption = Attr(properties?.Element(W + "tblCaption"), "val"),
+            Description = Attr(properties?.Element(W + "tblDescription"), "val"),
             Rows = rows,
             Between = between,
             Revisions =
@@ -270,6 +272,8 @@ internal sealed class DocxReader
         ReadCells(row, [], cells, between);
         return new DocxRow(cells, IsOn(properties?.Element(W + "tblHeader")))
         {
+            Height = TableFormat.Height(properties?.Element(W + "trHeight")),
+            CantSplit = IsOn(properties?.Element(W + "cantSplit")),
             Revisions =
             [
                 .. Changes(properties, RowChanges),
@@ -314,6 +318,8 @@ internal sealed class DocxReader
             Width = TableFormat.Width(properties?.Element(W + "tcW")),
             Margins = TableFormat.Margins(properties?.Element(W + "tcMar")),
             Borders = TableFormat.Borders(properties?.Element(W + "tcBorders")),
+            VerticalAlign = Attr(properties?.Element(W + "vAlign"), "val"),
+            TextDirection = Attr(properties?.Element(W + "textDirection"), "val"),
             Revisions = Changes(properties, CellChanges),
             Controls = controls,
         };

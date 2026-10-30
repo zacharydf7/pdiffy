@@ -349,13 +349,20 @@ internal sealed class DocxSnapshotWriter
         Key(line, "width", table.Width);
         Key(line, "cell-margins", List(table.CellMargins));
         Key(line, "borders", List(Borders(table.Borders)));
+        Key(line, "caption", Quote(table.Caption));
+        Key(line, "description", Quote(table.Description));
         Line(depth, line.ToString());
         foreach (var revision in table.Revisions) Line(depth + 1, RevisionLine(revision));
         for (var i = 0; i < table.Rows.Count; i++)
         {
             var row = table.Rows[i];
             WriteBetween(table.Between, i, depth + 1);
-            Line(depth + 1, row.IsHeader ? "Row header" : "Row");
+            var rowLine = new StringBuilder(row.IsHeader ? "Row header" : "Row");
+            Key(rowLine, "height", row.Height);
+
+            // A key rather than a bare word: a row line has no text, so a new word would stop it pairing with the old line.
+            if (row.CantSplit) Key(rowLine, "split", "no");
+            Line(depth + 1, rowLine.ToString());
             foreach (var control in row.Controls) WriteControl(control, depth + 2);
             foreach (var revision in row.Revisions) Line(depth + 2, RevisionLine(revision));
             for (var j = 0; j < row.Cells.Count; j++)
@@ -369,6 +376,8 @@ internal sealed class DocxSnapshotWriter
                 Key(cellLine, "width", cell.Width);
                 Key(cellLine, "margins", List(cell.Margins));
                 Key(cellLine, "borders", List(Borders(cell.Borders)));
+                Key(cellLine, "valign", cell.VerticalAlign);
+                Key(cellLine, "text-direction", cell.TextDirection);
                 Line(depth + 2, cellLine.ToString());
                 foreach (var control in cell.Controls) WriteControl(control, depth + 3, around: true);
                 foreach (var revision in cell.Revisions) Line(depth + 3, RevisionLine(revision));

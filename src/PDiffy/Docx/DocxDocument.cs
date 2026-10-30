@@ -523,6 +523,13 @@ public sealed record DocxTable : DocxBlock
     public IReadOnlyList<string> CellMargins { get; init; } = [];
 
     public IReadOnlyList<string> Borders { get; init; } = [];
+
+    /// <summary>The table's title, the first part of its alt text in Word.</summary>
+    public string? Caption { get; init; }
+
+    /// <summary>The table's description, the rest of its alt text in Word.</summary>
+    public string? Description { get; init; }
+
     public IReadOnlyList<DocxRow> Rows { get; init; } = [];
 
     /// <summary>Bookmarks and content PDiffy can't read between the rows.</summary>
@@ -535,6 +542,14 @@ public sealed record DocxTable : DocxBlock
 /// <summary>A table row. A header row repeats at the top of each page the table runs onto.</summary>
 public sealed record DocxRow(IReadOnlyList<DocxCell> Cells, bool IsHeader = false)
 {
+    /// <summary>
+    /// The row's height in points: at least that much ("20"), exactly that much ("20-exact"), or "auto" when Word sizes it.
+    /// </summary>
+    public string? Height { get; init; }
+
+    /// <summary>Whether the row is kept on one page rather than split across two.</summary>
+    public bool CantSplit { get; init; }
+
     /// <summary>
     /// Tracked changes to the row: "row-insert", "row-delete", "row-format", or "row-table-format" for the table
     /// properties the row sets for itself.
@@ -564,6 +579,12 @@ public sealed record DocxCell(IReadOnlyList<DocxBlock> Blocks, int Span = 1, str
     public string? Width { get; init; }
     public IReadOnlyList<string> Margins { get; init; } = [];
     public IReadOnlyList<string> Borders { get; init; } = [];
+
+    /// <summary>Where the text sits in the cell as Word writes it, such as "center" or "bottom".</summary>
+    public string? VerticalAlign { get; init; }
+
+    /// <summary>The direction of the cell's text when the cell sets one, as Word writes it, such as "btLr".</summary>
+    public string? TextDirection { get; init; }
 
     /// <summary>Tracked changes to the cell: "cell-insert", "cell-delete", "cell-merge" or "cell-format".</summary>
     public IReadOnlyList<DocxRevision> Revisions { get; init; } = [];

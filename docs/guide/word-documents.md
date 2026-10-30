@@ -65,8 +65,8 @@ The [Word snapshot format](../reference/docx-snapshot-format.md) reference lists
   out, since they can't change the document.
 - List labels as Word numbers them.
 - Paragraph layout and text formatting.
-- Tables: grid, header rows, merged cells, shading, widths, margins and borders, and content controls around rows and
-  cells.
+- Tables: grid, header rows, merged cells, shading, widths, margins and borders, alt text, row heights, cell
+  alignment and text direction, and content controls around rows and cells.
 - Images and charts with their alt text and a hash of the image; text boxes with their paragraphs; equations;
   embedded objects and ActiveX controls.
 - Links, bookmarks, symbols, fields with their results, and form controls.
