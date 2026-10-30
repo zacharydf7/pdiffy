@@ -767,6 +767,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | `pdfua-snapshot v1`, unchanged version: an artifact whose text is split across nested marked content is read in drawing order (`"Page 1"`, not `"1Page"`). Only snapshots of documents with such artifacts change; a short one can show as removed and added |
 | Next | `pdfua-snapshot v1`, unchanged version: a form that sets a calculation order, `NeedAppearances` or XFA prints a `form` line first in `forms`, and `javascript=yes` now covers form field scripts, so `NoActions` and `pdiffy check` report them. Only snapshots of documents with such forms or scripts change |
 | Next | `pdfua-snapshot v1`, unchanged version: form fields print their default value, export values, alignment, typed text's font, size and color, and JavaScript by when it runs (`scripts=calculate:3f9c0a1b2d4e5f60`). Snapshots of documents with forms change |
 | Next | `pdfua-snapshot v1`, unchanged version: a signed signature field prints its signature (`signed=yes subfilter=adbe.pkcs7.detached covers-file=yes`, whether a reason, location and signing time are given, and a certification level), not its bytes. Only snapshots of signed documents change |

@@ -16,6 +16,9 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### PDF (`pdfua-snapshot v1`, unchanged)
 
+- An artifact whose text is split across nested marked content is read in the order it's drawn (`"Page 1"`, not
+  `"1Page"`). Only snapshots of documents with such artifacts change, and their artifact text was wrong. A short artifact,
+  such as a page number, can show as removed and added, since the old text shares no word with the new.
 - A form that sets a calculation order, asks the viewer to draw its fields (`NeedAppearances`) or carries XFA prints a
   `form` line first in `forms` (`form calculation-order=["trip.tax","trip.total"] need-appearances=yes xfa=dynamic`),
   and `javascript=` in `settings` now also says `yes` when a form field runs JavaScript, which it used to miss. Only

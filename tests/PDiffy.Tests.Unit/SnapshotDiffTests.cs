@@ -602,6 +602,18 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowOnlyTheReorderedText_WhenASnapshotFromBeforeNestedArtifactTextMeetsOneWithIt()
+    {
+        // The old reader put the nested text last and fused the two words where it jumped back.
+        var before = SnapshotText.Header + "artifacts\n  p1 \"page 1Trail Guide\"\n";
+        var after = SnapshotText.Header + "artifacts\n  p1 \"Trail Guide page 1\"\n";
+
+        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+
+        Assert.Equal((ChangeKind.TextChanged, Section.Artifacts), (change.Kind, change.Section));
+    }
+
+    [Fact]
     public void Compare_ShouldShowOnlyTheNewKey_WhenASnapshotFromBeforeFigureImagesMeetsOneWithThem()
     {
         var before = SnapshotText.Header + "structure\n  Figure p1 alt=\"Logo\"\n";

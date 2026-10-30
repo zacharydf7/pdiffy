@@ -291,6 +291,17 @@ public class PdfUaDocumentLoadTests
     }
 
     [Fact]
+    public void Load_ShouldReadAnArtifactsTextInDrawingOrder_WhenPartOfItIsInNestedMarkedContent()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("/Artifact BMC BT /F1 12 Tf 72 40 Td /Span BMC (Page ) Tj EMC (1) Tj ET EMC");
+
+        var artifact = Assert.Single(pdf.Load().Artifacts);
+
+        Assert.Equal("Page 1", artifact.Text);
+    }
+
+    [Fact]
     public void Load_ShouldKeepArtifactOutOfElementText_WhenArtifactIsNestedInsideAnMcid()
     {
         var pdf = new TestPdf();

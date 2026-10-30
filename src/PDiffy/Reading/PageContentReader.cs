@@ -93,7 +93,7 @@ internal sealed class PageContentReader
                 Own(element, artifact);
             }
 
-            var text = TextJoiner.Join(letters);
+            var text = TextJoiner.Join(InDrawingOrder(letters));
             if (text.Length > 0)
             {
                 var kind = markedContent as ArtifactMarkedContentElement;
@@ -135,10 +135,13 @@ internal sealed class PageContentReader
         };
         if (span == new MarkedSpan()) return null;
 
-        var letters = SelfAndDescendants(markedContent).SelectMany(element => element.Letters)
-            .OrderBy(letter => _drawingOrder.GetValueOrDefault(letter)).ToList();
+        var letters = InDrawingOrder(SelfAndDescendants(markedContent).SelectMany(element => element.Letters));
         return span with { Text = NonEmpty(TextJoiner.Join(letters)) };
     }
+
+    // Letters gathered element by element are a parent's then its children's; the page draws them in content order.
+    private List<Letter> InDrawingOrder(IEnumerable<Letter> letters) =>
+        letters.OrderBy(letter => _drawingOrder.GetValueOrDefault(letter)).ToList();
 
     private static string? NonEmpty(string? value) => string.IsNullOrEmpty(value) ? null : value;
 
