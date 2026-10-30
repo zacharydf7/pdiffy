@@ -110,6 +110,17 @@ with two ways to work out the outline that disagree.
 **How to fix it:** pick one kind. Numbered headings are simpler and what most generators write. With `H`, give each
 heading its own `Sect` and nest the sections the way the outline goes.
 
+## NoteIds
+
+**Finds:** a note (`Note`, a footnote or endnote) with no ID, and a note with the same ID as an earlier one.
+**Category:** `Structure`. **Severity:** `Error`. **From:** ISO 14289-1 7.9.
+
+**Why it matters:** a reference in the text points to its note by the note's ID, so a screen reader can jump to the
+note and back. Without an ID, or with one two notes share, the reference leads nowhere or to the wrong note.
+
+**How to fix it:** give each `Note` element an `/ID` that no other note uses, such as `fn1`, `fn2`. Generators that
+tag footnotes usually number them; check that the IDs survive when documents are merged or sections are reused.
+
 ## FontsEmbedded
 
 **Finds:** a font that isn't embedded. **Category:** `Fonts`. **Severity:** `Error`. **From:** ISO 14289-1 7.21.4.1.

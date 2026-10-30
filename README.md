@@ -438,6 +438,7 @@ public async Task TrailMap_ShouldPassTheAccessibilityChecks_WhenGenerated()
 | `TableHeaders` | A header with no scope that no cell names, and a cell that names a header that doesn't exist | `Tables` | 7.5 |
 | `HeadingLevels` | A heading that skips a level, or one that comes before any H1 | `Headings` | 7.4.2 |
 | `HeadingTypes` | Unnumbered (H) and numbered (H1 to H6) headings in one document, and an element with more than one H | `Headings` | 7.4.4 |
+| `NoteIds` | A note with no ID, and a note with the ID of an earlier one | `Structure` | 7.9 |
 | `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |
 | `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
@@ -803,7 +804,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 | Release | Change |
 |---|---|
 | Next | `pdfua-snapshot v1`, unchanged version: the document line prints `suspects=yes` when MarkInfo says the tags may be unreliable, a structure element with no parent entry gets `parent=missing`, and a file whose header says PDF 2.0 prints `version=2.0`, not `1.4`. Only snapshots of such documents change |
-| Next | `pdfua-snapshot v1`, unchanged version: `PdfCheckSet.Latest` has seven new rules (`RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`, `TocStructure`, `HeadingTypes`), so a snapshot that records checks with it prints `# checks: latest, 19 rules` and what they find. A release's own set doesn't change |
+| Next | `pdfua-snapshot v1`, unchanged version: `PdfCheckSet.Latest` has eight new rules (`RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`, `TocStructure`, `HeadingTypes`, `NoteIds`), so a snapshot that records checks with it prints `# checks: latest, 20 rules` and what they find. A release's own set doesn't change |
 | Next | No snapshot changes. A new problem in the `checks` section from a rule that isn't a house rule is flagged as affecting accessibility |
 | Next | `pdfua-snapshot v1`, unchanged version: a test can opt into a `checks` section, with `Check(PdfCheckSet)`, that lists what the checks find, and a `# checks: ...` header line. Snapshots without the option don't change |
 | Next | `pdfua-snapshot v1`, unchanged version: an element whose marked content is in a form XObject reads its text from the form alone. A form numbers its MCIDs apart from the page, and before, both the page's element and the form's printed the text of both when the two used the same MCID. Only snapshots of documents whose forms reuse the page's MCIDs change, and text a form tags that no element points to now shows in `untagged` |

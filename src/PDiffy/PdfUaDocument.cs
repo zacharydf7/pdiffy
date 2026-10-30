@@ -601,6 +601,12 @@ public sealed record PdfStructureElement
     public string? Name { get; init; }
 
     /// <summary>
+    /// The element's ID (/ID), as the PDF writes it; null when it has none. Snapshots leave it out, since generators
+    /// often make it up, and print a header's <see cref="Name"/> instead.
+    /// </summary>
+    public string? Id { get; init; }
+
+    /// <summary>
     /// The first page the element's own marked content or annotations are on; null when it has none on a page. Its
     /// children's pages don't count.
     /// </summary>

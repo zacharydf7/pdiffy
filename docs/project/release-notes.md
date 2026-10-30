@@ -107,6 +107,8 @@ library does.
   caption, and a caption first) ([#64](https://github.com/zacharydf7/pdiffy/issues/64)).
 - `HeadingTypes` finds a document that mixes unnumbered (H) and numbered (H1 to H6) headings, and an element with
   more than one H ([#65](https://github.com/zacharydf7/pdiffy/issues/65)).
+- `NoteIds` finds a note with no ID, and a note with the ID of an earlier one. `PdfStructureElement` has `Id`, the ID
+  as the PDF writes it, which snapshots leave out ([#66](https://github.com/zacharydf7/pdiffy/issues/66)).
 - Snapshots print `suspects=yes` and `parent=missing` when a document has them, and a PDF 2.0 file's
   `version` is now `2.0`, not `1.4`. `PdfDocumentInfo` has `Suspects` and `HasStructureTree`, `PdfMetadata` has
   `HasXmp` and `PdfUaIdPrefix`, and `PdfStructureElement` has `ParentMissing`

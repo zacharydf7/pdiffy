@@ -502,6 +502,26 @@ public class PdfCheckTests
     }
 
     [Fact]
+    public void Check_ShouldFindNotesWithoutAnIdAndWithAnEarlierNotesId_WhenTheDocumentHasThem()
+    {
+        var pdf = new TestPdf();
+        var page = pdf.AddPage();
+        for (var i = 0; i < 5; i++) page.Tagged(i, $"Note {i}");
+        pdf.Structure(new TestElement("Note", 0) { Entries = "/ID (n1)" }, new TestElement("Note", 1),
+            new TestElement("Note", 2) { Entries = "/ID (n1)" }, new TestElement("Note", 3) { Entries = "/ID (n2)" },
+            new TestElement("Note", 4) { Entries = "/ID ()" });
+
+        var findings = pdf.Load().Check(PdfCheck.NoteIds);
+
+        Assert.Equal(
+        [
+            "structure > Note[2]: Note on p1 has no ID",
+            "structure > Note[3]: Note on p1 has the ID n1, which an earlier note has",
+            "structure > Note[5]: Note on p1 has no ID",
+        ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Fact]
     public void Check_ShouldFindNoRoleMapProblem_WhenAnElementHasNoType()
     {
         var document = Documents.Empty() with { Structure = [new PdfStructureElement { Type = StructureTypes.None }] };
@@ -556,6 +576,7 @@ public class PdfCheckTests
     [InlineData(PdfCheck.ListStructure, PdfCheckCategory.Lists, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     [InlineData(PdfCheck.TocStructure, PdfCheckCategory.Lists, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     [InlineData(PdfCheck.HeadingTypes, PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.4")]
+    [InlineData(PdfCheck.NoteIds, PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.9")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

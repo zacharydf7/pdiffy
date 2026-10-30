@@ -38,6 +38,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.ListStructure: ListStructure(); break;
             case PdfCheck.TocStructure: TocStructure(); break;
             case PdfCheck.HeadingTypes: HeadingTypes(); break;
+            case PdfCheck.NoteIds: NoteIds(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -382,6 +383,21 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
+    // The first note with an ID keeps it; each later one with the same ID is reported.
+    private void NoteIds()
+    {
+        var seen = new HashSet<string>();
+        foreach (var (note, path) in Elements.Where(pair => pair.Element.TypeOrMapped == StructureType.Note))
+        {
+            var page = note.FirstPage;
+            if (note.Id is not { } id || IsBlank(id)) Add(PdfCheck.NoteIds, page, path, $"Note{On(page)} has no ID");
+            else if (!seen.Add(id))
+            {
+                Add(PdfCheck.NoteIds, page, path, $"Note{On(page)} has the ID {id}, which an earlier note has");
+            }
+        }
+    }
+
     // Each element of a type that must sit in another, each child a container can't hold, and a caption that isn't
     // its container's first child. A child is reported once, for the first of these it breaks.
     private void Nesting(PdfCheck check, Dictionary<string, string> parents, Dictionary<string, string[]> holds)
@@ -498,6 +514,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.TableHeaders => new(PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.5"),
         PdfCheck.HeadingLevels => new(PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.2"),
         PdfCheck.HeadingTypes => new(PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.4"),
+        PdfCheck.NoteIds => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.9"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

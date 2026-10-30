@@ -147,6 +147,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
             Type = type,
             MappedType = MapRole(type),
             Name = objects.Text(element, "ID") is { } id ? _namesById.GetValueOrDefault(id) : null,
+            Id = objects.Text(element, "ID"),
             FirstPage = pagesUsed.Count > 0 ? pagesUsed.Min : null,
             LastPage = pagesUsed.Count > 0 ? pagesUsed.Max : null,
             Language = objects.Text(element, "Lang"),

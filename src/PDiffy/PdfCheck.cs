@@ -93,6 +93,9 @@ public enum PdfCheck
     /// structure tree root, holds more than one H.
     /// </summary>
     HeadingTypes,
+
+    /// <summary>Every note (footnote or endnote) has an ID, and no two notes share one.</summary>
+    NoteIds,
 }
 
 /// <summary>
