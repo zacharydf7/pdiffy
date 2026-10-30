@@ -155,7 +155,8 @@ CI shows what changed; accepting is done on a developer machine, so the change g
 3. Run `pdiffy accept --all` and commit the updated `.verified.*` files.
 
 Now and then, run `pdiffy coverage --all` to see how many snapshots still compare each section, in case tests have
-drifted into ignoring the same thing everywhere.
+drifted into ignoring the same thing everywhere, and [`pdiffy unused`](../reference/command-line.md#unused) to find
+the snapshots of renamed or deleted tests.
 
 ## See also
 

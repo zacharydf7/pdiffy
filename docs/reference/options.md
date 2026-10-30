@@ -148,3 +148,4 @@ out both, and a call's `Use(SnapshotProfile.Strict)` leaves out nothing more, so
 | Variable | Does |
 |---|---|
 | `PDIFFY_ACCEPT=1` | Accepts every received snapshot as the new verified one. Ignored when `CI` or `TF_BUILD` is set |
+| `PDIFFY_RUN_LOG=<folder>` | Logs the verified file each snapshot call uses, one log per test process, for [`pdiffy unused`](command-line.md#unused). Use a full path, since each test process resolves a relative one from its own folder |

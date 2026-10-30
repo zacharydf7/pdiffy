@@ -15,9 +15,15 @@ internal static class SnapshotWorkflow
     // case are one file on Windows and macOS.
     private static readonly ConcurrentDictionary<string, string> ReceivedThisRun = new(StringComparer.OrdinalIgnoreCase);
 
+    // The start of each run log's name; the rest is the process ID, since test assemblies run in parallel.
+    public const string RunLogPrefix = "pdiffy-run-";
+
+    private static readonly Lock RunLogLock = new();
+
     public static void Verify(string received, SnapshotFiles files, string kind)
     {
         CheckNotVerifiedBefore(received, files);
+        LogRun(files);
         var verified = File.Exists(files.Verified) ? Normalize(File.ReadAllText(files.Verified)) : null;
         var diff = verified is null || received == verified ? null : SnapshotDiff.Compare(verified, received);
 
@@ -59,6 +65,15 @@ internal static class SnapshotWorkflow
                 + "in a helper method, take [CallerFilePath] and [CallerMemberName] parameters and pass them on as "
                 + "testFile and testName.");
         }
+    }
+
+    // Tests in one process verify in parallel, so writes to its log take turns.
+    private static void LogRun(SnapshotFiles files)
+    {
+        if (Environment.GetEnvironmentVariable(Snapshot.RunLogVariable) is not { Length: > 0 } folder) return;
+        Directory.CreateDirectory(folder);
+        var log = Path.Combine(folder, $"{RunLogPrefix}{Environment.ProcessId}.log");
+        lock (RunLogLock) File.AppendAllText(log, Path.GetFullPath(files.Verified) + "\n");
     }
 
     // The folder is the call's, else Snapshot.Directory, else the test file's; the name defaults to the test file and

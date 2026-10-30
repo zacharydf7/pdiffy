@@ -554,6 +554,58 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void Run_ShouldListTheSnapshotsNoTestUsed_WhenAskedForUnusedOnes()
+    {
+        var used = Write("snaps/Map.verified.pdfua.txt", "");
+        Write("snaps/Map.received.pdfua.txt", "");
+        var verified = Write("snaps/Old.verified.pdfua.txt", "");
+        var received = Write("snaps/Old.received.pdfua.txt", "");
+        var report = Write("snaps/Old.diff.html", "");
+        var nested = Write("snaps/more/Gone.verified.txt", "");
+        var otherKind = Write("snaps/Map.verified.txt", "");
+        Write("snaps/Map.diff.html", "");
+        Write("runs/pdiffy-run-1.log", used + "\n");
+        string[] args = ["unused", Path.Combine(_folder, "snaps"), "--all", "--run-log", Path.Combine(_folder, "runs")];
+
+        var exitCode = Commands.Run(args, _output, _error);
+
+        Assert.Equal(Commands.Different, exitCode);
+        var expected = new[] { report, received, verified, nested, otherKind }.Select(Path.GetFullPath)
+            .Order(StringComparer.Ordinal);
+        Assert.Equal(expected, _output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    [Fact]
+    public void Run_ShouldDeleteOnlyTheUnusedSnapshots_WhenAskedToDeleteThem()
+    {
+        var used = Write("Map.verified.pdfua.txt", "");
+        var unused = Write("Old.verified.pdfua.txt", "");
+        Write("runs/pdiffy-run-1.log", Path.Combine(_folder, "other", "Trail.verified.txt") + "\n");
+        Write("runs/pdiffy-run-2.log", used + "\nC:\\cut-off.veri");
+        string[] args = ["unused", _folder, "--run-log", Path.Combine(_folder, "runs"), "--delete"];
+
+        var exitCode = Commands.Run(args, _output, _error);
+
+        Assert.Equal((Commands.Same, $"deleted {unused}"), (exitCode, _output.ToString().TrimEnd()));
+        Assert.Equal((true, false), (File.Exists(used), File.Exists(unused)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Run_ShouldRefuseAndReturnTwo_WhenAskedForUnusedSnapshotsWithoutARunLog(bool givesFolder)
+    {
+        Write("Old.verified.pdfua.txt", "");
+        var runLog = Path.Combine(_folder, "runs");
+        string[] args = givesFolder ? ["unused", _folder, "--run-log", runLog] : ["unused", _folder];
+
+        var exitCode = Commands.Run(args, _output, _error);
+
+        Assert.Equal(Commands.UsageError, exitCode);
+        Assert.Contains(givesFolder ? "has no run logs" : "needs --run-log", _error.ToString());
+    }
+
+    [Fact]
     public void Run_ShouldPrintTheDocxsSnapshot_WhenGivenADocx()
     {
         var docx = WriteDocx("guide.docx", "Hello");

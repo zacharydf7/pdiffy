@@ -26,12 +26,15 @@ public static class Commands
                                                             Summarize received snapshots
           pdiffy coverage [<files or folders>] [--all] [--markdown <coverage.md>]
                                                             Count what the verified snapshots compare
+          pdiffy unused [<folders>] --run-log <folder> [--all] [--delete]
+                                                            List or delete snapshots no test used in a run
           pdiffy --version                                  Print the version and the snapshot formats it writes
           pdiffy --help, -h                                 Print this help
 
         Comparing exits with 0 when nothing changed and 1 when something did; check, with 0 when it finds nothing and 1
-        when it finds something; report, with 0 when no snapshot was received and 1 when one was.
-        accept, report and coverage take the current folder by default; --all includes subfolders.
+        when it finds something; report, with 0 when no snapshot was received and 1 when one was; unused, with 0 when
+        every snapshot was used or --delete removed the rest, and 1 when it lists some.
+        accept, report, coverage and unused take the current folder by default; --all includes subfolders.
         """;
 
     public static int Run(string[] args, TextWriter output, TextWriter error)
@@ -48,6 +51,7 @@ public static class Commands
                 ["accept", .. var rest] => Accept(rest, output),
                 ["report", .. var rest] => Report(rest, output),
                 ["coverage", .. var rest] => Coverage(rest, output),
+                ["unused", .. var rest] => Unused(rest, output),
                 ["compare", var before, var after, .. var options] =>
                     CompareFolders(before, after, options, output, error),
                 [var before, var after, .. var options] => Compare(before, after, options, output, error),
@@ -169,6 +173,38 @@ public static class Commands
         output.Write(coverage.ToText());
         if (markdown is not null) File.AppendAllText(markdown, coverage.ToMarkdown());
         return Same;
+    }
+
+    // A test that didn't run looks unused, so this is only meaningful after a full, unfiltered run.
+    private static int Unused(string[] args, TextWriter output)
+    {
+        var (folders, runLog) = (new List<string>(), (string?)null);
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i] == "--run-log" && i + 1 == args.Length)
+            {
+                throw new ArgumentException("--run-log needs a folder.");
+            }
+
+            if (args[i] == "--run-log") runLog = args[++i];
+            else if (args[i] is not ("--all" or "--delete")) folders.Add(args[i]);
+        }
+
+        if (runLog is null)
+        {
+            throw new ArgumentException($"unused needs --run-log, the folder {PDiffy.Snapshot.RunLogVariable} named.");
+        }
+
+        var delete = args.Contains("--delete");
+        var unused = UnusedSnapshots.Find(folders, args.Contains("--all"), runLog);
+        foreach (var file in unused)
+        {
+            if (delete) File.Delete(file);
+            output.WriteLine(delete ? $"deleted {file}" : file);
+        }
+
+        if (unused.Count == 0) output.WriteLine("No unused snapshots.");
+        return unused.Count == 0 || delete ? Same : Different;
     }
 
     // A PDF or a DOCX is read and snapshotted; anything else is taken to be a snapshot already, which a profile can't

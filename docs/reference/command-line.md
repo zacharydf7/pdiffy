@@ -26,6 +26,7 @@ exit with `0`.
 | [`pdiffy accept [targets]`](#accept) | Accepts received snapshots as verified |
 | [`pdiffy report [targets]`](#report) | Summarizes received snapshots, for review or a CI job page |
 | [`pdiffy coverage [targets]`](#coverage) | Counts what the verified snapshots compare and leave out |
+| [`pdiffy unused [folders] --run-log <folder>`](#unused) | Lists or deletes snapshots no test used in a run |
 | `pdiffy --version` | Prints the version and the snapshot formats it writes |
 | `pdiffy --help`, `-h` | Prints the commands |
 
@@ -33,8 +34,8 @@ exit with `0`.
 
 | Code | Meaning |
 |---|---|
-| `0` | Nothing changed (comparing files or folders), nothing was found (check), nothing is waiting to be accepted (report), or the command succeeded |
-| `1` | Something changed (comparing files or folders), something was found (check), or received snapshots are waiting (report) |
+| `0` | Nothing changed (comparing files or folders), nothing was found (check), nothing is waiting to be accepted (report), every snapshot was used or `--delete` removed the rest (unused), or the command succeeded |
+| `1` | Something changed (comparing files or folders), something was found (check), received snapshots are waiting (report), or some snapshots weren't used (unused) |
 | `2` | The arguments don't fit a command, or a file or folder is missing or can't be read. The problem is written to standard error. When comparing folders, a file that can't be read is listed as `unreadable` instead, and counts as a change. |
 
 ## Compare
@@ -230,3 +231,33 @@ so it's fast and needs no documents.
 Each section shows how many snapshots compare it, and the fields line lists every field some snapshot leaves out, most
 often first. Text and JSON snapshots have no sections, so they're only counted. `coverage` exits with `0`, or with `2`
 when a target is missing or isn't a verified snapshot.
+
+## Unused
+
+```text
+pdiffy unused [<folders>] --run-log <folder> [--all] [--delete]
+```
+
+A renamed or deleted test leaves its `.verified.*` file behind, and nothing reads it any more. To find such files, set
+`PDIFFY_RUN_LOG` (`Snapshot.RunLogVariable`) to an empty folder and run every test: each snapshot call writes down the
+verified file it uses, in one log per test process. `unused` then lists the verified and received snapshots, and their
+reports, that no call used. Give the folder as a full path, since each test process resolves a relative one from its
+own folder.
+
+```bash
+PDIFFY_RUN_LOG="$PWD/artifacts/run-log" dotnet test
+pdiffy unused tests --all --run-log artifacts/run-log
+```
+
+| Option | Does |
+|---|---|
+| `<folders>` | Which folders to look in. The current folder by default |
+| `--all` | Includes every folder under each folder |
+| `--run-log <folder>` | The folder `PDIFFY_RUN_LOG` named for the test run |
+| `--delete` | Deletes the files it lists |
+
+A test that didn't run, or failed before its snapshot call, looks unused, so run the whole suite, without a filter and
+with every test passing, before deleting anything, and start each run with an empty log folder. Every `.verified.`,
+`.received.` and `.diff.html` file in the folders counts, so give the snapshot folders rather than a folder that also
+holds other tools' files or saved reports. `unused` exits with `0` when every snapshot was used or `--delete` removed the
+rest, with `1` when it lists some, and with `2` when the run log folder has no logs.

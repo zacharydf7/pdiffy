@@ -16,6 +16,12 @@ public static class Snapshot
     public const string AcceptVariable = "PDIFFY_ACCEPT";
 
     /// <summary>
+    /// Set PDIFFY_RUN_LOG to a folder to log the verified file every snapshot call uses, one log per test process, so
+    /// <c>pdiffy unused</c> can find the snapshots no test uses any more.
+    /// </summary>
+    public const string RunLogVariable = "PDIFFY_RUN_LOG";
+
+    /// <summary>
     /// The folder that holds snapshot files, for every kind of snapshot. When null, each snapshot sits next to the test
     /// file that made it. A call's <c>directory</c> argument overrides it.
     /// </summary>

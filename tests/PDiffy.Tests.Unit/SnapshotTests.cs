@@ -30,6 +30,23 @@ public sealed class SnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public void Verify_ShouldLogEachVerifiedFileItUses_WhenTheRunLogIsSet()
+    {
+        var runLog = Path.Combine(Folder, "run-log");
+        Environment.SetEnvironmentVariable(Snapshot.RunLogVariable, runLog);
+        Directory.CreateDirectory(Folder);
+        File.WriteAllText(Path.Combine(Folder, "Export.verified.txt"), "one\n");
+
+        Snapshot.Verify("one\n", "Export");
+        Assert.Throws<SnapshotException>(() => Snapshot.Verify("two\n", "Report"));
+
+        var log = Assert.Single(Directory.GetFiles(runLog));
+        Assert.Equal($"pdiffy-run-{Environment.ProcessId}.log", Path.GetFileName(log));
+        Assert.Equal([Path.Combine(Folder, "Export.verified.txt"), Path.Combine(Folder, "Report.verified.txt")],
+            File.ReadAllLines(log));
+    }
+
+    [Fact]
     public async Task VerifyAsync_ShouldPass_WhenTheVerifiedFileHasAByteOrderMarkAndCrlfLineEndings()
     {
         Directory.CreateDirectory(Folder);

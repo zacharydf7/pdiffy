@@ -4,7 +4,7 @@ namespace PDiffy.Tests.Unit;
 // one collection, so they never run at once; each test gets its own folder and puts everything back afterwards.
 public abstract class SnapshotFolderTests : IDisposable
 {
-    private static readonly string[] Variables = [Snapshot.AcceptVariable, "CI", "TF_BUILD"];
+    private static readonly string[] Variables = [Snapshot.AcceptVariable, Snapshot.RunLogVariable, "CI", "TF_BUILD"];
 
     private readonly Dictionary<string, string?> _savedVariables =
         Variables.ToDictionary(name => name, Environment.GetEnvironmentVariable);
