@@ -3,6 +3,8 @@ using PDiffy.Tests.Unit.Pdfs;
 namespace PDiffy.Tests.Unit;
 
 // The docs site publishes a sample report built from two versions of a small guide, so it shows real PDiffy output.
+// It shares the snapshot tests' collection, so it never runs while one of them turns accept mode on.
+[Collection(nameof(SnapshotFolderTests))]
 public class DocsSampleTests
 {
     [Fact]
