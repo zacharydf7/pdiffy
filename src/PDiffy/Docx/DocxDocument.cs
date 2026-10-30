@@ -5,32 +5,64 @@ namespace PDiffy;
 /// <summary>Everything PDiffy reads from a Word document (DOCX), in the order a snapshot prints it.</summary>
 public sealed record DocxDocument
 {
+    internal DocxDocument()
+    {
+    }
+
     /// <summary>Document-wide details: title, language, compatibility, protection and unreadable parts.</summary>
     public required DocxInfo Document { get; init; }
 
     /// <summary>Each section's page size, margins, columns and page numbering, in document order.</summary>
-    public IReadOnlyList<PageSetup> PageSetups { get; init; } = [];
+    public IReadOnlyList<PageSetup> PageSetups
+    {
+        get;
+        init => field = ValueList<PageSetup>.Of(value);
+    } = ValueList<PageSetup>.Empty;
 
     /// <summary>The styles the document uses, with their properties resolved through the styles they're based on.</summary>
-    public IReadOnlyList<DocxStyle> Styles { get; init; } = [];
+    public IReadOnlyList<DocxStyle> Styles
+    {
+        get;
+        init => field = ValueList<DocxStyle>.Of(value);
+    } = ValueList<DocxStyle>.Empty;
 
     /// <summary>The lists the document uses, each with the levels it uses.</summary>
-    public IReadOnlyList<DocxList> Lists { get; init; } = [];
+    public IReadOnlyList<DocxList> Lists
+    {
+        get;
+        init => field = ValueList<DocxList>.Of(value);
+    } = ValueList<DocxList>.Empty;
 
     /// <summary>
     /// Paragraphs, tables, content controls, inserted documents, bookmarks between them and content PDiffy can't read,
     /// in reading order.
     /// </summary>
-    public IReadOnlyList<DocxBlock> Body { get; init; } = [];
+    public IReadOnlyList<DocxBlock> Body
+    {
+        get;
+        init => field = ValueList<DocxBlock>.Of(value);
+    } = ValueList<DocxBlock>.Empty;
 
     /// <summary>Each section's headers, by kind.</summary>
-    public IReadOnlyList<DocxHeaderFooter> Headers { get; init; } = [];
+    public IReadOnlyList<DocxHeaderFooter> Headers
+    {
+        get;
+        init => field = ValueList<DocxHeaderFooter>.Of(value);
+    } = ValueList<DocxHeaderFooter>.Empty;
 
     /// <summary>Each section's footers, by kind.</summary>
-    public IReadOnlyList<DocxHeaderFooter> Footers { get; init; } = [];
+    public IReadOnlyList<DocxHeaderFooter> Footers
+    {
+        get;
+        init => field = ValueList<DocxHeaderFooter>.Of(value);
+    } = ValueList<DocxHeaderFooter>.Empty;
 
     /// <summary>Footnotes, endnotes and comments, with what each says.</summary>
-    public IReadOnlyList<DocxNote> Notes { get; init; } = [];
+    public IReadOnlyList<DocxNote> Notes
+    {
+        get;
+        init => field = ValueList<DocxNote>.Of(value);
+    } = ValueList<DocxNote>.Empty;
 
     /// <summary>
     /// Reads the DOCX in a stream from its start, wherever the stream was left, and puts its position back afterwards. The
@@ -136,6 +168,10 @@ public sealed record DocxDocument
 /// <summary>Document-wide details: title, language, compatibility and protection settings.</summary>
 public sealed record DocxInfo
 {
+    internal DocxInfo()
+    {
+    }
+
     /// <summary>The title in the file's properties (docProps/core.xml), or null when it has none.</summary>
     public string? Title { get; init; }
 
@@ -164,12 +200,20 @@ public sealed record DocxInfo
     public bool HasModifiedDate { get; init; }
 
     /// <summary>Parts of the file that couldn't be read, such as "word/styles.xml" with broken XML.</summary>
-    public IReadOnlyList<string> UnreadableParts { get; init; } = [];
+    public IReadOnlyList<string> UnreadableParts
+    {
+        get;
+        init => field = ValueList<string>.Of(value);
+    } = ValueList<string>.Empty;
 }
 
 /// <summary>One section's page geometry. Lengths are in points.</summary>
 public sealed record PageSetup
 {
+    internal PageSetup()
+    {
+    }
+
     /// <summary>The page width, or 0 when the section doesn't set a page size.</summary>
     public double Width { get; init; }
 
@@ -213,10 +257,18 @@ public sealed record PageSetup
     public bool TitlePage { get; init; }
 
     /// <summary>The kinds of header the section has: "default", "first" or "even".</summary>
-    public IReadOnlyList<string> Headers { get; init; } = [];
+    public IReadOnlyList<string> Headers
+    {
+        get;
+        init => field = ValueList<string>.Of(value);
+    } = ValueList<string>.Empty;
 
     /// <summary>The kinds of footer the section has: "default", "first" or "even".</summary>
-    public IReadOnlyList<string> Footers { get; init; } = [];
+    public IReadOnlyList<string> Footers
+    {
+        get;
+        init => field = ValueList<string>.Of(value);
+    } = ValueList<string>.Empty;
 
     /// <summary>A tracked change to the section's settings ("section-format"), or null.</summary>
     public DocxRevision? Revision { get; init; }
@@ -225,6 +277,10 @@ public sealed record PageSetup
 /// <summary>A style the document uses. <see cref="Run"/> and <see cref="Paragraph"/> are resolved through its based-on chain.</summary>
 public sealed record DocxStyle
 {
+    internal DocxStyle()
+    {
+    }
+
     /// <summary>The style's id, such as "Heading1", which paragraphs, runs and tables refer to it by.</summary>
     public required string Id { get; init; }
 
@@ -255,6 +311,10 @@ public sealed record DocxStyle
 /// <summary>How text looks. Sizes are in points; null means not set.</summary>
 public sealed record RunFormat
 {
+    internal RunFormat()
+    {
+    }
+
     /// <summary>The character style applied, if any.</summary>
     public string? Style { get; init; }
 
@@ -312,6 +372,10 @@ public sealed record RunFormat
 /// <summary>How a paragraph is laid out. Lengths are in points; null means not set.</summary>
 public sealed record ParagraphFormat
 {
+    internal ParagraphFormat()
+    {
+    }
+
     /// <summary>"left", "center", "right", "both" (justified) and so on, as Word writes it.</summary>
     public string? Align { get; init; }
 
@@ -349,13 +413,17 @@ public sealed record ParagraphFormat
     public int? HeadingLevel { get; init; }
 
     /// <summary>Custom tab stops, such as "left:72" or "right:468:dot".</summary>
-    public IReadOnlyList<string> Tabs { get; init; } = [];
+    public IReadOnlyList<string> Tabs { get; init => field = ValueList<string>.Of(value); } = ValueList<string>.Empty;
 
     /// <summary>A paragraph set right to left, such as one in Arabic or Hebrew.</summary>
     public bool RightToLeft { get; init; }
 
     /// <summary>Borders around the paragraph, written like a table's, such as "top:single:0.5:000000".</summary>
-    public IReadOnlyList<string> Borders { get; init; } = [];
+    public IReadOnlyList<string> Borders
+    {
+        get;
+        init => field = ValueList<string>.Of(value);
+    } = ValueList<string>.Empty;
 
     /// <summary>The paragraph's fill color in hex.</summary>
     public string? Shading { get; init; }
@@ -365,11 +433,19 @@ public sealed record ParagraphFormat
 /// Something in the body, a table cell, a header or footer, a note or a text box: a paragraph, a table, a content
 /// control, an inserted document, a bookmark between them, or content PDiffy can't read.
 /// </summary>
-public abstract record DocxBlock;
-
+public abstract record DocxBlock
+{
+    private protected DocxBlock()
+    {
+    }
+}
 /// <summary>A paragraph: its style, list item, layout, text and what sits in the text.</summary>
 public sealed record DocxParagraph : DocxBlock
 {
+    internal DocxParagraph()
+    {
+    }
+
     /// <summary>The paragraph style's id: the one named, or the document's default paragraph style.</summary>
     public string? Style { get; init; }
 
@@ -386,13 +462,21 @@ public sealed record DocxParagraph : DocxBlock
     public string Text { get; init; } = "";
 
     /// <summary>The text cut where its look changes, each part with its full formatting.</summary>
-    public IReadOnlyList<DocxSpan> Spans { get; init; } = [];
+    public IReadOnlyList<DocxSpan> Spans
+    {
+        get;
+        init => field = ValueList<DocxSpan>.Of(value);
+    } = ValueList<DocxSpan>.Empty;
 
     /// <summary>
     /// What sits in the text, in reading order: images, links, bookmarks, symbols, fields, page or column breaks, and
     /// stray text from runs in the paragraph's properties.
     /// </summary>
-    public IReadOnlyList<DocxInline> Inlines { get; init; } = [];
+    public IReadOnlyList<DocxInline> Inlines
+    {
+        get;
+        init => field = ValueList<DocxInline>.Of(value);
+    } = ValueList<DocxInline>.Empty;
 
     /// <summary>The section this paragraph ends, numbered from 1, or null.</summary>
     public int? EndsSection { get; init; }
@@ -402,89 +486,157 @@ public sealed record DocxParagraph : DocxBlock
 /// A paragraph's place in a list: the list's id (w:numId), its level from 0, and the label Word shows, such as "A." or
 /// "1.2", counted from the items before it. The label is null when the list or its level isn't defined.
 /// </summary>
-/// <param name="List">
-/// The list's id (w:numId), the <see cref="DocxList.Id"/> of its entry in <see cref="DocxDocument.Lists"/> when the
-/// list is defined. Never 0, since numId 0 takes a paragraph out of its list.
-/// </param>
-/// <param name="Level">The level from 0, the outermost: the paragraph's own w:ilvl, else its style's, else 0.</param>
-/// <param name="Label">The label as Word shows it, such as "A." or "1.2", or the bullet character for a bullet.</param>
-public sealed record DocxListItem(int List, int Level, string? Label);
+public sealed record DocxListItem
+{
+    internal DocxListItem()
+    {
+    }
+
+    /// <summary>
+    /// The list's id (w:numId), the <see cref="DocxList.Id"/> of its entry in <see cref="DocxDocument.Lists"/> when the
+    /// list is defined. Never 0, since numId 0 takes a paragraph out of its list.
+    /// </summary>
+    public required int List { get; init; }
+
+    /// <summary>The level from 0, the outermost: the paragraph's own w:ilvl, else its style's, else 0.</summary>
+    public required int Level { get; init; }
+
+    /// <summary>The label as Word shows it, such as "A." or "1.2", or the bullet character for a bullet.</summary>
+    public required string? Label { get; init; }
+}
 
 /// <summary>
 /// A list the document uses: its id, the definition it numbers from (w:abstractNumId, or the definition of the list style
 /// it links to) and the levels used.
 /// </summary>
-/// <param name="Id">The list's id (w:numId), which <see cref="DocxListItem.List"/> refers to it by.</param>
-/// <param name="Definition">
-/// The id of the definition the list numbers from, such as "3". Lists that share a definition share its counters,
-/// unless one restarts its numbering with a start override.
-/// </param>
-/// <param name="Levels">The levels the document's paragraphs use, outermost first, not every level defined.</param>
-public sealed record DocxList(int Id, string Definition, IReadOnlyList<DocxListLevel> Levels);
+public sealed record DocxList
+{
+    internal DocxList()
+    {
+    }
+
+    /// <summary>The list's id (w:numId), which <see cref="DocxListItem.List"/> refers to it by.</summary>
+    public required int Id { get; init; }
+
+    /// <summary>
+    /// The id of the definition the list numbers from, such as "3". Lists that share a definition share its counters,
+    /// unless one restarts its numbering with a start override.
+    /// </summary>
+    public required string Definition { get; init; }
+
+    /// <summary>The levels the document's paragraphs use, outermost first, not every level defined.</summary>
+    public required IReadOnlyList<DocxListLevel> Levels { get; init => field = ValueList<DocxListLevel>.Of(value); }
+}
 
 /// <summary>
 /// How one level of a list is numbered: its format (such as "decimal", "upperLetter" or "bullet"), its label pattern
 /// (such as "%1." or a bullet character), the number it starts at, its indents in points and its bullet font. Format,
 /// Text and Start are null when the list's definition has no such level.
 /// </summary>
-/// <param name="Level">The level from 0, the outermost, to 8.</param>
-/// <param name="Format">The number format, such as "lowerRoman"; "decimal" when the level doesn't set one.</param>
-/// <param name="Text">
-/// The label pattern, in which %1 to %9 stand for the counters of levels 0 to 8, so "%1.%2." prints as "2.1." for the
-/// first item under the second; a bullet's character for a bullet, and empty when the level doesn't set one.
-/// </param>
-/// <param name="Start">The number the level starts at: the list's own override, else the level's start, else 1.</param>
-/// <param name="Indent">The left indent of the level's paragraphs in points, or null when the level sets none.</param>
-/// <param name="Hanging">
-/// How far the label hangs out to the left of the text after it, in points, or null when the level doesn't set it.
-/// </param>
-/// <param name="Font">The label's font, such as "Symbol" for a bullet, or null when the level doesn't set one.</param>
-public sealed record DocxListLevel(int Level, string? Format, string? Text, int? Start, double? Indent, double? Hanging, string? Font);
+public sealed record DocxListLevel
+{
+    internal DocxListLevel()
+    {
+    }
+
+    /// <summary>The level from 0, the outermost, to 8.</summary>
+    public required int Level { get; init; }
+
+    /// <summary>The number format, such as "lowerRoman"; "decimal" when the level doesn't set one.</summary>
+    public required string? Format { get; init; }
+
+    /// <summary>
+    /// The label pattern, in which %1 to %9 stand for the counters of levels 0 to 8, so "%1.%2." prints as "2.1." for
+    /// the first item under the second; a bullet's character for a bullet, and empty when the level doesn't set one.
+    /// </summary>
+    public required string? Text { get; init; }
+
+    /// <summary>The number the level starts at: the list's own override, else the level's start, else 1.</summary>
+    public required int? Start { get; init; }
+
+    /// <summary>The left indent of the level's paragraphs in points, or null when the level sets none.</summary>
+    public required double? Indent { get; init; }
+
+    /// <summary>
+    /// How far the label hangs out to the left of the text after it, in points, or null when the level doesn't set it.
+    /// </summary>
+    public required double? Hanging { get; init; }
+
+    /// <summary>The label's font, such as "Symbol" for a bullet, or null when the level doesn't set one.</summary>
+    public required string? Font { get; init; }
+}
 
 /// <summary>Part of a paragraph's text and how it looks.</summary>
-/// <param name="Text">
-/// The text, never empty. The spans of a paragraph, in order, make up its <see cref="DocxParagraph.Text"/>, and two
-/// next to each other always look different.
-/// </param>
-/// <param name="Format">
-/// The full formatting: the document defaults and the paragraph style, with the character style and the run's own
-/// formatting on top.
-/// </param>
-public sealed record DocxSpan(string Text, RunFormat Format);
+public sealed record DocxSpan
+{
+    internal DocxSpan()
+    {
+    }
+
+    /// <summary>
+    /// The text, never empty. The spans of a paragraph, in order, make up its <see cref="DocxParagraph.Text"/>, and two
+    /// next to each other always look different.
+    /// </summary>
+    public required string Text { get; init; }
+
+    /// <summary>
+    /// The full formatting: the document defaults and the paragraph style, with the character style and the run's own
+    /// formatting on top.
+    /// </summary>
+    public required RunFormat Format { get; init; }
+}
 
 /// <summary>Something in a paragraph's text. <see cref="Position"/> is where, counted in characters of its text.</summary>
-/// <param name="Position">
-/// How many characters of <see cref="DocxParagraph.Text"/> come before it, so 0 is the start and the text's length is
-/// the end.
-/// </param>
-public abstract record DocxInline(int Position);
+public abstract record DocxInline
+{
+    private protected DocxInline()
+    {
+    }
+
+    /// <summary>
+    /// How many characters of <see cref="DocxParagraph.Text"/> come before it, so 0 is the start and the text's length
+    /// is the end.
+    /// </summary>
+    public required int Position { get; init; }
+}
 
 /// <summary>
 /// A field: its code, such as "PAGE" or "TOC \o \"1-3\"", and its result, the text Word last showed for it. The result
 /// is also part of the paragraph's text, unless the field sits in another field's code, whose code it becomes part of.
 /// </summary>
-/// <param name="Code">
-/// The field's code with each stretch of white space made one space and the ends trimmed. A field nested in it
-/// is replaced by that field's result, so { IF { PAGE } = 1 ... } on page 1 reads "IF 1 = 1 ...".
-/// </param>
-/// <param name="Result">The text Word last showed for the field, or empty when it showed none.</param>
-/// <param name="Position">
-/// Where the field starts in the paragraph's text, in characters, which is where its result starts when the result is
-/// part of the text.
-/// </param>
-public sealed record DocxField(string Code, string Result, int Position) : DocxInline(Position);
+public sealed record DocxField : DocxInline
+{
+    internal DocxField()
+    {
+    }
+
+    /// <summary>
+    /// The field's code with each stretch of white space made one space and the ends trimmed. A field nested in it is
+    /// replaced by that field's result, so { IF { PAGE } = 1 ... } on page 1 reads "IF 1 = 1 ...".
+    /// </summary>
+    public required string Code { get; init; }
+
+    /// <summary>The text Word last showed for the field, or empty when it showed none.</summary>
+    public required string Result { get; init; }
+}
 
 /// <summary>
 /// The text, tabs and breaks of a run where WordprocessingML doesn't allow one: inside the paragraph's properties (w:pPr). Word may
 /// drop or move it, so it isn't part of the paragraph's text, but it's recorded so the text isn't lost and the problem
 /// shows. Its <see cref="DocxInline.Position"/> is always 0, before the paragraph's text.
 /// </summary>
-/// <param name="Text">
-/// The run's text, with tabs as \t, line breaks as \n, page breaks as \f and column breaks as \u000E, the characters
-/// Word's own plain text uses; empty when the run holds none of these.
-/// </param>
-/// <param name="Position">Always 0.</param>
-public sealed record DocxStrayText(string Text, int Position) : DocxInline(Position);
+public sealed record DocxStrayText : DocxInline
+{
+    internal DocxStrayText()
+    {
+    }
+
+    /// <summary>
+    /// The run's text, with tabs as \t, line breaks as \n, page breaks as \f and column breaks as \u000E, the
+    /// characters Word's own plain text uses; empty when the run holds none of these.
+    /// </summary>
+    public required string Text { get; init; }
+}
 
 /// <summary>
 /// A tracked change and who made it: "insert", "delete", "move-to" or "move-from" with the text it covers; "format" for a
@@ -495,43 +647,68 @@ public sealed record DocxStrayText(string Text, int Position) : DocxInline(Posit
 /// "cell-merge" or "cell-format" for a cell (<see cref="DocxCell.Revisions"/>); "section-format" for a section's
 /// settings (<see cref="PageSetup.Revision"/>). Tables, rows, cells and sections have no text and no position.
 /// </summary>
-/// <param name="Kind">What changed, one of the kinds the summary lists, such as "insert" or "row-delete".</param>
-/// <param name="Text">
-/// The text inserted, deleted, moved or reformatted, empty for the other kinds. Deleted and moved-away text isn't part
-/// of the paragraph's text.
-/// </param>
-/// <param name="Author">Who made the change, as Word recorded it, or null when it didn't record anyone.</param>
-/// <param name="Position">
-/// Where the text starts in the paragraph's text, or where deleted or moved-away text was; the end of the text for a
-/// change to the paragraph mark, and 0 for "paragraph-format" and for tables, rows, cells and sections.
-/// </param>
-public sealed record DocxRevision(string Kind, string Text, string? Author, int Position) : DocxInline(Position);
+public sealed record DocxRevision : DocxInline
+{
+    internal DocxRevision()
+    {
+    }
+
+    /// <summary>What changed, one of the kinds the summary lists, such as "insert" or "row-delete".</summary>
+    public required string Kind { get; init; }
+
+    /// <summary>
+    /// The text inserted, deleted, moved or reformatted, empty for the other kinds. Deleted and moved-away text isn't
+    /// part of the paragraph's text.
+    /// </summary>
+    public required string Text { get; init; }
+
+    /// <summary>Who made the change, as Word recorded it, or null when it didn't record anyone.</summary>
+    public required string? Author { get; init; }
+}
 
 /// <summary>Where a footnote or endnote is referenced. <see cref="DocxDocument.Notes"/> has what the note says.</summary>
-/// <param name="Kind">"footnote" or "endnote".</param>
-/// <param name="Id">The <see cref="DocxNote.Id"/> of the note of the same kind that this refers to.</param>
-/// <param name="Position">Where the reference mark sits in the paragraph's text, in characters.</param>
-public sealed record DocxNoteReference(string Kind, int Id, int Position) : DocxInline(Position);
+public sealed record DocxNoteReference : DocxInline
+{
+    internal DocxNoteReference()
+    {
+    }
+
+    /// <summary>"footnote" or "endnote".</summary>
+    public required string Kind { get; init; }
+
+    /// <summary>The <see cref="DocxNote.Id"/> of the note of the same kind that this refers to.</summary>
+    public required int Id { get; init; }
+}
 
 /// <summary>Where a comment is attached. <see cref="DocxDocument.Notes"/> has what the comment says.</summary>
-/// <param name="Id">The <see cref="DocxNote.Id"/> of the note of kind "comment" that this refers to.</param>
-/// <param name="Position">Where the comment's mark sits in the paragraph's text, in characters.</param>
-public sealed record DocxCommentReference(int Id, int Position) : DocxInline(Position);
+public sealed record DocxCommentReference : DocxInline
+{
+    internal DocxCommentReference()
+    {
+    }
+
+    /// <summary>The <see cref="DocxNote.Id"/> of the note of kind "comment" that this refers to.</summary>
+    public required int Id { get; init; }
+}
 
 /// <summary>
 /// A form control in the text: a content control (Kind "text", "rich-text", "dropdown", "combobox", "date", "checkbox"
 /// and so on) or a legacy form field (Kind "legacy-text", "legacy-checkbox" or "legacy-dropdown"). Name is a content
 /// control's tag or a legacy field's name; a check box's Value is "yes" or "no".
 /// </summary>
-/// <param name="Kind">
-/// A content control's "text", "rich-text", "dropdown", "combobox", "date", "checkbox", "picture", "gallery", "group",
-/// "citation", "bibliography", "equation", "repeating-section" or "repeating-section-item", or a legacy field's kind.
-/// </param>
-/// <param name="Position">
-/// Where the control's text starts in the paragraph's text, or for a legacy form field, where the field starts.
-/// </param>
-public sealed record DocxForm(string Kind, int Position) : DocxInline(Position)
+public sealed record DocxForm : DocxInline
 {
+    internal DocxForm()
+    {
+    }
+
+    /// <summary>
+    /// A content control's "text", "rich-text", "dropdown", "combobox", "date", "checkbox", "picture", "gallery",
+    /// "group", "citation", "bibliography", "equation", "repeating-section" or "repeating-section-item", or a legacy
+    /// field's kind.
+    /// </summary>
+    public required string Kind { get; init; }
+
     /// <summary>A content control's tag or a legacy form field's name, or null when it has none.</summary>
     public string? Name { get; init; }
 
@@ -544,34 +721,54 @@ public sealed record DocxForm(string Kind, int Position) : DocxInline(Position)
     public string? Value { get; init; }
 
     /// <summary>The choices of a drop-down or combo box.</summary>
-    public IReadOnlyList<string> Items { get; init; } = [];
+    public IReadOnlyList<string> Items { get; init => field = ValueList<string>.Of(value); } = ValueList<string>.Empty;
 }
 
 /// <summary>A page or column break.</summary>
-/// <param name="Kind">"page" or "column". A line break isn't a DocxBreak but \n in the paragraph's text.</param>
-/// <param name="Position">Where the break sits in the paragraph's text, in characters.</param>
-public sealed record DocxBreak(string Kind, int Position) : DocxInline(Position);
+public sealed record DocxBreak : DocxInline
+{
+    internal DocxBreak()
+    {
+    }
+
+    /// <summary>"page" or "column". A line break isn't a DocxBreak but \n in the paragraph's text.</summary>
+    public required string Kind { get; init; }
+}
 
 /// <summary>A link: the text it covers and where it goes, a URL or "#bookmark" for a place in the document.</summary>
-/// <param name="Text">The text the link covers, as it is in the paragraph's text; empty when it covers none.</param>
-/// <param name="Target">
-/// Where the link goes, such as "https://example.com/trails", with "#bookmark" on the end when it also names a place;
-/// just "#bookmark" for a place in this document. Null when the link's address can't be found or it has none.
-/// </param>
-/// <param name="Position">Where the link's text starts in the paragraph's text, in characters.</param>
-public sealed record DocxLink(string Text, string? Target, int Position) : DocxInline(Position);
+public sealed record DocxLink : DocxInline
+{
+    internal DocxLink()
+    {
+    }
+
+    /// <summary>The text the link covers, as it is in the paragraph's text; empty when it covers none.</summary>
+    public required string Text { get; init; }
+
+    /// <summary>
+    /// Where the link goes, such as "https://example.com/trails", with "#bookmark" on the end when it also names a
+    /// place; just "#bookmark" for a place in this document. Null when the link's address can't be found or it has
+    /// none.
+    /// </summary>
+    public required string? Target { get; init; }
+}
 
 /// <summary>
 /// A named place in the document that links and cross-references can point to. A bookmark in a table can cover only
 /// some columns: <see cref="Columns"/> is then the first and last, counting from 0, such as "1-2".
 /// </summary>
-/// <param name="Name">
-/// The bookmark's name, such as "Ridge_Loop", which a link's "#Ridge_Loop" points to. Word's own "_GoBack" bookmark
-/// for the last edit is left out.
-/// </param>
-/// <param name="Position">Where the bookmark starts in the paragraph's text, in characters.</param>
-public sealed record DocxBookmark(string Name, int Position) : DocxInline(Position)
+public sealed record DocxBookmark : DocxInline
 {
+    internal DocxBookmark()
+    {
+    }
+
+    /// <summary>
+    /// The bookmark's name, such as "Ridge_Loop", which a link's "#Ridge_Loop" points to. Word's own "_GoBack" bookmark
+    /// for the last edit is left out.
+    /// </summary>
+    public required string Name { get; init; }
+
     /// <summary>
     /// The first and last table columns covered, such as "1-2"; null unless it's a table bookmark covering only some
     /// columns.
@@ -580,13 +777,21 @@ public sealed record DocxBookmark(string Name, int Position) : DocxInline(Positi
 }
 
 /// <summary>A character from a symbol font, such as Wingdings: the font and the character's code in hex.</summary>
-/// <param name="Font">The symbol font, such as "Wingdings", or null when the symbol doesn't name one.</param>
-/// <param name="Code">
-/// The character's code in upper-case hex, such as "F0FC", and then the character is also in the paragraph's text. A
-/// code that isn't hex is kept as the file writes it and isn't in the text; empty when the symbol has no code.
-/// </param>
-/// <param name="Position">Where the symbol sits in the paragraph's text, in characters.</param>
-public sealed record DocxSymbol(string? Font, string Code, int Position) : DocxInline(Position);
+public sealed record DocxSymbol : DocxInline
+{
+    internal DocxSymbol()
+    {
+    }
+
+    /// <summary>The symbol font, such as "Wingdings", or null when the symbol doesn't name one.</summary>
+    public required string? Font { get; init; }
+
+    /// <summary>
+    /// The character's code in upper-case hex, such as "F0FC", and then the character is also in the paragraph's text.
+    /// A code that isn't hex is kept as the file writes it and isn't in the text; empty when the symbol has no code.
+    /// </summary>
+    public required string Code { get; init; }
+}
 
 /// <summary>
 /// An image or other graphic. Width and height are in points. For a picture, <see cref="Hash"/> is the first 16 hex
@@ -594,9 +799,11 @@ public sealed record DocxSymbol(string? Font, string Code, int Position) : DocxI
 /// For an embedded object, Type is the program it belongs to, such as "Excel.Sheet.12", and Hash is of what it holds;
 /// for an ActiveX control, Type is the control's name.
 /// </summary>
-/// <param name="Position">Where the image sits in the paragraph's text, in characters, floating or not.</param>
-public sealed record DocxImage(int Position) : DocxInline(Position)
+public sealed record DocxImage : DocxInline
 {
+    internal DocxImage()
+    {
+    }
     /// <summary>
     /// "image" for a picture, "object" for an embedded or linked object such as a spreadsheet, "control" for an ActiveX
     /// control; otherwise what the graphic is, such as "chart", "diagram" or "shape".
@@ -607,7 +814,11 @@ public sealed record DocxImage(int Position) : DocxInline(Position)
     public string? Source { get; init; }
 
     /// <summary>What a text box, or a shape with text in it, says.</summary>
-    public IReadOnlyList<DocxBlock> TextBox { get; init; } = [];
+    public IReadOnlyList<DocxBlock> TextBox
+    {
+        get;
+        init => field = ValueList<DocxBlock>.Of(value);
+    } = ValueList<DocxBlock>.Empty;
 
     /// <summary>Whether text flows around the image rather than the image sitting in the line.</summary>
     public bool Floating { get; init; }
@@ -643,36 +854,57 @@ public sealed record DocxImage(int Position) : DocxInline(Position)
 /// An equation: the characters of its text in order, such as "x=a+b", and a hash of how it's built, which changes when,
 /// for example, a fraction becomes a division even though the characters stay the same.
 /// </summary>
-/// <param name="Text">The characters of the equation's text runs (m:t), in order; empty when it has none.</param>
-/// <param name="Hash">
-/// The first 16 hex digits of a SHA-256 of the equation's XML, leaving out editing-session ids, relationship ids,
-/// namespace prefixes and the indenting between elements, which change without the equation changing.
-/// </param>
-/// <param name="Position">
-/// Where the equation sits in the paragraph's text, in characters. The equation's own text isn't part of that text.
-/// </param>
-public sealed record DocxMath(string Text, string Hash, int Position) : DocxInline(Position);
+public sealed record DocxMath : DocxInline
+{
+    internal DocxMath()
+    {
+    }
+
+    /// <summary>The characters of the equation's text runs (m:t), in order; empty when it has none.</summary>
+    public required string Text { get; init; }
+
+    /// <summary>
+    /// The first 16 hex digits of a SHA-256 of the equation's XML, leaving out editing-session ids, relationship ids,
+    /// namespace prefixes and the indenting between elements, which change without the equation changing.
+    /// </summary>
+    public required string Hash { get; init; }
+}
 
 /// <summary>
 /// Something in a paragraph PDiffy doesn't read yet, such as a phonetic guide (w:ruby): the element's name and a hash of
 /// its contents, so a change to it still shows.
 /// </summary>
-/// <param name="Element">
-/// The element's name with its usual prefix, "w:" or "m:", whatever prefix the file uses, such as "w:ruby"; an element
-/// from another namespace is named in full, as "{namespace}name".
-/// </param>
-/// <param name="Hash">
-/// The first 16 hex digits of a SHA-256 of the element's XML, leaving out what <see cref="DocxMath.Hash"/> leaves out.
-/// </param>
-/// <param name="Position">Where the element sits in the paragraph's text, in characters.</param>
-public sealed record DocxUnsupported(string Element, string Hash, int Position) : DocxInline(Position);
+public sealed record DocxUnsupported : DocxInline
+{
+    internal DocxUnsupported()
+    {
+    }
+
+    /// <summary>
+    /// The element's name with its usual prefix, "w:" or "m:", whatever prefix the file uses, such as "w:ruby"; an
+    /// element from another namespace is named in full, as "{namespace}name".
+    /// </summary>
+    public required string Element { get; init; }
+
+    /// <summary>
+    /// The first 16 hex digits of a SHA-256 of the element's XML, leaving out what <see cref="DocxMath.Hash"/> leaves
+    /// out.
+    /// </summary>
+    public required string Hash { get; init; }
+}
 
 /// <summary>
 /// A bookmark between paragraphs, tables, rows or cells, such as one that starts at a table; links can point to it.
 /// </summary>
-/// <param name="Name">The bookmark's name, as for <see cref="DocxBookmark.Name"/>.</param>
-public sealed record DocxBookmarkBlock(string Name) : DocxBlock
+public sealed record DocxBookmarkBlock : DocxBlock
 {
+    internal DocxBookmarkBlock()
+    {
+    }
+
+    /// <summary>The bookmark's name, as for <see cref="DocxBookmark.Name"/>.</summary>
+    public required string Name { get; init; }
+
     /// <summary>The columns a table-column bookmark covers, as for <see cref="DocxBookmark.Columns"/>.</summary>
     public string? Columns { get; init; }
 }
@@ -681,28 +913,56 @@ public sealed record DocxBookmarkBlock(string Name) : DocxBlock
 /// Something between paragraphs, tables, rows or cells that PDiffy doesn't read yet: the element's name and a hash of
 /// its contents, so a change to it still shows.
 /// </summary>
-/// <param name="Element">The element's name, written as for <see cref="DocxUnsupported.Element"/>.</param>
-/// <param name="Hash">The element's hash, worked out as for <see cref="DocxUnsupported.Hash"/>.</param>
-public sealed record DocxUnsupportedBlock(string Element, string Hash) : DocxBlock;
+public sealed record DocxUnsupportedBlock : DocxBlock
+{
+    internal DocxUnsupportedBlock()
+    {
+    }
+
+    /// <summary>The element's name, written as for <see cref="DocxUnsupported.Element"/>.</summary>
+    public required string Element { get; init; }
+
+    /// <summary>The element's hash, worked out as for <see cref="DocxUnsupported.Hash"/>.</summary>
+    public required string Hash { get; init; }
+}
 
 /// <summary>A footnote, endnote or comment: its kind, id, a comment's author and what it says.</summary>
-/// <param name="Kind">"footnote", "endnote" or "comment".</param>
-/// <param name="Id">
-/// The note's id, which <see cref="DocxNoteReference.Id"/> or <see cref="DocxCommentReference.Id"/> refers to it by;
-/// ids are only unique within a kind. 0 when the file gives none.
-/// </param>
-/// <param name="Author">A comment's author, or null for a footnote, an endnote or a comment that names no one.</param>
-/// <param name="Blocks">What the note says: its paragraphs, tables and other blocks.</param>
-public sealed record DocxNote(string Kind, int Id, string? Author, IReadOnlyList<DocxBlock> Blocks);
+public sealed record DocxNote
+{
+    internal DocxNote()
+    {
+    }
+
+    /// <summary>"footnote", "endnote" or "comment".</summary>
+    public required string Kind { get; init; }
+
+    /// <summary>
+    /// The note's id, which <see cref="DocxNoteReference.Id"/> or <see cref="DocxCommentReference.Id"/> refers to it
+    /// by; ids are only unique within a kind. 0 when the file gives none.
+    /// </summary>
+    public required int Id { get; init; }
+
+    /// <summary>A comment's author, or null for a footnote, an endnote or a comment that names no one.</summary>
+    public required string? Author { get; init; }
+
+    /// <summary>What the note says: its paragraphs, tables and other blocks.</summary>
+    public required IReadOnlyList<DocxBlock> Blocks { get; init => field = ValueList<DocxBlock>.Of(value); }
+}
 
 /// <summary>A content control around paragraphs or tables, such as a repeating section or a rich-text box.</summary>
-/// <param name="Kind">
-/// "rich-text" when the control sets no other kind; otherwise "text", "dropdown", "combobox", "date", "checkbox",
-/// "picture", "gallery", "group", "citation", "bibliography", "equation", "repeating-section" or
-/// "repeating-section-item".
-/// </param>
-public sealed record DocxControl(string Kind) : DocxBlock
+public sealed record DocxControl : DocxBlock
 {
+    internal DocxControl()
+    {
+    }
+
+    /// <summary>
+    /// "rich-text" when the control sets no other kind; otherwise "text", "dropdown", "combobox", "date", "checkbox",
+    /// "picture", "gallery", "group", "citation", "bibliography", "equation", "repeating-section" or
+    /// "repeating-section-item".
+    /// </summary>
+    public required string Kind { get; init; }
+
     /// <summary>The control's tag.</summary>
     public string? Name { get; init; }
 
@@ -710,17 +970,36 @@ public sealed record DocxControl(string Kind) : DocxBlock
     public string? Title { get; init; }
 
     /// <summary>The paragraphs, tables and other blocks inside the control.</summary>
-    public IReadOnlyList<DocxBlock> Blocks { get; init; } = [];
+    public IReadOnlyList<DocxBlock> Blocks
+    {
+        get;
+        init => field = ValueList<DocxBlock>.Of(value);
+    } = ValueList<DocxBlock>.Empty;
 }
 
 /// <summary>A section's header or footer of one kind: "default", "first" or "even". Blocks is null when its part can't be found.</summary>
-/// <param name="Section">
-/// The section it belongs to, numbered from 1 in document order, so section 1 is the first of
-/// <see cref="DocxDocument.PageSetups"/>.
-/// </param>
-/// <param name="Kind">"first" for the section's first page, "even" for even pages, or "default" for the rest.</param>
-/// <param name="Blocks">Its paragraphs, tables and other blocks, or null when its part can't be found.</param>
-public sealed record DocxHeaderFooter(int Section, string Kind, IReadOnlyList<DocxBlock>? Blocks);
+public sealed record DocxHeaderFooter
+{
+    internal DocxHeaderFooter()
+    {
+    }
+
+    /// <summary>
+    /// The section it belongs to, numbered from 1 in document order, so section 1 is the first of <see
+    /// cref="DocxDocument.PageSetups"/>.
+    /// </summary>
+    public required int Section { get; init; }
+
+    /// <summary>"first" for the section's first page, "even" for even pages, or "default" for the rest.</summary>
+    public required string Kind { get; init; }
+
+    /// <summary>Its paragraphs, tables and other blocks, or null when its part can't be found.</summary>
+    public required IReadOnlyList<DocxBlock>? Blocks
+    {
+        get;
+        init => field = value is null ? null : ValueList<DocxBlock>.Of(value);
+    }
+}
 
 /// <summary>
 /// A document inserted into this one (w:altChunk). A DOCX is read in place into <see cref="Document"/>, with its own
@@ -729,6 +1008,10 @@ public sealed record DocxHeaderFooter(int Section, string Kind, IReadOnlyList<Do
 /// </summary>
 public sealed record DocxInserted : DocxBlock
 {
+    internal DocxInserted()
+    {
+    }
+
     /// <summary>The inserted file's type, such as "docx", "html" or "rtf", or null when it can't be told.</summary>
     public string? Kind { get; init; }
 
@@ -757,20 +1040,32 @@ public sealed record DocxInserted : DocxBlock
 /// </summary>
 public sealed record DocxTable : DocxBlock
 {
+    internal DocxTable()
+    {
+    }
+
     /// <summary>The table style's id, or null when the table names none.</summary>
     public string? Style { get; init; }
 
     /// <summary>The width of each column of the table's grid, in points.</summary>
-    public IReadOnlyList<double> Widths { get; init; } = [];
+    public IReadOnlyList<double> Widths { get; init => field = ValueList<double>.Of(value); } = ValueList<double>.Empty;
 
     /// <summary>The width of the whole table.</summary>
     public string? Width { get; init; }
 
     /// <summary>The space between each cell's edge and its text, unless a cell sets its own.</summary>
-    public IReadOnlyList<string> CellMargins { get; init; } = [];
+    public IReadOnlyList<string> CellMargins
+    {
+        get;
+        init => field = ValueList<string>.Of(value);
+    } = ValueList<string>.Empty;
 
     /// <summary>The table's own borders, one per side the table sets, such as "top:single:0.5:000000".</summary>
-    public IReadOnlyList<string> Borders { get; init; } = [];
+    public IReadOnlyList<string> Borders
+    {
+        get;
+        init => field = ValueList<string>.Of(value);
+    } = ValueList<string>.Empty;
 
     /// <summary>The table's title, the first part of its alt text in Word.</summary>
     public string? Caption { get; init; }
@@ -779,20 +1074,40 @@ public sealed record DocxTable : DocxBlock
     public string? Description { get; init; }
 
     /// <summary>The rows in order, including those inside content controls such as a repeating section.</summary>
-    public IReadOnlyList<DocxRow> Rows { get; init; } = [];
+    public IReadOnlyList<DocxRow> Rows
+    {
+        get;
+        init => field = ValueList<DocxRow>.Of(value);
+    } = ValueList<DocxRow>.Empty;
 
     /// <summary>Bookmarks and content PDiffy can't read between the rows.</summary>
-    public IReadOnlyList<DocxBetween> Between { get; init; } = [];
+    public IReadOnlyList<DocxBetween> Between
+    {
+        get;
+        init => field = ValueList<DocxBetween>.Of(value);
+    } = ValueList<DocxBetween>.Empty;
 
     /// <summary>Tracked changes to the table's properties ("table-format") or its columns ("table-grid").</summary>
-    public IReadOnlyList<DocxRevision> Revisions { get; init; } = [];
+    public IReadOnlyList<DocxRevision> Revisions
+    {
+        get;
+        init => field = ValueList<DocxRevision>.Of(value);
+    } = ValueList<DocxRevision>.Empty;
 }
 
 /// <summary>A table row. A header row repeats at the top of each page the table runs onto.</summary>
-/// <param name="Cells">The cells in order, including those inside content controls around cells.</param>
-/// <param name="IsHeader">Whether the row is a header row (w:tblHeader).</param>
-public sealed record DocxRow(IReadOnlyList<DocxCell> Cells, bool IsHeader = false)
+public sealed record DocxRow
 {
+    internal DocxRow()
+    {
+    }
+
+    /// <summary>The cells in order, including those inside content controls around cells.</summary>
+    public required IReadOnlyList<DocxCell> Cells { get; init => field = ValueList<DocxCell>.Of(value); }
+
+    /// <summary>Whether the row is a header row (w:tblHeader).</summary>
+    public bool IsHeader { get; init; }
+
     /// <summary>
     /// The row's height in points: at least that much ("20"), exactly that much ("20-exact"), or "auto" when Word sizes it.
     /// </summary>
@@ -805,44 +1120,85 @@ public sealed record DocxRow(IReadOnlyList<DocxCell> Cells, bool IsHeader = fals
     /// Tracked changes to the row: "row-insert", "row-delete", "row-format", or "row-table-format" for the table
     /// properties the row sets for itself.
     /// </summary>
-    public IReadOnlyList<DocxRevision> Revisions { get; init; } = [];
+    public IReadOnlyList<DocxRevision> Revisions
+    {
+        get;
+        init => field = ValueList<DocxRevision>.Of(value);
+    } = ValueList<DocxRevision>.Empty;
 
     /// <summary>The content controls around the row, outermost first, such as a repeating section and its item.</summary>
-    public IReadOnlyList<DocxControl> Controls { get; init; } = [];
+    public IReadOnlyList<DocxControl> Controls
+    {
+        get;
+        init => field = ValueList<DocxControl>.Of(value);
+    } = ValueList<DocxControl>.Empty;
 
     /// <summary>Bookmarks and content PDiffy can't read between the cells.</summary>
-    public IReadOnlyList<DocxBetween> Between { get; init; } = [];
+    public IReadOnlyList<DocxBetween> Between
+    {
+        get;
+        init => field = ValueList<DocxBetween>.Of(value);
+    } = ValueList<DocxBetween>.Empty;
 }
 
 /// <summary>
 /// A <see cref="DocxBookmarkBlock"/> or <see cref="DocxUnsupportedBlock"/> between a table's rows or a row's cells.
 /// <see cref="Before"/> is the index of the row or cell that comes after it, or the count when it comes last.
 /// </summary>
-/// <param name="Before">The index, counting from 0, of the row or cell after it.</param>
-/// <param name="Block">The bookmark or unread content.</param>
-public sealed record DocxBetween(int Before, DocxBlock Block);
+public sealed record DocxBetween
+{
+    internal DocxBetween()
+    {
+    }
+
+    /// <summary>The index, counting from 0, of the row or cell after it.</summary>
+    public required int Before { get; init; }
+
+    /// <summary>The bookmark or unread content.</summary>
+    public required DocxBlock Block { get; init; }
+}
 
 /// <summary>
 /// A table cell. <see cref="Span"/> is how many grid columns it covers; <see cref="Merge"/> is "restart" for the top of
 /// cells merged down a column and "continue" for those below it; <see cref="Shading"/> is its fill color in hex. Width,
 /// margins and borders are written as for <see cref="DocxTable"/>.
 /// </summary>
-/// <param name="Blocks">The paragraphs, tables and other blocks in the cell.</param>
-/// <param name="Span">How many columns of the table's grid the cell covers, 1 unless it's merged across.</param>
-/// <param name="Merge">"restart" or "continue", or null when it isn't merged with the cells above or below it.</param>
-/// <param name="Shading">The fill color in upper-case hex, such as "D9E2F3", or null when the cell has no fill.</param>
-public sealed record DocxCell(IReadOnlyList<DocxBlock> Blocks, int Span = 1, string? Merge = null, string? Shading = null)
+public sealed record DocxCell
 {
+    internal DocxCell()
+    {
+    }
+
+    /// <summary>The paragraphs, tables and other blocks in the cell.</summary>
+    public required IReadOnlyList<DocxBlock> Blocks { get; init => field = ValueList<DocxBlock>.Of(value); }
+
+    /// <summary>How many columns of the table's grid the cell covers, 1 unless it's merged across.</summary>
+    public int Span { get; init; } = 1;
+
+    /// <summary>"restart" or "continue", or null when it isn't merged with the cells above or below it.</summary>
+    public string? Merge { get; init; }
+
+    /// <summary>The fill color in upper-case hex, such as "D9E2F3", or null when the cell has no fill.</summary>
+    public string? Shading { get; init; }
+
     /// <summary>The cell's width, such as "120", "25%" or "auto", or null when the cell doesn't set one.</summary>
     public string? Width { get; init; }
 
     /// <summary>
     /// The cell's own margins, such as "left:5.4", used instead of <see cref="DocxTable.CellMargins"/> on those sides.
     /// </summary>
-    public IReadOnlyList<string> Margins { get; init; } = [];
+    public IReadOnlyList<string> Margins
+    {
+        get;
+        init => field = ValueList<string>.Of(value);
+    } = ValueList<string>.Empty;
 
     /// <summary>The cell's own borders, such as "bottom:double:1.5", one per side the cell sets.</summary>
-    public IReadOnlyList<string> Borders { get; init; } = [];
+    public IReadOnlyList<string> Borders
+    {
+        get;
+        init => field = ValueList<string>.Of(value);
+    } = ValueList<string>.Empty;
 
     /// <summary>Where the text sits in the cell as Word writes it, such as "center" or "bottom".</summary>
     public string? VerticalAlign { get; init; }
@@ -851,8 +1207,16 @@ public sealed record DocxCell(IReadOnlyList<DocxBlock> Blocks, int Span = 1, str
     public string? TextDirection { get; init; }
 
     /// <summary>Tracked changes to the cell: "cell-insert", "cell-delete", "cell-merge" or "cell-format".</summary>
-    public IReadOnlyList<DocxRevision> Revisions { get; init; } = [];
+    public IReadOnlyList<DocxRevision> Revisions
+    {
+        get;
+        init => field = ValueList<DocxRevision>.Of(value);
+    } = ValueList<DocxRevision>.Empty;
 
     /// <summary>The content controls around the cell, outermost first.</summary>
-    public IReadOnlyList<DocxControl> Controls { get; init; } = [];
+    public IReadOnlyList<DocxControl> Controls
+    {
+        get;
+        init => field = ValueList<DocxControl>.Of(value);
+    } = ValueList<DocxControl>.Empty;
 }

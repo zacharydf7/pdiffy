@@ -3,6 +3,10 @@ namespace PDiffy;
 /// <summary>Document-wide settings that change how a viewer opens, shows or restricts the file.</summary>
 public sealed record PdfSettings
 {
+    internal PdfSettings()
+    {
+    }
+
     /// <summary>The version in the file header.</summary>
     public string? PdfVersion { get; init; }
 
@@ -22,7 +26,11 @@ public sealed record PdfSettings
     public string? OpenAction { get; init; }
 
     // Each action of OpenAction on its own, since a destination's name can hold the ", " that joins them.
-    internal IReadOnlyList<string> OpenActions { get; init; } = [];
+    internal IReadOnlyList<string> OpenActions
+    {
+        get;
+        init => field = ValueList<string>.Of(value);
+    } = ValueList<string>.Empty;
 
     /// <summary>
     /// Whether the document has JavaScript in its document-level scripts, open action, document actions, form fields,
@@ -40,13 +48,25 @@ public sealed record PdfSettings
     public PdfPermissions? Permissions { get; init; }
 
     /// <summary>Viewer preferences other than DisplayDocTitle, which <see cref="PdfDocumentInfo"/> holds.</summary>
-    public IReadOnlyList<PdfSetting> ViewerPreferences { get; init; } = [];
+    public IReadOnlyList<PdfSetting> ViewerPreferences
+    {
+        get;
+        init => field = ValueList<PdfSetting>.Of(value);
+    } = ValueList<PdfSetting>.Empty;
 
     /// <summary>The optional-content layers a viewer can show or hide, in order; empty when there are none.</summary>
-    public IReadOnlyList<PdfLayer> Layers { get; init; } = [];
+    public IReadOnlyList<PdfLayer> Layers
+    {
+        get;
+        init => field = ValueList<PdfLayer>.Of(value);
+    } = ValueList<PdfLayer>.Empty;
 
     /// <summary>The files attached to the document, in the order its list of attachments has them; empty when none.</summary>
-    public IReadOnlyList<PdfEmbeddedFile> EmbeddedFiles { get; init; } = [];
+    public IReadOnlyList<PdfEmbeddedFile> EmbeddedFiles
+    {
+        get;
+        init => field = ValueList<PdfEmbeddedFile>.Of(value);
+    } = ValueList<PdfEmbeddedFile>.Empty;
 }
 
 /// <summary>The standard values of <see cref="PdfSettings.PageMode"/>.</summary>
@@ -97,18 +117,33 @@ public static class PdfPageLayouts
 /// A file attached to the document. <see cref="Name"/> is its key in the document's list of attachments; <see cref="Hash"/>
 /// is the first 16 hex digits of a SHA-256 of its contents. <see cref="Unreadable"/> is set when the contents are damaged.
 /// </summary>
-/// <param name="Name">The file's key in the document's list of attachments.</param>
-/// <param name="FileName">The file name it was attached under; null when it has none.</param>
-/// <param name="Description">The description the viewer shows for it; null when it has none.</param>
-/// <param name="Relationship">
-/// How the file relates to the document, such as <c>Source</c>, <c>Data</c> or <c>Supplement</c>; null when it doesn't say.
-/// </param>
-/// <param name="Size">The size of its contents in bytes, once decompressed; null when they're missing or
-/// damaged.</param>
-/// <param name="Hash">The first 16 hex digits of a SHA-256 of its contents; null when they're missing or
-/// damaged.</param>
-public sealed record PdfEmbeddedFile(string Name, string? FileName, string? Description, string? Relationship, int? Size, string? Hash)
+public sealed record PdfEmbeddedFile
 {
+    internal PdfEmbeddedFile()
+    {
+    }
+
+    /// <summary>The file's key in the document's list of attachments.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>The file name it was attached under; null when it has none.</summary>
+    public required string? FileName { get; init; }
+
+    /// <summary>The description the viewer shows for it; null when it has none.</summary>
+    public required string? Description { get; init; }
+
+    /// <summary>
+    /// How the file relates to the document, such as <c>Source</c>, <c>Data</c> or <c>Supplement</c>; null when it
+    /// doesn't say.
+    /// </summary>
+    public required string? Relationship { get; init; }
+
+    /// <summary>The size of its contents in bytes, once decompressed; null when they're missing or damaged.</summary>
+    public required int? Size { get; init; }
+
+    /// <summary>The first 16 hex digits of a SHA-256 of its contents; null when they're missing or damaged.</summary>
+    public required string? Hash { get; init; }
+
     /// <summary>
     /// Whether the contents are damaged, which leaves <see cref="Size"/> and <see cref="Hash"/> null.
     /// </summary>
@@ -157,11 +192,29 @@ public enum PdfPermissions
 }
 
 /// <summary>A named value, as the PDF stores it.</summary>
-/// <param name="Name">The entry's name, such as <c>HideToolbar</c> for a viewer preference.</param>
-/// <param name="Value">The entry's value as text, such as <c>true</c>.</param>
-public sealed record PdfSetting(string Name, string Value);
+public sealed record PdfSetting
+{
+    internal PdfSetting()
+    {
+    }
+
+    /// <summary>The entry's name, such as <c>HideToolbar</c> for a viewer preference.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>The entry's value as text, such as <c>true</c>.</summary>
+    public required string Value { get; init; }
+}
 
 /// <summary>An optional-content layer and whether a viewer shows it when the file opens.</summary>
-/// <param name="Name">The layer's name as the viewer's layers panel shows it, or <c>(unnamed)</c>.</param>
-/// <param name="VisibleByDefault">Whether the viewer shows the layer when the file opens.</param>
-public sealed record PdfLayer(string Name, bool VisibleByDefault);
+public sealed record PdfLayer
+{
+    internal PdfLayer()
+    {
+    }
+
+    /// <summary>The layer's name as the viewer's layers panel shows it, or <c>(unnamed)</c>.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>Whether the viewer shows the layer when the file opens.</summary>
+    public required bool VisibleByDefault { get; init; }
+}

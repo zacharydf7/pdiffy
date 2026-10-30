@@ -77,7 +77,7 @@ internal sealed class PdfObjects(PdfDocument document)
         var bottom = Math.Min(numbers[1], numbers[3]);
         var width = Math.Abs(numbers[2] - numbers[0]);
         var height = Math.Abs(numbers[3] - numbers[1]);
-        return new PdfBox(Round(left), Round(bottom), Round(width), Round(height));
+        return new PdfBox { X = Round(left), Y = Round(bottom), Width = Round(width), Height = Round(height) };
     }
 
     /// <summary>A simple value as text: a name, string, number or true/false, or an array of them in brackets.</summary>
@@ -88,7 +88,7 @@ internal sealed class PdfObjects(PdfDocument document)
         (dictionary?.Data ?? new Dictionary<string, IToken>())
             .Where(pair => !skip.Contains(pair.Key))
             .OrderBy(pair => pair.Key, StringComparer.Ordinal)
-            .Select(pair => new PdfSetting(pair.Key, Describe(pair.Value) ?? ""))
+            .Select(pair => new PdfSetting { Name = pair.Key, Value = Describe(pair.Value) ?? "" })
             .ToList();
 
     /// <summary>

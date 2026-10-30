@@ -27,7 +27,8 @@ public class MalformedPdfTests
     {
         var document = OnePage("/PageLabels 6 0 R", extraObjects: ["<< /Kids [6 0 R] /Nums [0 << /S /D >>] >>"]);
 
-        Assert.Equal([new PdfPageLabelRange(1, "D", null, 1)], document.PageLabels);
+        PdfPageLabelRange[] labels = [new() { FirstPage = 1, Style = "D", Prefix = null, Start = 1 }];
+        Assert.Equal(labels, document.PageLabels);
     }
 
     [Fact]
@@ -140,7 +141,7 @@ public class MalformedPdfTests
     {
         var document = OnePage(catalogEntries, pagesKids);
 
-        Assert.Contains(new PdfPageText(1, "Loop"), document.Untagged);
+        Assert.Contains(new PdfPageText { Page = 1, Text = "Loop" }, document.Untagged);
     }
 
     [Fact]

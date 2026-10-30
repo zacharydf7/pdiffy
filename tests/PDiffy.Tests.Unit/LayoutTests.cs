@@ -15,9 +15,21 @@ public class LayoutTests
 
         PdfTextRun[] expected =
         [
-            new(1, 72, 720, "Helvetica", 12, "gray:0", PdfTextRenderMode.Fill, PdfContentRole.Tagged, "Go with a guide"),
-            new(1, 72, 700, "Helvetica", 12, "gray:0", PdfTextRenderMode.Fill, PdfContentRole.Artifact, "Page 1"),
-            new(1, 72, 680, "Helvetica", 12, "gray:0", PdfTextRenderMode.Fill, PdfContentRole.Untagged, "Stray"),
+            new()
+            {
+                Page = 1, X = 72, Y = 720, Font = "Helvetica", Size = 12, Color = "gray:0",
+                RenderMode = PdfTextRenderMode.Fill, Role = PdfContentRole.Tagged, Text = "Go with a guide",
+            },
+            new()
+            {
+                Page = 1, X = 72, Y = 700, Font = "Helvetica", Size = 12, Color = "gray:0",
+                RenderMode = PdfTextRenderMode.Fill, Role = PdfContentRole.Artifact, Text = "Page 1",
+            },
+            new()
+            {
+                Page = 1, X = 72, Y = 680, Font = "Helvetica", Size = 12, Color = "gray:0",
+                RenderMode = PdfTextRenderMode.Fill, Role = PdfContentRole.Untagged, Text = "Stray",
+            },
         ];
         Assert.Equal(expected, runs);
     }
@@ -376,9 +388,21 @@ public class LayoutTests
 
         PdfVectorPath[] expected =
         [
-            new(1, 72, 500, 100, 20, "gray:0", null, null, PdfContentRole.Untagged),
-            new(1, 72, 480, 100, 1, "gray:0", null, null, PdfContentRole.Artifact),
-            new(1, 72, 300, 100, 0, null, "#ff0000", 2, PdfContentRole.Untagged),
+            new()
+            {
+                Page = 1, X = 72, Y = 500, Width = 100, Height = 20, Fill = "gray:0", Stroke = null, LineWidth = null,
+                Role = PdfContentRole.Untagged,
+            },
+            new()
+            {
+                Page = 1, X = 72, Y = 480, Width = 100, Height = 1, Fill = "gray:0", Stroke = null, LineWidth = null,
+                Role = PdfContentRole.Artifact,
+            },
+            new()
+            {
+                Page = 1, X = 72, Y = 300, Width = 100, Height = 0, Fill = null, Stroke = "#ff0000", LineWidth = 2,
+                Role = PdfContentRole.Untagged,
+            },
         ];
         Assert.Equal(expected, paths);
     }

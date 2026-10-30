@@ -23,7 +23,11 @@ internal static class MetadataReader
         var viewerPreferences = objects.Dictionary(catalog, "ViewerPreferences");
         var marked = markInfo is not null && objects.Boolean(markInfo, "Marked");
         var displayDocTitle = viewerPreferences is not null && objects.Boolean(viewerPreferences, "DisplayDocTitle");
-        return new PdfDocumentInfo(marked, objects.Text(catalog, "Lang"), displayDocTitle, pageCount);
+        return new PdfDocumentInfo
+        {
+            Marked = marked, Language = objects.Text(catalog, "Lang"), DisplayDocTitle = displayDocTitle,
+            PageCount = pageCount,
+        };
     }
 
     public static PdfMetadata ReadMetadata(PdfDocument document, PdfObjects objects)
@@ -36,12 +40,12 @@ internal static class MetadataReader
         var pdfUaPart = XmpValue(xml, PdfUaId + "part");
         var pdfAPart = XmpValue(xml, PdfAId + "part");
         var xmpTitle = xml?.Descendants(DublinCore + "title").Descendants().LastOrDefault()?.Value;
-        return new PdfMetadata(
-            info.Title, info.Author, info.Subject, info.Keywords, info.CreationDate is not null, info.ModifiedDate is not null,
-            info.Producer, info.Creator, pdfUaPart, xmpTitle)
+        return new PdfMetadata
         {
-            OtherInfo = otherInfo,
-            XmpCreator = XmpValue(xml, DublinCore + "creator"),
+            Title = info.Title, Author = info.Author, Subject = info.Subject, Keywords = info.Keywords,
+            HasCreatedDate = info.CreationDate is not null, HasModifiedDate = info.ModifiedDate is not null,
+            Producer = info.Producer, Creator = info.Creator, PdfUaPart = pdfUaPart, XmpTitle = xmpTitle,
+            OtherInfo = otherInfo, XmpCreator = XmpValue(xml, DublinCore + "creator"),
             XmpDescription = XmpValue(xml, DublinCore + "description"),
             XmpLanguage = XmpValue(xml, DublinCore + "language"),
             PdfAConformance = pdfAPart is null ? null : pdfAPart + XmpValue(xml, PdfAId + "conformance"),

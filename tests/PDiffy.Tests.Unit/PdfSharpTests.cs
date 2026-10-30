@@ -49,7 +49,7 @@ public class PdfSharpTests
 
         var document = pdf.Load();
 
-        Assert.Equal([new PdfPageText(1, "Page 1")], document.Artifacts);
+        Assert.Equal([new PdfPageText { Page = 1, Text = "Page 1" }], document.Artifacts);
         Assert.Equal(["Body text."], document.Elements("P").Select(element => element.Text));
         Assert.Empty(document.Untagged);
     }

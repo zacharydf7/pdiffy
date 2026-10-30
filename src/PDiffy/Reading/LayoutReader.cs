@@ -55,8 +55,12 @@ internal sealed class LayoutReader(int pageNumber, PageContent content,
             }
 
             var bounds = image.BoundingBox;
-            images.Add(new PdfImage(pageNumber, Round(bounds.Left), Round(bounds.Bottom), Round(bounds.Width), Round(bounds.Height),
-                image.WidthInSamples, image.HeightInSamples, hash ?? Hash(image), RoleOf(owner)) { Layers = layers });
+            images.Add(new PdfImage
+            {
+                Page = pageNumber, X = Round(bounds.Left), Y = Round(bounds.Bottom), Width = Round(bounds.Width),
+                Height = Round(bounds.Height), PixelWidth = image.WidthInSamples, PixelHeight = image.HeightInSamples,
+                Hash = hash ?? Hash(image), Role = RoleOf(owner), Layers = layers,
+            });
         }
 
         return images;
@@ -73,8 +77,12 @@ internal sealed class LayoutReader(int pageNumber, PageContent content,
             var fill = path.IsFilled ? ColorText.Format(path.FillColor) ?? DefaultColor : null;
             var stroke = path.IsStroked ? ColorText.Format(path.StrokeColor) ?? DefaultColor : null;
             double? lineWidth = path.IsStroked ? Math.Round((double)path.LineWidth, 1, MidpointRounding.AwayFromZero) : null;
-            paths.Add(new PdfVectorPath(pageNumber, Round(bounds.Left), Round(bounds.Bottom), Round(bounds.Width), Round(bounds.Height),
-                fill, stroke, lineWidth, RoleOf(owner)) { Layers = content.Layers.Paths.GetValueOrDefault(path) ?? [] });
+            paths.Add(new PdfVectorPath
+            {
+                Page = pageNumber, X = Round(bounds.Left), Y = Round(bounds.Bottom), Width = Round(bounds.Width),
+                Height = Round(bounds.Height), Fill = fill, Stroke = stroke, LineWidth = lineWidth,
+                Role = RoleOf(owner), Layers = content.Layers.Paths.GetValueOrDefault(path) ?? [],
+            });
         }
 
         return paths;

@@ -12,7 +12,8 @@ public class PdfUaDocumentLoadTests
 
         var document = pdf.Load();
 
-        Assert.Equal(new PdfDocumentInfo(Marked: true, Language: "en-US", DisplayDocTitle: true, PageCount: 1), document.Document);
+        var info = new PdfDocumentInfo { Marked = true, Language = "en-US", DisplayDocTitle = true, PageCount = 1 };
+        Assert.Equal(info, document.Document);
         Assert.Equal("Trail Guide", document.Metadata.Title);
         Assert.Equal("1", document.Metadata.PdfUaPart);
     }
@@ -118,7 +119,12 @@ public class PdfUaDocumentLoadTests
         Assert.Equal(("es-ES", "Hello", "Greeting"), (paragraph.Language, paragraph.Expansion, paragraph.Title));
         Assert.Equal("Decimal", list.ListNumbering);
         Assert.Equal([chart], document.Elements("Figure"));
-        Assert.Equal([new PdfRoleMapping("Chart", "Diagram"), new PdfRoleMapping("Diagram", "Figure")], document.RoleMap);
+        PdfRoleMapping[] roleMap =
+        [
+            new() { Custom = "Chart", Standard = "Diagram" },
+            new() { Custom = "Diagram", Standard = "Figure" },
+        ];
+        Assert.Equal(roleMap, document.RoleMap);
     }
 
     [Fact]
@@ -183,7 +189,7 @@ public class PdfUaDocumentLoadTests
 
         var document = pdf.Load();
 
-        Assert.Equal([new PdfPageText(1, "Orphaned")], document.Untagged);
+        Assert.Equal([new PdfPageText { Page = 1, Text = "Orphaned" }], document.Untagged);
     }
 
     [Fact]
@@ -232,8 +238,8 @@ public class PdfUaDocumentLoadTests
 
         var document = pdf.Load();
 
-        Assert.Equal([new PdfPageText(1, "Page 1")], document.Artifacts);
-        Assert.Equal([new PdfPageText(1, "Stray text")], document.Untagged);
+        Assert.Equal([new PdfPageText { Page = 1, Text = "Page 1" }], document.Artifacts);
+        Assert.Equal([new PdfPageText { Page = 1, Text = "Stray text" }], document.Untagged);
     }
 
     [Fact]
@@ -244,7 +250,8 @@ public class PdfUaDocumentLoadTests
 
         var document = pdf.Load();
 
-        Assert.Equal([new PdfPageText(1, "Trail closed"), new PdfPageText(1, "Bring water")], document.Untagged);
+        PdfPageText[] lines = [new() { Page = 1, Text = "Trail closed" }, new() { Page = 1, Text = "Bring water" }];
+        Assert.Equal(lines, document.Untagged);
     }
 
     [Fact]
@@ -338,7 +345,7 @@ public class PdfUaDocumentLoadTests
         var document = pdf.Load();
 
         Assert.Equal("Body", Assert.Single(document.Structure).Text);
-        Assert.Equal([new PdfPageText(1, "Page 1")], document.Artifacts);
+        Assert.Equal([new PdfPageText { Page = 1, Text = "Page 1" }], document.Artifacts);
     }
 
     [Fact]
@@ -370,7 +377,8 @@ public class PdfUaDocumentLoadTests
         Assert.Equal("Readable", document.Structure[0].Text);
         Assert.Null(document.Structure[1].Text);
         Assert.Contains("  p2 unreadable\n", document.ToSnapshot());
-        Assert.Contains(new PdfFont("Damaged", "Type0", Embedded: true, HasToUnicode: true), document.Fonts);
+        var damaged = new PdfFont { Name = "Damaged", Subtype = "Type0", Embedded = true, HasToUnicode = true };
+        Assert.Contains(damaged, document.Fonts);
     }
 
     [Fact]
@@ -382,8 +390,14 @@ public class PdfUaDocumentLoadTests
 
         var pages = pdf.Load().Pages;
 
-        Assert.Equal(new PdfPage(1, 612, 792, 0, "S", false), pages[0]);
-        Assert.Equal(new PdfPage(2, 595, 842, 90, null, false), pages[1]);
+        Assert.Equal(new PdfPage
+        {
+            Number = 1, Width = 612, Height = 792, Rotation = 0, Tabs = "S", HasAnnotations = false,
+        }, pages[0]);
+        Assert.Equal(new PdfPage
+        {
+            Number = 2, Width = 595, Height = 842, Rotation = 90, Tabs = null, HasAnnotations = false,
+        }, pages[1]);
     }
 
     [Fact]
@@ -398,7 +412,11 @@ public class PdfUaDocumentLoadTests
 
         Assert.Equal(["Intro", "Safety"], document.Bookmarks.Select(b => b.Title));
         Assert.Equal([1, 2], document.Bookmarks.Select(b => b.Page));
-        PdfPageLabelRange[] expected = [new(1, "r", null, 1), new(2, "D", "A-", 5)];
+        PdfPageLabelRange[] expected =
+        [
+            new() { FirstPage = 1, Style = "r", Prefix = null, Start = 1 },
+            new() { FirstPage = 2, Style = "D", Prefix = "A-", Start = 5 },
+        ];
         Assert.Equal(expected, document.PageLabels);
     }
 
@@ -535,7 +553,12 @@ public class PdfUaDocumentLoadTests
 
         var labels = pdf.Load().PageLabels;
 
-        Assert.Equal([new PdfPageLabelRange(1, "r", null, 1), new PdfPageLabelRange(2, "D", null, 1)], labels);
+        PdfPageLabelRange[] expected =
+        [
+            new() { FirstPage = 1, Style = "r", Prefix = null, Start = 1 },
+            new() { FirstPage = 2, Style = "D", Prefix = null, Start = 1 },
+        ];
+        Assert.Equal(expected, labels);
     }
 
     [Fact]
@@ -546,7 +569,8 @@ public class PdfUaDocumentLoadTests
 
         var font = Assert.Single(pdf.Load().Fonts);
 
-        Assert.Equal(new PdfFont("Helvetica", "Type1", Embedded: false, HasToUnicode: false), font);
+        Assert.Equal(new PdfFont { Name = "Helvetica", Subtype = "Type1", Embedded = false, HasToUnicode = false },
+            font);
     }
 
     [Fact]

@@ -35,10 +35,9 @@ internal static class FormReader
         var (kind, name, title) = Describe(sdtPr);
         var list = sdtPr?.Element(W + "dropDownList") ?? sdtPr?.Element(W + "comboBox");
         var checkbox = sdtPr?.Element(W14 + "checkbox");
-        return new DocxForm(kind, position)
+        return new DocxForm
         {
-            Name = name,
-            Title = title,
+            Kind = kind, Position = position, Name = name, Title = title,
             Value = checkbox is null ? value : YesNo(IsTrue((string?)checkbox.Element(W14 + "checked")?.Attribute(W14 + "val"))),
             Items = list?.Elements(W + "listItem").Select(item => Attr(item, "displayText") ?? Attr(item, "value") ?? "").ToList() ?? [],
         };
@@ -58,7 +57,11 @@ internal static class FormReader
             : dropDown is not null
                 ? ("legacy-dropdown", entries.ElementAtOrDefault(Integer(dropDown.Element(W + "result"), "val") ?? 0))
                 : ("legacy-text", result);
-        return new DocxForm(kind, position) { Name = Attr(data.Element(W + "name"), "val"), Value = value, Items = entries };
+        return new DocxForm
+        {
+            Kind = kind, Position = position, Name = Attr(data.Element(W + "name"), "val"), Value = value,
+            Items = entries,
+        };
     }
 
     private static string YesNo(bool value) => value ? "yes" : "no";

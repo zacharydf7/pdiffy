@@ -118,7 +118,7 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
             var turnedOn = item is IndirectReferenceToken onReference && on.Contains(onReference.Data);
             var turnedOff = item is IndirectReferenceToken offReference && off.Contains(offReference.Data);
             var visible = allOff ? turnedOn : !turnedOff;
-            layers.Add(new PdfLayer(objects.Text(group, "Name") ?? "(unnamed)", visible));
+            layers.Add(new PdfLayer { Name = objects.Text(group, "Name") ?? "(unnamed)", VisibleByDefault = visible });
         }
 
         return layers;
@@ -139,7 +139,10 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
             var name = PdfObjects.TextOf(objects.Resolve(key)) ?? "";
             if (objects.Resolve(value) is not DictionaryToken specification)
             {
-                files.Add(new PdfEmbeddedFile(name, null, null, null, null, null));
+                files.Add(new PdfEmbeddedFile
+                {
+                    Name = name, FileName = null, Description = null, Relationship = null, Size = null, Hash = null,
+                });
                 continue;
             }
 
@@ -147,8 +150,12 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
             var stream = streams is null ? null : (objects.Get(streams, "UF") ?? objects.Get(streams, "F")) as StreamToken;
             var contents = stream is null ? null : objects.Contents(stream);
             var hash = contents is null ? null : Convert.ToHexStringLower(SHA256.HashData(contents))[..16];
-            var file = new PdfEmbeddedFile(name, objects.FileName(specification), objects.Text(specification, "Desc"),
-                objects.Name(specification, "AFRelationship"), contents?.Length, hash);
+            var file = new PdfEmbeddedFile
+            {
+                Name = name, FileName = objects.FileName(specification),
+                Description = objects.Text(specification, "Desc"),
+                Relationship = objects.Name(specification, "AFRelationship"), Size = contents?.Length, Hash = hash,
+            };
             files.Add(file with { Unreadable = stream is not null && contents is null });
         }
 

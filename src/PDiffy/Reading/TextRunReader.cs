@@ -51,10 +51,11 @@ internal sealed class TextRunReader(int pageNumber, ContentOwners owners, Conten
         }
 
         var start = letters[0].StartBaseLine;
-        var run = new PdfTextRun(pageNumber, LayoutReader.Round(start.X), LayoutReader.Round(start.Y), style.Font, style.Size,
-            style.Color, style.RenderMode, RoleOf(style.Owner), text)
+        var run = new PdfTextRun
         {
-            Angle = TextJoiner.Angle(letters[0]),
+            Page = pageNumber, X = LayoutReader.Round(start.X), Y = LayoutReader.Round(start.Y), Font = style.Font,
+            Size = style.Size, Color = style.Color, RenderMode = style.RenderMode, Role = RoleOf(style.Owner),
+            Text = text, Angle = TextJoiner.Angle(letters[0]),
             Layers = layers.Letters.GetValueOrDefault(letters[0]) ?? [],
         };
         runs.Add(new OwnedRun(run, style.Owner?.Mcid));

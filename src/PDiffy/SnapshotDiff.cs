@@ -34,19 +34,40 @@ public enum ChangeKind
 /// says what changed. <see cref="Section"/> is null for the snapshot's first lines (format version and options), for blank
 /// lines, and for every change in text without sections.
 /// </summary>
-/// <param name="Kind">What kind of difference it is.</param>
-/// <param name="Section">The PDF snapshot section the change is in. Besides the cases listed above, it's null for every
-/// change in a DOCX snapshot.</param>
-/// <param name="Path">Where the change is, as described above; "header" for the snapshot's first lines, "pages" for
-/// pages inserted or removed, and "whitespace" when only blank lines or line endings differ.</param>
-/// <param name="Page">The page the changed line is on, counted from 1, as its first "p3" word says (the later
-/// snapshot's, for a line both have); null when the line names no page. For pages inserted or removed, the first such
-/// page.</param>
-/// <param name="Detail">What changed, such as <c>type: H2 -> H3</c>, <c>alt: "Trail map" -> (missing)</c> or
-/// <c>reading position 3 -> 5</c> and <c>parent: Document > P -> Document</c> for a move; for a line added or removed,
-/// the line itself. It can run over several lines.</param>
-public sealed record SnapshotChange(ChangeKind Kind, PdfSection? Section, string Path, int? Page, string Detail)
+public sealed record SnapshotChange
 {
+    internal SnapshotChange()
+    {
+    }
+
+    /// <summary>What kind of difference it is.</summary>
+    public required ChangeKind Kind { get; init; }
+
+    /// <summary>
+    /// The PDF snapshot section the change is in. Besides the cases listed above, it's null for every change in a DOCX
+    /// snapshot.
+    /// </summary>
+    public required PdfSection? Section { get; init; }
+
+    /// <summary>
+    /// Where the change is, as described above; "header" for the snapshot's first lines, "pages" for pages inserted or
+    /// removed, and "whitespace" when only blank lines or line endings differ.
+    /// </summary>
+    public required string Path { get; init; }
+
+    /// <summary>
+    /// The page the changed line is on, counted from 1, as its first "p3" word says (the later snapshot's, for a line
+    /// both have); null when the line names no page. For pages inserted or removed, the first such page.
+    /// </summary>
+    public required int? Page { get; init; }
+
+    /// <summary>
+    /// What changed, such as <c>type: H2 -> H3</c>, <c>alt: "Trail map" -> (missing)</c> or <c>reading position 3 ->
+    /// 5</c> and <c>parent: Document > P -> Document</c> for a move; for a line added or removed, the line itself. It
+    /// can run over several lines.
+    /// </summary>
+    public required string Detail { get; init; }
+
     /// <summary>
     /// Whether the change can affect what assistive technology gets, by the rules the README lists under "Changes
     /// that affect accessibility", such as a heading that became a paragraph or a figure that lost its alt text.
@@ -98,7 +119,11 @@ public sealed class SnapshotDiff
         // When the snapshot's tolerances allowed a difference, that difference is what made the texts differ.
         if (changes.Count == 0 && before != after && !tolerated)
         {
-            changes.Add(new SnapshotChange(ChangeKind.Changed, null, "whitespace", null, "Blank lines or line endings differ."));
+            changes.Add(new SnapshotChange
+            {
+                Kind = ChangeKind.Changed, Section = null, Path = "whitespace", Page = null,
+                Detail = "Blank lines or line endings differ.",
+            });
         }
 
         return new SnapshotDiff(before, after, changes, matchedBefore);
@@ -116,7 +141,11 @@ public sealed class SnapshotDiff
         {
             var removed = beforeHeader.Except(afterHeader).Select(line => $"- {line}");
             var detail = removed.Concat(afterHeader.Except(beforeHeader).Select(line => $"+ {line}"));
-            changes.Add(new SnapshotChange(ChangeKind.Changed, null, "header", null, string.Join("\n", detail)));
+            changes.Add(new SnapshotChange
+            {
+                Kind = ChangeKind.Changed, Section = null, Path = "header", Page = null,
+                Detail = string.Join("\n", detail),
+            });
         }
 
         // Section names a PDF snapshot's sections; other formats, such as DOCX, have sections of their own.

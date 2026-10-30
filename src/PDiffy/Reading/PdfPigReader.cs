@@ -87,7 +87,11 @@ internal static class PdfPigReader
         {
             if (TryGetPage(document, number) is not { } page)
             {
-                pages.Add(new PdfPage(number, 0, 0, 0, null, false, Unreadable: true));
+                pages.Add(new PdfPage
+                {
+                    Number = number, Width = 0, Height = 0, Rotation = 0, Tabs = null, HasAnnotations = false,
+                    Unreadable = true,
+                });
                 continue;
             }
 
@@ -104,12 +108,12 @@ internal static class PdfPigReader
         // MediaBox size before rotation; the rotation is reported on its own.
         var size = page.MediaBox.Bounds;
         var hasAnnotations = objects.Items(dictionary.Data.GetValueOrDefault("Annots")).Count > 0;
-        return new PdfPage(number, size.Width, size.Height, page.Rotation.Value, objects.Name(dictionary, "Tabs"), hasAnnotations)
+        return new PdfPage
         {
-            CropBox = CropBoxOf(dictionary, objects),
-            BleedBox = objects.Box(dictionary, "BleedBox"),
-            TrimBox = objects.Box(dictionary, "TrimBox"),
-            ArtBox = objects.Box(dictionary, "ArtBox"),
+            Number = number, Width = size.Width, Height = size.Height, Rotation = page.Rotation.Value,
+            Tabs = objects.Name(dictionary, "Tabs"), HasAnnotations = hasAnnotations,
+            CropBox = CropBoxOf(dictionary, objects), BleedBox = objects.Box(dictionary, "BleedBox"),
+            TrimBox = objects.Box(dictionary, "TrimBox"), ArtBox = objects.Box(dictionary, "ArtBox"),
             UserUnit = objects.Get(dictionary, "UserUnit") is NumericToken unit ? unit.Double : null,
             Group = ReadGroup(dictionary, objects),
         };
@@ -123,7 +127,11 @@ internal static class PdfPigReader
         }
 
         var colorSpace = objects.Describe(group.Data.GetValueOrDefault("CS"));
-        return new PdfPageGroup(objects.Name(group, "S"), colorSpace, objects.Boolean(group, "I"), objects.Boolean(group, "K"));
+        return new PdfPageGroup
+        {
+            Type = objects.Name(group, "S"), ColorSpace = colorSpace, Isolated = objects.Boolean(group, "I"),
+            Knockout = objects.Boolean(group, "K"),
+        };
     }
 
     // A CropBox can be set on a Pages node and inherited, so look up the /Parent chain when the page has none. The depth
@@ -152,13 +160,16 @@ internal static class PdfPigReader
         foreach (var (number, (_, content)) in readable.OrderBy(pair => pair.Key))
         {
             loose.Artifacts.AddRange(content.Artifacts);
-            loose.Untagged.AddRange(content.UntaggedLines.Select(line => new PdfPageText(number, line)));
+            loose.Untagged.AddRange(content.UntaggedLines.Select(line => new PdfPageText
+            {
+                Page = number, Text = line,
+            }));
 
             foreach (var (mcid, letters) in content.LettersByMcid.OrderBy(pair => pair.Key))
             {
                 if (!referenced.Contains((number, mcid)) && TextJoiner.Join(letters) is { Length: > 0 } text)
                 {
-                    loose.Untagged.Add(new PdfPageText(number, text));
+                    loose.Untagged.Add(new PdfPageText { Page = number, Text = text });
                 }
             }
         }

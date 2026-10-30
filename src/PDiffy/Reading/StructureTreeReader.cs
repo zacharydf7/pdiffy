@@ -48,7 +48,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         NameReferencedHeaders(topLevel);
         var read = topLevel.Select(element => ReadElement(element, inheritedPage: null, depth: 1).Element).ToList();
         var elements = StructurePaths.Assign(read, StructurePaths.Root);
-        var mappings = _roleMap.Select(pair => new PdfRoleMapping(pair.Key, pair.Value)).ToList();
+        var mappings = _roleMap.Select(pair => new PdfRoleMapping { Custom = pair.Key, Standard = pair.Value }).ToList();
         return new StructureTree(mappings, elements, _referencedMcids, _referencedObjects);
     }
 

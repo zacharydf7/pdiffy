@@ -53,7 +53,8 @@ public class DocxHeaderAndFieldTests
 
         var paragraph = Assert.Single(docx.Load().Paragraphs());
 
-        Assert.Equal(("9", new DocxField("NUMPAGES", "9", 0)), (paragraph.Text, Assert.Single(paragraph.Inlines)));
+        var field = new DocxField { Code = "NUMPAGES", Result = "9", Position = 0 };
+        Assert.Equal(("9", field), (paragraph.Text, Assert.Single(paragraph.Inlines)));
     }
 
     [Fact]
@@ -71,7 +72,12 @@ public class DocxHeaderAndFieldTests
         var paragraph = Assert.Single(docx.Load().Paragraphs());
 
         Assert.Equal("First", paragraph.Text);
-        Assert.Equal([new DocxField("IF 1 = 1 \"First\"", "First", 0), new DocxField("PAGE", "1", 0)], paragraph.Inlines);
+        DocxField[] fields =
+        [
+            new() { Code = "IF 1 = 1 \"First\"", Result = "First", Position = 0 },
+            new() { Code = "PAGE", Result = "1", Position = 0 },
+        ];
+        Assert.Equal(fields, paragraph.Inlines);
     }
 
     [Fact]
@@ -88,7 +94,8 @@ public class DocxHeaderAndFieldTests
 
         var paragraphs = docx.Load().Paragraphs().ToList();
 
-        Assert.Equal(new DocxField("TOC \\o \"1-3\"", "Introduction", 0), Assert.Single(paragraphs[0].Inlines));
+        var toc = new DocxField { Code = "TOC \\o \"1-3\"", Result = "Introduction", Position = 0 };
+        Assert.Equal(toc, Assert.Single(paragraphs[0].Inlines));
         Assert.Empty(paragraphs[1].Inlines);
     }
 

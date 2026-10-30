@@ -136,7 +136,10 @@ internal sealed class TreeMatcher(string name, PdfSection? section,
     }
 
     private void Add(ChangeKind kind, string path, int? page, string detail) =>
-        _entries.Add(new Entry(Change: new SnapshotChange(kind, section, path, page, detail)));
+        _entries.Add(new Entry(Change: new SnapshotChange
+        {
+            Kind = kind, Section = section, Path = path, Page = page, Detail = detail,
+        }));
 
     // A removed subtree found elsewhere, as is or edited, was moved; leftover children of a move are checked too.
     private void FindMoves()
@@ -166,7 +169,11 @@ internal sealed class TreeMatcher(string name, PdfSection? section,
                 var details = new List<string>();
                 if (oldPosition != newPosition) details.Add($"reading position {oldPosition} -> {newPosition}");
                 if (oldParent != newParent) details.Add($"parent: {oldParent} -> {newParent}");
-                var moved = new SnapshotChange(ChangeKind.Moved, section, path, line.Page, string.Join("\n", details));
+                var moved = new SnapshotChange
+                {
+                    Kind = ChangeKind.Moved, Section = section, Path = path, Page = line.Page,
+                    Detail = string.Join("\n", details),
+                };
                 _entries.Insert(index++, new Entry(Change: moved));
             }
 
@@ -182,9 +189,16 @@ internal sealed class TreeMatcher(string name, PdfSection? section,
 
     private SnapshotChange ToChange(Entry entry) => entry.Change
         ?? (entry.Removed is { } removed
-            ? new SnapshotChange(ChangeKind.Removed, section, entry.Path!, Original(removed).Page,
-                Original(removed).Text.Trim())
-            : new SnapshotChange(ChangeKind.Added, section, entry.Path!, entry.Added!.Page, entry.Added.Text.Trim()));
+            ? new SnapshotChange
+            {
+                Kind = ChangeKind.Removed, Section = section, Path = entry.Path!, Page = Original(removed).Page,
+                Detail = Original(removed).Text.Trim(),
+            }
+            : new SnapshotChange
+            {
+                Kind = ChangeKind.Added, Section = section, Path = entry.Path!, Page = entry.Added!.Page,
+                Detail = entry.Added.Text.Trim(),
+            });
 
     private SnapshotLine Original(SnapshotLine line) => originals?.GetValueOrDefault(line) ?? line;
 

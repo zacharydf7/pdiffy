@@ -63,7 +63,11 @@ internal static class NavigationReader
             if (objects.Resolve(key) is NumericToken pageIndex && objects.Resolve(value) is DictionaryToken label)
             {
                 var start = objects.Integer(label, "St") ?? 1;
-                ranges.Add(new PdfPageLabelRange(pageIndex.Int + 1, objects.Name(label, "S"), objects.Text(label, "P"), start));
+                ranges.Add(new PdfPageLabelRange
+                {
+                    FirstPage = pageIndex.Int + 1, Style = objects.Name(label, "S"), Prefix = objects.Text(label, "P"),
+                    Start = start,
+                });
             }
         }
 
@@ -76,8 +80,9 @@ internal static class NavigationReader
         var document = node as DocumentBookmarkNode;
         var local = node is not (ExternalBookmarkNode or EmbeddedBookmarkNode);
         var page = local ? document?.PageNumber : null;
-        return new PdfBookmark(TextJoiner.Normalize(node.Title), page, node.Children.Select(ToBookmark).ToList())
+        return new PdfBookmark
         {
+            Title = TextJoiner.Normalize(node.Title), Page = page, Children = node.Children.Select(ToBookmark).ToList(),
             Destination = document is null ? null : DestinationReader.FromBookmark(document.Destination),
             Uri = (node as UriBookmarkNode)?.Uri,
             File = node switch

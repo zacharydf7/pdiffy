@@ -329,7 +329,7 @@ public class DocxInlineTests
         var paragraph = new TestDocx { Body = Paragraph("a", inline) }.Load().Paragraphs().Single();
 
         Assert.Equal("a\tb", paragraph.Text);
-        Assert.Equal(new DocxSymbol("Wingdings", "zz", 3), Assert.Single(paragraph.Inlines));
+        Assert.Equal(new DocxSymbol { Font = "Wingdings", Code = "zz", Position = 3 }, Assert.Single(paragraph.Inlines));
     }
 
     [Fact]

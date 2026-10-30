@@ -205,9 +205,21 @@ public class SnapshotOptionsTests
     {
         var document = Documents.Empty() with
         {
-            Document = new PdfDocumentInfo(true, "en-US", true, 3),
-            Pages = [new PdfPage(1, 612, 792, 0, null, false), new PdfPage(2, 612, 792, 0, null, false), new PdfPage(3, 612, 792, 0, null, false)],
-            Bookmarks = [new PdfBookmark("Intro", 1, []), new PdfBookmark("Results", null, [new PdfBookmark("Table", 2, []), new PdfBookmark("Notes", 3, [])])],
+            Document = new PdfDocumentInfo { Marked = true, Language = "en-US", DisplayDocTitle = true, PageCount = 3 },
+            Pages = [Page(1), Page(2), Page(3)],
+            Bookmarks =
+            [
+                new PdfBookmark { Title = "Intro", Page = 1, Children = [] },
+                new PdfBookmark
+                {
+                    Title = "Results", Page = null,
+                    Children =
+                    [
+                        new PdfBookmark { Title = "Table", Page = 2, Children = [] },
+                        new PdfBookmark { Title = "Notes", Page = 3, Children = [] },
+                    ],
+                },
+            ],
             Structure =
             [
                 new PdfStructureElement
@@ -222,11 +234,19 @@ public class SnapshotOptionsTests
                     ],
                 },
             ],
-            Artifacts = [new PdfPageText(1, "Page 1"), new PdfPageText(2, "Page 2")],
+            Artifacts = [new PdfPageText { Page = 1, Text = "Page 1" }, new PdfPageText { Page = 2, Text = "Page 2" }],
             Annotations = [new PdfAnnotation { Subtype = "Link", Page = 3 }, new PdfAnnotation { Subtype = "Link", Page = 2 }],
             FormFields = [new PdfFormField { Name = "a", Page = 1 }, new PdfFormField { Name = "b", Page = 2 }, new PdfFormField { Name = "c" }],
-            TextRuns = [new PdfTextRun(1, 72, 700, "Arial", 12, null, PdfTextRenderMode.Fill, PdfContentRole.Tagged, "One"),
-                new PdfTextRun(2, 72, 700, "Arial", 12, null, PdfTextRenderMode.Fill, PdfContentRole.Tagged, "Two")],
+            TextRuns = [new PdfTextRun
+            {
+                Page = 1, X = 72, Y = 700, Font = "Arial", Size = 12, Color = null, RenderMode = PdfTextRenderMode.Fill,
+                Role = PdfContentRole.Tagged, Text = "One",
+            },
+                new PdfTextRun
+                {
+                    Page = 2, X = 72, Y = 700, Font = "Arial", Size = 12, Color = null,
+                    RenderMode = PdfTextRenderMode.Fill, Role = PdfContentRole.Tagged, Text = "Two",
+                }],
         };
 
         var snapshot = document.ToSnapshot(o => o.OnlyPages(2));
@@ -283,22 +303,40 @@ public class SnapshotOptionsTests
     }
 
     // A document with every field set, so ignoring any one of them changes its snapshot.
+    private static PdfPage Page(int number) =>
+        new() { Number = number, Width = 612, Height = 792, Rotation = 0, Tabs = null, HasAnnotations = false };
+
     private static PdfUaDocument Full() => Documents.Empty() with
     {
         Settings = new PdfSettings
         {
             PdfVersion = "1.7", OpenAction = "p1 Fit", IsEncrypted = true, Permissions = PdfPermissions.Print,
-            EmbeddedFiles = [new PdfEmbeddedFile("a.txt", null, null, null, 5, "2cf24dba5fb0a30e")],
+            EmbeddedFiles = [new PdfEmbeddedFile
+            {
+                Name = "a.txt", FileName = null, Description = null, Relationship = null, Size = 5,
+                Hash = "2cf24dba5fb0a30e",
+            }],
         },
-        Metadata = new PdfMetadata("Title", "Ann", "Trails", "park", true, true, "Producer 1.0", "Word", "1", "Title")
+        Metadata = new PdfMetadata
         {
-            OtherInfo = [new PdfSetting("Company", "Example Park")], XmpCreator = "Ann", XmpDescription = "Trails", XmpLanguage = "en-US",
+            Title = "Title", Author = "Ann", Subject = "Trails", Keywords = "park", HasCreatedDate = true,
+            HasModifiedDate = true, Producer = "Producer 1.0", Creator = "Word", PdfUaPart = "1", XmpTitle = "Title",
+            OtherInfo = [new PdfSetting { Name = "Company", Value = "Example Park" }], XmpCreator = "Ann",
+            XmpDescription = "Trails", XmpLanguage = "en-US",
         },
-        Pages = [new PdfPage(1, 612, 792, 0, null, false) { CropBox = new PdfBox(0, 0, 600, 780) }],
+        Pages = [new PdfPage
+        {
+            Number = 1, Width = 612, Height = 792, Rotation = 0, Tabs = null, HasAnnotations = false,
+            CropBox = new PdfBox { X = 0, Y = 0, Width = 600, Height = 780 },
+        }],
         Bookmarks =
         [
-            new PdfBookmark("Intro", 1, []) { Destination = new PdfDestination { Page = 1, View = "FitH", Positions = [700] } },
-            new PdfBookmark("Map", null, []) { Uri = "https://example.com/map" },
+            new PdfBookmark
+            {
+                Title = "Intro", Page = 1, Children = [],
+                Destination = new PdfDestination { Page = 1, View = "FitH", Positions = [700] },
+            },
+            new PdfBookmark { Title = "Map", Page = null, Children = [], Uri = "https://example.com/map" },
         ],
         Structure =
         [
@@ -332,9 +370,21 @@ public class SnapshotOptionsTests
                 TextSize = 10, TextColor = "gray:0",
             },
         ],
-        TextRuns = [new PdfTextRun(1, 72, 700, "Arial", 12, "gray:0", PdfTextRenderMode.Fill, PdfContentRole.Tagged, "Hi")],
-        Images = [new PdfImage(1, 72, 500, 10, 10, 1, 1, "0123456789abcdef", PdfContentRole.Tagged)],
-        Paths = [new PdfVectorPath(1, 72, 300, 100, 0, null, "#ff0000", 0.5, PdfContentRole.Artifact)],
+        TextRuns = [new PdfTextRun
+        {
+            Page = 1, X = 72, Y = 700, Font = "Arial", Size = 12, Color = "gray:0", RenderMode = PdfTextRenderMode.Fill,
+            Role = PdfContentRole.Tagged, Text = "Hi",
+        }],
+        Images = [new PdfImage
+        {
+            Page = 1, X = 72, Y = 500, Width = 10, Height = 10, PixelWidth = 1, PixelHeight = 1,
+            Hash = "0123456789abcdef", Role = PdfContentRole.Tagged,
+        }],
+        Paths = [new PdfVectorPath
+        {
+            Page = 1, X = 72, Y = 300, Width = 100, Height = 0, Fill = null, Stroke = "#ff0000", LineWidth = 0.5,
+            Role = PdfContentRole.Artifact,
+        }],
     };
 
     private static string Body(string snapshot) => string.Join("\n", snapshot.Split('\n').Where(line => !line.StartsWith('#')));

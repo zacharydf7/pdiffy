@@ -255,7 +255,7 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
         {
             var script = ScriptText(objects.Get(chained, "JS"));
             var hash = script is null ? null : Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(script)))[..16];
-            scripts.Add(new PdfFormScript(trigger, hash));
+            scripts.Add(new PdfFormScript { Trigger = trigger, Hash = hash });
         }
     }
 

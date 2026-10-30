@@ -5,6 +5,10 @@ namespace PDiffy;
 /// <summary>Everything PDiffy reads from a PDF, in the order a snapshot prints it.</summary>
 public sealed record PdfUaDocument
 {
+    internal PdfUaDocument()
+    {
+    }
+
     /// <summary>Whether it's tagged, its language and page count, and whether a viewer shows its title.</summary>
     public required PdfDocumentInfo Document { get; init; }
 
@@ -17,20 +21,36 @@ public sealed record PdfUaDocument
     public PdfSettings Settings { get; init; } = new();
 
     /// <summary>The custom structure types and the type each maps to; empty when the PDF has no role map.</summary>
-    public IReadOnlyList<PdfRoleMapping> RoleMap { get; init; } = [];
+    public IReadOnlyList<PdfRoleMapping> RoleMap
+    {
+        get;
+        init => field = ValueList<PdfRoleMapping>.Of(value);
+    } = ValueList<PdfRoleMapping>.Empty;
 
     /// <summary>
     /// Every page in order, including any that couldn't be loaded (<see cref="PdfPage.Unreadable"/>).
     /// </summary>
-    public IReadOnlyList<PdfPage> Pages { get; init; } = [];
+    public IReadOnlyList<PdfPage> Pages
+    {
+        get;
+        init => field = ValueList<PdfPage>.Of(value);
+    } = ValueList<PdfPage>.Empty;
 
     /// <summary>
     /// The page label ranges, ordered by their first page; empty when the PDF doesn't label its pages.
     /// </summary>
-    public IReadOnlyList<PdfPageLabelRange> PageLabels { get; init; } = [];
+    public IReadOnlyList<PdfPageLabelRange> PageLabels
+    {
+        get;
+        init => field = ValueList<PdfPageLabelRange>.Of(value);
+    } = ValueList<PdfPageLabelRange>.Empty;
 
     /// <summary>The top-level bookmarks, with nested ones in their <see cref="PdfBookmark.Children"/>.</summary>
-    public IReadOnlyList<PdfBookmark> Bookmarks { get; init; } = [];
+    public IReadOnlyList<PdfBookmark> Bookmarks
+    {
+        get;
+        init => field = ValueList<PdfBookmark>.Of(value);
+    } = ValueList<PdfBookmark>.Empty;
 
     /// <summary>
     /// Set when the bookmarks nest more than 256 deep or loop back on themselves, so they can't be read safely;
@@ -42,40 +62,76 @@ public sealed record PdfUaDocument
     /// The structure tree's top-level elements, with the rest in their <see cref="PdfStructureElement.Children"/>; empty
     /// for an untagged PDF. <see cref="AllElements"/> lists every element.
     /// </summary>
-    public IReadOnlyList<PdfStructureElement> Structure { get; init; } = [];
+    public IReadOnlyList<PdfStructureElement> Structure
+    {
+        get;
+        init => field = ValueList<PdfStructureElement>.Of(value);
+    } = ValueList<PdfStructureElement>.Empty;
 
     /// <summary>Artifact text, such as page numbers, headers and footers, page by page.</summary>
-    public IReadOnlyList<PdfPageText> Artifacts { get; init; } = [];
+    public IReadOnlyList<PdfPageText> Artifacts
+    {
+        get;
+        init => field = ValueList<PdfPageText>.Of(value);
+    } = ValueList<PdfPageText>.Empty;
 
     /// <summary>
     /// Text assistive technology can't reach, page by page: text outside any tag, one entry per line, and tagged text that
     /// no structure element points to, one entry per marked-content ID.
     /// </summary>
-    public IReadOnlyList<PdfPageText> Untagged { get; init; } = [];
+    public IReadOnlyList<PdfPageText> Untagged
+    {
+        get;
+        init => field = ValueList<PdfPageText>.Of(value);
+    } = ValueList<PdfPageText>.Empty;
 
     /// <summary>Every font the pages use, once each.</summary>
-    public IReadOnlyList<PdfFont> Fonts { get; init; } = [];
+    public IReadOnlyList<PdfFont> Fonts
+    {
+        get;
+        init => field = ValueList<PdfFont>.Of(value);
+    } = ValueList<PdfFont>.Empty;
 
     /// <summary>
     /// Every annotation on every page, in each page's own order. Those a structure element points to are also in its
     /// <see cref="PdfStructureElement.Annotations"/>.
     /// </summary>
-    public IReadOnlyList<PdfAnnotation> Annotations { get; init; } = [];
+    public IReadOnlyList<PdfAnnotation> Annotations
+    {
+        get;
+        init => field = ValueList<PdfAnnotation>.Of(value);
+    } = ValueList<PdfAnnotation>.Empty;
 
     /// <summary>Every field in the form; empty when the document has no form.</summary>
-    public IReadOnlyList<PdfFormField> FormFields { get; init; } = [];
+    public IReadOnlyList<PdfFormField> FormFields
+    {
+        get;
+        init => field = ValueList<PdfFormField>.Of(value);
+    } = ValueList<PdfFormField>.Empty;
 
     /// <summary>Settings for the whole form; null when the document has no form.</summary>
     public PdfFormSettings? Form { get; init; }
 
     /// <summary>The text, page by page, in runs that share a font, size, color, render mode and role.</summary>
-    public IReadOnlyList<PdfTextRun> TextRuns { get; init; } = [];
+    public IReadOnlyList<PdfTextRun> TextRuns
+    {
+        get;
+        init => field = ValueList<PdfTextRun>.Of(value);
+    } = ValueList<PdfTextRun>.Empty;
 
     /// <summary>Every image drawn on every page, page by page.</summary>
-    public IReadOnlyList<PdfImage> Images { get; init; } = [];
+    public IReadOnlyList<PdfImage> Images
+    {
+        get;
+        init => field = ValueList<PdfImage>.Of(value);
+    } = ValueList<PdfImage>.Empty;
 
     /// <summary>Every painted vector path, such as a line, box or filled shape, page by page.</summary>
-    public IReadOnlyList<PdfVectorPath> Paths { get; init; } = [];
+    public IReadOnlyList<PdfVectorPath> Paths
+    {
+        get;
+        init => field = ValueList<PdfVectorPath>.Of(value);
+    } = ValueList<PdfVectorPath>.Empty;
 
     /// <summary>
     /// Reads the PDF in a stream from its start, wherever the stream was left, and puts its position back afterwards. The
@@ -152,47 +208,90 @@ public sealed record PdfUaDocument
     public IReadOnlyList<PdfHeading> Headings() =>
         AllElements().Select(element => (Element: element, Type: element.TypeOrMapped))
             .Where(pair => pair.Type == StructureType.Heading || StructureTypes.HeadingLevel(pair.Type) is not null)
-            .Select(pair => new PdfHeading(StructureTypes.HeadingLevel(pair.Type), pair.Element))
+            .Select(pair => new PdfHeading { Level = StructureTypes.HeadingLevel(pair.Type), Element = pair.Element })
             .ToList();
 }
 
 /// <summary>What the PDF's catalog says about the document as a whole, and its page count.</summary>
-/// <param name="Marked">Whether the PDF says it's tagged (MarkInfo's Marked).</param>
-/// <param name="Language">The document's default language, such as "en-US"; null when it doesn't set one.</param>
-/// <param name="DisplayDocTitle">Whether a viewer shows the metadata's title in its title bar, not the file
-/// name.</param>
-/// <param name="PageCount">How many pages the document has, including any that couldn't be loaded.</param>
-public sealed record PdfDocumentInfo(bool Marked, string? Language, bool DisplayDocTitle, int PageCount);
+public sealed record PdfDocumentInfo
+{
+    internal PdfDocumentInfo()
+    {
+    }
+
+    /// <summary>Whether the PDF says it's tagged (MarkInfo's Marked).</summary>
+    public required bool Marked { get; init; }
+
+    /// <summary>The document's default language, such as "en-US"; null when it doesn't set one.</summary>
+    public required string? Language { get; init; }
+
+    /// <summary>Whether a viewer shows the metadata's title in its title bar, not the file name.</summary>
+    public required bool DisplayDocTitle { get; init; }
+
+    /// <summary>How many pages the document has, including any that couldn't be loaded.</summary>
+    public required int PageCount { get; init; }
+}
 
 /// <summary>
 /// Document metadata from the Info dictionary and XMP. <see cref="OtherInfo"/> holds every Info entry not covered by the
 /// other properties, such as a company name or a classification label.
 /// </summary>
-/// <param name="Title">The Info dictionary's title; null when it has none. <paramref name="XmpTitle"/> is the
-/// XMP's.</param>
-/// <param name="Author">The Info dictionary's author; null when it has none.</param>
-/// <param name="Subject">The Info dictionary's subject; null when it has none.</param>
-/// <param name="Keywords">The Info dictionary's keywords, as one string the way the PDF writes them; null when it has
-/// none.</param>
-/// <param name="HasCreatedDate">Whether the Info dictionary has a creation date. The date itself is left out, since it
-/// changes every time the file is made.</param>
-/// <param name="HasModifiedDate">Whether the Info dictionary has a modification date, which is left out for the same
-/// reason.</param>
-/// <param name="Producer">The program that wrote the PDF, such as a PDF library; null when the Info dictionary doesn't
-/// say. Snapshots print only whether it's there unless <see cref="PdfSnapshotOptions.ShowProducerAndCreator"/> is
-/// used.</param>
-/// <param name="Creator">The program the document was made in before it became a PDF, such as a word processor; null
-/// when the Info dictionary doesn't say. Printed like <paramref name="Producer"/>.</param>
-/// <param name="PdfUaPart">The PDF/UA part the XMP claims (pdfuaid:part), such as "1" or "2"; null when it claims
-/// none.</param>
-/// <param name="XmpTitle">The XMP title (dc:title), not the Info dictionary's <paramref name="Title"/>; the last
-/// language version when it has several, and null when the XMP has none.</param>
-public sealed record PdfMetadata(
-    string? Title, string? Author, string? Subject, string? Keywords, bool HasCreatedDate, bool HasModifiedDate,
-    string? Producer, string? Creator, string? PdfUaPart, string? XmpTitle)
+public sealed record PdfMetadata
 {
+    internal PdfMetadata()
+    {
+    }
+
+    /// <summary>The Info dictionary's title; null when it has none. <see cref="XmpTitle"/> is the XMP's.</summary>
+    public required string? Title { get; init; }
+
+    /// <summary>The Info dictionary's author; null when it has none.</summary>
+    public required string? Author { get; init; }
+
+    /// <summary>The Info dictionary's subject; null when it has none.</summary>
+    public required string? Subject { get; init; }
+
+    /// <summary>
+    /// The Info dictionary's keywords, as one string the way the PDF writes them; null when it has none.
+    /// </summary>
+    public required string? Keywords { get; init; }
+
+    /// <summary>
+    /// Whether the Info dictionary has a creation date. The date itself is left out, since it changes every time the
+    /// file is made.
+    /// </summary>
+    public required bool HasCreatedDate { get; init; }
+
+    /// <summary>Whether the Info dictionary has a modification date, which is left out for the same reason.</summary>
+    public required bool HasModifiedDate { get; init; }
+
+    /// <summary>
+    /// The program that wrote the PDF, such as a PDF library; null when the Info dictionary doesn't say. Snapshots
+    /// print only whether it's there unless <see cref="PdfSnapshotOptions.ShowProducerAndCreator"/> is used.
+    /// </summary>
+    public required string? Producer { get; init; }
+
+    /// <summary>
+    /// The program the document was made in before it became a PDF, such as a word processor; null when the Info
+    /// dictionary doesn't say. Printed like <see cref="Producer"/>.
+    /// </summary>
+    public required string? Creator { get; init; }
+
+    /// <summary>The PDF/UA part the XMP claims (pdfuaid:part), such as "1" or "2"; null when it claims none.</summary>
+    public required string? PdfUaPart { get; init; }
+
+    /// <summary>
+    /// The XMP title (dc:title), not the Info dictionary's <see cref="Title"/>; the last language version when it
+    /// has several, and null when the XMP has none.
+    /// </summary>
+    public required string? XmpTitle { get; init; }
+
     /// <summary>The Info entries the other properties don't cover, sorted by name.</summary>
-    public IReadOnlyList<PdfSetting> OtherInfo { get; init; } = [];
+    public IReadOnlyList<PdfSetting> OtherInfo
+    {
+        get;
+        init => field = ValueList<PdfSetting>.Of(value);
+    } = ValueList<PdfSetting>.Empty;
 
     /// <summary>The XMP creator (dc:creator), several joined with "; "; null when the XMP has none.</summary>
     public string? XmpCreator { get; init; }
@@ -211,30 +310,61 @@ public sealed record PdfMetadata(
 }
 
 /// <summary>One role map entry: a custom structure type and the type it maps to.</summary>
-/// <param name="Custom">The custom type, as elements use it.</param>
-/// <param name="Standard">
-/// The type it maps to, usually a standard one such as <see cref="StructureType.Paragraph"/>. It can be another custom
-/// type, which maps on in turn; <see cref="PdfStructureElement.MappedType"/> gives the end of the chain.
-/// </param>
-public sealed record PdfRoleMapping(string Custom, string Standard);
+public sealed record PdfRoleMapping
+{
+    internal PdfRoleMapping()
+    {
+    }
+
+    /// <summary>The custom type, as elements use it.</summary>
+    public required string Custom { get; init; }
+
+    /// <summary>
+    /// The type it maps to, usually a standard one such as <see cref="StructureType.Paragraph"/>. It can be another
+    /// custom type, which maps on in turn; <see cref="PdfStructureElement.MappedType"/> gives the end of the chain.
+    /// </summary>
+    public required string Standard { get; init; }
+}
 
 /// <summary>
 /// A page. <see cref="Unreadable"/> is set when the PDF library could not load it; its other values are then empty.
 /// The boxes are set only when the page declares them (or, for the crop box, inherits one).
 /// </summary>
-/// <param name="Number">The page number, counted from 1.</param>
-/// <param name="Width">The media box's width in points, before <paramref name="Rotation"/> turns the page, so a
-/// portrait page turned 90 degrees still has its portrait width; 0 for an unreadable page.</param>
-/// <param name="Height">The media box's height in points, before <paramref name="Rotation"/> turns the page; 0 for an
-/// unreadable page.</param>
-/// <param name="Rotation">How far a viewer turns the page clockwise, in degrees: 0, 90, 180 or 270.</param>
-/// <param name="Tabs">The tab order of the page's links and form fields: "R" (rows), "C" (columns) or "S" (structure
-/// order, which PDF/UA requires on a page with annotations), or another name the PDF writes; null when the page doesn't
-/// set one.</param>
-/// <param name="HasAnnotations">Whether the page has annotations, such as links or form fields.</param>
-/// <param name="Unreadable">Whether the PDF library couldn't load the page.</param>
-public sealed record PdfPage(int Number, double Width, double Height, int Rotation, string? Tabs, bool HasAnnotations, bool Unreadable = false)
+public sealed record PdfPage
 {
+    internal PdfPage()
+    {
+    }
+
+    /// <summary>The page number, counted from 1.</summary>
+    public required int Number { get; init; }
+
+    /// <summary>
+    /// The media box's width in points, before <see cref="Rotation"/> turns the page, so a portrait page turned 90
+    /// degrees still has its portrait width; 0 for an unreadable page.
+    /// </summary>
+    public required double Width { get; init; }
+
+    /// <summary>
+    /// The media box's height in points, before <see cref="Rotation"/> turns the page; 0 for an unreadable page.
+    /// </summary>
+    public required double Height { get; init; }
+
+    /// <summary>How far a viewer turns the page clockwise, in degrees: 0, 90, 180 or 270.</summary>
+    public required int Rotation { get; init; }
+
+    /// <summary>
+    /// The tab order of the page's links and form fields: "R" (rows), "C" (columns) or "S" (structure order, which
+    /// PDF/UA requires on a page with annotations), or another name the PDF writes; null when the page doesn't set one.
+    /// </summary>
+    public required string? Tabs { get; init; }
+
+    /// <summary>Whether the page has annotations, such as links or form fields.</summary>
+    public required bool HasAnnotations { get; init; }
+
+    /// <summary>Whether the PDF library couldn't load the page.</summary>
+    public bool Unreadable { get; init; }
+
     /// <summary>
     /// The area a viewer shows; null when neither the page nor a parent sets one, so all of it shows.
     /// </summary>
@@ -260,45 +390,99 @@ public sealed record PdfPage(int Number, double Width, double Height, int Rotati
 }
 
 /// <summary>A page group: its type (usually "Transparency"), the color space it blends in, and its isolated and knockout options.</summary>
-/// <param name="Type">The group's subtype; "Transparency" is the only one PDF defines. Null when the PDF leaves it
-/// out.</param>
-/// <param name="ColorSpace">The color space content blends in, such as "DeviceRGB", or an array in brackets for one
-/// such as ICCBased; null when the group doesn't set one.</param>
-/// <param name="Isolated">Whether the group blends against a transparent backdrop instead of what's under it.</param>
-/// <param name="Knockout">Whether each object in the group covers the group's earlier ones instead of blending with
-/// them.</param>
-public sealed record PdfPageGroup(string? Type, string? ColorSpace, bool Isolated, bool Knockout);
+public sealed record PdfPageGroup
+{
+    internal PdfPageGroup()
+    {
+    }
+
+    /// <summary>
+    /// The group's subtype; "Transparency" is the only one PDF defines. Null when the PDF leaves it out.
+    /// </summary>
+    public required string? Type { get; init; }
+
+    /// <summary>
+    /// The color space content blends in, such as "DeviceRGB", or an array in brackets for one such as ICCBased; null
+    /// when the group doesn't set one.
+    /// </summary>
+    public required string? ColorSpace { get; init; }
+
+    /// <summary>Whether the group blends against a transparent backdrop instead of what's under it.</summary>
+    public required bool Isolated { get; init; }
+
+    /// <summary>
+    /// Whether each object in the group covers the group's earlier ones instead of blending with them.
+    /// </summary>
+    public required bool Knockout { get; init; }
+}
 
 /// <summary>A rectangle in whole points from the page's bottom-left corner.</summary>
-/// <param name="X">The left edge.</param>
-/// <param name="Y">The bottom edge.</param>
-/// <param name="Width">The width; never negative, whichever corners the PDF gives.</param>
-/// <param name="Height">The height; never negative, whichever corners the PDF gives.</param>
-public sealed record PdfBox(int X, int Y, int Width, int Height);
+public sealed record PdfBox
+{
+    internal PdfBox()
+    {
+    }
+
+    /// <summary>The left edge.</summary>
+    public required int X { get; init; }
+
+    /// <summary>The bottom edge.</summary>
+    public required int Y { get; init; }
+
+    /// <summary>The width; never negative, whichever corners the PDF gives.</summary>
+    public required int Width { get; init; }
+
+    /// <summary>The height; never negative, whichever corners the PDF gives.</summary>
+    public required int Height { get; init; }
+}
 
 /// <summary>
-/// A range of page labels, such as roman numerals for the front pages, from <paramref name="FirstPage"/> until the next
+/// A range of page labels, such as roman numerals for the front pages, from <see cref="FirstPage"/> until the next
 /// range starts.
 /// </summary>
-/// <param name="FirstPage">The range's first page, counted from 1.</param>
-/// <param name="Style">
-/// The numbering: "D" (1, 2, 3), "R" (I, II, III), "r" (i, ii, iii), "A" (A, B, C) or "a" (a, b, c); null for labels
-/// that are only the prefix.
-/// </param>
-/// <param name="Prefix">Text before each number, such as "Map-"; null when there is none.</param>
-/// <param name="Start">The number of the range's first page; 1 when the PDF doesn't say.</param>
-public sealed record PdfPageLabelRange(int FirstPage, string? Style, string? Prefix, int Start);
+public sealed record PdfPageLabelRange
+{
+    internal PdfPageLabelRange()
+    {
+    }
+
+    /// <summary>The range's first page, counted from 1.</summary>
+    public required int FirstPage { get; init; }
+
+    /// <summary>
+    /// The numbering: "D" (1, 2, 3), "R" (I, II, III), "r" (i, ii, iii), "A" (A, B, C) or "a" (a, b, c); null for
+    /// labels that are only the prefix.
+    /// </summary>
+    public required string? Style { get; init; }
+
+    /// <summary>Text before each number, such as "Map-"; null when there is none.</summary>
+    public required string? Prefix { get; init; }
+
+    /// <summary>The number of the range's first page; 1 when the PDF doesn't say.</summary>
+    public required int Start { get; init; }
+}
 
 /// <summary>
 /// A bookmark. <see cref="Page"/> is set when it goes to a page of this document, <see cref="Uri"/> when it opens a web
 /// address and <see cref="File"/> when it opens another file.
 /// </summary>
-/// <param name="Title">The text the bookmark shows, with whitespace runs collapsed to one space.</param>
-/// <param name="Page">The page it goes to in this document, counted from 1; null when it goes anywhere else or
-/// nowhere.</param>
-/// <param name="Children">The bookmarks nested under it, in order; empty when there are none.</param>
-public sealed record PdfBookmark(string Title, int? Page, IReadOnlyList<PdfBookmark> Children)
+public sealed record PdfBookmark
 {
+    internal PdfBookmark()
+    {
+    }
+
+    /// <summary>The text the bookmark shows, with whitespace runs collapsed to one space.</summary>
+    public required string Title { get; init; }
+
+    /// <summary>
+    /// The page it goes to in this document, counted from 1; null when it goes anywhere else or nowhere.
+    /// </summary>
+    public required int? Page { get; init; }
+
+    /// <summary>The bookmarks nested under it, in order; empty when there are none.</summary>
+    public required IReadOnlyList<PdfBookmark> Children { get; init => field = ValueList<PdfBookmark>.Of(value); }
+
     /// <summary>The page and view it opens: in this document, or in <see cref="File"/>. Its zoom isn't read.</summary>
     public PdfDestination? Destination { get; init; }
 
@@ -316,6 +500,10 @@ public sealed record PdfBookmark(string Title, int? Page, IReadOnlyList<PdfBookm
 /// </summary>
 public sealed record PdfDestination
 {
+    internal PdfDestination()
+    {
+    }
+
     /// <summary>The page, counted from 1; null when the PDF points at something that isn't a page.</summary>
     public int? Page { get; init; }
 
@@ -323,7 +511,7 @@ public sealed record PdfDestination
     public string? View { get; init; }
 
     /// <summary>The view's positions, such as the left and top of an XYZ view.</summary>
-    public IReadOnlyList<int?> Positions { get; init; } = [];
+    public IReadOnlyList<int?> Positions { get; init => field = ValueList<int?>.Of(value); } = ValueList<int?>.Empty;
 
     /// <summary>An XYZ view's zoom, where 1 is 100%; null when the viewer keeps its zoom.</summary>
     public double? Zoom { get; init; }
@@ -333,13 +521,26 @@ public sealed record PdfDestination
 }
 
 /// <summary>A heading in the structure tree. <see cref="Level"/> is 1 to 6, or null for a plain H.</summary>
-/// <param name="Level">1 for H1 through 6 for H6; null for H, whose level comes from how it's nested.</param>
-/// <param name="Element">The heading's structure element, with its text and children.</param>
-public sealed record PdfHeading(int? Level, PdfStructureElement Element);
+public sealed record PdfHeading
+{
+    internal PdfHeading()
+    {
+    }
+
+    /// <summary>1 for H1 through 6 for H6; null for H, whose level comes from how it's nested.</summary>
+    public required int? Level { get; init; }
+
+    /// <summary>The heading's structure element, with its text and children.</summary>
+    public required PdfStructureElement Element { get; init; }
+}
 
 /// <summary>A structure element. <see cref="Name"/> replaces the type in the snapshot when other elements refer to it (TH1, TH2).</summary>
 public sealed record PdfStructureElement
 {
+    internal PdfStructureElement()
+    {
+    }
+
     /// <summary>
     /// The type as the PDF writes it: a standard type (see <see cref="StructureType"/>) or a custom one the role map
     /// maps; "(none)" when the element has no type.
@@ -347,7 +548,11 @@ public sealed record PdfStructureElement
     public required string Type { get; init; }
 
     /// <summary>The child elements, in the order the element lists them, which is reading order.</summary>
-    public IReadOnlyList<PdfStructureElement> Children { get; init; } = [];
+    public IReadOnlyList<PdfStructureElement> Children
+    {
+        get;
+        init => field = ValueList<PdfStructureElement>.Of(value);
+    } = ValueList<PdfStructureElement>.Empty;
 
     /// <summary>
     /// The type the role map maps a custom <see cref="Type"/> to, at the end of the chain when one custom type maps to
@@ -393,7 +598,11 @@ public sealed record PdfStructureElement
     /// The header cells a table cell names, by their <see cref="Name"/>, or "?id" for an ID no element has; null when
     /// the cell has no Headers attribute.
     /// </summary>
-    public IReadOnlyList<string>? Headers { get; init; }
+    public IReadOnlyList<string>? Headers
+    {
+        get;
+        init => field = value is null ? null : ValueList<string>.Of(value);
+    }
 
     /// <summary>How many rows a table cell spans; null when it doesn't say, which means 1.</summary>
     public int? RowSpan { get; init; }
@@ -410,7 +619,11 @@ public sealed record PdfStructureElement
     /// <summary>
     /// The annotations the element points to, such as links and form widgets, in the order it lists them.
     /// </summary>
-    public IReadOnlyList<PdfAnnotation> Annotations { get; init; } = [];
+    public IReadOnlyList<PdfAnnotation> Annotations
+    {
+        get;
+        init => field = ValueList<PdfAnnotation>.Of(value);
+    } = ValueList<PdfAnnotation>.Empty;
 
     /// <summary>How many of the element's marked-content references name no page, so their text can't be found.</summary>
     public int McidsWithoutPage { get; init; }
@@ -428,20 +641,32 @@ public sealed record PdfStructureElement
     public int UnreadChildren { get; init; }
 
     /// <summary>Marked content in the element that sets its own language, replacement text, alt text or expansion.</summary>
-    public IReadOnlyList<PdfMarkedSpan> MarkedSpans { get; init; } = [];
+    public IReadOnlyList<PdfMarkedSpan> MarkedSpans
+    {
+        get;
+        init => field = ValueList<PdfMarkedSpan>.Of(value);
+    } = ValueList<PdfMarkedSpan>.Empty;
 
     /// <summary>
     /// The hashes of the images the element's own marked content draws, in the order the element lists its marked
     /// content, as <see cref="PdfImage.Hash"/> gives them: the image a figure's alt text describes.
     /// </summary>
-    public IReadOnlyList<string> ImageHashes { get; init; } = [];
+    public IReadOnlyList<string> ImageHashes
+    {
+        get;
+        init => field = ValueList<string>.Of(value);
+    } = ValueList<string>.Empty;
 
     /// <summary>
     /// The text runs the element's own marked content draws, in the order the element lists its marked content and
     /// each in drawing order, with the font, size and color each uses: the same runs
     /// <see cref="PdfUaDocument.TextRuns"/> lists. Runs drawn by child elements are in each child's own list.
     /// </summary>
-    public IReadOnlyList<PdfTextRun> TextRuns { get; init; } = [];
+    public IReadOnlyList<PdfTextRun> TextRuns
+    {
+        get;
+        init => field = ValueList<PdfTextRun>.Of(value);
+    } = ValueList<PdfTextRun>.Empty;
 
     /// <summary>
     /// The text of the element's own marked content. Text in child elements, such as a link in a paragraph or a
@@ -480,6 +705,10 @@ public sealed record PdfStructureElement
 /// </summary>
 public sealed record PdfAnnotation
 {
+    internal PdfAnnotation()
+    {
+    }
+
     /// <summary>
     /// The kind of annotation, such as "Link", "Widget" or "Text"; "(none)" when the PDF doesn't say.
     /// </summary>
@@ -539,10 +768,18 @@ public sealed record PdfAnnotation
 /// Text on a page that no structure element holds: an artifact or untagged text. An artifact can say what kind it is,
 /// in <see cref="Type"/> (Pagination, Layout, Page or Background) and <see cref="Subtype"/> (such as Header or Footer).
 /// </summary>
-/// <param name="Page">The page number, counted from 1.</param>
-/// <param name="Text">The text, with whitespace runs collapsed to one space, such as "Page 4 of 12".</param>
-public sealed record PdfPageText(int Page, string Text)
+public sealed record PdfPageText
 {
+    internal PdfPageText()
+    {
+    }
+
+    /// <summary>The page number, counted from 1.</summary>
+    public required int Page { get; init; }
+
+    /// <summary>The text, with whitespace runs collapsed to one space, such as "Page 4 of 12".</summary>
+    public required string Text { get; init; }
+
     /// <summary>
     /// The artifact's kind: "Pagination", "Layout", "Page" or "Background"; null for untagged text and when it doesn't
     /// say.
@@ -562,6 +799,10 @@ public sealed record PdfPageText(int Page, string Text)
 /// </summary>
 public sealed record PdfMarkedSpan
 {
+    internal PdfMarkedSpan()
+    {
+    }
+
     /// <summary>The language of the text, such as "fr"; null when it doesn't set one.</summary>
     public string? Language { get; init; }
 
@@ -587,18 +828,36 @@ public sealed record PdfMarkedSpan
 /// A font. <see cref="UnmappedCodes"/> lists the character codes its text uses that don't map to Unicode: that text can't
 /// be copied, searched or read aloud correctly.
 /// </summary>
-/// <param name="Name">The font's name (BaseFont) without a subset prefix, such as "Helvetica-Bold" for
-/// "ABCDEF+Helvetica-Bold"; "(none)" when the PDF doesn't name it.</param>
-/// <param name="Subtype">The font's type, such as "Type1", "TrueType", "Type0" or "Type3"; null when the PDF leaves it
-/// out.</param>
-/// <param name="Embedded">Whether the PDF holds the font's file, so the text doesn't depend on the fonts installed
-/// where it's opened.</param>
-/// <param name="HasToUnicode">Whether the font has a ToUnicode map from its character codes to Unicode. A font without
-/// one can still map its codes through its encoding; <see cref="UnmappedCodes"/> lists the ones nothing maps.</param>
-public sealed record PdfFont(string Name, string? Subtype, bool Embedded, bool HasToUnicode)
+public sealed record PdfFont
 {
+    internal PdfFont()
+    {
+    }
+
+    /// <summary>
+    /// The font's name (BaseFont) without a subset prefix, such as "Helvetica-Bold" for "ABCDEF+Helvetica-Bold";
+    /// "(none)" when the PDF doesn't name it.
+    /// </summary>
+    public required string Name { get; init; }
+
+    /// <summary>
+    /// The font's type, such as "Type1", "TrueType", "Type0" or "Type3"; null when the PDF leaves it out.
+    /// </summary>
+    public required string? Subtype { get; init; }
+
+    /// <summary>
+    /// Whether the PDF holds the font's file, so the text doesn't depend on the fonts installed where it's opened.
+    /// </summary>
+    public required bool Embedded { get; init; }
+
+    /// <summary>
+    /// Whether the font has a ToUnicode map from its character codes to Unicode. A font without one can still map its
+    /// codes through its encoding; <see cref="UnmappedCodes"/> lists the ones nothing maps.
+    /// </summary>
+    public required bool HasToUnicode { get; init; }
+
     /// <summary>
     /// The character codes the font's text uses that don't map to Unicode, smallest first; empty when every code maps.
     /// </summary>
-    public IReadOnlyList<int> UnmappedCodes { get; init; } = [];
+    public IReadOnlyList<int> UnmappedCodes { get; init => field = ValueList<int>.Of(value); } = ValueList<int>.Empty;
 }

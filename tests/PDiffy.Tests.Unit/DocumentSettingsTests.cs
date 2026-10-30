@@ -27,9 +27,23 @@ public class DocumentSettingsTests
             (settings.PdfVersion, settings.CatalogVersion, settings.PageMode, settings.PageLayout, settings.OpenAction));
         Assert.Equal((true, true, false), (settings.HasJavaScript, settings.HasAdditionalActions, settings.IsEncrypted));
         Assert.Null(settings.Permissions);
-        Assert.Equal([new PdfSetting("CenterWindow", "true"), new PdfSetting("Direction", "R2L")], settings.ViewerPreferences);
-        Assert.Equal([new PdfLayer("Watermark", true), new PdfLayer("Draft", false)], settings.Layers);
-        Assert.Equal([new PdfEmbeddedFile("data.xml", "data.xml", "Lab data", "Data", 5, "2cf24dba5fb0a30e")], settings.EmbeddedFiles);
+        PdfSetting[] preferences =
+        [
+            new() { Name = "CenterWindow", Value = "true" },
+            new() { Name = "Direction", Value = "R2L" },
+        ];
+        Assert.Equal(preferences, settings.ViewerPreferences);
+        PdfLayer[] layers =
+        [
+            new() { Name = "Watermark", VisibleByDefault = true },
+            new() { Name = "Draft", VisibleByDefault = false },
+        ];
+        Assert.Equal(layers, settings.Layers);
+        Assert.Equal([new PdfEmbeddedFile
+        {
+            Name = "data.xml", FileName = "data.xml", Description = "Lab data", Relationship = "Data", Size = 5,
+            Hash = "2cf24dba5fb0a30e",
+        }], settings.EmbeddedFiles);
     }
 
     [Fact]
@@ -49,7 +63,12 @@ public class DocumentSettingsTests
         var settings = document.Settings;
 
         Assert.Equal(("1.7", null, "GoTo p1 XYZ 0 792 0.5"), (settings.PdfVersion, settings.CatalogVersion, settings.OpenAction));
-        Assert.Equal([new PdfLayer("Watermark", true), new PdfLayer("Draft", false)], settings.Layers);
+        PdfLayer[] layers =
+        [
+            new() { Name = "Watermark", VisibleByDefault = true },
+            new() { Name = "Draft", VisibleByDefault = false },
+        ];
+        Assert.Equal(layers, settings.Layers);
     }
 
     [Fact]
@@ -200,7 +219,12 @@ public class DocumentSettingsTests
 
         var metadata = pdf.Load().Metadata;
 
-        PdfSetting[] expectedInfo = [new("Company", "Example Park"), new("SourceModified", "D:20210101"), new("Trapped", "False")];
+        PdfSetting[] expectedInfo =
+        [
+            new() { Name = "Company", Value = "Example Park" },
+            new() { Name = "SourceModified", Value = "D:20210101" },
+            new() { Name = "Trapped", Value = "False" },
+        ];
         Assert.Equal(expectedInfo, metadata.OtherInfo);
         Assert.Equal(("Ann; Bo", "Trail guide", "en-US", "2B"),
             (metadata.XmpCreator, metadata.XmpDescription, metadata.XmpLanguage, metadata.PdfAConformance));
@@ -217,12 +241,15 @@ public class DocumentSettingsTests
         var pages = pdf.Load().Pages;
 
         var boxed = pages[0];
-        Assert.Equal(new PdfBox(10, 10, 592, 772), boxed.CropBox);
-        Assert.Equal(new PdfBox(0, 0, 612, 792), boxed.BleedBox);
-        Assert.Equal(new PdfBox(20, 20, 572, 752), boxed.TrimBox);
-        Assert.Equal(new PdfBox(30, 30, 552, 732), boxed.ArtBox);
+        Assert.Equal(new PdfBox { X = 10, Y = 10, Width = 592, Height = 772 }, boxed.CropBox);
+        Assert.Equal(new PdfBox { X = 0, Y = 0, Width = 612, Height = 792 }, boxed.BleedBox);
+        Assert.Equal(new PdfBox { X = 20, Y = 20, Width = 572, Height = 752 }, boxed.TrimBox);
+        Assert.Equal(new PdfBox { X = 30, Y = 30, Width = 552, Height = 732 }, boxed.ArtBox);
         Assert.Equal(2.0, boxed.UserUnit);
-        Assert.Equal(new PdfPageGroup("Transparency", "DeviceRGB", Isolated: true, Knockout: false), boxed.Group);
+        Assert.Equal(new PdfPageGroup
+        {
+            Type = "Transparency", ColorSpace = "DeviceRGB", Isolated = true, Knockout = false,
+        }, boxed.Group);
         Assert.Equal((null, null, null), (pages[1].CropBox, pages[1].TrimBox, pages[1].Group));
     }
 
@@ -235,6 +262,6 @@ public class DocumentSettingsTests
             "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
             TestPdf.Stream(""));
 
-        Assert.Equal(new PdfBox(5, 5, 595, 775), Assert.Single(document.Pages).CropBox);
+        Assert.Equal(new PdfBox { X = 5, Y = 5, Width = 595, Height = 775 }, Assert.Single(document.Pages).CropBox);
     }
 }

@@ -65,25 +65,46 @@ public class SnapshotWriterTests
         };
         var document = Documents.Empty() with
         {
-            Document = new PdfDocumentInfo(true, "en-US", true, 3),
-            RoleMap = [new PdfRoleMapping("Heading", "H1")],
+            Document = new PdfDocumentInfo
+            {
+                Marked = true, Language = "en-US", DisplayDocTitle = true, PageCount = 3,
+            },
+            RoleMap = [new PdfRoleMapping { Custom = "Heading", Standard = "H1" }],
             Pages =
             [
-                new PdfPage(1, 612, 792, 0, null, false),
-                new PdfPage(2, 792, 612, 90, "S", true),
-                new PdfPage(3, 595, 842, 0, null, false),
+                new PdfPage
+                {
+                    Number = 1, Width = 612, Height = 792, Rotation = 0, Tabs = null, HasAnnotations = false,
+                },
+                new PdfPage
+                {
+                    Number = 2, Width = 792, Height = 612, Rotation = 90, Tabs = "S", HasAnnotations = true,
+                },
+                new PdfPage
+                {
+                    Number = 3, Width = 595, Height = 842, Rotation = 0, Tabs = null, HasAnnotations = false,
+                },
             ],
-            PageLabels = [new PdfPageLabelRange(1, "r", "A-", 1)],
+            PageLabels = [new PdfPageLabelRange { FirstPage = 1, Style = "r", Prefix = "A-", Start = 1 }],
             Bookmarks =
             [
-                new PdfBookmark("Safety", 3, [new PdfBookmark("Gear", null, []) { Uri = "https://example.com/gear" }])
+                new PdfBookmark
                 {
+                    Title = "Safety", Page = 3,
+                    Children =
+                    [
+                        new PdfBookmark { Title = "Gear", Page = null, Children = [], Uri = "https://example.com/gear" },
+                    ],
                     Destination = new PdfDestination { Page = 3, View = "FitH", Positions = [700] },
                 },
             ],
             Structure = [root],
-            Artifacts = [new PdfPageText(1, "Page i")],
-            Fonts = [new PdfFont("Symbol", null, false, false), new PdfFont("Arial", "TrueType", true, true)],
+            Artifacts = [new PdfPageText { Page = 1, Text = "Page i" }],
+            Fonts =
+            [
+                new PdfFont { Name = "Symbol", Subtype = null, Embedded = false, HasToUnicode = false },
+                new PdfFont { Name = "Arial", Subtype = "TrueType", Embedded = true, HasToUnicode = true },
+            ],
         };
 
         var snapshot = document.ToSnapshot();
@@ -182,7 +203,12 @@ public class SnapshotWriterTests
     [Fact]
     public void Write_ShouldSortRoleMap_WhenGivenInSourceOrder()
     {
-        var document = Documents.Empty() with { RoleMap = [new PdfRoleMapping("Zeta", "P"), new PdfRoleMapping("Alpha", "Span")] };
+        PdfRoleMapping[] roleMap =
+        [
+            new() { Custom = "Zeta", Standard = "P" },
+            new() { Custom = "Alpha", Standard = "Span" },
+        ];
+        var document = Documents.Empty() with { RoleMap = roleMap };
 
         var snapshot = document.ToSnapshot();
 
@@ -196,10 +222,10 @@ public class SnapshotWriterTests
         {
             Fonts =
             [
-                new PdfFont("Times", "Type1", false, false),
-                new PdfFont("Arial", "TrueType", true, true),
-                new PdfFont("Arial", "TrueType", true, false),
-                new PdfFont("Arial", "TrueType", true, true),
+                new PdfFont { Name = "Times", Subtype = "Type1", Embedded = false, HasToUnicode = false },
+                new PdfFont { Name = "Arial", Subtype = "TrueType", Embedded = true, HasToUnicode = true },
+                new PdfFont { Name = "Arial", Subtype = "TrueType", Embedded = true, HasToUnicode = false },
+                new PdfFont { Name = "Arial", Subtype = "TrueType", Embedded = true, HasToUnicode = true },
             ],
         };
 
@@ -219,12 +245,24 @@ public class SnapshotWriterTests
     {
         var document = Documents.Empty() with
         {
-            Untagged = [new PdfPageText(2, "Footer"), new PdfPageText(1, "Stray")],
-            Images = [new PdfImage(1, 0, 0, 10, 10, 1, 1, "0123456789abcdef", PdfContentRole.Untagged)],
+            Untagged = [new PdfPageText { Page = 2, Text = "Footer" }, new PdfPageText { Page = 1, Text = "Stray" }],
+            Images = [new PdfImage
+            {
+                Page = 1, X = 0, Y = 0, Width = 10, Height = 10, PixelWidth = 1, PixelHeight = 1,
+                Hash = "0123456789abcdef", Role = PdfContentRole.Untagged,
+            }],
             Paths =
             [
-                new PdfVectorPath(1, 0, 0, 5, 5, "gray:0", null, null, PdfContentRole.Untagged),
-                new PdfVectorPath(1, 0, 0, 5, 5, "gray:0", null, null, PdfContentRole.Artifact),
+                new PdfVectorPath
+                {
+                    Page = 1, X = 0, Y = 0, Width = 5, Height = 5, Fill = "gray:0", Stroke = null, LineWidth = null,
+                    Role = PdfContentRole.Untagged,
+                },
+                new PdfVectorPath
+                {
+                    Page = 1, X = 0, Y = 0, Width = 5, Height = 5, Fill = "gray:0", Stroke = null, LineWidth = null,
+                    Role = PdfContentRole.Artifact,
+                },
             ],
         };
 
@@ -242,15 +280,30 @@ public class SnapshotWriterTests
             {
                 PdfVersion = "1.7", CatalogVersion = "2.0", PageLayout = PdfPageLayouts.OneColumn, OpenAction = "p1 Fit", IsEncrypted = true,
                 Permissions = PdfPermissions.Print | PdfPermissions.ExtractForAccessibility,
-                ViewerPreferences = [new PdfSetting("CenterWindow", "true")], Layers = [new PdfLayer("Draft", false)],
-                EmbeddedFiles = [new PdfEmbeddedFile("data.xml", "data.xml", null, "Data", 5, "2cf24dba5fb0a30e")],
+                ViewerPreferences = [new PdfSetting { Name = "CenterWindow", Value = "true" }], Layers = [new PdfLayer
+                {
+                    Name = "Draft", VisibleByDefault = false,
+                }],
+                EmbeddedFiles = [new PdfEmbeddedFile
+                {
+                    Name = "data.xml", FileName = "data.xml", Description = null, Relationship = "Data", Size = 5,
+                    Hash = "2cf24dba5fb0a30e",
+                }],
             },
-            Metadata = Documents.Empty().Metadata with { OtherInfo = [new PdfSetting("Company", "Example Park")], PdfAConformance = "2B" },
+            Metadata = Documents.Empty().Metadata with { OtherInfo = [new PdfSetting
+            {
+                Name = "Company", Value = "Example Park",
+            }], PdfAConformance = "2B" },
             Pages =
             [
-                new PdfPage(1, 612, 792, 0, "S", false)
+                new PdfPage
                 {
-                    CropBox = new PdfBox(10, 10, 592, 772), Group = new PdfPageGroup("Transparency", "DeviceRGB", Isolated: true, Knockout: false),
+                    Number = 1, Width = 612, Height = 792, Rotation = 0, Tabs = "S", HasAnnotations = false,
+                    CropBox = new PdfBox { X = 10, Y = 10, Width = 592, Height = 772 },
+                    Group = new PdfPageGroup
+                    {
+                        Type = "Transparency", ColorSpace = "DeviceRGB", Isolated = true, Knockout = false,
+                    },
                 },
             ],
         };
@@ -311,11 +364,27 @@ public class SnapshotWriterTests
         {
             TextRuns =
             [
-                new PdfTextRun(2, 72, 700, "Arial", 10.5, "#ff0000", PdfTextRenderMode.Fill, PdfContentRole.Tagged, "Next page"),
-                new PdfTextRun(1, 72, 720, "Arial", 12, "gray:0", PdfTextRenderMode.Invisible, PdfContentRole.Untagged, "OCR text"),
+                new PdfTextRun
+                {
+                    Page = 2, X = 72, Y = 700, Font = "Arial", Size = 10.5, Color = "#ff0000",
+                    RenderMode = PdfTextRenderMode.Fill, Role = PdfContentRole.Tagged, Text = "Next page",
+                },
+                new PdfTextRun
+                {
+                    Page = 1, X = 72, Y = 720, Font = "Arial", Size = 12, Color = "gray:0",
+                    RenderMode = PdfTextRenderMode.Invisible, Role = PdfContentRole.Untagged, Text = "OCR text",
+                },
             ],
-            Images = [new PdfImage(1, 72, 600, 10, 10, 1, 1, "0123456789abcdef", PdfContentRole.Tagged)],
-            Paths = [new PdfVectorPath(1, 72, 300, 100, 0, null, "#ff0000", 0.5, PdfContentRole.Artifact)],
+            Images = [new PdfImage
+            {
+                Page = 1, X = 72, Y = 600, Width = 10, Height = 10, PixelWidth = 1, PixelHeight = 1,
+                Hash = "0123456789abcdef", Role = PdfContentRole.Tagged,
+            }],
+            Paths = [new PdfVectorPath
+            {
+                Page = 1, X = 72, Y = 300, Width = 100, Height = 0, Fill = null, Stroke = "#ff0000", LineWidth = 0.5,
+                Role = PdfContentRole.Artifact,
+            }],
         };
 
         var snapshot = document.ToSnapshot();
@@ -333,7 +402,10 @@ public class SnapshotWriterTests
     [Fact]
     public void Write_ShouldPrintTabsMissing_WhenPageHasAnnotationsButNoTabsEntry()
     {
-        var document = Documents.Empty() with { Pages = [new PdfPage(1, 612, 792, 0, null, HasAnnotations: true)] };
+        var document = Documents.Empty() with { Pages = [new PdfPage
+        {
+            Number = 1, Width = 612, Height = 792, Rotation = 0, Tabs = null, HasAnnotations = true,
+        }] };
 
         var snapshot = document.ToSnapshot();
 
@@ -343,7 +415,10 @@ public class SnapshotWriterTests
     [Fact]
     public void Write_ShouldPrintMissingLang_WhenDocumentHasNoLanguage()
     {
-        var document = Documents.Empty() with { Document = new PdfDocumentInfo(true, null, false, 1) };
+        var document = Documents.Empty() with { Document = new PdfDocumentInfo
+        {
+            Marked = true, Language = null, DisplayDocTitle = false, PageCount = 1,
+        } };
 
         var snapshot = document.ToSnapshot();
 

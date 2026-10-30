@@ -30,7 +30,7 @@ internal static class AnnotationReader
     public static PdfAnnotation Read(PdfObjects objects, DictionaryToken annotation, int? page, PdfContentRole role,
         DestinationReader destinations)
     {
-        var rect = objects.Box(annotation, "Rect") ?? new PdfBox(0, 0, 0, 0);
+        var rect = objects.Box(annotation, "Rect") ?? new PdfBox { X = 0, Y = 0, Width = 0, Height = 0 };
         var action = objects.Dictionary(annotation, "A");
         var uri = action is null ? null : objects.Text(action, "URI");
         var type = action is null ? null : objects.Name(action, "S");

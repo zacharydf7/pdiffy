@@ -36,6 +36,11 @@ library does.
   compiles.
 - `PdfAnnotation.HasDestination` is gone: it covered only a link's own destination entry, not a GoTo action's.
   `Destination` says where any link goes.
+- Model types (`PdfStructureElement`, `PdfTextRun`, `DocxParagraph` and the rest) compare by content: two loads of
+  the same document are equal, since their lists compare item by item, and a failing `Assert.Equal` prints each list's
+  items. Their properties are `init` properties rather than constructor parameters, and the constructors are internal,
+  so a later release can add a property without breaking code that reads them
+  ([#92](https://github.com/zacharydf7/pdiffy/issues/92)).
 
 ### Snapshots record more
 

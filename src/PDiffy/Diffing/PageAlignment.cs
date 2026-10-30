@@ -46,7 +46,11 @@ internal sealed class PageAlignment
         if (_removed.Count > 0) parts.Add($"{Ranges(_removed)} removed");
         parts.AddRange(Shifts().Select(shift => $"{shift.From} -> {shift.To}"));
         var page = _inserted.Concat(_removed).Min();
-        return new SnapshotChange(ChangeKind.Changed, PdfSection.Pages, "pages", page, string.Join("; ", parts));
+        return new SnapshotChange
+        {
+            Kind = ChangeKind.Changed, Section = PdfSection.Pages, Path = "pages", Page = page,
+            Detail = string.Join("; ", parts),
+        };
     }
 
     /// <summary>

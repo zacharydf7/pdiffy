@@ -71,7 +71,11 @@ internal sealed class DocxReader
         if (_package.Xml(part)?.Root is not { } root) return [];
         var reader = new DocxReader(_styles, _numbering, _package, part!, _usedStyles, _depth);
         return root.Elements(W + kind).Where(note => Attr(note, "type") is null or "normal")
-            .Select(note => new DocxNote(kind, Integer(note, "id") ?? 0, NonEmpty(Attr(note, "author")), reader.Blocks(note).ToList()))
+            .Select(note => new DocxNote
+            {
+                Kind = kind, Id = Integer(note, "id") ?? 0, Author = NonEmpty(Attr(note, "author")),
+                Blocks = reader.Blocks(note).ToList(),
+            })
             .ToList();
     }
 
@@ -87,7 +91,10 @@ internal sealed class DocxReader
                 var root = _package.Xml(target)?.Root;
                 var blocks = root is null ? null
                     : new DocxReader(_styles, _numbering, _package, target!, _usedStyles, _depth).Blocks(root).ToList();
-                found.Add(new DocxHeaderFooter(i + 1, Attr(item, "type") ?? "default", blocks));
+                found.Add(new DocxHeaderFooter
+                {
+                    Section = i + 1, Kind = Attr(item, "type") ?? "default", Blocks = blocks,
+                });
             }
         }
 
@@ -138,7 +145,10 @@ internal sealed class DocxReader
             Headers = References(sectPr, "headerReference"),
             Footers = References(sectPr, "footerReference"),
             Revision = sectPr.Element(W + "sectPrChange") is { } change
-                ? new DocxRevision("section-format", "", Attr(change, "author"), 0)
+                ? new DocxRevision
+                {
+                    Kind = "section-format", Text = "", Author = Attr(change, "author"), Position = 0,
+                }
                 : null,
         };
     }
@@ -220,7 +230,10 @@ internal sealed class DocxReader
                 if (Chosen(child) is { } choice) ReadRows(choice, controls, rows, between);
             }
             else if (IsWrapper(child)) ReadRows(child, controls, rows, between);
-            else if (Stray(child, SkippedInRows) is { } stray) between.Add(new DocxBetween(rows.Count, stray));
+            else if (Stray(child, SkippedInRows) is { } stray) between.Add(new DocxBetween
+            {
+                Before = rows.Count, Block = stray,
+            });
         }
     }
 
@@ -240,7 +253,10 @@ internal sealed class DocxReader
                 if (Chosen(child) is { } choice) ReadCells(choice, controls, cells, between);
             }
             else if (IsWrapper(child)) ReadCells(child, controls, cells, between);
-            else if (Stray(child, SkippedInCells) is { } stray) between.Add(new DocxBetween(cells.Count, stray));
+            else if (Stray(child, SkippedInCells) is { } stray) between.Add(new DocxBetween
+            {
+                Before = cells.Count, Block = stray,
+            });
         }
     }
 
@@ -248,7 +264,7 @@ internal sealed class DocxReader
     private static DocxControl ControlAround(XElement sdt)
     {
         var (kind, name, title) = FormReader.Describe(sdt.Element(W + "sdtPr"));
-        return new DocxControl(kind) { Name = name, Title = title };
+        return new DocxControl { Kind = kind, Name = name, Title = title };
     }
 
     // A bookmark, or anything else not left out on purpose, which is kept by its hash so a change to it still shows.
@@ -257,12 +273,12 @@ internal sealed class DocxReader
         if (element.Name == W + "bookmarkStart")
         {
             return Attr(element, "name") is { } name and not LastEditBookmark
-                ? new DocxBookmarkBlock(name) { Columns = BookmarkColumns(element) }
+                ? new DocxBookmarkBlock { Name = name, Columns = BookmarkColumns(element) }
                 : null;
         }
 
         if (element.Name.Namespace == W && skipped.Contains(element.Name.LocalName)) return null;
-        return new DocxUnsupportedBlock(NameOf(element), Hash(element));
+        return new DocxUnsupportedBlock { Element = NameOf(element), Hash = Hash(element) };
     }
 
     private DocxRow Row(XElement row, IReadOnlyList<DocxControl> controls)
@@ -270,8 +286,9 @@ internal sealed class DocxReader
         var properties = row.Element(W + "trPr");
         var (cells, between) = (new List<DocxCell>(), new List<DocxBetween>());
         ReadCells(row, [], cells, between);
-        return new DocxRow(cells, IsOn(properties?.Element(W + "tblHeader")))
+        return new DocxRow
         {
+            Cells = cells, IsHeader = IsOn(properties?.Element(W + "tblHeader")),
             Height = TableFormat.Height(properties?.Element(W + "trHeight")),
             CantSplit = IsOn(properties?.Element(W + "cantSplit")),
             Revisions =
@@ -279,8 +296,7 @@ internal sealed class DocxReader
                 .. Changes(properties, RowChanges),
                 .. Changes(row.Element(W + "tblPrEx"), [("tblPrExChange", "row-table-format")]),
             ],
-            Controls = controls,
-            Between = between,
+            Controls = controls, Between = between,
         };
     }
 
@@ -292,7 +308,10 @@ internal sealed class DocxReader
         {
             if (properties?.Element(W + element) is { } change)
             {
-                revisions.Add(new DocxRevision(kind, "", Attr(change, "author"), 0));
+                revisions.Add(new DocxRevision
+                {
+                    Kind = kind, Text = "", Author = Attr(change, "author"), Position = 0,
+                });
             }
         }
 
@@ -313,15 +332,15 @@ internal sealed class DocxReader
         var properties = cell.Element(W + "tcPr");
         var merge = properties?.Element(W + "vMerge") is { } vMerge ? Attr(vMerge, "val") ?? "continue" : null;
         var shading = TableFormat.Shading(properties?.Element(W + "shd"));
-        return new DocxCell(Blocks(cell).ToList(), Integer(properties?.Element(W + "gridSpan"), "val") ?? 1, merge, shading)
+        return new DocxCell
         {
-            Width = TableFormat.Width(properties?.Element(W + "tcW")),
+            Blocks = Blocks(cell).ToList(), Span = Integer(properties?.Element(W + "gridSpan"), "val") ?? 1,
+            Merge = merge, Shading = shading, Width = TableFormat.Width(properties?.Element(W + "tcW")),
             Margins = TableFormat.Margins(properties?.Element(W + "tcMar")),
             Borders = TableFormat.Borders(properties?.Element(W + "tcBorders")),
             VerticalAlign = Attr(properties?.Element(W + "vAlign"), "val"),
             TextDirection = Attr(properties?.Element(W + "textDirection"), "val"),
-            Revisions = Changes(properties, CellChanges),
-            Controls = controls,
+            Revisions = Changes(properties, CellChanges), Controls = controls,
         };
     }
 
@@ -330,7 +349,10 @@ internal sealed class DocxReader
     {
         var (kind, name, title) = FormReader.Describe(control.Element(W + "sdtPr"));
         var inner = control.Element(W + "sdtContent");
-        return new DocxControl(kind) { Name = name, Title = title, Blocks = inner is null ? [] : Blocks(inner).ToList() };
+        return new DocxControl
+        {
+            Kind = kind, Name = name, Title = title, Blocks = inner is null ? [] : Blocks(inner).ToList(),
+        };
     }
 
     // An inserted DOCX (w:altChunk) is read in place as a document of its own, and the parts of it that can't be read
@@ -393,7 +415,7 @@ internal sealed class DocxReader
         var list = Integer(numPr?.Element(W + "numId"), "val") ?? fromStyle?.List;
         if (list is null or 0) return null;
         var level = Integer(numPr?.Element(W + "ilvl"), "val") ?? fromStyle?.Level ?? 0;
-        return new DocxListItem(list.Value, level, _numbering.Next(list.Value, level));
+        return new DocxListItem { List = list.Value, Level = level, Label = _numbering.Next(list.Value, level) };
     }
 
 }

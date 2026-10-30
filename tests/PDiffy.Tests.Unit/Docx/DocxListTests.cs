@@ -78,7 +78,8 @@ public class DocxListTests
             Body = """<w:p><w:pPr><w:pStyle w:val="SubStep"/></w:pPr></w:p>""",
         };
 
-        Assert.Equal(new DocxListItem(1, 1, "A.1"), Assert.Single(docx.Load().Paragraphs()).List);
+        var item = Assert.Single(docx.Load().Paragraphs()).List;
+        Assert.Equal(new DocxListItem { List = 1, Level = 1, Label = "A.1" }, item);
     }
 
     [Fact]
@@ -152,7 +153,7 @@ public class DocxListTests
     {
         var paragraph = Assert.Single(Docx(Item(70, 0)).Load().Paragraphs());
 
-        Assert.Equal(new DocxListItem(70, 0, null), paragraph.List);
+        Assert.Equal(new DocxListItem { List = 70, Level = 0, Label = null }, paragraph.List);
     }
 
     [Fact]

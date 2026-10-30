@@ -74,7 +74,8 @@ public class ResourceLimitTests
 
         var document = OnePage("/PageLabels 6 0 R", [.. nodes]);
 
-        Assert.Equal([new PdfPageLabelRange(1, "D", null, 1)], document.PageLabels);
+        PdfPageLabelRange[] labels = [new() { FirstPage = 1, Style = "D", Prefix = null, Start = 1 }];
+        Assert.Equal(labels, document.PageLabels);
     }
 
     [Fact]

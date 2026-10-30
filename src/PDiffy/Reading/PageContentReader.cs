@@ -104,8 +104,9 @@ internal sealed class PageContentReader
             if (text.Length > 0)
             {
                 var kind = markedContent as ArtifactMarkedContentElement;
-                _artifacts.Add(new PdfPageText(_pageNumber, text)
+                _artifacts.Add(new PdfPageText
                 {
+                    Page = _pageNumber, Text = text,
                     Type = kind?.Type is { } type and not ArtifactMarkedContentElement.ArtifactType.Unknown ? type.ToString() : null,
                     Subtype = kind?.SubType,
                 });

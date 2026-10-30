@@ -29,18 +29,14 @@ internal sealed partial class DrawingReader(DocxPackage package, string part,
         var blip = frame.Descendants(A + "blip").FirstOrDefault(blip => !InTextBox(blip, frame));
         var embed = (string?)blip?.Attribute(R + "embed");
         var imagePart = embed is null ? null : package.Target(part, embed);
-        return new DocxImage(position)
+        return new DocxImage
         {
-            Kind = blip is null ? GraphicKind(frame) : "image",
-            Floating = frame.Name.LocalName == "anchor",
-            Width = Emus(extent, "cx"),
-            Height = Emus(extent, "cy"),
+            Position = position, Kind = blip is null ? GraphicKind(frame) : "image",
+            Floating = frame.Name.LocalName == "anchor", Width = Emus(extent, "cx"), Height = Emus(extent, "cy"),
             AltText = NonEmpty((string?)properties?.Attribute("descr")),
             Title = NonEmpty((string?)properties?.Attribute("title")),
             Decorative = properties?.Descendants(Decorative + "decorative").Any(mark => IsTrue((string?)mark.Attribute("val"))) ?? false,
-            Type = TypeOf(imagePart),
-            Hash = package.Hash(imagePart),
-            TextBox = TextBoxes(frame),
+            Type = TypeOf(imagePart), Hash = package.Hash(imagePart), TextBox = TextBoxes(frame),
         };
     }
 
@@ -52,17 +48,14 @@ internal sealed partial class DrawingReader(DocxPackage package, string part,
         var id = (string?)data?.Attribute(R + "id");
         var imagePart = id is null ? null : package.Target(part, id);
         var style = (string?)shape.Attribute("style") ?? "";
-        return new DocxImage(position)
+        return new DocxImage
         {
-            Kind = data is null ? "shape" : "image",
+            Position = position, Kind = data is null ? "shape" : "image",
             Floating = style.Contains("position:absolute", StringComparison.Ordinal),
-            Width = StylePoints(style, "width"),
-            Height = StylePoints(style, "height"),
+            Width = StylePoints(style, "width"), Height = StylePoints(style, "height"),
             AltText = NonEmpty((string?)shape.Attribute("alt")),
-            Title = NonEmpty((string?)data?.Attribute(O + "title")),
-            Type = TypeOf(imagePart),
-            Hash = package.Hash(imagePart),
-            TextBox = TextBoxes(pict),
+            Title = NonEmpty((string?)data?.Attribute(O + "title")), Type = TypeOf(imagePart),
+            Hash = package.Hash(imagePart), TextBox = TextBoxes(pict),
         };
     }
 
@@ -77,12 +70,10 @@ internal sealed partial class DrawingReader(DocxPackage package, string part,
         var linked = (string?)ole?.Attribute("Type") == "Link";
         var isControl = ole is null && control is not null;
         var style = (string?)shape?.Attribute("style") ?? "";
-        return new DocxImage(position)
+        return new DocxImage
         {
-            Kind = isControl ? "control" : "object",
-            Width = StylePoints(style, "width"),
-            Height = StylePoints(style, "height"),
-            AltText = NonEmpty((string?)shape?.Attribute("alt")),
+            Position = position, Kind = isControl ? "control" : "object", Width = StylePoints(style, "width"),
+            Height = StylePoints(style, "height"), AltText = NonEmpty((string?)shape?.Attribute("alt")),
             Type = NonEmpty((string?)ole?.Attribute("ProgID") ?? Attr(control, "name")),
             Source = linked ? target : null,
             Hash = linked ? null : package.Hash(target, isControl ? StatePart(target) : null),

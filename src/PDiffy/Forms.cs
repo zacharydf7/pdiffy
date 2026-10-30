@@ -146,6 +146,10 @@ public enum PdfFormFieldFlags
 /// </summary>
 public sealed record PdfFormField
 {
+    internal PdfFormField()
+    {
+    }
+
     /// <summary>The field's full name, or <c>(unnamed)</c> when neither it nor its parents have one.</summary>
     public required string Name { get; init; }
 
@@ -168,7 +172,11 @@ public sealed record PdfFormField
     /// <summary>
     /// The text shown for each choice of a combo box or list box, in order; empty when there are none.
     /// </summary>
-    public IReadOnlyList<string> Options { get; init; } = [];
+    public IReadOnlyList<string> Options
+    {
+        get;
+        init => field = ValueList<string>.Of(value);
+    } = ValueList<string>.Empty;
 
     /// <summary>The most characters a text field takes, or its parent's limit; null when there's no limit.</summary>
     public int? MaxLength { get; init; }
@@ -180,7 +188,11 @@ public sealed record PdfFormField
     public string? DefaultValue { get; init; }
 
     /// <summary>The values a check box or radio button sends when it's on, one per widget, such as <c>Yes</c>.</summary>
-    public IReadOnlyList<string> ExportValues { get; init; } = [];
+    public IReadOnlyList<string> ExportValues
+    {
+        get;
+        init => field = ValueList<string>.Of(value);
+    } = ValueList<string>.Empty;
 
     /// <summary>How text in the field lines up; left unless the field, a widget or the form says otherwise.</summary>
     public PdfFormFieldAlignment Alignment { get; init; }
@@ -198,7 +210,11 @@ public sealed record PdfFormField
     /// The field's JavaScript: its own scripts, then each widget's, each in <see cref="PdfFormScriptTrigger"/> order,
     /// with scripts an action chains after it under the same trigger.
     /// </summary>
-    public IReadOnlyList<PdfFormScript> Scripts { get; init; } = [];
+    public IReadOnlyList<PdfFormScript> Scripts
+    {
+        get;
+        init => field = ValueList<PdfFormScript>.Of(value);
+    } = ValueList<PdfFormScript>.Empty;
 
     /// <summary>The signature in a signed signature field; null for other fields and unsigned ones.</summary>
     public PdfSignature? Signature { get; init; }
@@ -207,8 +223,16 @@ public sealed record PdfFormField
 /// <summary>Settings that apply to a whole form rather than to one field.</summary>
 public sealed record PdfFormSettings
 {
+    internal PdfFormSettings()
+    {
+    }
+
     /// <summary>The fields whose calculate scripts run when a value changes, by full name, in the order they run.</summary>
-    public IReadOnlyList<string> CalculationOrder { get; init; } = [];
+    public IReadOnlyList<string> CalculationOrder
+    {
+        get;
+        init => field = ValueList<string>.Of(value);
+    } = ValueList<string>.Empty;
 
     /// <summary>Whether the viewer must draw each field itself instead of using the appearance stored in the file.</summary>
     public bool NeedsAppearances { get; init; }
@@ -244,9 +268,18 @@ public enum PdfFormFieldAlignment
 /// A script on a form field: when it runs, and a hash of its JavaScript, so any edit to it shows. The hash is null when
 /// the script's stream is damaged and can't be read.
 /// </summary>
-/// <param name="Trigger">The event that runs the script, such as a value changing or the field getting focus.</param>
-/// <param name="Hash">The first 16 hex digits of a SHA-256 of the script's text, such as "9c1e5a07b3d24f68".</param>
-public sealed record PdfFormScript(PdfFormScriptTrigger Trigger, string? Hash);
+public sealed record PdfFormScript
+{
+    internal PdfFormScript()
+    {
+    }
+
+    /// <summary>The event that runs the script, such as a value changing or the field getting focus.</summary>
+    public required PdfFormScriptTrigger Trigger { get; init; }
+
+    /// <summary>The first 16 hex digits of a SHA-256 of the script's text, such as "9c1e5a07b3d24f68".</summary>
+    public required string? Hash { get; init; }
+}
 
 /// <summary>When a form field's script runs.</summary>
 public enum PdfFormScriptTrigger
@@ -303,6 +336,10 @@ public enum PdfFormScriptTrigger
 /// </summary>
 public sealed record PdfSignature
 {
+    internal PdfSignature()
+    {
+    }
+
     /// <summary>The signature's format, such as <c>adbe.pkcs7.detached</c> or <c>ETSI.CAdES.detached</c>.</summary>
     public string? SubFilter { get; init; }
 

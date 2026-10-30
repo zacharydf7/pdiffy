@@ -36,11 +36,17 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         {
             if (MarkKinds.TryGetValue(mark.Name.LocalName, out var kind) && mark.Name.Namespace == W)
             {
-                content.Inlines.Add(new DocxRevision(kind, "", Attr(mark, "author"), content.Text.Length));
+                content.Inlines.Add(new DocxRevision
+                {
+                    Kind = kind, Text = "", Author = Attr(mark, "author"), Position = content.Text.Length,
+                });
             }
         }
 
-        if (pPr?.Element(W + "pPrChange") is { } change) content.Inlines.Add(new DocxRevision("paragraph-format", "", Attr(change, "author"), 0));
+        if (pPr?.Element(W + "pPrChange") is { } change) content.Inlines.Add(new DocxRevision
+        {
+            Kind = "paragraph-format", Text = "", Author = Attr(change, "author"), Position = 0,
+        });
     }
 
     private static readonly Dictionary<string, string> MarkKinds = new()
@@ -55,7 +61,10 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
     {
         foreach (var run in paragraph.Element(W + "pPr")?.Elements(W + "r") ?? [])
         {
-            content.Inlines.Add(new DocxStrayText(string.Concat(run.Elements().Select(StrayPiece)), 0));
+            content.Inlines.Add(new DocxStrayText
+            {
+                Text = string.Concat(run.Elements().Select(StrayPiece)), Position = 0,
+            });
         }
     }
 
@@ -100,7 +109,10 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
                 if (Attr(element, "name") is { } bookmark and not LastEditBookmark)
                 {
                     var columns = BookmarkColumns(element);
-                    content.Inlines.Add(new DocxBookmark(bookmark, content.Text.Length) { Columns = columns });
+                    content.Inlines.Add(new DocxBookmark
+                    {
+                        Name = bookmark, Position = content.Text.Length, Columns = columns,
+                    });
                 }
             }
             else if (IsWrapper(element)) ReadContent(element, content);
@@ -123,10 +135,13 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
     private static void ReadMath(XElement math, ParagraphContent content)
     {
         var text = string.Concat(math.Descendants(M + "t").Select(t => t.Value));
-        content.Inlines.Add(new DocxMath(text, Hash(math), content.Text.Length));
+        content.Inlines.Add(new DocxMath { Text = text, Hash = Hash(math), Position = content.Text.Length });
     }
 
-    private static DocxUnsupported Unsupported(XElement element, int position) => new(NameOf(element), Hash(element), position);
+    private static DocxUnsupported Unsupported(XElement element, int position) => new()
+    {
+        Element = NameOf(element), Hash = Hash(element), Position = position,
+    };
 
     // A link's text is the text of the runs inside it, so it's read first and the link placed before what it contains.
     // A link whose address can't be found has no target, even when it also names a bookmark.
@@ -136,7 +151,10 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         ReadContent(link, content);
         var bookmark = Attr(link, "anchor") is { } anchor ? $"#{anchor}" : null;
         var target = (string?)link.Attribute(R + "id") is { } id ? package.Target(part, id) is { } address ? address + bookmark : null : bookmark;
-        content.Inlines.Insert(index, new DocxLink(content.Text.ToString(start, content.Text.Length - start), target, start));
+        content.Inlines.Insert(index, new DocxLink
+        {
+            Text = content.Text.ToString(start, content.Text.Length - start), Target = target, Position = start,
+        });
     }
 
     // Inserted text is part of the paragraph and is also recorded as a tracked change, with who made it.
@@ -146,7 +164,10 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         ReadContent(insertion, content);
         var kind = insertion.Name.LocalName == "ins" ? "insert" : "move-to";
         var text = content.Text.ToString(start, content.Text.Length - start);
-        content.Inlines.Insert(index, new DocxRevision(kind, text, Attr(insertion, "author"), start));
+        content.Inlines.Insert(index, new DocxRevision
+        {
+            Kind = kind, Text = text, Author = Attr(insertion, "author"), Position = start,
+        });
     }
 
     // Deleted text (tracked deletions and moves away) isn't part of the paragraph; it's recorded where it was.
@@ -154,7 +175,10 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
     {
         var text = string.Concat(deletion.Descendants().Where(item => item.Name == W + "delText" || item.Name == W + "t").Select(item => item.Value));
         var kind = deletion.Name.LocalName == "del" ? "delete" : "move-from";
-        content.Inlines.Add(new DocxRevision(kind, text, Attr(deletion, "author"), content.Text.Length));
+        content.Inlines.Add(new DocxRevision
+        {
+            Kind = kind, Text = text, Author = Attr(deletion, "author"), Position = content.Text.Length,
+        });
     }
 
     // A content control in a paragraph: its kind, tag and title, and the text it shows as its value.
@@ -172,7 +196,10 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         var (start, index) = (content.Text.Length, content.Inlines.Count);
         ReadContent(field, content);
         var result = content.Text.ToString(start, content.Text.Length - start);
-        content.Inlines.Insert(index, new DocxField(FieldCode(Attr(field, "instr")), result, start));
+        content.Inlines.Insert(index, new DocxField
+        {
+            Code = FieldCode(Attr(field, "instr")), Result = result, Position = start,
+        });
     }
 
     // A complex field spans runs: fldChar begin, its code in instrText, fldChar separate, the result as ordinary text,
@@ -198,7 +225,10 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
     private static void EndField(OpenField field, ParagraphContent content)
     {
         if (field.FormData is { } data) content.Inlines.Insert(field.Index, FormReader.LegacyField(data, field.Result.ToString(), field.Position));
-        content.Inlines.Insert(field.Index, new DocxField(FieldCode(field.Code.ToString()), field.Result.ToString(), field.Position));
+        content.Inlines.Insert(field.Index, new DocxField
+        {
+            Code = FieldCode(field.Code.ToString()), Result = field.Result.ToString(), Position = field.Position,
+        });
         if (content.Fields.TryPeek(out var outer) && !outer.InResult) outer.Code.Append(field.Result);
     }
 
@@ -241,17 +271,23 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
             {
                 // What's left of w:br once TextOf has taken line breaks: page and column breaks.
                 case "br":
-                    content.Inlines.Add(new DocxBreak(Attr(item, "type")!, position));
+                    content.Inlines.Add(new DocxBreak { Kind = Attr(item, "type")!, Position = position });
                     break;
 
                 // A symbol is a character from a symbol font, such as a Wingdings check mark: it's text, and its font
                 // decides what it looks like.
                 case "sym" when Attr(item, "char") is { } code && int.TryParse(code, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var value):
                     Append(((char)value).ToString());
-                    content.Inlines.Add(new DocxSymbol(Attr(item, "font"), code.ToUpperInvariant(), position));
+                    content.Inlines.Add(new DocxSymbol
+                    {
+                        Font = Attr(item, "font"), Code = code.ToUpperInvariant(), Position = position,
+                    });
                     break;
                 case "sym":
-                    content.Inlines.Add(new DocxSymbol(Attr(item, "font"), Attr(item, "char") ?? "", position));
+                    content.Inlines.Add(new DocxSymbol
+                    {
+                        Font = Attr(item, "font"), Code = Attr(item, "char") ?? "", Position = position,
+                    });
                     break;
                 case "fldChar":
                     ReadFieldCharacter(item, position, content);
@@ -260,10 +296,14 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
                     field.Code.Append(item.Value);
                     break;
                 case "footnoteReference" or "endnoteReference" when Integer(item, "id") is int id:
-                    content.Inlines.Add(new DocxNoteReference(item.Name.LocalName == "footnoteReference" ? "footnote" : "endnote", id, position));
+                    content.Inlines.Add(new DocxNoteReference
+                    {
+                        Kind = item.Name.LocalName == "footnoteReference" ? "footnote" : "endnote", Id = id,
+                        Position = position,
+                    });
                     break;
                 case "commentReference" when Integer(item, "id") is int id:
-                    content.Inlines.Add(new DocxCommentReference(id, position));
+                    content.Inlines.Add(new DocxCommentReference { Id = id, Position = position });
                     break;
                 case "drawing" when _drawings.Drawing(item, position) is { } image:
                     content.Inlines.Add(image);
@@ -281,13 +321,16 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
         }
 
         // A run whose formatting changed with tracking on is a tracked change of its text.
-        if (rPr?.Element(W + "rPrChange") is { } change) content.Inlines.Insert(index, new DocxRevision("format", text.ToString(), Attr(change, "author"), start));
+        if (rPr?.Element(W + "rPrChange") is { } change) content.Inlines.Insert(index, new DocxRevision
+        {
+            Kind = "format", Text = text.ToString(), Author = Attr(change, "author"), Position = start,
+        });
 
         if (text.Length == 0) return;
         content.Text.Append(text);
         var spans = content.Spans;
         if (spans.Count > 0 && spans[^1].Format == format) spans[^1] = spans[^1] with { Text = spans[^1].Text + text };
-        else spans.Add(new DocxSpan(text.ToString(), format));
+        else spans.Add(new DocxSpan { Text = text.ToString(), Format = format });
     }
 
     [GeneratedRegex(@"\s+")]

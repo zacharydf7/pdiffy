@@ -38,7 +38,12 @@ public class DocxNotesAndFormsTests
         var document = docx.Load();
 
         Assert.Equal("new text", Assert.Single(document.Paragraphs()).Text);
-        Assert.Equal([new DocxRevision("insert", "new ", "Ann", 0), new DocxRevision("delete", "old ", "Bob", 4)], document.Revisions());
+        DocxRevision[] revisions =
+        [
+            new() { Kind = "insert", Text = "new ", Author = "Ann", Position = 0 },
+            new() { Kind = "delete", Text = "old ", Author = "Bob", Position = 4 },
+        ];
+        Assert.Equal(revisions, document.Revisions());
     }
 
     [Fact]
@@ -57,8 +62,11 @@ public class DocxNotesAndFormsTests
 
         DocxRevision[] expected =
         [
-            new("move-from", "Up", "Bob", 0), new("move-to", "Down", "Bob", 0), new("format", "!", "Cy", 4),
-            new("paragraph-insert", "", "Ann", 5), new("paragraph-format", "", "Ann", 0),
+            new() { Kind = "move-from", Text = "Up", Author = "Bob", Position = 0 },
+            new() { Kind = "move-to", Text = "Down", Author = "Bob", Position = 0 },
+            new() { Kind = "format", Text = "!", Author = "Cy", Position = 4 },
+            new() { Kind = "paragraph-insert", Text = "", Author = "Ann", Position = 5 },
+            new() { Kind = "paragraph-format", Text = "", Author = "Ann", Position = 0 },
         ];
         Assert.Equal(expected, revisions);
     }
@@ -73,7 +81,8 @@ public class DocxNotesAndFormsTests
 
         var revision = Assert.Single(docx.Load().Revisions());
 
-        Assert.Equal(new DocxRevision("paragraph-mark-format", "", "Ana", 0), revision);
+        Assert.Equal(new DocxRevision { Kind = "paragraph-mark-format", Text = "", Author = "Ana", Position = 0 },
+            revision);
     }
 
     [Fact]
@@ -168,7 +177,7 @@ public class DocxNotesAndFormsTests
 
         var inlines = Assert.Single(docx.Load().Paragraphs()).Inlines;
 
-        Assert.Equal(new DocxField(code, result, 0), inlines[0]);
+        Assert.Equal(new DocxField { Code = code, Result = result, Position = 0 }, inlines[0]);
         var form = Assert.IsType<DocxForm>(inlines[1]);
         Assert.Equal((kind, "Field1", value), (form.Kind, form.Name, form.Value));
     }

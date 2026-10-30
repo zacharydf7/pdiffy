@@ -242,5 +242,5 @@ internal sealed class PdfChecker(PdfUaDocument document)
     private static string On(int? page) => page is int number ? $" on p{number}" : "";
 
     private void Add(PdfCheck check, int? page, string path, string message) =>
-        _findings.Add(new PdfCheckFinding(check, page, path, message));
+        _findings.Add(new PdfCheckFinding { Check = check, Page = page, Path = path, Message = message });
 }

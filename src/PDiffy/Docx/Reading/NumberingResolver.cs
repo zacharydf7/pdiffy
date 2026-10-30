@@ -57,17 +57,28 @@ internal sealed class NumberingResolver
     {
         var list = _lists[used.Key.ToString(CultureInfo.InvariantCulture)];
         var definitionId = DefinitionId(list)!;
-        return new DocxList(used.Key, definitionId, used.Value.Select(level => LevelOf(list, definitionId, level)).ToList());
+        return new DocxList
+        {
+            Id = used.Key, Definition = definitionId,
+            Levels = used.Value.Select(level => LevelOf(list, definitionId, level)).ToList(),
+        };
     }).ToList();
 
     // A level the definition doesn't have is reported as missing rather than given made-up settings.
     private DocxListLevel LevelOf(XElement list, string definitionId, int level)
     {
-        if (Level(list, definitionId, level) is not { } lvl) return new DocxListLevel(level, null, null, null, null, null, null);
+        if (Level(list, definitionId, level) is not { } lvl) return new DocxListLevel
+        {
+            Level = level, Format = null, Text = null, Start = null, Indent = null, Hanging = null, Font = null,
+        };
         var ind = lvl.Element(W + "pPr")?.Element(W + "ind");
-        return new DocxListLevel(level, Attr(lvl.Element(W + "numFmt"), "val") ?? "decimal", Attr(lvl.Element(W + "lvlText"), "val") ?? "",
-            Start(list, definitionId, level), Twips(ind, "left") ?? Twips(ind, "start"), Twips(ind, "hanging"),
-            Attr(lvl.Element(W + "rPr")?.Element(W + "rFonts"), "ascii"));
+        return new DocxListLevel
+        {
+            Level = level, Format = Attr(lvl.Element(W + "numFmt"), "val") ?? "decimal",
+            Text = Attr(lvl.Element(W + "lvlText"), "val") ?? "", Start = Start(list, definitionId, level),
+            Indent = Twips(ind, "left") ?? Twips(ind, "start"), Hanging = Twips(ind, "hanging"),
+            Font = Attr(lvl.Element(W + "rPr")?.Element(W + "rFonts"), "ascii"),
+        };
     }
 
     // A bullet's label is its text; a number's text has a placeholder (%1 to %9) for each level's counter.
