@@ -3,16 +3,24 @@
 You don't need a snapshot to use PDiffy. [`PdfUaDocument.Load`](xref:PDiffy.PdfUaDocument.Load*) reads the whole PDF
 once into a model you can assert on, with no PDF knowledge needed: enums and constant classes list every option.
 
-| To check... | Use | Options listed in |
-|---|---|---|
-| Tags, alt text, reading order | [`Structure`](xref:PDiffy.PdfUaDocument.Structure), [`Elements(type)`](xref:PDiffy.PdfUaDocument.Elements*) | [`StructureType`](xref:PDiffy.StructureType) |
-| Untagged or artifact content | [`TextRuns`](xref:PDiffy.PdfUaDocument.TextRuns), [`Untagged`](xref:PDiffy.PdfUaDocument.Untagged), [`Artifacts`](xref:PDiffy.PdfUaDocument.Artifacts) | [`ContentRole`](xref:PDiffy.ContentRole) |
-| Links and comments | [`Annotations`](xref:PDiffy.PdfUaDocument.Annotations) | [`AnnotationFlags`](xref:PDiffy.AnnotationFlags) |
-| Form fields | [`FormFields`](xref:PDiffy.PdfUaDocument.FormFields) | [`FormFieldType`](xref:PDiffy.FormFieldType), [`FormFieldFlags`](xref:PDiffy.FormFieldFlags) |
-| How the file opens, what it allows | [`Settings`](xref:PDiffy.PdfUaDocument.Settings) | [`PageModes`](xref:PDiffy.PageModes), [`PageLayouts`](xref:PDiffy.PageLayouts), [`DocumentPermissions`](xref:PDiffy.DocumentPermissions) |
-| Fonts and copyable text | [`Fonts`](xref:PDiffy.PdfUaDocument.Fonts) | |
-| Fonts, colors, hidden text | [`TextRuns`](xref:PDiffy.PdfUaDocument.TextRuns), [`Images`](xref:PDiffy.PdfUaDocument.Images), [`Paths`](xref:PDiffy.PdfUaDocument.Paths) | [`TextRenderMode`](xref:PDiffy.TextRenderMode) |
-| Language, title, page count | [`Document`](xref:PDiffy.PdfUaDocument.Document), [`Metadata`](xref:PDiffy.PdfUaDocument.Metadata), [`Pages`](xref:PDiffy.PdfUaDocument.Pages) | |
+- **Tags, alt text and reading order:** [`Structure`](xref:PDiffy.PdfUaDocument.Structure) and
+  [`Elements(type)`](xref:PDiffy.PdfUaDocument.Elements*), with types listed in [`StructureType`](xref:PDiffy.StructureType).
+- **Untagged and artifact content:** [`TextRuns`](xref:PDiffy.PdfUaDocument.TextRuns),
+  [`Untagged`](xref:PDiffy.PdfUaDocument.Untagged) and [`Artifacts`](xref:PDiffy.PdfUaDocument.Artifacts), with roles
+  listed in [`ContentRole`](xref:PDiffy.ContentRole).
+- **Links and comments:** [`Annotations`](xref:PDiffy.PdfUaDocument.Annotations), with flags listed in
+  [`AnnotationFlags`](xref:PDiffy.AnnotationFlags).
+- **Form fields:** [`FormFields`](xref:PDiffy.PdfUaDocument.FormFields), with types and flags listed in
+  [`FormFieldType`](xref:PDiffy.FormFieldType) and [`FormFieldFlags`](xref:PDiffy.FormFieldFlags).
+- **How the file opens and what it allows:** [`Settings`](xref:PDiffy.PdfUaDocument.Settings), with options listed in
+  [`PageModes`](xref:PDiffy.PageModes), [`PageLayouts`](xref:PDiffy.PageLayouts) and
+  [`DocumentPermissions`](xref:PDiffy.DocumentPermissions).
+- **Fonts and copyable text:** [`Fonts`](xref:PDiffy.PdfUaDocument.Fonts).
+- **Fonts, colors and hidden text on the page:** [`TextRuns`](xref:PDiffy.PdfUaDocument.TextRuns),
+  [`Images`](xref:PDiffy.PdfUaDocument.Images) and [`Paths`](xref:PDiffy.PdfUaDocument.Paths), with render modes listed
+  in [`TextRenderMode`](xref:PDiffy.TextRenderMode).
+- **Language, title and page count:** [`Document`](xref:PDiffy.PdfUaDocument.Document),
+  [`Metadata`](xref:PDiffy.PdfUaDocument.Metadata) and [`Pages`](xref:PDiffy.PdfUaDocument.Pages).
 
 ## Built-in checks
 

@@ -50,11 +50,9 @@ The snapshot is named after the test file and method, and sits next to the test 
 The first run has nothing to compare with, so it fails with "New PDF snapshot" and writes what it got to a
 `.received.pdfua.txt` file. Open it, check that it describes your document, then accept it in any of these ways:
 
-| Way | Command |
-|---|---|
-| Accept every received snapshot under the current folder | `pdiffy accept --all` |
-| Run the tests in accept mode | `PDIFFY_ACCEPT=1 dotnet test` (PowerShell: `$env:PDIFFY_ACCEPT=1; dotnet test`) |
-| By hand | Rename `.received.pdfua.txt` to `.verified.pdfua.txt` |
+- Run `pdiffy accept --all` to accept every received snapshot under the current folder.
+- Run the tests in accept mode: `PDIFFY_ACCEPT=1 dotnet test`, or in PowerShell `$env:PDIFFY_ACCEPT=1; dotnet test`.
+- Rename the `.received.pdfua.txt` file to `.verified.pdfua.txt` by hand.
 
 Run the tests again: they pass. Commit the `.verified.pdfua.txt` file. From now on, any change to what the document
 says fails the test, and accepting it shows up in code review as a diff of that file.

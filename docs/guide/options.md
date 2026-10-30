@@ -14,13 +14,12 @@ await PdfSnapshot.VerifyAsync(pdf, configure: options => options
     .OnlyPages(1, 2));
 ```
 
-| To... | Use | Example |
-|---|---|---|
-| Compare only what a test guards | `Use(SnapshotProfile...)` | Only what assistive technology uses |
-| Leave out a whole section | `Ignore(Section...)` | Layout the design team changes freely |
-| Leave out one detail everywhere | `Ignore(Field...)` | Positions, colors, the title |
-| Replace values that change on every run | `ScrubDates()`, `ScrubGuids()`, `ScrubText(...)` | Print dates, permit numbers, booking ids |
-| Snapshot part of a long document | `OnlyPages(...)` | The summary on pages 3 and 4 |
+- `Use(SnapshotProfile...)` compares only what a test guards, such as what assistive technology uses.
+- `Ignore(Section...)` leaves out a whole section, such as a layout the design team changes freely.
+- `Ignore(Field...)` leaves out one detail everywhere, such as positions, colors or the title.
+- `ScrubDates()`, `ScrubGuids()` and `ScrubText(...)` replace values that change on every run, such as print dates,
+  permit numbers and booking ids.
+- `OnlyPages(...)` snapshots part of a long document, such as the summary on pages 3 and 4.
 
 The snapshot's first lines always list what was ignored, so nobody reading it mistakes a missing section for an empty
 one.

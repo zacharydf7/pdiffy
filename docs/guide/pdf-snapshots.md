@@ -125,13 +125,11 @@ public async Task TrailMap_ShouldMatchApprovedSnapshot_WhenGeneratedForATrail(st
 }
 ```
 
-The three files for a snapshot are:
+Each snapshot has up to three files:
 
-| File | Written when | Commit it? |
-|---|---|---|
-| `{name}.verified.pdfua.txt` | You accept a snapshot | Yes |
-| `{name}.received.pdfua.txt` | The test fails | No |
-| `{name}.diff.html` | The test fails and a verified file exists | No |
+- `{name}.verified.pdfua.txt` is the approved snapshot, written when you accept one. Commit it.
+- `{name}.received.pdfua.txt` is written when the test fails. Don't commit it.
+- `{name}.diff.html` is the report, written when the test fails and a verified file exists. Don't commit it.
 
 To keep every snapshot in one folder, set [`Snapshot.Directory`](xref:PDiffy.Snapshot.Directory) once (see
 [Getting started](getting-started.md#keep-snapshots-in-one-folder)). To place one snapshot elsewhere, pass

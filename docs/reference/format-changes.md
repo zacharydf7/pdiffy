@@ -4,10 +4,11 @@ A newer PDiffy can print some snapshots differently, when it records something n
 Releases that change what a snapshot prints are minor versions (0.3.0, 0.4.0), and each one is listed below, so a
 failure after an upgrade can be told apart from a change to your document.
 
-| Kind of change | What happens |
-|---|---|
-| **Some snapshots change**: a new line or key that only some documents have, or a reader fix | The format version stays the same. The entry below says which snapshots change. |
-| **Nearly every snapshot changes**: a key renamed, a value printed another way, or a section added, removed or moved | The format version goes up, at most once per format per release. A failing test says first that the verified file uses the old version, and still lists the document's changes. |
+- **Some snapshots change** when there's a new line or key that only some documents have, or a reader fix. The format
+  version stays the same, and the entry below says which snapshots change.
+- **Nearly every snapshot changes** when a key is renamed, a value is printed another way, or a section is added,
+  removed or moved. The format version goes up, at most once per format per release. A failing test says first that
+  the verified file uses the old version, and still lists the document's changes.
 
 Either way, review the received files and accept them: `pdiffy accept --all`, or run the tests with `PDIFFY_ACCEPT=1`.
 
