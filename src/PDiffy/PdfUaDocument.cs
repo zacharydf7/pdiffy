@@ -140,7 +140,44 @@ public sealed record PageBox(int X, int Y, int Width, int Height);
 
 public sealed record PageLabelRange(int FirstPage, string? Style, string? Prefix, int Start);
 
-public sealed record Bookmark(string Title, int? Page, IReadOnlyList<Bookmark> Children);
+/// <summary>
+/// A bookmark. <see cref="Page"/> is set when it goes to a page of this document, <see cref="Uri"/> when it opens a web
+/// address and <see cref="File"/> when it opens another file.
+/// </summary>
+public sealed record Bookmark(string Title, int? Page, IReadOnlyList<Bookmark> Children)
+{
+    /// <summary>The page and view it opens: in this document, or in <see cref="File"/>. Its zoom isn't read.</summary>
+    public Destination? Destination { get; init; }
+
+    /// <summary>The web address it opens.</summary>
+    public string? Uri { get; init; }
+
+    /// <summary>The other file it opens.</summary>
+    public string? File { get; init; }
+}
+
+/// <summary>
+/// Where a link, bookmark or action goes: a page, the view a viewer opens it at (a PDF view type such as XYZ, Fit or FitH)
+/// and that view's positions in whole points, with null for a position the viewer keeps as it is. <see cref="Name"/> is
+/// set, and the rest empty, when the PDF names a destination it doesn't define.
+/// </summary>
+public sealed record Destination
+{
+    /// <summary>The page, counted from 1; null when the PDF points at something that isn't a page.</summary>
+    public int? Page { get; init; }
+
+    /// <summary>The view type, such as XYZ (a position), Fit (the whole page) or FitH (the page's width).</summary>
+    public string? View { get; init; }
+
+    /// <summary>The view's positions, such as the left and top of an XYZ view.</summary>
+    public IReadOnlyList<int?> Positions { get; init; } = [];
+
+    /// <summary>An XYZ view's zoom, where 1 is 100%; null when the viewer keeps its zoom.</summary>
+    public double? Zoom { get; init; }
+
+    /// <summary>The name of a destination the PDF doesn't define, or one in another file.</summary>
+    public string? Name { get; init; }
+}
 
 /// <summary>A structure element. <see cref="Name"/> replaces the type in the snapshot when other elements refer to it (TH1, TH2).</summary>
 public sealed record StructureElement
@@ -192,7 +229,15 @@ public sealed record Annotation
     public ContentRole Role { get; init; }
     public string? Uri { get; init; }
     public string? Action { get; init; }
+
+    /// <summary>Whether the link has its own destination entry. <see cref="Destination"/> says where it goes.</summary>
     public bool HasDestination { get; init; }
+
+    /// <summary>Where the link goes, from its own destination or a GoTo or GoToR action.</summary>
+    public Destination? Destination { get; init; }
+
+    /// <summary>The file a GoToR or Launch action opens.</summary>
+    public string? File { get; init; }
     public string? Contents { get; init; }
     public string? AccessibleName { get; init; }
 }

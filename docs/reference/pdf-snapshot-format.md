@@ -41,12 +41,12 @@ Sections always appear in this order. Each can be left out with [`Section`](xref
 | `metadata` | Title, author, subject, keywords; whether dates, producer and creator are present; PDF/UA identifier; XMP title, creator, description, language and PDF/A conformance, or `xmp=unreadable`; every other Info entry (such as a company name or classification label) |
 | `role-map` | Each custom tag type and the standard type it maps to |
 | `pages` | Size (named when standard, such as `letter` or `a4`), rotation, tab order; crop, bleed, trim and art boxes, user unit and transparency group when set; pages that couldn't be read; page label ranges |
-| `bookmarks` | The outline tree, with target pages, or `unreadable` when it nests more than 256 deep or loops back on itself |
+| `bookmarks` | The outline tree, with each bookmark's target: a page and the view it opens at, a web address or another file. Or `unreadable` when it nests more than 256 deep or loops back on itself |
 | `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, links, how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), how many child elements are nested more than 256 deep and left out (`unread-children`), and the element's text |
 | `artifacts` | Text marked as an artifact (headers, footers, page numbers), per page |
 | `untagged` | Text that is neither tagged nor marked as an artifact (including tagged text that no structure element points to), and a count of such images and paths per page |
 | `fonts` | Each font: name, type, whether it's embedded, whether it has a Unicode map, and the character codes its text uses that don't map to Unicode (that text can't be copied, searched or read aloud) |
-| `annotations` | Every annotation (links, comments, form widgets and so on), page by page in the order each page lists them: type, `tagged` or `untagged`, rectangle, flags (such as `print` or `hidden`), link target, contents and accessible name |
+| `annotations` | Every annotation (links, comments, form widgets and so on), page by page in the order each page lists them: type, `tagged` or `untagged`, rectangle, flags (such as `print` or `hidden`), where a link goes (a web address, or a page and the view it opens at, or another file), contents and accessible name |
 | `forms` | Every form field: type, full name (`address.city`), page, accessible name, value, options, maximum length and flags (such as `required` or `read-only`) |
 | `layout` | Every text run, image and painted vector path, page by page, each labeled `tagged`, `artifact` or `untagged`. Text runs: position, font, size, color, render mode. Images: position, size, pixel size, a hash of the pixels. Paths: bounding box, fill, stroke and line width |
 
@@ -78,6 +78,18 @@ Sections always appear in this order. Each can be left out with [`Section`](xref
 - `fill=`, `stroke=` and `width=` appear only for what a path actually paints.
 - An image's hash is taken from its decoded pixels where possible, so recompressing an image doesn't change it.
 - Annotation rectangles use the same convention: the bottom-left corner and size, in whole points.
+
+### Links and bookmarks
+
+- A link that goes to a page prints `dest=p3` (`p?` when its page reference isn't a page), the view it opens the page
+  at (`view=XYZ`, `Fit`, `FitH` and so on) and the view's positions in whole points (`view-at=72,720`, with `-` for a
+  position the viewer keeps as it is), and an XYZ view's zoom when it sets one (`zoom=2`). The positions belong to
+  `Field.Positions`, so they can be tolerated or ignored.
+- A named destination is looked up, so it prints like any other. One the PDF doesn't define, or one in another file,
+  prints `dest-name="..."`.
+- A link to another file prints `file="maps.pdf"`, with the page it opens there for `action=GoToR`.
+- A bookmark prints `-> p2` and the view it opens at, or `uri="..."`, or `file="..."` with `dest=` for the page it opens
+  in that file. A bookmark's zoom isn't read.
 
 ### Fonts
 

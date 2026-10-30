@@ -10,7 +10,7 @@ internal sealed class TestPdf
     private readonly List<TestPage> _pages = [];
     private readonly List<TestElement> _structure = [];
     private readonly List<(string Custom, string Standard)> _roleMap = [];
-    private readonly List<(string Title, int Page)> _bookmarks = [];
+    private readonly List<(string Title, string Target)> _bookmarks = [];
     private readonly List<(string Name, string Entries, int Page)> _formFields = [];
     private readonly List<string> _objects = [];
     private string _catalogEntries = "";
@@ -59,9 +59,12 @@ internal sealed class TestPdf
         return this;
     }
 
-    public TestPdf Bookmark(string title, int page)
+    public TestPdf Bookmark(string title, int page, string view = "/Fit") => Bookmark(title, $"/Dest [{{page{page}}} {view}]");
+
+    /// <summary>A bookmark with raw target entries, such as "/A &lt;&lt; /S /URI /URI (https://example.com) &gt;&gt;".</summary>
+    public TestPdf Bookmark(string title, string target)
     {
-        _bookmarks.Add((title, page));
+        _bookmarks.Add((title, target));
         return this;
     }
 
@@ -108,7 +111,7 @@ internal sealed class TestPdf
 
         for (var i = 0; i < _pages.Count; i++)
         {
-            annotations[i].AddRange(_pages[i].Annotations.Select(entries => Add($"<< /Type /Annot {entries} >>")));
+            annotations[i].AddRange(_pages[i].Annotations.Select(entries => Add($"<< /Type /Annot {PageReferences(entries, pageObjects)} >>")));
         }
 
         if (_formFields.Count > 0)
@@ -137,10 +140,17 @@ internal sealed class TestPdf
         var inheritedResources = ResourcesOnPagesNode ? $" /Resources << /Font << /F1 {font} 0 R >> >>" : "";
         var pageRefs = string.Join(" ", pageObjects.Select(p => $"{p} 0 R"));
         Set(pagesNode, $"<< /Type /Pages /Kids [{pageRefs}] /Count {_pages.Count}{inheritedResources} >>");
-        Set(catalog, $"<< {catalogEntries} >>");
+        Set(catalog, $"<< {PageReferences(catalogEntries, pageObjects)} >>");
         var titleEntry = Title is null ? "" : $"/Title ({Title}) ";
         var info = Add($"<< {titleEntry}{InfoEntries} >>");
         return RawPdf.Build(_objects, catalog, $"/Info {info} 0 R {TrailerEntries}", Layout);
+    }
+
+    // Raw entries name pages as {page1}, {page2} and so on, since page object numbers aren't known until the build.
+    private static string PageReferences(string entries, List<int> pageObjects)
+    {
+        for (var i = 0; i < pageObjects.Count; i++) entries = entries.Replace($"{{page{i + 1}}}", $"{pageObjects[i]} 0 R");
+        return entries;
     }
 
     /// <summary>A stream object with the given dictionary entries; compressed when <see cref="CompressStreams"/> is set.</summary>
@@ -207,10 +217,10 @@ internal sealed class TestPdf
         var items = _bookmarks.Select(_ => Reserve()).ToList();
         for (var i = 0; i < items.Count; i++)
         {
-            var (title, page) = _bookmarks[i];
+            var (title, target) = _bookmarks[i];
             var previous = i > 0 ? $" /Prev {items[i - 1]} 0 R" : "";
             var next = i < items.Count - 1 ? $" /Next {items[i + 1]} 0 R" : "";
-            Set(items[i], $"<< /Title ({title}) /Parent {outlines} 0 R /Dest [{pageObjects[page - 1]} 0 R /Fit]{previous}{next} >>");
+            Set(items[i], $"<< /Title ({title}) /Parent {outlines} 0 R {PageReferences(target, pageObjects)}{previous}{next} >>");
         }
 
         Set(outlines, $"<< /Type /Outlines /First {items[0]} 0 R /Last {items[^1]} 0 R /Count {items.Count} >>");

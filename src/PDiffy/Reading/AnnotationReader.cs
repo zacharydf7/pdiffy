@@ -6,7 +6,8 @@ namespace PDiffy.Reading;
 internal static class AnnotationReader
 {
     /// <summary>Every annotation on every page, in each page's /Annots order.</summary>
-    public static IReadOnlyList<Annotation> ReadAll(PdfObjects objects, PageTree pages, IReadOnlySet<IndirectReference> tagged)
+    public static IReadOnlyList<Annotation> ReadAll(PdfObjects objects, PageTree pages, IReadOnlySet<IndirectReference> tagged,
+        DestinationReader destinations)
     {
         var annotations = new List<Annotation>();
         for (var i = 0; i < pages.Pages.Count; i++)
@@ -18,7 +19,7 @@ internal static class AnnotationReader
                     var role = item is IndirectReferenceToken reference && tagged.Contains(reference.Data)
                         ? ContentRole.Tagged
                         : ContentRole.Untagged;
-                    annotations.Add(Read(objects, annotation, i + 1, role));
+                    annotations.Add(Read(objects, annotation, i + 1, role, destinations));
                 }
             }
         }
@@ -26,11 +27,13 @@ internal static class AnnotationReader
         return annotations;
     }
 
-    public static Annotation Read(PdfObjects objects, DictionaryToken annotation, int? page, ContentRole role)
+    public static Annotation Read(PdfObjects objects, DictionaryToken annotation, int? page, ContentRole role,
+        DestinationReader destinations)
     {
         var rect = objects.Box(annotation, "Rect") ?? new PageBox(0, 0, 0, 0);
         var action = objects.Dictionary(annotation, "A");
         var uri = action is null ? null : objects.Text(action, "URI");
+        var type = action is null ? null : objects.Name(action, "S");
         return new Annotation
         {
             Subtype = objects.Name(annotation, "Subtype") ?? "(none)",
@@ -42,11 +45,20 @@ internal static class AnnotationReader
             Flags = (AnnotationFlags)(objects.Integer(annotation, "F") ?? 0),
             Role = role,
             Uri = uri,
-            Action = action is not null && uri is null ? objects.Name(action, "S") : null,
+            Action = action is not null && uri is null ? type : null,
             HasDestination = annotation.Data.ContainsKey("Dest"),
+            Destination = type is "GoTo" or "GoToR"
+                ? destinations.Read(action!.Data.GetValueOrDefault("D"), remote: type == "GoToR")
+                : destinations.Read(annotation.Data.GetValueOrDefault("Dest")),
+            File = type is "GoToR" or "Launch" ? FileName(objects, action!) : null,
             Contents = objects.Text(annotation, "Contents"),
             AccessibleName = objects.Text(annotation, "TU"),
         };
     }
 
+    // /F is a file name, or a file specification whose /UF (Unicode) or /F holds it.
+    private static string? FileName(PdfObjects objects, DictionaryToken action) =>
+        objects.Text(action, "F") ?? (objects.Dictionary(action, "F") is { } specification
+            ? objects.Text(specification, "UF") ?? objects.Text(specification, "F")
+            : null);
 }

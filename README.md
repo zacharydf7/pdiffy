@@ -294,7 +294,7 @@ await PdfSnapshot.VerifyAsync(pdf, configure: options => options
     .Tolerate(Field.FontSizes, points: 0.5));
 ```
 
-A number that differs from the verified one by no more than its tolerance doesn't fail the test, and the verified file stays as it is, even in accept mode, so the baseline doesn't creep a point at a time. `Positions` covers where text, images, paths and annotations are and the size of images, paths and annotations, `FontSizes` a text run's size, and `LineWidths` a path's width. The snapshot's header lists each tolerance (`# tolerances: positions 1pt, font-sizes 0.5pt`), so a reader knows its numbers are approximate.
+A number that differs from the verified one by no more than its tolerance doesn't fail the test, and the verified file stays as it is, even in accept mode, so the baseline doesn't creep a point at a time. `Positions` covers where text, images, paths and annotations are, the size of images, paths and annotations, and the positions a link or bookmark opens its page at, `FontSizes` a text run's size, and `LineWidths` a path's width. The snapshot's header lists each tolerance (`# tolerances: positions 1pt, font-sizes 0.5pt`), so a reader knows its numbers are approximate.
 
 ### Scrub values that change on every run
 
@@ -579,12 +579,12 @@ pdiffy coverage --all
 | `metadata` | Title, author, subject, keywords; whether dates, producer and creator are present; PDF/UA identifier; XMP title, creator, description, language and PDF/A conformance, or `xmp=unreadable`; every other Info entry (such as a company name or classification label) |
 | `role-map` | Each custom tag type and the standard type it maps to |
 | `pages` | Size (named when standard, such as `letter` or `a4`), rotation, tab order; crop, bleed, trim and art boxes, user unit and transparency group when set; pages that couldn't be read; page label ranges |
-| `bookmarks` | The outline tree, with target pages, or `unreadable` when it nests more than 256 deep or loops back on itself |
+| `bookmarks` | The outline tree, with each bookmark's target: a page and the view it opens at, a web address or another file. Or `unreadable` when it nests more than 256 deep or loops back on itself |
 | `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, links, how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), how many child elements are nested more than 256 deep and left out (`unread-children`), and the element's text |
 | `artifacts` | Text marked as an artifact (headers, footers, page numbers), per page |
 | `untagged` | Text that is neither tagged nor marked as an artifact (including tagged text that no structure element points to), and a count of such images and paths per page |
 | `fonts` | Each font: name, type, whether it's embedded, whether it has a Unicode map, and the character codes its text uses that don't map to Unicode (that text can't be copied, searched or read aloud) |
-| `annotations` | Every annotation (links, comments, form widgets and so on), page by page in the order each page lists them: type, `tagged` or `untagged`, rectangle, flags (such as `print` or `hidden`), link target, contents and accessible name |
+| `annotations` | Every annotation (links, comments, form widgets and so on), page by page in the order each page lists them: type, `tagged` or `untagged`, rectangle, flags (such as `print` or `hidden`), where a link goes (a web address, or a page and the view it opens at, or another file), contents and accessible name |
 | `forms` | Every form field: type, full name (`address.city`), page, accessible name, value, options, maximum length and flags (such as `required` or `read-only`) |
 | `layout` | Every text run, image and painted vector path, page by page, each labeled `tagged`, `artifact` or `untagged`. Text runs: position, font, size, color, render mode. Images: position, size, pixel size, a hash of the pixels. Paths: bounding box, fill, stroke and line width |
 
@@ -606,12 +606,12 @@ Each `Section` value leaves out one section from the table above. Each `Field` v
 | `CustomInfo` | Info entries other than the standard ones |
 | `PageBoxes` | The crop, bleed, trim and art boxes and the user unit of each page |
 | `AltText`, `ActualText` | Alternate and replacement text on structure elements |
-| `Positions` | Where text, images, paths and annotations are, and the size of images, paths and annotations |
+| `Positions` | Where text, images, paths and annotations are, the size of images, paths and annotations, and the positions a link or bookmark opens its page at |
 | `Colors` | Text color and path fill and stroke colors |
 | `FontNames`, `FontSizes` | The font and size of each text run in the layout |
 | `LineWidths` | The stroke width of each path |
 | `ImageContents` | The pixel size and hash of each image |
-| `LinkTargets` | Where links and other actions go |
+| `LinkTargets` | Where links, bookmarks and other actions go: web addresses, files, and the view a page opens at (a bookmark's page stays) |
 | `AnnotationContents` | The text of annotations |
 | `FormValues` | The value of each form field |
 
@@ -725,6 +725,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | `pdfua-snapshot v1`, unchanged version: links print where they go (`dest=p3 view=XYZ view-at=72,720`, `zoom=` when set, a named destination looked up, `file=` for another file) instead of `dest=yes`, and bookmarks print their view, web address or file. Snapshots of documents with internal links or bookmarks change |
 | Next | No snapshot changes. More changes are flagged as affecting accessibility: tagged content made an artifact or untagged, `marked` or `display-doc-title` turned off, the title removed, replacement text or an expansion removed, a page's tab order no longer `S`, a font's text no longer mapping to Unicode, and permissions that stop extraction for accessibility |
 | 0.3.0 | `pdfua-snapshot v1`, unchanged version: when an element's text is split into tagged pieces, a space now goes between two pieces on the same page only where the page shows a gap (`"Num ber:"` becomes `"Number:"`). Snapshots with such elements change in `structure` |
 | 0.3.0 | `pdfua-snapshot v1`, unchanged version: an element with marked-content references that name no page gets `mcids-without-page=N`. Only snapshots with such elements change |

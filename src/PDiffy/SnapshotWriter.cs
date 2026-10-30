@@ -148,8 +148,17 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
 
     private void WriteBookmark(Bookmark bookmark, int depth)
     {
-        var line = bookmark.Page is int page ? $"{Quote(bookmark.Title)} -> p{page}" : Quote(bookmark.Title);
-        Line(depth, line);
+        var line = new StringBuilder(bookmark.Page is int page ? $"{Quote(bookmark.Title)} -> p{page}" : Quote(bookmark.Title));
+        QuotedKey(line, Field.LinkTargets, "uri", bookmark.Uri);
+        QuotedKey(line, Field.LinkTargets, "file", bookmark.File);
+        if (bookmark.Destination is { } destination)
+        {
+            // A page in another file is printed as dest=, so it isn't read as a page of this document.
+            if (bookmark.Page is null) Key(line, Field.LinkTargets, "dest", PageText(destination));
+            AppendView(line, destination);
+        }
+
+        Line(depth, line.ToString());
         foreach (var child in bookmark.Children) WriteBookmark(child, depth + 1);
     }
 

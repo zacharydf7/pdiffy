@@ -13,7 +13,7 @@ pages
   p1 letter rotate=0 tabs=S
   p2 letter rotate=0 tabs=S
 bookmarks
-  "Trails" -> p2
+  "Trails" -> p2 view=Fit
 structure
   H1 p1 "Trail Guide"
   Figure p1 alt="Park logo"

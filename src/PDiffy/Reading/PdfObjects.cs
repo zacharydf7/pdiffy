@@ -156,5 +156,5 @@ internal sealed class PdfObjects(PdfDocument document)
         var other => TextOf(other),
     };
 
-    private static int Round(double value) => (int)Math.Round(value, MidpointRounding.AwayFromZero);
+    public static int Round(double value) => (int)Math.Round(value, MidpointRounding.AwayFromZero);
 }

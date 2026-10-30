@@ -123,7 +123,8 @@ await PdfSnapshot.VerifyAsync(pdf, configure: options => options
 
 - A number that differs from the verified one by no more than its tolerance doesn't fail the test, and the verified
   file stays as it is, even in accept mode, so the baseline doesn't creep a point at a time.
-- `Positions` covers where text, images, paths and annotations are and the size of images, paths and annotations;
+- `Positions` covers where text, images, paths and annotations are, the size of images, paths and annotations, and
+  the positions a link or bookmark opens its page at;
   `FontSizes` a text run's size; `LineWidths` a path's width. Other fields aren't numbers and can't be tolerated.
 - The snapshot's header lists each tolerance (`# tolerances: positions 1pt, font-sizes 0.5pt`), so a reader knows its
   numbers are approximate. Comparing two snapshots, with `SnapshotDiff.Compare` or `pdiffy`, applies the tolerances

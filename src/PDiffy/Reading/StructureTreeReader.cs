@@ -11,7 +11,7 @@ internal sealed record StructureTree(
     IReadOnlySet<IndirectReference> ReferencedObjects);
 
 /// <summary>Turns the structure tree into <see cref="StructureElement"/>s, joining each element to its marked-content text.</summary>
-internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
+internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, DestinationReader destinations,
     Func<int, int, IReadOnlyList<Letter>?> lettersOf)
 {
     private readonly Dictionary<string, string> _roleMap = [];
@@ -22,7 +22,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
 
     /// <param name="lettersOf">The letters behind an MCID, given (page number, MCID).</param>
     public static StructureTree Read(PdfObjects objects, DictionaryToken catalog, PageTree pages,
-        Func<int, int, IReadOnlyList<Letter>?> lettersOf)
+        DestinationReader destinations, Func<int, int, IReadOnlyList<Letter>?> lettersOf)
     {
         var root = objects.Dictionary(catalog, "StructTreeRoot");
         if (root is null)
@@ -30,7 +30,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
             return new StructureTree([], [], new HashSet<(int, int)>(), new HashSet<IndirectReference>());
         }
 
-        return new StructureTreeReader(objects, pages, lettersOf).ReadRoot(root);
+        return new StructureTreeReader(objects, pages, destinations, lettersOf).ReadRoot(root);
     }
 
     private StructureTree ReadRoot(DictionaryToken root)
@@ -178,7 +178,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages,
         }
 
         var page = pages.NumberOf(objectReference.Data.GetValueOrDefault("Pg")) ?? elementPage;
-        return AnnotationReader.Read(objects, annotation, page, ContentRole.Tagged);
+        return AnnotationReader.Read(objects, annotation, page, ContentRole.Tagged, destinations);
     }
 
     // /Headers lists other elements' /ID values. In the snapshot, unresolved ones print as ?id so a broken reference shows up.

@@ -365,6 +365,24 @@ public class PdfUaDocumentLoadTests
     }
 
     [Fact]
+    public void Load_ShouldReadWhereEachBookmarkGoes_WhenTheyHaveDifferentTargets()
+    {
+        var pdf = new TestPdf().Bookmark("Intro", 1, "/XYZ 72 700 0")
+            .Bookmark("Map", "/A << /S /URI /URI (https://example.com/map) >>")
+            .Bookmark("Atlas", "/A << /S /GoToR /F (atlas.pdf) /D [0 /Fit] >>");
+        pdf.AddPage();
+
+        var document = pdf.Load();
+
+        var bookmarks = document.Bookmarks;
+        Assert.Equal((1, "XYZ"), (bookmarks[0].Destination?.Page, bookmarks[0].Destination?.View));
+        Assert.Equal([72, 700], bookmarks[0].Destination!.Positions);
+        Assert.Equal("https://example.com/map", bookmarks[1].Uri);
+        Assert.Equal(("atlas.pdf", null, 1), (bookmarks[2].File, bookmarks[2].Page, bookmarks[2].Destination?.Page));
+        Assert.Contains("  \"Atlas\" file=\"atlas.pdf\" dest=p1 view=Fit\n", document.ToSnapshot());
+    }
+
+    [Fact]
     public void Load_ShouldReadPageLabelsFromEveryNode_WhenLabelTreeHasKids()
     {
         var pdf = new TestPdf()

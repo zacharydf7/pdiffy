@@ -63,7 +63,20 @@ internal static class NavigationReader
 
     private static Bookmark ToBookmark(BookmarkNode node)
     {
-        int? page = node is DocumentBookmarkNode documentNode ? documentNode.PageNumber : null;
-        return new Bookmark(TextJoiner.Normalize(node.Title), page, node.Children.Select(ToBookmark).ToList());
+        // PdfPig's bookmarks to another file are document bookmarks too, but their page is in that file.
+        var document = node as DocumentBookmarkNode;
+        var local = node is not (ExternalBookmarkNode or EmbeddedBookmarkNode);
+        var page = local ? document?.PageNumber : null;
+        return new Bookmark(TextJoiner.Normalize(node.Title), page, node.Children.Select(ToBookmark).ToList())
+        {
+            Destination = document is null ? null : DestinationReader.FromBookmark(document.Destination),
+            Uri = (node as UriBookmarkNode)?.Uri,
+            File = node switch
+            {
+                ExternalBookmarkNode external => external.FileName,
+                EmbeddedBookmarkNode embedded => embedded.FileSpecification,
+                _ => null,
+            },
+        };
     }
 }

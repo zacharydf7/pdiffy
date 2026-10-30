@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace PDiffy;
@@ -23,9 +24,33 @@ internal sealed partial class SnapshotWriter
     {
         QuotedKey(line, Field.LinkTargets, "uri", annotation.Uri);
         Key(line, Field.LinkTargets, "action", annotation.Action);
-        Key(line, Field.LinkTargets, "dest", annotation.HasDestination ? "yes" : null);
+        QuotedKey(line, Field.LinkTargets, "file", annotation.File);
+        if (annotation.Destination is { } destination)
+        {
+            // A name the PDF doesn't define is printed instead of a page.
+            Key(line, Field.LinkTargets, "dest", destination.Name is null ? PageText(destination) : null);
+            QuotedKey(line, Field.LinkTargets, "dest-name", destination.Name);
+            AppendView(line, destination);
+        }
+
         QuotedKey(line, Field.AnnotationContents, "contents", annotation.Contents);
         Key(line, "tu", QuoteIfPresent(annotation.AccessibleName));
+    }
+
+    // p? is a page reference that isn't a page.
+    private static string PageText(Destination destination) => $"p{destination.Page?.ToString() ?? "?"}";
+
+    // The view a link or bookmark opens its page at, the view's positions ("-" for one the viewer keeps) and its zoom.
+    private void AppendView(StringBuilder line, Destination destination)
+    {
+        if (options.Ignores(Field.LinkTargets)) return;
+        Key(line, "view", destination.View);
+        if (destination.Positions.Count > 0)
+        {
+            Key(line, Field.Positions, "view-at", string.Join(",", destination.Positions.Select(p => p?.ToString() ?? "-")));
+        }
+
+        Key(line, "zoom", destination.Zoom?.ToString(CultureInfo.InvariantCulture));
     }
 
     private void WriteFormFields(IReadOnlyList<FormField> fields)

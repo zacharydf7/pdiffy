@@ -22,6 +22,63 @@ public class FormsTests
         Assert.Equal(AnnotationFlags.Hidden | AnnotationFlags.Print, note.Flags);
     }
 
+    [Theory]
+    [InlineData("/Dest [{page2} /XYZ 72.4 720 0]", 2, "XYZ", new[] { 72, 720 })]
+    [InlineData("/A << /S /GoTo /D [{page2} /FitH 500] >>", 2, "FitH", new[] { 500 })]
+    [InlineData("/Dest (trails)", 2, "Fit", new int[0])]
+    [InlineData("/Dest /safety", 1, "FitR", new[] { 10, 20, 300, 400 })]
+    public void Load_ShouldReadWhereALinkGoes_WhenItHasADestination(string target, int page, string view, int[] positions)
+    {
+        var pdf = new TestPdf().CatalogEntries("/Names << /Dests << /Names [(trails) [{page2} /Fit]] >> >> "
+            + "/Dests << /safety << /D [{page1} /FitR 10 20 300 400] >> >>");
+        pdf.AddPage().Annotation($"/Subtype /Link /Rect [72 700 172 720] {target}");
+        pdf.AddPage();
+
+        var destination = Assert.Single(pdf.Load().Annotations).Destination;
+
+        Assert.NotNull(destination);
+        Assert.Equal((page, view), (destination.Page, destination.View));
+        Assert.Equal(positions.Select(p => (int?)p), destination.Positions);
+    }
+
+    [Theory]
+    [InlineData("/XYZ 72 720 2", 2.0)]
+    [InlineData("/XYZ 72 720 0", null)]
+    [InlineData("/XYZ 72 720 null", null)]
+    public void Load_ShouldReadTheZoom_WhenALinkOpensAtAPosition(string view, double? zoom)
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Annotation($"/Subtype /Link /Rect [72 700 172 720] /Dest [{{page1}} {view}]");
+
+        var destination = Assert.Single(pdf.Load().Annotations).Destination;
+
+        Assert.Equal(zoom, destination?.Zoom);
+    }
+
+    [Fact]
+    public void Load_ShouldKeepTheName_WhenANamedDestinationIsNotDefined()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Annotation("/Subtype /Link /Rect [72 700 172 720] /Dest (missing)");
+
+        var destination = Assert.Single(pdf.Load().Annotations).Destination;
+
+        Assert.Equal(("missing", null, null), (destination?.Name, destination?.Page, destination?.View));
+    }
+
+    [Fact]
+    public void Load_ShouldReadTheFileAndPage_WhenALinkGoesToAnotherFile()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Annotation("/Subtype /Link /Rect [72 700 172 720] /A << /S /GoToR /F (maps.pdf) /D [1 /Fit] >>")
+            .Annotation("/Subtype /Link /Rect [72 600 172 620] /A << /S /Launch /F << /Type /Filespec /UF (guide.docx) >> >>");
+
+        var annotations = pdf.Load().Annotations;
+
+        Assert.Equal(("GoToR", "maps.pdf", 2), (annotations[0].Action, annotations[0].File, annotations[0].Destination?.Page));
+        Assert.Equal(("Launch", "guide.docx"), (annotations[1].Action, annotations[1].File));
+    }
+
     [Fact]
     public void Load_ShouldReadTextFieldNameValueAndFlags_WhenFormHasATextField()
     {

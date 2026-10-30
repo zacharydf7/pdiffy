@@ -54,12 +54,12 @@ appears; the rest of each line is still compared.
 | `CustomInfo` | Info entries other than the standard ones |
 | `PageBoxes` | The crop, bleed, trim and art boxes and the user unit of each page |
 | `AltText`, `ActualText` | Alternate and replacement text on structure elements |
-| `Positions` | Where text, images, paths and annotations are, and the size of images, paths and annotations |
+| `Positions` | Where text, images, paths and annotations are, the size of images, paths and annotations, and the positions a link or bookmark opens its page at |
 | `Colors` | Text color and path fill and stroke colors |
 | `FontNames`, `FontSizes` | The font and size of each text run in the layout |
 | `LineWidths` | The stroke width of each path |
 | `ImageContents` | The pixel size and hash of each image |
-| `LinkTargets` | Where links and other actions go |
+| `LinkTargets` | Where links, bookmarks and other actions go: web addresses, files, and the view a page opens at (a bookmark's page stays) |
 | `AnnotationContents` | The text of annotations |
 | `FormValues` | The value of each form field |
 

@@ -51,7 +51,10 @@ public enum Field
     /// <summary>Replacement text on structure elements.</summary>
     ActualText,
 
-    /// <summary>Where text, images, paths and annotations are on the page, and the size of images, paths and annotations.</summary>
+    /// <summary>
+    /// Where text, images, paths and annotations are on the page, the size of images, paths and annotations, and the
+    /// positions a link or bookmark opens its page at.
+    /// </summary>
     Positions,
 
     /// <summary>Text color and path fill and stroke colors.</summary>
@@ -69,7 +72,10 @@ public enum Field
     /// <summary>The pixel size and hash of each image.</summary>
     ImageContents,
 
-    /// <summary>Where links and other actions go: web addresses, action types and destinations.</summary>
+    /// <summary>
+    /// Where links, bookmarks and other actions go: web addresses, files, action types, destinations and the view a page
+    /// opens at. A bookmark's page stays.
+    /// </summary>
     LinkTargets,
 
     /// <summary>The text of annotations, such as a comment or a link's description.</summary>

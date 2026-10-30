@@ -42,21 +42,26 @@ internal sealed class Tolerances(IReadOnlyDictionary<Field, double> points)
     }
 
     /// <summary>
-    /// Whether every number in a key's value, such as both in at=72,700, moved no more than its tolerance.
+    /// Whether every number in a key's value, such as both in at=72,700, moved no more than its tolerance. A part that
+    /// isn't a number, such as the "-" in view-at=72,-, has to stay the same.
     /// </summary>
     public bool Allow(SnapshotLine line, string key, string from, string to)
     {
         if (FieldOf(line, key) is not { } field || !points.TryGetValue(field, out var tolerance)) return false;
-        var (before, after) = (SnapshotLine.Numbers(from), SnapshotLine.Numbers(to));
-        return before is not null && after is not null && before.Length == after.Length
-            && before.Zip(after).All(pair => Math.Abs(pair.First - pair.Second) <= tolerance + Slack);
+        var (before, after) = (from.Split(',', 'x'), to.Split(',', 'x'));
+        return before.Length == after.Length
+            && before.Zip(after).All(pair => pair.First == pair.Second || Near(pair.First, pair.Second, tolerance));
     }
 
-    // A text run's size is its font size; every other size, and every at=, is a position. An embedded file's size, on a
-    // line with no page, is a byte count.
+    private static bool Near(string from, string to, double tolerance) =>
+        SnapshotLine.Numbers(from) is [var before] && SnapshotLine.Numbers(to) is [var after]
+        && Math.Abs(before - after) <= tolerance + Slack;
+
+    // A text run's size is its font size; every other size, every at= and a link's view-at= are positions. An embedded
+    // file's size, on a line with no page, is a byte count.
     private static Field? FieldOf(SnapshotLine line, string key) => line.Page is null ? null : key switch
     {
-        "at" => Field.Positions,
+        "at" or "view-at" => Field.Positions,
         "size" => line.Words.ElementAtOrDefault(1) == "text" ? Field.FontSizes : Field.Positions,
         "width" => Field.LineWidths,
         _ => null,

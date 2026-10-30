@@ -387,6 +387,10 @@ public class SnapshotDiffTests
         "embedded-file \"a.txt\" size=101 hash=x", 1)]
     [InlineData("positions 1pt", "p1 text tagged at=72,700 \"Go with a guide\"",
         "p1 text tagged at=73,700 \"Go without a guide\"", 1)]
+    [InlineData("positions 1pt", "p1 Link untagged dest=p2 view=XYZ view-at=72,720", "p1 Link untagged dest=p2 view=XYZ view-at=72,721", 0)]
+    [InlineData("positions 1pt", "p1 Link untagged dest=p2 view=XYZ view-at=72,720", "p1 Link untagged dest=p2 view=XYZ view-at=72,740", 1)]
+    [InlineData("positions 1pt", "p1 Link untagged dest=p2 view=XYZ view-at=72,-", "p1 Link untagged dest=p2 view=XYZ view-at=73,-", 0)]
+    [InlineData("positions 1pt", "p1 Link untagged dest=p2 view=XYZ view-at=72,-", "p1 Link untagged dest=p2 view=XYZ view-at=72,720", 1)]
     public void Compare_ShouldCountOnlyNumbersBeyondTheTolerance_WhenTheHeaderGivesOne(string tolerance, string before,
         string after, int changes)
     {
@@ -395,6 +399,21 @@ public class SnapshotDiffTests
         var diff = SnapshotDiff.Compare(header + before + "\n", header + after + "\n");
 
         Assert.Equal(changes, diff.Changes.Count);
+    }
+
+    [Fact]
+    public void Compare_ShouldShowOnlyTheNewKeys_WhenASnapshotFromBeforeLinkTargetsMeetsOneWithThem()
+    {
+        var before = SnapshotText.Header + "bookmarks\n  \"Safety\" -> p2\n"
+            + "annotations\n  p1 Link untagged at=72,200 size=100x20 dest=yes contents=\"Safety\"\n";
+        var after = SnapshotText.Header + "bookmarks\n  \"Safety\" -> p2 view=Fit\n"
+            + "annotations\n  p1 Link untagged at=72,200 size=100x20 dest=p2 view=XYZ view-at=72,720 contents=\"Safety\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
+        Assert.Equal(["view: (missing) -> Fit", "dest: yes -> p2", "view: (missing) -> XYZ", "view-at: (missing) -> 72,720"],
+            changes.Select(change => change.Detail));
     }
 
     [Fact]

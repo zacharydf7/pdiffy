@@ -33,7 +33,11 @@ public class SnapshotWriterTests
             Annotations =
             [
                 new Annotation { Subtype = "Link", Uri = "https://example.com", Contents = "Example" },
-                new Annotation { Subtype = "Link", Action = "GoTo", HasDestination = true, AccessibleName = "Go to warnings" },
+                new Annotation
+                {
+                    Subtype = "Link", Action = "GoTo", AccessibleName = "Go to warnings",
+                    Destination = new Destination { Page = 3, View = "XYZ", Positions = [72, null], Zoom = 1.5 },
+                },
             ],
             Text = "example.com",
         };
@@ -70,7 +74,13 @@ public class SnapshotWriterTests
                 new PageInfo(3, 595, 842, 0, null, false),
             ],
             PageLabels = [new PageLabelRange(1, "r", "A-", 1)],
-            Bookmarks = [new Bookmark("Safety", 3, [new Bookmark("Gear", null, [])])],
+            Bookmarks =
+            [
+                new Bookmark("Safety", 3, [new Bookmark("Gear", null, []) { Uri = "https://example.com/gear" }])
+                {
+                    Destination = new Destination { Page = 3, View = "FitH", Positions = [700] },
+                },
+            ],
             Structure = [root],
             Artifacts = [new PageText(1, "Page i")],
             Fonts = [new FontInfo("Symbol", null, false, false), new FontInfo("Arial", "TrueType", true, true)],
@@ -96,8 +106,8 @@ public class SnapshotWriterTests
               p3 a4 rotate=0
               label from p1 style=r prefix="A-" start=1
             bookmarks
-              "Safety" -> p3
-                "Gear"
+              "Safety" -> p3 view=FitH view-at=700
+                "Gear" uri="https://example.com/gear"
             structure
               Document lang=en-US
                 Heading->H1 p1 actual="Trail table" expansion="DIT" title="Intro" "Trail Table"
@@ -110,7 +120,7 @@ public class SnapshotWriterTests
                     TD p2 headers=[TH1] "Ridgeline"
                     TD p2-3 headers=[TH1,TH2] rowspan=2 "Cedars"
                 L p3 numbering=Decimal
-                Link p3 annot=Link uri="https://example.com" contents="Example" annot=Link action=GoTo dest=yes tu="Go to warnings" "example.com"
+                Link p3 annot=Link uri="https://example.com" contents="Example" annot=Link action=GoTo dest=p3 view=XYZ view-at=72,- zoom=1.5 tu="Go to warnings" "example.com"
             artifacts
               p1 "Page i"
             untagged

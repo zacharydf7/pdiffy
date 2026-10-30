@@ -89,6 +89,8 @@ public class SnapshotOptionsTests
         ];
         Assert.Equal(expectedLayout, SectionLines(snapshot, "layout"));
         Assert.Equal(["  p1 Link tagged uri=\"https://example.com\" contents=\"Example\""], SectionLines(snapshot, "annotations"));
+        Assert.Equal(["  \"Intro\" -> p1 view=FitH", "  \"Map\" uri=\"https://example.com/map\""], SectionLines(snapshot, "bookmarks"));
+        Assert.DoesNotContain("view-at=", snapshot);
     }
 
     [Fact]
@@ -104,7 +106,7 @@ public class SnapshotOptionsTests
     {
         var snapshot = Full().ToSnapshot(o => o.Ignore(Field.Title, Field.Author, Field.Subject, Field.Language, Field.LinkTargets));
 
-        Assert.DoesNotMatch(@"\s(title|xmp-title|author|xmp-creator|subject|xmp-description|lang|xmp-language|uri|action|dest)=", snapshot);
+        Assert.DoesNotMatch(@"\s(title|xmp-title|author|xmp-creator|subject|xmp-description|lang|xmp-language|uri|action|file|dest|view|view-at)=", snapshot);
     }
 
     [Theory]
@@ -278,10 +280,26 @@ public class SnapshotOptionsTests
             OtherInfo = [new Setting("Company", "Example Park")], XmpCreator = "Ann", XmpDescription = "Trails", XmpLanguage = "en-US",
         },
         Pages = [new PageInfo(1, 612, 792, 0, null, false) { CropBox = new PageBox(0, 0, 600, 780) }],
+        Bookmarks =
+        [
+            new Bookmark("Intro", 1, []) { Destination = new Destination { Page = 1, View = "FitH", Positions = [700] } },
+            new Bookmark("Map", null, []) { Uri = "https://example.com/map" },
+        ],
         Structure =
         [
             new StructureElement { Type = "Figure", Lang = "en-US", Alt = "Logo", ActualText = "Logo" },
-            new StructureElement { Type = "Link", Annotations = [new Annotation { Subtype = "Link", Action = "GoTo", HasDestination = true }] },
+            new StructureElement
+            {
+                Type = "Link",
+                Annotations =
+                [
+                    new Annotation
+                    {
+                        Subtype = "Link", Action = "GoToR", File = "maps.pdf",
+                        Destination = new Destination { Page = 1, View = "XYZ", Positions = [72, 700] },
+                    },
+                ],
+            },
         ],
         Annotations =
         [
