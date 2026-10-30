@@ -129,7 +129,7 @@ A page that can't be loaded (for example, one with a damaged font) comes back ma
 says so, instead of the whole read failing. The same goes for an attachment whose contents can't be decoded, for XMP
 metadata that isn't well-formed XML or has a DTD (`xmp=unreadable`), and for bookmarks with a damaged item, such as one
 without a title. An image that can't be decoded is hashed as stored, and a reference to an object the file doesn't
-have, or can't find, reads as nothing, as the PDF standard says. A file that can't be opened at all throws.
+have, or can't find, reads as nothing, as the PDF standard says. A file that can't be opened at all throws `InvalidDataException`.
 
 PDiffy also reads structure elements and bookmarks only 256 levels deep, so a file built to overflow the stack can't
 crash the test run. An element whose children are deeper gets `unread-children=N`, and their content counts as untagged.

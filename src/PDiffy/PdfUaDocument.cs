@@ -82,8 +82,9 @@ public sealed record PdfUaDocument
     /// stream is left open.
     /// </summary>
     /// <remarks>
-    /// A page that can't be loaded comes back as <see cref="PageInfo.Unreadable"/>; a file that can't be opened throws.
-    /// An empty stream, a ZIP file or a web page throws <see cref="InvalidDataException"/> saying so.
+    /// A page that can't be loaded comes back as <see cref="PageInfo.Unreadable"/>. An empty stream, a ZIP file, a web
+    /// page, or a PDF too damaged to open or encrypted with a password, throws <see cref="InvalidDataException"/> saying
+    /// so.
     /// </remarks>
     public static PdfUaDocument Load(Stream pdf) => InputStream.Read(pdf, DocumentFormat.Pdf, PdfPigReader.Read);
 
@@ -91,7 +92,10 @@ public sealed record PdfUaDocument
     public static PdfUaDocument Load(byte[] pdf) => Load(new MemoryStream(pdf, writable: false));
 
     /// <summary>Reads the PDF file at a path.</summary>
-    /// <remarks>A page that can't be loaded comes back as <see cref="PageInfo.Unreadable"/>; a file that can't be opened throws.</remarks>
+    /// <remarks>
+    /// A page that can't be loaded comes back as <see cref="PageInfo.Unreadable"/>; a file that isn't a PDF, is too
+    /// damaged to open or is encrypted with a password throws <see cref="InvalidDataException"/>.
+    /// </remarks>
     public static PdfUaDocument Load(string path)
     {
         using var stream = File.OpenRead(path);

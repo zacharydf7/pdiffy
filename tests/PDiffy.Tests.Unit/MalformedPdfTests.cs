@@ -6,7 +6,8 @@ namespace PDiffy.Tests.Unit;
 
 /// <summary>
 /// Malformed files, such as references that loop back on themselves or name objects the file doesn't have. Each must
-/// load instead of failing, hanging or overflowing the stack.
+/// load, or fail with <see cref="InvalidDataException"/> when it can't be opened at all, instead of hanging or
+/// overflowing the stack.
 /// </summary>
 public class MalformedPdfTests
 {
@@ -180,6 +181,44 @@ public class MalformedPdfTests
             "<< /Title (Trails) /Parent 6 0 R /Dest [3 0 R /Fit] >>");
 
         Assert.Equal((0, false, 1), (document.Bookmarks.Count, document.BookmarksUnreadable, document.Pages.Count));
+    }
+
+    [Theory]
+    [InlineData("no page tree")]
+    [InlineData("no catalog")]
+    [InlineData("cut off in the cross-reference table")]
+    public void Load_ShouldThrowInvalidDataException_WhenThePdfIsTooDamagedToOpen(string damage)
+    {
+        var pdf = Encoding.Latin1.GetString(RawPdf.Build(OnePageObjects("", "3 0 R"), 1, ""));
+        var damaged = damage switch
+        {
+            "no page tree" => RawPdf.Build(["<< /Type /Catalog >>"], 1, ""),
+            "no catalog" => RawPdf.Build(OnePageObjects("", "3 0 R"), 9, ""),
+            _ => Encoding.Latin1.GetBytes(pdf[..(pdf.IndexOf("xref", StringComparison.Ordinal) + 30)]),
+        };
+
+        var error = Assert.Throws<InvalidDataException>(() => PdfUaDocument.Load(damaged));
+
+        Assert.StartsWith("The PDF is too damaged to open: ", error.Message);
+    }
+
+    [Fact]
+    public void Load_ShouldThrowInvalidDataException_WhenTheCatalogsPlaceInTheFileIsDamaged()
+    {
+        var error = Assert.Throws<InvalidDataException>(() => WithDamagedPlace(1, ""));
+
+        Assert.Equal("The PDF is too damaged to open: a position in the file points outside it.", error.Message);
+    }
+
+    [Fact]
+    public void Load_ShouldThrowInvalidDataException_WhenThePdfIsEncryptedWithoutAPasswordPDiffyHas()
+    {
+        var pdf = RawPdf.Build([.. OnePageObjects("", "3 0 R"), "<< /Filter /Standard /V 1 /R 2 /O <00> /U <00> /P -4 >>"], 1,
+            "/Encrypt 6 0 R /ID [<00> <00>]");
+
+        var error = Assert.Throws<InvalidDataException>(() => PdfUaDocument.Load(pdf));
+
+        Assert.StartsWith("The PDF is encrypted, and PDiffy can't open it: ", error.Message);
     }
 
     [Fact]

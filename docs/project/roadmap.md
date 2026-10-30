@@ -31,7 +31,6 @@ each release shipped.
 | [#125](https://github.com/zacharydf7/pdiffy/issues/125) | How a snapshot links structure lines to layout lines, so the report can draw reading order |
 | [#145](https://github.com/zacharydf7/pdiffy/issues/145) | Recording East Asian and right-to-left fonts changes many Word snapshots |
 | [#146](https://github.com/zacharydf7/pdiffy/issues/146) | A catch-all hash for Word formatting PDiffy doesn't read |
-| [#156](https://github.com/zacharydf7/pdiffy/issues/156) | Wrap a failure to open a PDF in `InvalidDataException`: approved, in progress |
 
 Decided for the next release: the `Accessibility` profile keeps leaving out `images=`
 ([#90](https://github.com/zacharydf7/pdiffy/issues/90)), a `span-lang` change is flagged only when its languages change
@@ -58,8 +57,8 @@ are re-approved once.
 Found and fixed along the way: [#143](https://github.com/zacharydf7/pdiffy/issues/143),
 [#144](https://github.com/zacharydf7/pdiffy/issues/144), [#147](https://github.com/zacharydf7/pdiffy/issues/147),
 [#149](https://github.com/zacharydf7/pdiffy/issues/149), [#151](https://github.com/zacharydf7/pdiffy/issues/151),
-[#152](https://github.com/zacharydf7/pdiffy/issues/152), [#153](https://github.com/zacharydf7/pdiffy/issues/153)
-and [#155](https://github.com/zacharydf7/pdiffy/issues/155).
+[#152](https://github.com/zacharydf7/pdiffy/issues/152), [#153](https://github.com/zacharydf7/pdiffy/issues/153),
+[#155](https://github.com/zacharydf7/pdiffy/issues/155) and [#156](https://github.com/zacharydf7/pdiffy/issues/156).
 
 ## 2. API pass
 

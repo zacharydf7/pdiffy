@@ -53,7 +53,7 @@ Scrub it, or leave out the field it's in:
 ## A page shows as unreadable
 
 A page that can't be loaded, for example one with a damaged font, is marked unreadable in the snapshot instead of the
-whole read failing. A file that can't be opened at all throws. Open the PDF in a validator to find the damage.
+whole read failing. A file that can't be opened at all throws `InvalidDataException`. Open the PDF in a validator to find the damage.
 
 ## `pdiffy accept` says a file isn't a received snapshot
 

@@ -1,5 +1,6 @@
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
+using UglyToad.PdfPig.Exceptions;
 using UglyToad.PdfPig.Tokens;
 
 namespace PDiffy.Reading;
@@ -10,7 +11,7 @@ internal static class PdfPigReader
     public static PdfUaDocument Read(Stream pdf)
     {
         var fileLength = pdf.Length;
-        using var document = PdfDocument.Open(pdf, new ParsingOptions { FilterProvider = CappedFilterProvider.Instance });
+        using var document = Open(pdf);
         var objects = new PdfObjects(document);
         var catalog = document.Structure.Catalog.CatalogDictionary;
         var pageTree = PageTree.Read(objects, catalog);
@@ -52,6 +53,30 @@ internal static class PdfPigReader
             Images = layouts.SelectMany(layout => layout.Images).ToList(),
             Paths = layouts.SelectMany(layout => layout.Paths).ToList(),
         };
+    }
+
+    // A file PdfPig can't open fails the way input that isn't a PDF does, so callers see one exception type.
+    private static PdfDocument Open(Stream pdf)
+    {
+        try
+        {
+            return PdfDocument.Open(pdf, new ParsingOptions { FilterProvider = CappedFilterProvider.Instance });
+        }
+        catch (PdfDocumentEncryptedException problem)
+        {
+            throw new InvalidDataException($"The PDF is encrypted, and PDiffy can't open it: {problem.Message}", problem);
+        }
+        catch (ArgumentOutOfRangeException problem)
+        {
+            // PdfPig seeks to where the file says each object is, which can be past its end.
+            throw new InvalidDataException("The PDF is too damaged to open: a position in the file points outside it.",
+                problem);
+        }
+        catch (Exception problem)
+        {
+            // PdfPig throws many exception types on damaged data, as PdfObjects.Contents notes.
+            throw new InvalidDataException($"The PDF is too damaged to open: {problem.Message}", problem);
+        }
     }
 
     private static (List<PageInfo> Pages, Dictionary<int, ReadPage> Readable) ReadPages(PdfDocument document, PdfObjects objects)

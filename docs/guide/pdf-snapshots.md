@@ -188,7 +188,7 @@ After reviewing a failure, accept the new snapshot:
 
 A page that can't be loaded (for example, one with a damaged font) comes back marked unreadable, and its snapshot line
 says so, instead of the whole read failing. The same goes for an attachment whose contents can't be decoded, and for XMP
-metadata that isn't well-formed XML or has a DTD (`xmp=unreadable`). A file that can't be opened at all throws.
+metadata that isn't well-formed XML or has a DTD (`xmp=unreadable`). A file that can't be opened at all throws `InvalidDataException`.
 
 PDiffy also reads structure elements and bookmarks only 256 levels deep, so a file built to overflow the stack can't
 crash the test run. An element whose children are deeper gets `unread-children=N`, and their content counts as untagged.

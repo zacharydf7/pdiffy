@@ -43,6 +43,9 @@ snapshots gain keys or lines; see [Format changes](../reference/format-changes.m
   ([#152](https://github.com/zacharydf7/pdiffy/issues/152)).
 - A PDF that refers to an object it doesn't have, has a bookmark without a title, or has an image that can't be
   decoded now loads instead of throwing ([#155](https://github.com/zacharydf7/pdiffy/issues/155)).
+- A PDF too damaged to open, or encrypted with a password, throws `InvalidDataException`, as input that isn't a PDF
+  does, instead of an exception from the PDF library underneath
+  ([#156](https://github.com/zacharydf7/pdiffy/issues/156)).
 
 ### Accessibility flags
 

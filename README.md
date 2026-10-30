@@ -814,7 +814,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 ## Damaged files
 
-A page that can't be loaded (for example, one with a damaged font) comes back marked unreadable, and its snapshot line says so, instead of the whole read failing. The same goes for an attachment whose contents can't be decoded, XMP metadata that isn't well-formed XML (`xmp=unreadable`) and a Word part that isn't (`unreadable word/styles.xml`). A file that can't be opened at all throws.
+A page that can't be loaded (for example, one with a damaged font) comes back marked unreadable, and its snapshot line says so, instead of the whole read failing. The same goes for an attachment whose contents can't be decoded, XMP metadata that isn't well-formed XML (`xmp=unreadable`) and a Word part that isn't (`unreadable word/styles.xml`). A file that can't be opened at all throws `InvalidDataException`.
 
 PDiffy also limits what it reads, so a file built to exhaust the stack or memory can't crash the test run:
 
