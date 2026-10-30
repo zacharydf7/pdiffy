@@ -128,6 +128,12 @@ Assert.All(document.Elements(StructureType.Figure), figure => Assert.False(strin
 string snapshot = document.ToSnapshot();
 ```
 
+Each structure element also has its text with its descendants' (`AllText`), its descendants (`Descendants()`,
+`Elements(type)`) and its `Path`, the one a check finding shows, and `document.Headings()` lists every heading with its
+level. The document's `Elements(type)` throws for a type that's neither standard, nor in the role map, nor used in the
+document, so a typo such as `"figure"` fails instead of passing over no elements. An element's `Elements(type)` doesn't
+check, so use the `StructureType` constants.
+
 ## Next steps
 
 - [PDF snapshots](pdf-snapshots.md): reading a failure, the HTML report, naming and folders.

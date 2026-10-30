@@ -76,32 +76,35 @@ public sealed record PdfUaDocument
     public IReadOnlyList<CheckFinding> Check(params PdfCheck[] checks) =>
         PdfChecker.Run(this, checks.Length == 0 ? Enum.GetValues<PdfCheck>() : checks);
 
-    /// <summary>Structure elements of a type, matched on the type or its role-mapped type, in reading order.</summary>
+    /// <summary>Every structure element, in reading order.</summary>
+    public IEnumerable<StructureElement> AllElements() => Structure.SelectMany(root => root.Descendants().Prepend(root));
+
+    /// <summary>
+    /// Structure elements of a type, such as <see cref="StructureType.Figure"/>, matched on the type or its role-mapped
+    /// type, in reading order.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// The type is neither a standard type, nor in the role map, nor used in the document, so a typo such as "figure"
+    /// can't make an assertion over no elements pass.
+    /// </exception>
     public IEnumerable<StructureElement> Elements(string type)
     {
-        foreach (var root in Structure)
+        var elements = AllElements().Where(element => element.Is(type)).ToList();
+        if (elements.Count == 0 && !StructureTypes.IsKnown(type, RoleMap))
         {
-            foreach (var element in SelfAndDescendants(root))
-            {
-                if (element.Type == type || element.MappedType == type)
-                {
-                    yield return element;
-                }
-            }
+            var used = AllElements().Select(element => element.Type);
+            throw new ArgumentException(StructureTypes.Unknown(type, RoleMap, used), nameof(type));
         }
+
+        return elements;
     }
 
-    private static IEnumerable<StructureElement> SelfAndDescendants(StructureElement element)
-    {
-        yield return element;
-        foreach (var child in element.Children)
-        {
-            foreach (var descendant in SelfAndDescendants(child))
-            {
-                yield return descendant;
-            }
-        }
-    }
+    /// <summary>Every heading, H1 to H6 and H, with its level, role-mapped types included, in reading order.</summary>
+    public IReadOnlyList<Heading> Headings() =>
+        AllElements().Select(element => (Element: element, Type: element.TypeOrMapped))
+            .Where(pair => pair.Type == StructureType.Heading || StructureTypes.HeadingLevel(pair.Type) is not null)
+            .Select(pair => new Heading(StructureTypes.HeadingLevel(pair.Type), pair.Element))
+            .ToList();
 }
 
 public sealed record DocumentInfo(bool Marked, string? Lang, bool DisplayDocTitle, int PageCount);
@@ -191,6 +194,9 @@ public sealed record Destination
     public string? Name { get; init; }
 }
 
+/// <summary>A heading in the structure tree. <see cref="Level"/> is 1 to 6, or null for a plain H.</summary>
+public sealed record Heading(int? Level, StructureElement Element);
+
 /// <summary>A structure element. <see cref="Name"/> replaces the type in the snapshot when other elements refer to it (TH1, TH2).</summary>
 public sealed record StructureElement
 {
@@ -237,7 +243,35 @@ public sealed record StructureElement
     /// </summary>
     public IReadOnlyList<string> ImageHashes { get; init; } = [];
 
+    /// <summary>
+    /// The text of the element's own marked content. Text in child elements, such as a link in a paragraph or a
+    /// paragraph in a table cell, is in <see cref="AllText"/>.
+    /// </summary>
     public string? Text { get; init; }
+
+    /// <summary>The element's text with its descendants', in the order the element lists them.</summary>
+    public string? AllText { get; init; }
+
+    /// <summary>
+    /// Where the element is, as a check finding and a diff of whole-document snapshots show it:
+    /// <c>structure > Document > Table > TR[2]</c>. With <c>OnlyPages</c>, a diff numbers only the siblings it kept.
+    /// </summary>
+    public string? Path { get; init; }
+
+    /// <summary>The element's children, their children and so on, in reading order.</summary>
+    public IEnumerable<StructureElement> Descendants() =>
+        Children.SelectMany(child => child.Descendants().Prepend(child));
+
+    /// <summary>
+    /// Descendants of a type, such as <see cref="StructureType.Paragraph"/>, matched on the type or its role-mapped
+    /// type. Unlike <see cref="PdfUaDocument.Elements(string)"/>, it doesn't check the type, so use the
+    /// <see cref="StructureType"/> constants.
+    /// </summary>
+    public IEnumerable<StructureElement> Elements(string type) => Descendants().Where(element => element.Is(type));
+
+    internal bool Is(string type) => Type == type || MappedType == type;
+
+    internal string TypeOrMapped => MappedType ?? Type;
 }
 
 /// <summary>

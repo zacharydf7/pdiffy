@@ -462,6 +462,22 @@ public async Task TrailMap_ShouldBeReadableByScreenReaders_WhenGenerated()
 }
 ```
 
+### Walk the structure tree
+
+`Elements(type)` throws for a type that's neither standard, nor in the role map, nor used in the document, with a hint such as "Did you mean 'Figure'?", so a typo can't make an `Assert.All` over no elements pass. Each element has its own text (`Text`), its text with its descendants' in order (`AllText`, such as a table cell's paragraph or a paragraph's link), its descendants (`Descendants()`, or `Elements(type)` for one type, which doesn't check the type, so use the `StructureType` constants) and its `Path`, the same path a check finding or a diff of whole-document snapshots shows. `Headings()` lists every heading with its level.
+
+```csharp
+PdfUaDocument document = PdfUaDocument.Load("trail-guide.pdf");
+
+// Headings go down one level at a time, so a screen reader's outline has no gaps.
+var levels = document.Headings().Select(heading => heading.Level ?? 1).ToList();
+Assert.All(levels.Zip(levels.Skip(1)), pair => Assert.True(pair.Second <= pair.First + 1));
+
+// Every table cell says something.
+StructureElement table = document.Elements(StructureType.Table).Single();
+Assert.All(table.Elements(StructureType.TableDataCell), cell => Assert.False(string.IsNullOrWhiteSpace(cell.AllText)));
+```
+
 ### Check forms
 
 Each form field has its full name, type, accessible name, value and flags. `FormFieldType` and `FormFieldFlags` list every option.

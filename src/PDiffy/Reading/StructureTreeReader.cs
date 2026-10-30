@@ -46,17 +46,21 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
 
         var topLevel = Elements(root, _readElements).ToList();
         NameReferencedHeaders(topLevel);
-        var elements = topLevel.Select(element => ReadElement(element, inheritedPage: null, depth: 1)).ToList();
+        var read = topLevel.Select(element => ReadElement(element, inheritedPage: null, depth: 1).Element).ToList();
+        var elements = StructurePaths.Assign(read, StructurePaths.Root);
         var mappings = _roleMap.Select(pair => new RoleMapping(pair.Key, pair.Value)).ToList();
         return new StructureTree(mappings, elements, _referencedMcids, _referencedObjects);
     }
 
     // Elements nested deeper than ReadLimits.MaxDepth are counted, not read, so a hostile tree can't overflow the stack.
-    private StructureElement ReadElement(DictionaryToken element, int? inheritedPage, int depth)
+    // Also gives the letters of the element and its descendants, in the order it lists them, for its parent's AllText.
+    private (StructureElement Element, List<(int Page, IReadOnlyList<Letter> Letters)> AllPieces) ReadElement(
+        DictionaryToken element, int? inheritedPage, int depth)
     {
         var type = objects.Name(element, "S") ?? "(none)";
         var page = pages.NumberOf(element.Data.GetValueOrDefault("Pg")) ?? inheritedPage;
         var pieces = new List<(int Page, IReadOnlyList<Letter> Letters)>();
+        var allPieces = new List<(int Page, IReadOnlyList<Letter> Letters)>();
         var spans = new List<MarkedSpan>();
         var images = new List<string>();
         var pagesUsed = new SortedSet<int>();
@@ -104,7 +108,9 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
                     }
                     else if (IsFirstVisit(kid, _readElements))
                     {
-                        children.Add(ReadElement(child, page, depth + 1));
+                        var read = ReadElement(child, page, depth + 1);
+                        children.Add(read.Element);
+                        allPieces.AddRange(read.AllPieces);
                     }
 
                     break;
@@ -119,6 +125,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
             if (content?.LettersByMcid.GetValueOrDefault(mcid) is { Count: > 0 } letters)
             {
                 pieces.Add((textPage, letters));
+                allPieces.Add((textPage, letters));
             }
 
             if (content?.SpansByMcid.GetValueOrDefault(mcid) is { } found) spans.AddRange(found);
@@ -126,7 +133,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         }
 
         var attributes = Attributes(element);
-        return new StructureElement
+        var result = new StructureElement
         {
             Type = type,
             MappedType = MapRole(type),
@@ -151,8 +158,10 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
             MarkedSpans = spans,
             ImageHashes = images,
             Text = Join(pieces),
+            AllText = Join(allPieces),
             Children = children,
         };
+        return (result, allPieces);
     }
 
     // Join pieces that follow on from each other by position, so a word split across MCIDs stays one word.

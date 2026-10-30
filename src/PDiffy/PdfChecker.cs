@@ -145,9 +145,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
         var previous = 0;
         foreach (var (element, path) in Elements)
         {
-            if (TypeOf(element) is not ['H', var digit] || !char.IsAsciiDigit(digit)) continue;
+            if (StructureTypes.HeadingLevel(TypeOf(element)) is not int level) continue;
 
-            var level = digit - '0';
             if (level > previous + 1)
             {
                 var detail = previous == 0 ? "comes before any H1" : $"follows H{previous}, skipping a level";
@@ -219,38 +218,19 @@ internal sealed class PdfChecker(PdfUaDocument document)
     // Every structure element in reading order, with its path as a snapshot diff shows it. Read once, since several
     // checks walk them.
     private List<(StructureElement Element, string Path)> Elements => _elements ??=
-        [.. WithPaths(document.Structure, Name(Section.Structure))
+        [.. StructurePaths.WithPaths(document.Structure, StructurePaths.Root)
             .SelectMany(pair => Descendants(pair.Element, pair.Path, stopAt: null).Prepend(pair))];
 
     private static IEnumerable<(StructureElement Element, string Path)> Descendants(StructureElement element, string path,
         string? stopAt)
     {
-        foreach (var child in WithPaths(element.Children, path))
+        foreach (var child in StructurePaths.WithPaths(element.Children, path))
         {
             yield return child;
             if (TypeOf(child.Element) == stopAt) continue;
             foreach (var descendant in Descendants(child.Element, child.Path, stopAt)) yield return descendant;
         }
     }
-
-    // A sibling that shares its key with others gets its place among them: P[2].
-    private static IEnumerable<(StructureElement Element, string Path)> WithPaths(
-        IReadOnlyList<StructureElement> siblings, string parentPath)
-    {
-        var keys = siblings.Select(KeyOf).ToList();
-        var counts = keys.CountBy(key => key).ToDictionary();
-        var seen = new Dictionary<string, int>();
-        for (var i = 0; i < siblings.Count; i++)
-        {
-            var place = seen[keys[i]] = seen.GetValueOrDefault(keys[i]) + 1;
-            var label = counts[keys[i]] > 1 ? $"{keys[i]}[{place}]" : keys[i];
-            yield return (siblings[i], $"{parentPath} > {label}");
-        }
-    }
-
-    // As the snapshot prints an element: its name or type, then the type it's mapped to.
-    private static string KeyOf(StructureElement element) =>
-        (element.Name ?? element.Type) + (element.MappedType is null ? "" : "->" + element.MappedType);
 
     private static string TypeOf(StructureElement element) => element.MappedType ?? element.Type;
 
