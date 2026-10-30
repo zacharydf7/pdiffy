@@ -75,8 +75,9 @@ that the document conforms.
 | `LinkText` | A warning: a link that says only something vague, such as "click here", "read more" or "link", with no other text saying where it goes | `Annotations` | WCAG 2.4.4 |
 | `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |
 | `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode, or map to U+0000, U+FEFF or U+FFFE | `Fonts` | 7.21.7 |
-| `NoMissingGlyphs` | A font whose text shows the missing-glyph box (.notdef), as its encoding or CID-to-glyph map tells | `Fonts` | 7.21.8 |
+| `NoMissingGlyphs` | A font whose text shows the missing-glyph box (.notdef), as its encoding, CID-to-glyph map or embedded TrueType program tells | `Fonts` | 7.21.4.1, 7.21.8 |
 | `FontDictionaries` | A font whose dictionaries break a font rule: a CMap and CIDSystemInfo that disagree, a missing CIDToGIDMap, a CMap that isn't built in or embedded, or a TrueType encoding PDF/UA doesn't allow | `Fonts` | 7.21.3, 7.21.6 |
+| `FontPrograms` | An embedded TrueType program that disagrees with its font: glyph widths that differ, a CIDSet that leaves out CIDs, cmaps that don't suit the font, or a program that can't be read | `Fonts` | 7.21.4, 7.21.5, 7.21.6 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
 | `NoEmbeddedFiles` | Each embedded file | `HouseRules` | House rule |
 | `RoleMap` | A custom structure type that doesn't map to a standard one, a mapping that loops back on itself, and a standard type that's remapped | `Structure` | 7.1 |
@@ -109,7 +110,7 @@ await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Check(PdfCheckS
 
 ```text
 # pdfua-snapshot v1
-# checks: latest, 39 rules
+# checks: latest, 40 rules
 ...
 checks
   FigureAltText p2 structure > Document > Figure[2]

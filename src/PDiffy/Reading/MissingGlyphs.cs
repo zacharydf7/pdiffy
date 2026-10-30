@@ -19,18 +19,27 @@ internal static class MissingGlyphs
         return code => glyphName(code) == ".notdef";
     }
 
-    // The Identity encodings use the code as the CID. A TrueType-based CID font's CIDToGIDMap stream gives each CID's
-    // glyph as two bytes; without one, the glyph is the CID, and CID 0 is .notdef.
+    // The Identity encodings use the code as the CID, and glyph 0 is .notdef.
     private static Func<int, bool> ForCidFont(PdfObjects objects, DictionaryToken font)
     {
         if (objects.Name(font, "Encoding") is not ("Identity-H" or "Identity-V")) return _ => false;
 
         var descendants = objects.Items(font.Data.GetValueOrDefault("DescendantFonts"));
         var descendant = descendants.Count > 0 ? objects.Resolve(descendants[0]) as DictionaryToken : null;
+        var glyphOf = GlyphOfCid(objects, descendant);
+        return cid => glyphOf(cid) == 0;
+    }
+
+    /// <summary>
+    /// The glyph a CID font draws for a CID. A TrueType-based CID font's CIDToGIDMap stream gives each CID's glyph as
+    /// two bytes, and a CID past its end has none (null); otherwise the glyph is the CID.
+    /// </summary>
+    public static Func<int, int?> GlyphOfCid(PdfObjects objects, DictionaryToken? descendant)
+    {
         var map = descendant is not null && objects.Name(descendant, "Subtype") == "CIDFontType2"
             && objects.Get(descendant, "CIDToGIDMap") is StreamToken stream ? objects.Contents(stream) : null;
-        if (map is null) return cid => cid == 0;
+        if (map is null) return cid => cid;
 
-        return cid => 2 * cid + 1 < map.Length && (map[2 * cid] << 8 | map[2 * cid + 1]) == 0;
+        return cid => 2 * cid + 1 < map.Length ? map[2 * cid] << 8 | map[2 * cid + 1] : null;
     }
 }

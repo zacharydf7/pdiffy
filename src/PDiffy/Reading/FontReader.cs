@@ -41,24 +41,28 @@ internal static class FontReader
         var embedded = descriptor is not null && FontFileKeys.Any(descriptor.Data.ContainsKey);
         var hasToUnicode = font.Data.ContainsKey("ToUnicode");
         var name = WithoutSubsetPrefix(objects.Name(font, "BaseFont") ?? "(none)");
-        var codes = UsedCodes(use, subtype);
+        var codes = UsedCodes(use.Bytes.Concat(use.InvisibleBytes), subtype);
         var maps = UnicodeMap.For(objects, font, subtype);
         var missing = MissingGlyphs.For(objects, font, subtype);
+        var program = TrueTypePrograms.Read(objects, font, subtype, descriptor, codes, UsedCodes(use.Bytes, subtype));
         return new PdfFont
         {
             Name = name, Subtype = subtype, Embedded = embedded, HasToUnicode = hasToUnicode,
             UnmappedCodes = codes.Where(code => !maps(code)).ToList(),
-            MissingGlyphCodes = codes.Where(missing).ToList(),
-            Problems = FontProblems.Read(objects, font, subtype, descriptor, embedded),
+            MissingGlyphCodes = codes.Where(code => missing(code) || program.MissingCodes.Contains(code)).ToList(),
+            Problems =
+            [
+                .. FontProblems.Read(objects, font, subtype, descriptor, embedded).Concat(program.Problems).Order(),
+            ],
         };
     }
 
     // A CID font's codes are two bytes (true of the Identity encodings nearly every CID font uses); a simple font's are one.
-    private static SortedSet<int> UsedCodes(FontUse use, string? subtype)
+    private static SortedSet<int> UsedCodes(IEnumerable<byte[]> shown, string? subtype)
     {
         var width = subtype == "Type0" ? 2 : 1;
         var codes = new SortedSet<int>();
-        foreach (var bytes in use.Bytes)
+        foreach (var bytes in shown)
         {
             for (var i = 0; i + width <= bytes.Length; i += width)
             {

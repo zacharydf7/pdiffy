@@ -390,7 +390,11 @@ public class PdfUaDocumentLoadTests
         Assert.Equal("Readable", document.Structure[0].Text);
         Assert.Null(document.Structure[1].Text);
         Assert.Contains("  p2 unreadable\n", document.ToSnapshot());
-        var damaged = new PdfFont { Name = "Damaged", Subtype = "Type0", Embedded = true, HasToUnicode = true };
+        var damaged = new PdfFont
+        {
+            Name = "Damaged", Subtype = "Type0", Embedded = true, HasToUnicode = true,
+            Problems = [PdfFontProblem.UnreadableProgram],
+        };
         Assert.Contains(damaged, document.Fonts);
     }
 

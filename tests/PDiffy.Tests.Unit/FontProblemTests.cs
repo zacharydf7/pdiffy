@@ -76,14 +76,15 @@ public class FontProblemTests
     [InlineData("/FontFile3 9 0 R", "", PdfFontProblem.CidToGidMap)]
     [InlineData("/FontFile2 9 0 R", "/CIDToGIDMap /Identity-H", PdfFontProblem.CidToGidMap)]
     [InlineData("/FontFile2 9 0 R", "/CIDToGIDMap /Identity", null)]
-    [InlineData("/FontFile2 9 0 R", "/CIDToGIDMap 9 0 R", null)]
+    [InlineData("/FontFile2 9 0 R", "/CIDToGIDMap 10 0 R", null)]
     [InlineData("", "", null)]
     public void Load_ShouldReportAMissingCidToGidMap_WhenAnEmbeddedTrueTypeCidFontHasNone(string fontFile, string map,
         PdfFontProblem? expected)
     {
         var descendant = CidFont.Replace("/StemV 80 >>", $"/StemV 80 {fontFile} >> {map}");
 
-        var document = OneFont(Type0, "<0041> Tj", CMap(""), descendant, "<< >>", TestPdf.Stream("not a font program"));
+        var document = OneFont(Type0, "<0041> Tj", CMap(""), descendant, "<< >>", new TestTrueType().ToStream(),
+            TestPdf.Stream(new string((char)0, 4)));
 
         Assert.Equal(expected is { } problem ? [problem] : [], Assert.Single(document.Fonts).Problems);
     }
@@ -95,7 +96,7 @@ public class FontProblemTests
         var font = Type0.Replace("/Identity-H", "/Trail-H");
         var descendant = CidFont.Replace("/StemV 80 >>", "/StemV 80 /FontFile2 8 0 R >>");
 
-        var document = OneFont(font, "<0041> Tj", CMap(""), descendant, TestPdf.Stream("not a font program"));
+        var document = OneFont(font, "<0041> Tj", CMap(""), descendant, new TestTrueType().ToStream());
 
         PdfFontProblem[] expected = [PdfFontProblem.CidToGidMap, PdfFontProblem.CmapNotEmbedded];
         Assert.Equal(expected, Assert.Single(document.Fonts).Problems);

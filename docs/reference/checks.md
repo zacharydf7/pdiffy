@@ -313,9 +313,11 @@ font. A font that maps some codes but not others usually means a symbol or ligat
 ## NoMissingGlyphs
 
 **Finds:** a font whose text shows its .notdef glyph, the empty box a font draws for a character it lacks. It finds the
-codes a simple font's encoding names `.notdef`, and in a CID font with an Identity encoding, CID 0 or a code its
-`CIDToGIDMap` sends to glyph 0. A glyph missing from the font file itself isn't found. **Category:** `Fonts`.
-**Severity:** `Error`. **From:** ISO 14289-1 7.21.8.
+codes a simple font's encoding names `.notdef`; in a CID font with an Identity encoding, CID 0 or a code its
+`CIDToGIDMap` sends to glyph 0; and in an embedded TrueType program, a code whose glyph the program lacks. A glyph
+past the program's last counts only in drawn text, not in invisible text such as an OCR layer. Type 1 and CFF font
+files aren't read yet. **Category:** `Fonts`. **Severity:** `Error`. **From:** ISO 14289-1 7.21.8, and
+7.21.4.1 for a glyph the program lacks.
 
 **Why it matters:** the text a screen reader reads may be there, but sighted readers see empty boxes in its place, and
 the two no longer agree.
@@ -342,6 +344,27 @@ read wrong in another.
 
 **How to fix it:** these come from the generator, not the document's content. Update the generator or its PDF/UA
 settings, or embed fonts as TrueType with WinAnsi encoding where it offers the choice.
+
+## FontPrograms
+
+**Finds:** an embedded TrueType program (`FontFile2`) that disagrees with its font, one finding for each kind of
+problem:
+
+- the program can't be read, so nothing in it can be checked (7.21.4.1);
+- a CID font's `CIDSet` leaves out a CID the program has (7.21.4.2);
+- a glyph width in the font dictionary (`Widths`, or `W` and `DW`) differs from the program's by more than one unit
+  in a thousand, for text that's drawn (7.21.5). A CID font's widths are compared when its encoding is Identity-H or
+  Identity-V, where each code is its CID;
+- a non-symbolic program has neither a (3,1) nor a (1,0) cmap, or a symbolic one has several cmaps and no (3,0) one
+  (7.21.6).
+
+**Category:** `Fonts`. **Severity:** `Error`. **From:** ISO 14289-1 7.21; each finding names its own clause.
+
+**Why it matters:** readers pick glyphs and space text from these. Widths that disagree draw text in one place and
+measure it in another, and a cmap that doesn't suit the font leaves readers to guess which glyph a code stands for.
+
+**How to fix it:** these come from how the generator embeds fonts. Embedding the whole font instead of a subset, or
+updating the generator, usually fixes them.
 
 ## LayerConfigurations
 

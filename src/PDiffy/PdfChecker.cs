@@ -80,7 +80,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.MeaningfulAltText: MeaningfulAltText(); break;
             case PdfCheck.LinkText: LinkText(); break;
             case PdfCheck.NoMissingGlyphs: NoMissingGlyphs(); break;
-            case PdfCheck.FontDictionaries: FontDictionaries(); break;
+            case PdfCheck.FontDictionaries: FontProblems(PdfCheck.FontDictionaries); break;
+            case PdfCheck.FontPrograms: FontProblems(PdfCheck.FontPrograms); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -392,30 +393,47 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
-    private void FontDictionaries()
+    // FontDictionaries and FontPrograms each report their own kinds of font problem.
+    private void FontProblems(PdfCheck check)
     {
         foreach (var fonts in document.Fonts.GroupBy(font => font.Name))
         {
             var name = fonts.Key;
             foreach (var problem in fonts.SelectMany(font => font.Problems).Distinct().Order())
             {
-                var (clause, says) = problem switch
-                {
-                    PdfFontProblem.CidSystemInfo => ("7.21.3.1", "CIDSystemInfo doesn't match the CMap's"),
-                    PdfFontProblem.CidToGidMap => ("7.21.3.2", "embedded TrueType CID font with no CIDToGIDMap"),
-                    PdfFontProblem.CmapNotEmbedded => ("7.21.3.3", "CMap is neither built in nor embedded"),
-                    PdfFontProblem.CmapWritingMode => ("7.21.3.3", "CMap gives two different writing modes"),
-                    PdfFontProblem.CmapReference => ("7.21.3.3", "CMap uses a CMap that isn't built in"),
-                    PdfFontProblem.TrueTypeEncoding => ("7.21.6",
-                        "non-symbolic TrueType font whose encoding isn't MacRomanEncoding or WinAnsiEncoding"),
-                    PdfFontProblem.SymbolicEncoding => ("7.21.6", "symbolic TrueType font with an Encoding entry"),
-                    _ => throw new ArgumentOutOfRangeException(nameof(problem), problem, "Not a PdfFontProblem value."),
-                };
-                Add(PdfCheck.FontDictionaries, null, $"{Name(PdfSection.Fonts)} > {name}", $"Font {name}: {says}",
-                    $"ISO 14289-1 {clause}");
+                var (owner, clause, says) = Describe(problem);
+                if (owner != check) continue;
+
+                Add(check, null, $"{Name(PdfSection.Fonts)} > {name}", $"Font {name}: {says}", $"ISO 14289-1 {clause}");
             }
         }
     }
+
+    private static (PdfCheck Check, string Clause, string Says) Describe(PdfFontProblem problem) => problem switch
+    {
+        PdfFontProblem.CidSystemInfo => (PdfCheck.FontDictionaries, "7.21.3.1",
+            "CIDSystemInfo doesn't match the CMap's"),
+        PdfFontProblem.CidToGidMap => (PdfCheck.FontDictionaries, "7.21.3.2",
+            "embedded TrueType CID font with no CIDToGIDMap"),
+        PdfFontProblem.CmapNotEmbedded => (PdfCheck.FontDictionaries, "7.21.3.3",
+            "CMap is neither built in nor embedded"),
+        PdfFontProblem.CmapWritingMode => (PdfCheck.FontDictionaries, "7.21.3.3",
+            "CMap gives two different writing modes"),
+        PdfFontProblem.CmapReference => (PdfCheck.FontDictionaries, "7.21.3.3", "CMap uses a CMap that isn't built in"),
+        PdfFontProblem.TrueTypeEncoding => (PdfCheck.FontDictionaries, "7.21.6",
+            "non-symbolic TrueType font whose encoding isn't MacRomanEncoding or WinAnsiEncoding"),
+        PdfFontProblem.SymbolicEncoding => (PdfCheck.FontDictionaries, "7.21.6",
+            "symbolic TrueType font with an Encoding entry"),
+        PdfFontProblem.GlyphWidths => (PdfCheck.FontPrograms, "7.21.5", "glyph widths differ from the font program's"),
+        PdfFontProblem.CidSet => (PdfCheck.FontPrograms, "7.21.4.2", "CIDSet leaves out CIDs the font program has"),
+        PdfFontProblem.TrueTypeCmap => (PdfCheck.FontPrograms, "7.21.6",
+            "non-symbolic TrueType program with neither a (3,1) nor a (1,0) cmap"),
+        PdfFontProblem.SymbolicCmap => (PdfCheck.FontPrograms, "7.21.6",
+            "symbolic TrueType program with several cmaps and no (3,0) one"),
+        PdfFontProblem.UnreadableProgram => (PdfCheck.FontPrograms, "7.21.4.1",
+            "embedded TrueType program can't be read"),
+        _ => throw new ArgumentOutOfRangeException(nameof(problem), problem, "Not a PdfFontProblem value."),
+    };
 
     // Opening at a page, by its number or a named destination, is fine; JavaScript is reported once, on its own. Every
     // action chained after the open action counts too.
@@ -1119,6 +1137,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.LinkText => new(PdfCheckCategory.Annotations, PdfCheckSeverity.Warning, "WCAG 2.2 2.4.4"),
         PdfCheck.NoMissingGlyphs => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.8"),
         PdfCheck.FontDictionaries => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21"),
+        PdfCheck.FontPrograms => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

@@ -45,7 +45,7 @@ Sections always appear in this order. Each can be left out with [`PdfSection`](x
 | `structure` | One line per structure element, in reading order: type, mapped type, pages, language, alt text, actual text, expansion, title, table attributes (scope, headers, spans, summary), list numbering, a form field's role (`field-role=cb`), links, the hashes of the images it draws (`images=[3f9c0a1b2d4e5f60]`, the same hash as its layout line), the language, replacement text, alt text and expansion that marked content inside it sets, each with the text it covers unless that's all of the element's text (`span-lang=[fr-FR:"bonjour"]`, `span-expansion=["Mount":"Mt."]`), how many of its marked-content references name no page (`mcids-without-page`, whose text can't be found), how many point into a form XObject (`mcids-in-xobject`), how many child elements are nested more than 256 deep and left out (`unread-children`), `parent=missing` when it has no parent entry, and the element's text |
 | `artifacts` | Text marked as an artifact (headers, footers, page numbers), per page, with its kind when it gives one (`type=Pagination subtype=Footer`) |
 | `untagged` | Text that is neither tagged nor marked as an artifact, one line per line of text (and tagged text that no structure element points to, one line per marked-content ID), and a count of such images and paths per page |
-| `fonts` | Each font: name, type, whether it's embedded, whether it has a Unicode map, the character codes its text uses that don't map to Unicode (that text can't be copied, searched or read aloud), those that show the missing-glyph box, and what PDF/UA forbids in its dictionaries |
+| `fonts` | Each font: name, type, whether it's embedded, whether it has a Unicode map, the character codes its text uses that don't map to Unicode (that text can't be copied, searched or read aloud), those that show the missing-glyph box, and what PDF/UA forbids in its dictionaries and embedded program |
 | `annotations` | Every annotation (links, comments, form widgets and so on), page by page in the order each page lists them: type, `tagged` or `untagged`, rectangle, flags (such as `print` or `hidden`), where a link goes (a web address, or a page and the view it opens at, or another file), contents and accessible name, and for a Screen annotation the media clip it plays: its content type and alternate text (`media-type=video/mp4 media-alt="Trail tour"`), also on the structure line of the element that tags it |
 | `forms` | A `form` line for settings that apply to the whole form, when it sets any: the order calculate scripts run in (`calculation-order=["trip.tax","trip.total"]`), whether the viewer must draw the fields itself (`need-appearances=yes`) and an XFA form (`xfa=static` or `xfa=dynamic`). Then every form field: type, full name (`address.city`), page, accessible name, value, options, maximum length, flags (such as `required` or `read-only`), default value, the value each check box or radio button widget sends (`exports=["Yes"]`), alignment when it isn't left (`align=center`), the font, size and color of typed text (`text-font=Helvetica text-size=auto text-color=gray:0`, from the widget, the field or the form) and the field's JavaScript by when it runs, as a hash (`scripts=format:1a2b3c4d5e6f7081`). A signed signature field prints `signed=yes`, the signature's format (`subfilter=`), whether the signed bytes run to the end of the file (`covers-file=no` after an update saved since signing), whether a reason, location and signing time are given (`reason=<present>`), and what a certifying signature still allows (`certification=form-filling`). The signature's bytes and signing time aren't recorded, so signing the same file again gives the same snapshot |
 | `layout` | Every text run, image and painted vector path, page by page, each labeled `tagged`, `artifact` or `untagged`. Text runs: position, font, size, color, render mode, angle. Images: position, size, pixel size, a hash of the pixels. Paths: bounding box, fill, stroke and line width. Any of them drawn inside optional-content marked content (`/OC ... BDC`, a layer a viewer can hide) also lists its layers by name, outermost first (`layers=["Draft"]`) |
@@ -59,7 +59,7 @@ Sections always appear in this order. Each can be left out with [`PdfSection`](x
 - When anything is ignored, the next lines list it: `# ignored sections: ...` and `# ignored fields: ...`. With
   `Tolerate`, `# tolerances: ...` follows, such as `# tolerances: positions 1pt`, with `OnlyPages`,
   `# only pages: ...`, and with `Check`, `# checks: ...`, the rule set and how many rules it has, such as
-  `# checks: latest, 39 rules`. Comparing two snapshots applies the tolerances their header lists.
+  `# checks: latest, 40 rules`. Comparing two snapshots applies the tolerances their header lists.
 
 ### Lines and keys
 
@@ -108,10 +108,12 @@ Sections always appear in this order. Each can be left out with [`PdfSection`](x
   (Japanese, Chinese or Korean).
 - `missing-glyphs=[01]` lists the codes that show the font's .notdef glyph, the empty box drawn for a character the
   font lacks: a simple font's encoding names the code `.notdef`, or a CID font with an Identity encoding picks CID 0 or
-  maps the code to glyph 0. A glyph missing from the font file itself isn't found.
+  maps the code to glyph 0. An embedded TrueType program adds the codes whose glyph it lacks; other font files
+  aren't read yet.
 - `problems=[cid-system-info]` lists what PDF/UA forbids in a Type 0 or TrueType font's dictionaries, one
   `PdfFontProblem` each: `cid-system-info`, `cid-to-gid-map`, `cmap-not-embedded`, `cmap-writing-mode`,
-  `cmap-reference`, `true-type-encoding` and `symbolic-encoding`.
+  `cmap-reference`, `true-type-encoding` and `symbolic-encoding`, and from an embedded TrueType program,
+  `glyph-widths`, `cid-set`, `true-type-cmap`, `symbolic-cmap` and `unreadable-program`.
 - Text inside form XObjects counts too, under each font it's drawn with.
 
 ## Text

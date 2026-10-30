@@ -1192,6 +1192,23 @@ public class SnapshotDiffTests
             changes.Select(change => (change.Kind, change.PdfSection)));
     }
 
+    // The earlier release didn't read TrueType programs, so it printed neither the width problem nor the missing glyph.
+    [Fact]
+    public void Compare_ShouldReportOnlyTheProgramsFindings_WhenASnapshotFromBeforeFontProgramsIsCompared()
+    {
+        var font = "<< /Type /Font /Subtype /TrueType /BaseFont /Trail /Encoding /WinAnsiEncoding /FirstChar 65 "
+            + "/Widths [600 650 800] /FontDescriptor 6 0 R >>";
+        var descriptor = "<< /Type /FontDescriptor /FontName /Trail /Flags 32 /FontBBox [0 0 1000 1000] /ItalicAngle 0 "
+            + "/Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 /FontFile2 7 0 R >>";
+        var current = TestFonts.OneFont(font, "(ABC) Tj", descriptor, new TestTrueType().ToStream()).ToSnapshot();
+        var earlier = current.Replace(" missing-glyphs=[43]", "").Replace(" problems=[glyph-widths]", "");
+
+        var changes = SnapshotDiff.CompareSnapshots(earlier, current).Changes;
+
+        Assert.Equal([(ChangeKind.AttributeChanged, PdfSection.Fonts), (ChangeKind.AttributeChanged, PdfSection.Fonts)],
+            changes.Select(change => (change.Kind, change.PdfSection)));
+    }
+
     [Fact]
     public void Compare_ShouldReportTheShiftOnceAndOnlyTheNewPagesContent_WhenAPageIsInserted()
     {

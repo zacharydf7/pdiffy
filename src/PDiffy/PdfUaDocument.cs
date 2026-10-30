@@ -966,8 +966,8 @@ public sealed record PdfFont
 
     /// <summary>
     /// The character codes the font's text uses that show its .notdef glyph, the empty box a font draws for a character
-    /// it lacks, smallest first. Only codes the font's encoding or CID-to-glyph map send there are found, not glyphs
-    /// missing from the font file.
+    /// it lacks, smallest first: those the font's encoding or CID-to-glyph map send there, and those whose glyph an
+    /// embedded TrueType program lacks. Type 1 and CFF font files aren't read yet.
     /// </summary>
     public IReadOnlyList<int> MissingGlyphCodes { get; init => field = ValueList<int>.Of(value); } = ValueList<int>.Empty;
 
@@ -982,7 +982,9 @@ public sealed record PdfFont
 }
 
 /// <summary>
-/// Something PDF/UA forbids in a Type 0 or TrueType font's dictionaries or CMaps, found without reading the font file.
+/// Something PDF/UA forbids in a Type 0 or TrueType font's dictionaries or CMaps, which
+/// <see cref="PdfCheck.FontDictionaries"/> finds, or in its embedded TrueType program, which
+/// <see cref="PdfCheck.FontPrograms"/> finds.
 /// </summary>
 public enum PdfFontProblem
 {
@@ -1006,4 +1008,19 @@ public enum PdfFontProblem
 
     /// <summary>A symbolic TrueType font has an Encoding entry.</summary>
     SymbolicEncoding,
+
+    /// <summary>A glyph width in the font dictionary differs from the embedded program's.</summary>
+    GlyphWidths,
+
+    /// <summary>A TrueType-based CID font's CIDSet leaves out a CID its embedded program has.</summary>
+    CidSet,
+
+    /// <summary>A non-symbolic TrueType program has neither a (3,1) nor a (1,0) cmap.</summary>
+    TrueTypeCmap,
+
+    /// <summary>A symbolic TrueType program's cmap has more than one subtable and no (3,0) one.</summary>
+    SymbolicCmap,
+
+    /// <summary>An embedded TrueType program can't be read, so its glyphs and widths can't be checked.</summary>
+    UnreadableProgram,
 }

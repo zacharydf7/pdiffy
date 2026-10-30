@@ -188,7 +188,7 @@ public enum PdfCheck
 
     /// <summary>
     /// No text shows a font's .notdef glyph, the empty box drawn for a character the font lacks, as far as the font's
-    /// encoding or CID-to-glyph map tells.
+    /// encoding, CID-to-glyph map or embedded TrueType program tells.
     /// </summary>
     NoMissingGlyphs,
 
@@ -198,6 +198,13 @@ public enum PdfCheck
     /// encodings. <see cref="PdfFontProblem"/> lists them.
     /// </summary>
     FontDictionaries,
+
+    /// <summary>
+    /// No embedded TrueType program disagrees with its font: glyph widths match the font dictionary's, a CID font's
+    /// CIDSet lists every CID the program has, the program's cmaps suit the font, and the program can be read.
+    /// <see cref="PdfFontProblem"/> lists them; a glyph the program lacks is found by <see cref="NoMissingGlyphs"/>.
+    /// </summary>
+    FontPrograms,
 }
 
 /// <summary>

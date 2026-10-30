@@ -155,6 +155,10 @@ library does.
   `/Contents`, as 7.18.5 asks, and a form field without a tooltip passes when the `Form` element of each of its
   widgets has alt text, as 7.18.1 allows. `PdfFormField` has `WidgetAltText`
   ([#158](https://github.com/zacharydf7/pdiffy/issues/158)).
+- `FontPrograms` reads embedded TrueType programs and finds glyph widths that differ from the font dictionary's, a
+  CIDSet that leaves out CIDs, cmaps that don't suit the font, and a program that can't be read. `NoMissingGlyphs`
+  also finds codes whose glyph the program lacks, in drawn text. Snapshots print these in `problems=[...]` and
+  `missing-glyphs=[...]` ([#77](https://github.com/zacharydf7/pdiffy/issues/77)).
 - The first warning from a standard other than PDF/UA, `MeaningfulAltText`, finds alt text that's a file name, such
   as `IMG_2041.jpg`, or a placeholder such as `image` or `graphic 3`. Its reference is WCAG 2.2 1.1.1, since PDF/UA
   doesn't check what alt text says ([#78](https://github.com/zacharydf7/pdiffy/issues/78)).

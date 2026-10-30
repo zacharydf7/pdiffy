@@ -204,6 +204,29 @@ public class PdfCheckTests
 
         Assert.Equal(("fonts > Trail", $"Font Trail: {message}", $"ISO 14289-1 {clause}"),
             (finding.Path, finding.Message, finding.Reference));
+        Assert.Empty(document.Check(PdfCheck.FontPrograms));
+    }
+
+    [Theory]
+    [InlineData(PdfFontProblem.GlyphWidths, "glyph widths differ from the font program's", "7.21.5")]
+    [InlineData(PdfFontProblem.CidSet, "CIDSet leaves out CIDs the font program has", "7.21.4.2")]
+    [InlineData(PdfFontProblem.TrueTypeCmap, "non-symbolic TrueType program with neither a (3,1) nor a (1,0) cmap", "7.21.6")]
+    [InlineData(PdfFontProblem.SymbolicCmap, "symbolic TrueType program with several cmaps and no (3,0) one", "7.21.6")]
+    [InlineData(PdfFontProblem.UnreadableProgram, "embedded TrueType program can't be read", "7.21.4.1")]
+    public void Check_ShouldFindTheProgramProblemWithItsClause_WhenAFontHasIt(PdfFontProblem problem, string message,
+        string clause)
+    {
+        var font = new PdfFont
+        {
+            Name = "Trail", Subtype = "TrueType", Embedded = true, HasToUnicode = true, Problems = [problem],
+        };
+        var document = Documents.Empty() with { Fonts = [font] };
+
+        var finding = Assert.Single(document.Check(PdfCheck.FontPrograms));
+
+        Assert.Equal(("fonts > Trail", $"Font Trail: {message}", $"ISO 14289-1 {clause}"),
+            (finding.Path, finding.Message, finding.Reference));
+        Assert.Empty(document.Check(PdfCheck.FontDictionaries));
     }
 
     // The field is its own widget, or its widget is its kid; either way the Form element tags the widget.
@@ -1327,6 +1350,7 @@ public class PdfCheckTests
     [InlineData(PdfCheck.LinkText, PdfCheckCategory.Annotations, PdfCheckSeverity.Warning, "WCAG 2.2 2.4.4")]
     [InlineData(PdfCheck.NoMissingGlyphs, PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.8")]
     [InlineData(PdfCheck.FontDictionaries, PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21")]
+    [InlineData(PdfCheck.FontPrograms, PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {
