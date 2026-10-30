@@ -6,6 +6,13 @@ namespace PDiffy;
 /// <summary>Applies <see cref="PdfCheck"/> rules to a document's model, one method per rule.</summary>
 internal sealed class PdfChecker(PdfUaDocument document)
 {
+    // A file name of at most six words, such as "IMG_2041 (1).jpg" or "Screenshot 2024-01-05 at 10.32.11.png", or a
+    // placeholder word with an optional number, such as "image 3". A longer sentence ending in a file name describes.
+    private static readonly Regex PlaceholderAltText = new(
+        @"^(?:(?:[\w().-]+ ){0,5}[\w().-]+\.(?:png|jpe?g|gif|bmp|tiff?|svg|webp|emf|wmf|eps|pdf)"
+        + @"|(?:image|img|picture|pic|photo|graphic|figure|icon|alt|alt text|untitled|placeholder|spacer|blank)"
+        + @"(?:[\s_#-]*\d+)?)\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
     // A well-formed BCP 47 tag: a language with its extended subtags, then an optional script, region, variants,
     // extensions and private use; or a private-use tag, or one of the irregular tags BCP 47 lists by name. The grammar
     // also allows a language of 4 to 8 letters, but the registry has none, so a word such as "english" isn't one.
@@ -65,6 +72,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.NoDynamicXfa: NoDynamicXfa(); break;
             case PdfCheck.AccessibilityPermission: AccessibilityPermission(); break;
             case PdfCheck.NoReferenceXObjects: NoReferenceXObjects(); break;
+            case PdfCheck.MeaningfulAltText: MeaningfulAltText(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -200,6 +208,28 @@ internal sealed class PdfChecker(PdfUaDocument document)
                 $"The pages' resources hold {document.Settings.ReferenceXObjects} reference XObject(s)");
         }
     }
+
+    private void MeaningfulAltText()
+    {
+        foreach (var (element, path) in Elements)
+        {
+            var (type, page) = (element.TypeOrMapped, element.FirstPage);
+            if (element.AltText is { } alt && IsPlaceholder(alt))
+            {
+                Add(PdfCheck.MeaningfulAltText, page, path,
+                    $"{type}{On(page)} has the alt text \"{alt.Trim()}\", which says nothing about it");
+            }
+
+            var spanAlts = element.MarkedSpans.Select(span => span.AltText).OfType<string>().Where(IsPlaceholder);
+            foreach (var spanAlt in spanAlts)
+            {
+                Add(PdfCheck.MeaningfulAltText, page, $"{path} > span-alt", $"Marked content in {type}{On(page)} has "
+                    + $"the alt text \"{spanAlt.Trim()}\", which says nothing about it");
+            }
+        }
+    }
+
+    private static bool IsPlaceholder(string altText) => PlaceholderAltText.IsMatch(altText.Trim());
 
     private void UntaggedContent()
     {
@@ -983,7 +1013,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
         });
     }
 
-    // Each rule's family and the clause of PDF/UA-1 (ISO 14289-1) it comes from; house rules come from no standard.
+    // Each rule's family and the clause it comes from: of PDF/UA-1 (ISO 14289-1), or for a warning PDF/UA doesn't
+    // check, of WCAG 2.2. House rules come from no standard.
     internal static PdfCheckRule RuleOf(PdfCheck check) => check switch
     {
         PdfCheck.DocumentLanguage => new(PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
@@ -1012,6 +1043,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.NoDynamicXfa => new(PdfCheckCategory.Forms, PdfCheckSeverity.Error, "ISO 14289-1 7.15"),
         PdfCheck.AccessibilityPermission => new(PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 7.16"),
         PdfCheck.NoReferenceXObjects => new(PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.20"),
+        PdfCheck.MeaningfulAltText => new(PdfCheckCategory.AltText, PdfCheckSeverity.Warning, "WCAG 2.2 1.1.1"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

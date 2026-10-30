@@ -37,11 +37,12 @@ Assert.Empty(findings);
 ```
 
 `Check()` with no arguments applies every check. Pick the ones a test guards. Each finding has a
-[`Severity`](xref:PDiffy.PdfCheckFinding.Severity), `Error` for a rule PDF/UA requires and `Warning` for a house rule, a
+[`Severity`](xref:PDiffy.PdfCheckFinding.Severity), `Error` for a rule PDF/UA requires and `Warning` for a practice
+another standard, such as WCAG, asks for that PDF/UA doesn't check, or a house rule, a
 [`Category`](xref:PDiffy.PdfCheckFinding.Category), the family its rule belongs to (`HouseRules` for policies that
-aren't accessibility rules), and a [`Reference`](xref:PDiffy.PdfCheckFinding.Reference) to the clause of PDF/UA-1 (ISO
-14289-1) the rule comes from, listed under From below. The reference says where a rule comes from, not that the document
-conforms.
+aren't accessibility rules), and a [`Reference`](xref:PDiffy.PdfCheckFinding.Reference) to the clause the rule comes
+from, of PDF/UA-1 (ISO 14289-1) or WCAG 2.2, listed under From below. The reference says where a rule comes from, not
+that the document conforms.
 
 | PdfCheck | Finds | Category | From |
 |---|---|---|---|
@@ -70,6 +71,7 @@ conforms.
 | `NoDynamicXfa` | A dynamic XFA form | `Forms` | 7.15 |
 | `AccessibilityPermission` | Encryption that doesn't let assistive technology extract the text | `Document` | 7.16 |
 | `NoReferenceXObjects` | A reference XObject, which shows a page of another file, in the pages' resources | `Content` | 7.20 |
+| `MeaningfulAltText` | A warning: alt text that's a file name, such as `IMG_2041.jpg`, or a placeholder such as `image` or `graphic 3` | `AltText` | WCAG 1.1.1 |
 | `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |
 | `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
@@ -104,7 +106,7 @@ await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Check(PdfCheckS
 
 ```text
 # pdfua-snapshot v1
-# checks: latest, 35 rules
+# checks: latest, 36 rules
 ...
 checks
   FigureAltText p2 structure > Document > Figure[2]

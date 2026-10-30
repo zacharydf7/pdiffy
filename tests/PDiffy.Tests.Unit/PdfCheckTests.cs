@@ -1054,6 +1054,46 @@ public class PdfCheckTests
             findings.Select(finding => $"{finding.Path}: {finding.Message}"));
     }
 
+    [Theory]
+    [InlineData("IMG_2041.jpg", true)]
+    [InlineData("trail-map final.PNG", true)]
+    [InlineData("image", true)]
+    [InlineData("Graphic 3", true)]
+    [InlineData("picture_12", true)]
+    [InlineData(" alt text ", true)]
+    [InlineData("IMG_2041 (1).jpg", true)]
+    [InlineData("Screenshot 2024-01-05 at 10.32.11.png", true)]
+    [InlineData("Scan of the signed contract saved as contract.pdf", false)]
+    [InlineData("Trail map of the ridge loop", false)]
+    [InlineData("Image of the summit at dawn", false)]
+    [InlineData("Logo", false)]
+    public void Check_ShouldWarnAboutAltText_WhenItIsAFileNameOrAPlaceholder(string altText, bool expected)
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().TaggedImage(0);
+        pdf.Structure(new TestElement("Figure", 0) { Entries = $"/Alt ({altText})" });
+
+        var findings = pdf.Load().Check(PdfCheck.MeaningfulAltText);
+
+        Assert.Equal(expected ? 1 : 0, findings.Count);
+        Assert.All(findings, finding => Assert.Equal(
+            $"structure > Figure: Figure on p1 has the alt text \"{altText.Trim()}\", which says nothing about it",
+            $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Fact]
+    public void Check_ShouldWarnAboutMarkedContentsAltText_WhenItIsAPlaceholder()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("/Figure << /MCID 0 /Alt (image1.png) >> BDC EMC");
+        pdf.Structure(new TestElement("Figure", 0) { Entries = "/Alt (Ridge view)" });
+
+        var findings = pdf.Load().Check(PdfCheck.MeaningfulAltText);
+
+        Assert.Equal(["structure > Figure > span-alt: Marked content in Figure on p1 has the alt text \"image1.png\", "
+            + "which says nothing about it"], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
     [Fact]
     public void Check_ShouldFindNoRoleMapProblem_WhenAnElementHasNoType()
     {
@@ -1127,6 +1167,7 @@ public class PdfCheckTests
     [InlineData(PdfCheck.AccessibilityPermission, PdfCheckCategory.Document, PdfCheckSeverity.Error,
         "ISO 14289-1 7.16")]
     [InlineData(PdfCheck.NoReferenceXObjects, PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.20")]
+    [InlineData(PdfCheck.MeaningfulAltText, PdfCheckCategory.AltText, PdfCheckSeverity.Warning, "WCAG 2.2 1.1.1")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

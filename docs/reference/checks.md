@@ -2,8 +2,9 @@
 
 What each rule [`Check`](xref:PDiffy.PdfUaDocument.Check*) applies finds, why it matters to someone using assistive
 technology, and how to fix it. A finding's [`HelpUrl`](xref:PDiffy.PdfCheckFinding.HelpUrl) links to its rule's entry
-here. Each rule names the clause of PDF/UA-1 (ISO 14289-1) it comes from; that says where the rule comes from, not that
-a document passing it conforms to the standard. For conformance, use [veraPDF](https://verapdf.org/) or PAC.
+here. Each rule names the clause it comes from, of PDF/UA-1 (ISO 14289-1) or, for a warning PDF/UA doesn't check, of
+WCAG 2.2; that says where the rule comes from, not that a document passing it conforms to the standard. For
+conformance, use [veraPDF](https://verapdf.org/) or PAC.
 
 Most fixes belong in whatever generates the document: a template, a report library's settings, or the export options
 of the application it comes from. The [recipes](../guide/recipes.md) cover common generators.
@@ -92,6 +93,19 @@ screen reader reads in its place, so a reader who can't play or see it still kno
 
 **How to fix it:** give the media clip data dictionary a `/CT` such as `(video/mp4)`, and `/Alt` with a language and a
 description for each language: `[(en-US) (A walk along the ridge trail)]`.
+
+## MeaningfulAltText
+
+**Finds:** alt text that's a file name, such as `IMG_2041.jpg` or `trail-map final.png`, or a placeholder word such as
+`image`, `picture`, `graphic`, `icon` or `untitled`, with or without a number. It looks at alt text on elements and in
+marked content. **Category:** `AltText`. **Severity:** `Warning`. **From:** WCAG 2.2 1.1.1, which asks that alt text
+serve the same purpose as the image; PDF/UA only asks that it's there.
+
+**Why it matters:** this alt text passes [`FigureAltText`](#figurealttext), but a screen reader user hears "image 3"
+or a file name and learns nothing about what the picture shows.
+
+**How to fix it:** write what the image shows or means, such as "Trail map of the ridge loop, 4.2 miles". Most
+generators fill alt text from the file name or a default when none was given, so set it where the image is added.
 
 ## UntaggedContent
 

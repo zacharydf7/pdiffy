@@ -169,6 +169,12 @@ public enum PdfCheck
     /// No reference XObject, which shows a page of another file, is in the pages' resources or the forms in them.
     /// </summary>
     NoReferenceXObjects,
+
+    /// <summary>
+    /// A warning: no alt text is a file name, such as "IMG_2041.jpg", or a placeholder such as "image" or "graphic 3",
+    /// which pass <see cref="FigureAltText"/> but say nothing.
+    /// </summary>
+    MeaningfulAltText,
 }
 
 /// <summary>
@@ -221,7 +227,8 @@ public enum PdfCheckSeverity
     Error,
 
     /// <summary>
-    /// The document breaks a rule PDF/UA recommends (a "should"), or a house rule that isn't from a standard.
+    /// The document breaks a practice another standard, such as WCAG, asks for that PDF/UA doesn't check, or a house
+    /// rule that isn't from a standard.
     /// </summary>
     Warning,
 }
