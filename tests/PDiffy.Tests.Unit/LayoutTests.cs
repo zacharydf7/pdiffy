@@ -155,8 +155,10 @@ public class LayoutTests
     public void Load_ShouldKeepRotatedLinesApart_WhenTheyRunSideBySideOrNextToTextAcrossThePage()
     {
         var pdf = new TestPdf();
+
+        // Across sits on Length's axis, just past its end, so only the direction check keeps the two apart.
         pdf.AddPage().Raw("BT /F1 12 Tf 0 1 -1 0 300 400 Tm (Trail) Tj ET BT /F1 12 Tf 0 1 -1 0 320 400 Tm (Length) Tj ET")
-            .Raw("BT /F1 12 Tf 330 400 Td (Across) Tj ET");
+            .Raw("BT /F1 12 Tf 320 440 Td (Across) Tj ET");
 
         var runs = pdf.Load().TextRuns;
 
