@@ -461,6 +461,33 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldPairATableWithItsEdit_WhenItGainsAPageAndMostOfItsTextChanges()
+    {
+        var before = SnapshotText.Header + "structure\n  Table p2-3 summary=\"Trail details\"\n    TR\n      TD p2 \"Ridgeline loop\"\n"
+            + "    TR\n      TD p3 \"Cedars\"\n";
+        var after = SnapshotText.Header + "structure\n  Table p2-4 summary=\"Trail details\"\n    TR\n      TD p2 \"Lakeshore walk\"\n"
+            + "    TR\n      TD p4 \"Meadows path\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Contains(changes, change => change.Kind == ChangeKind.Changed && change.Path == "structure > Table");
+        Assert.DoesNotContain(changes, change => change.Kind is ChangeKind.Removed or ChangeKind.Added && change.Path == "structure > Table");
+    }
+
+    [Fact]
+    public void Compare_ShouldPairTheRewrittenTableWithItsOldSelf_WhenADeletedTableComesFirst()
+    {
+        var before = SnapshotText.Header + "structure\n  Table p2-3\n    TR\n      TD p2 \"Ridgeline loop\"\n"
+            + "  Table p5-6\n    TR\n      TD p5 \"Lakeshore walk north shore trail\"\n";
+        var after = SnapshotText.Header + "structure\n  Table p5-7\n    TR\n      TD p5 \"Lakeshore path south bay ford\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Contains(changes, change => change.Kind == ChangeKind.Removed && change.Detail.StartsWith("Table p2-3"));
+        Assert.Contains(changes, change => change.Kind == ChangeKind.Changed && change.Detail == "Table p5-6 -> Table p5-7");
+    }
+
+    [Fact]
     public void Compare_ShouldReportOneBookmarkChanged_WhenABookmarkToAnotherFileLosesItsPage()
     {
         var before = SnapshotText.Header + "bookmarks\n  \"Atlas\" -> p1\n";

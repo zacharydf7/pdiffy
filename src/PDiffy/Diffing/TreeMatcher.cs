@@ -6,7 +6,8 @@ namespace PDiffy.Diffing;
 /// Compares one section of two snapshots. Siblings that didn't change at all are matched first. Between them, a removed
 /// and an added line with the same key and mostly the same words are treated as one edited line, the most alike of
 /// those nearby when several qualify; failing that, so are two without text with the same key and leading words, such
-/// as a table cell that gained attributes, and, in the structure, two with the same text and a different type.
+/// as a table cell that gained attributes, or most of their own words, such as a table whose rows were rewritten, and,
+/// in the structure, two with the same text and a different type.
 /// Whatever is left is removed or added, unless it turns up elsewhere on the other side, unchanged or edited, which
 /// makes it a move; found again in its own place, it was only edited. When the earlier snapshot's pages were renumbered
 /// to line up with the later one's, <paramref name="originals"/> gives each line as it was written, for showing. A
@@ -204,13 +205,21 @@ internal sealed class TreeMatcher(string name, Section? section,
     private static bool IsReattributed(SnapshotLine old, SnapshotLine line) =>
         line.Key == old.Key && old.QuotedText is null && line.QuotedText is null && old.Words.SequenceEqual(line.Words);
 
-    // The same line edited, else one without text that only changed attributes, else a retype in the structure.
+    // A line without text, of the same key, that kept most of its own words while the text under it was rewritten,
+    // such as a table that gained a page and new rows.
+    private static bool IsRewritten(SnapshotLine old, SnapshotLine line) =>
+        line.Key == old.Key && old.QuotedText is null && line.QuotedText is null
+        && Overlap(old.AllWords, line.AllWords) >= SameLineSimilarity;
+
+    // The same line edited, else one without text that only changed attributes or kept most of its words, else a retype
+    // in the structure.
     internal static int MatchOf(List<SnapshotLine> removed, int index, List<SnapshotLine> added, int start,
         string sectionName)
     {
         var old = removed[index];
         var match = MostAlike(removed, index, added, start, line => IsSameLine(old, line));
         if (match < 0) match = MostAlike(removed, index, added, start, line => IsReattributed(old, line));
+        if (match < 0) match = MostAlike(removed, index, added, start, line => IsRewritten(old, line));
         if (match < 0 && sectionName == SnapshotWriter.Name(Section.Structure))
         {
             match = MostAlike(removed, index, added, start, line => IsRetyped(old, line));
@@ -287,7 +296,7 @@ internal sealed class TreeMatcher(string name, Section? section,
     }
 
     private static bool Matches(SnapshotLine old, SnapshotLine line) =>
-        IsSameLine(old, line) || IsReattributed(old, line);
+        IsSameLine(old, line) || IsReattributed(old, line) || IsRewritten(old, line);
 
     // Text words first, as IsSameLine weighs them, then every word, which tells apart lines with the same text.
     private static (double Text, double All) Likeness(SnapshotLine old, SnapshotLine line) =>

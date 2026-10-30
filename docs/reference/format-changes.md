@@ -37,6 +37,13 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 - A table's alt text (`caption=`, `description=`), a row's height and `split=no` (kept on one page), and a cell's vertical alignment
   and text direction are read. Only snapshots of documents with tables that set them change.
 
+### Diffs
+
+No snapshot changes. A line without text of its own, such as a table row or cell, is now paired by the text under it,
+so rows that gained different attributes are no longer mixed up, and one that kept most of its own words while its
+content was rewritten, such as a table that gained a page, still pairs with its old self. Tests that assert on the exact
+list of changes can see different pairings.
+
 ### Accessibility flags
 
 No snapshot changes, but more changes are flagged as

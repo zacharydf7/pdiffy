@@ -360,7 +360,7 @@ internal sealed class DocxSnapshotWriter
             var rowLine = new StringBuilder(row.IsHeader ? "Row header" : "Row");
             Key(rowLine, "height", row.Height);
 
-            // A key rather than a bare word: a row line has no text, so a new word would stop it pairing with the old line.
+            // A key rather than a bare word, so gaining it reads as an attribute change like the row's other keys.
             if (row.CantSplit) Key(rowLine, "split", "no");
             Line(depth + 1, rowLine.ToString());
             foreach (var control in row.Controls) WriteControl(control, depth + 2);
