@@ -113,7 +113,7 @@ Findings are recorded in an opt-in `checks` section, so a new problem fails a te
 | [#107](https://github.com/zacharydf7/pdiffy/issues/107) | Accepted changes explained in pull requests | Open |
 | [#108](https://github.com/zacharydf7/pdiffy/issues/108) | A reflow as one change | Done |
 | [#111](https://github.com/zacharydf7/pdiffy/issues/111) | Screen reader transcript | Open |
-| [#126](https://github.com/zacharydf7/pdiffy/issues/126) | Accessibility flags for Word | Open, after [#94](https://github.com/zacharydf7/pdiffy/issues/94) |
+| [#126](https://github.com/zacharydf7/pdiffy/issues/126) | Accessibility flags for Word | Open |
 | [#116](https://github.com/zacharydf7/pdiffy/issues/116) | Docs: catching generator upgrades | Done |
 | [#119](https://github.com/zacharydf7/pdiffy/issues/119) | Encoding promise on real PDFs | Open |
 | [#109](https://github.com/zacharydf7/pdiffy/issues/109) | Grouped changes and accept rules | Open |
