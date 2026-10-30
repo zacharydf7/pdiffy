@@ -104,7 +104,8 @@ Sections always appear in this order. Each can be left out with [`Section`](xref
 ## Text
 
 Text is normalized to Unicode NFC, with whitespace runs collapsed to one space and trimmed. A space is added between two
-pieces of text when the baseline changes or the gap is wider than 0.2 em. The same rule joins the pieces of an element's
+pieces of text when the baseline changes or the gap is wider than 0.2 em beyond the line's letter spacing, which is read
+from its narrowest gaps. The same rule joins the pieces of an element's
 text, so a word a PDF splits across two tagged pieces stays one word. Pieces on different pages, and a piece that starts
 well to the left of where the last one ended on the same line, are always separated by a space.
 

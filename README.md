@@ -713,7 +713,7 @@ These change without changing what anyone reading the document gets:
 - Font subset prefixes (`ABCDEF+Arial` is recorded as `Arial`)
 - Dates, document IDs and the producer string (only whether they're present; `ShowProducerAndCreator()` prints the producer and creator)
 
-Text is normalized to Unicode NFC, with whitespace runs collapsed to one space and trimmed. A space is added between two pieces of text when the baseline changes or the gap is wider than 0.2 em. The same rule joins the pieces of an element's text, so a word a PDF splits across two tagged pieces stays one word. Pieces on different pages, and a piece that starts well to the left of where the last one ended on the same line, are always separated by a space.
+Text is normalized to Unicode NFC, with whitespace runs collapsed to one space and trimmed. A space is added between two pieces of text when the baseline changes or the gap is wider than 0.2 em beyond the line's letter spacing, which is read from its narrowest gaps. The same rule joins the pieces of an element's text, so a word a PDF splits across two tagged pieces stays one word. Pieces on different pages, and a piece that starts well to the left of where the last one ended on the same line, are always separated by a space.
 
 ## Format changes
 
@@ -726,6 +726,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | `pdfua-snapshot v1`, unchanged version: letter-spaced text no longer gets a space between every letter, since a gap counts as a space only when it's wider than the line's letter spacing (read from its narrowest gaps, up to a quarter of an em). Snapshots of documents with letter-spaced text change |
 | Next | `pdfua-snapshot v1`, unchanged version: text drawn at an angle is read along its own baseline, so it keeps its words and stays one layout run, which prints `angle=90`. Snapshots of documents with rotated text change |
 | Next | `pdfua-snapshot v1`, unchanged version: links print where they go (`dest=p3 view=XYZ view-at=72,720`, `zoom=` when set, a named destination looked up, `file=` for another file) instead of `dest=yes`, and bookmarks print their view, web address or file (a bookmark to another file prints `file="..." dest=p1` instead of `-> p1`). Snapshots of documents with internal links or bookmarks change |
 | Next | `docx-snapshot v1`, unchanged version: hidden text (`w:vanish`), double strikethrough, right-to-left runs and a run's language are read, so a run that differs from its paragraph in one of them prints a span (`span "care" hidden`), and a style whose language isn't the one on the document line prints `lang=`. An inserted Word document's styles are compared with that language too, so an inserted document in another language prints `lang=` on its styles. Only snapshots of documents with such runs or styles change |

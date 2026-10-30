@@ -25,6 +25,11 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 - Text drawn at an angle is read along its own baseline, so rotated text such as a column header or a chart label
   keeps its words (`"Hello world"`, not `"H e llo w o rld"`) and stays one layout run, which prints `angle=90`.
   Snapshots of documents with rotated text change.
+- Letter-spaced text (`Tc`) no longer gets a space between every letter: a gap counts as a space only when it's wider
+  than the line's letter spacing by 0.2 em (`"Hello world"`, not `"H e l l o w o r l d"`). Letter spacing is read from
+  the narrowest gaps on each line, up to a quarter of an em, from lines with at least three gaps, so a letter-spaced
+  word of three letters or fewer still prints a space between its letters. Snapshots of documents with letter-spaced
+  text change.
 
 ### Word (`docx-snapshot v1`, unchanged)
 

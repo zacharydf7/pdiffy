@@ -151,6 +151,39 @@ public class LayoutTests
         Assert.Equal(("Hi there", angle), (run.Text, run.Angle));
     }
 
+    [Theory]
+    [InlineData("3 Tc (Hello world) Tj", "Hello world")]
+    [InlineData("3 Tc [(Hello) -600 (world)] TJ", "Hello world")]
+    [InlineData("(1) Tj 100 0 Td (2) Tj 100 0 Td (3) Tj 100 0 Td (4) Tj", "1 2 3 4")]
+    [InlineData("[(I) -333 (am) -333 (a) -333 (cat)] TJ", "I am a cat")]
+    [InlineData("[(Go) -300 (to) -300 (B)] TJ", "Go to B")]
+    [InlineData("[(1) -300 (2) -300 (3) -300 (4)] TJ", "1 2 3 4")]
+    [InlineData("3 Tc (FAQ) Tj", "F A Q")]
+    public void Load_ShouldPutSpacesOnlyBetweenWords_WhenTextIsLetterSpacedOrSetApart(string operators, string expected)
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw($"/P << /MCID 0 >> BDC BT /F1 12 Tf 72 400 Td {operators} ET EMC");
+        pdf.Structure(new TestElement("P", 0));
+
+        var document = pdf.Load();
+
+        Assert.Equal(expected, Assert.Single(document.Structure).Text);
+        Assert.Equal(expected, string.Join(" ", document.TextRuns.Select(run => run.Text)));
+    }
+
+    [Fact]
+    public void Load_ShouldWorkOutLetterSpacingForEachLine_WhenOneElementHasALetterSpacedLineAndAnOrdinaryOne()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("/P << /MCID 0 >> BDC BT /F1 12 Tf 72 400 Td 3 Tc (Trail guide) Tj 0 Tc 0 -20 Td (Go with a guide) Tj ET EMC");
+        pdf.Structure(new TestElement("P", 0));
+
+        var document = pdf.Load();
+
+        Assert.Equal("Trail guide Go with a guide", Assert.Single(document.Structure).Text);
+        Assert.Equal(["Trail guide", "Go with a guide"], document.TextRuns.Select(run => run.Text));
+    }
+
     [Fact]
     public void Load_ShouldKeepRotatedLinesApart_WhenTheyRunSideBySideOrNextToTextAcrossThePage()
     {

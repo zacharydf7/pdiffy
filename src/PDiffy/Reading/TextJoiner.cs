@@ -10,28 +10,51 @@ internal static partial class TextJoiner
     /// <summary>The widest gap between two letters, as a share of the font size, that still counts as no space.</summary>
     public const double SpaceGap = 0.2;
 
-    // A space goes between two letters when the baseline changes or the gap is wider than SpaceGap em. Gaps are measured
-    // along the text's own baseline, so text drawn at an angle joins as it does across the page. Space glyphs in the PDF
-    // come through as letters themselves.
-    public static string Join(IEnumerable<Letter> letters)
+    /// <summary>The widest letter spacing, as a share of the font size; wider gaps are letters set apart on purpose.</summary>
+    public const double MaxLetterSpacing = 0.25;
+
+    // Fewer gaps than this can't tell letter spacing from short words set apart, so they aren't taken as spacing.
+    private const int MinGapsForLetterSpacing = 3;
+
+    // A space goes between two letters when the baseline changes or the gap is wider than SpaceGap em beyond the line's
+    // letter spacing. Gaps are measured along the text's own baseline, so text drawn at an angle joins as it does across
+    // the page. Space glyphs in the PDF come through as letters themselves.
+    public static string Join(IReadOnlyList<Letter> letters)
     {
         var sb = new StringBuilder();
-        Letter? previous = null;
-        foreach (var letter in letters)
+        var spacing = 0.0;
+        for (var i = 0; i < letters.Count; i++)
         {
-            if (previous is not null)
+            if (i == 0 || !OnSameLine(letters[i - 1], letters[i]))
             {
-                if (!OnSameLine(previous, letter) || Gap(previous, letter) > previous.PointSize * SpaceGap)
-                {
-                    sb.Append(' ');
-                }
+                if (i > 0) sb.Append(' ');
+                spacing = LetterSpacing(letters, i);
+            }
+            else if (Gap(letters[i - 1], letters[i]) - spacing > letters[i - 1].PointSize * SpaceGap)
+            {
+                sb.Append(' ');
             }
 
-            sb.Append(letter.Value);
-            previous = letter;
+            sb.Append(letters[i].Value);
         }
 
         return Normalize(sb.ToString());
+    }
+
+    // Letter spacing widens every gap on a line, word gaps and gaps inside words alike, so the low end of the line's gaps
+    // stands for it; word gaps only widen some of them.
+    private static double LetterSpacing(IReadOnlyList<Letter> letters, int start)
+    {
+        var gaps = new List<double>();
+        for (var i = start + 1; i < letters.Count && OnSameLine(letters[i - 1], letters[i]); i++)
+        {
+            gaps.Add(Gap(letters[i - 1], letters[i]));
+        }
+
+        if (gaps.Count < MinGapsForLetterSpacing) return 0;
+        gaps.Sort();
+        var low = gaps[gaps.Count / 4];
+        return low > 0 && low <= letters[start].PointSize * MaxLetterSpacing ? low : 0;
     }
 
     /// <summary>
