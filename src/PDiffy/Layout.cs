@@ -65,6 +65,12 @@ public sealed record TextRun(
     /// the page.
     /// </summary>
     public int Angle { get; init; }
+
+    /// <summary>
+    /// The optional-content layers the text is drawn in, outermost first, by name, such as "Draft"; empty when it's
+    /// drawn outside optional content. A viewer can hide a layer, so its content may not show or print.
+    /// </summary>
+    public IReadOnlyList<string> Layers { get; init; } = [];
 }
 
 /// <summary>An image. <see cref="Hash"/> comes from the decoded pixels where possible, so recompressing alone doesn't change it.</summary>
@@ -79,7 +85,14 @@ public sealed record TextRun(
 /// pixels can't be decoded (such as a JPEG) or are too large to decompress.</param>
 /// <param name="Role">Whether the image is tagged, an artifact, or untagged.</param>
 public sealed record ImageInfo(
-    int Page, int X, int Y, int Width, int Height, int PixelWidth, int PixelHeight, string Hash, ContentRole Role);
+    int Page, int X, int Y, int Width, int Height, int PixelWidth, int PixelHeight, string Hash, ContentRole Role)
+{
+    /// <summary>
+    /// The optional-content layers the image is drawn in, outermost first, by name, such as "Draft"; empty when it's
+    /// drawn outside optional content. A viewer can hide a layer, so its content may not show or print.
+    /// </summary>
+    public IReadOnlyList<string> Layers { get; init; } = [];
+}
 
 /// <summary>A painted vector path: its bounding box, and its fill and stroke. Unpainted parts are null.</summary>
 /// <param name="Page">The page number, counted from 1.</param>
@@ -95,4 +108,11 @@ public sealed record ImageInfo(
 /// isn't stroked.</param>
 /// <param name="Role">Whether the path is tagged, an artifact, or untagged.</param>
 public sealed record PathInfo(
-    int Page, int X, int Y, int Width, int Height, string? Fill, string? Stroke, double? LineWidth, ContentRole Role);
+    int Page, int X, int Y, int Width, int Height, string? Fill, string? Stroke, double? LineWidth, ContentRole Role)
+{
+    /// <summary>
+    /// The optional-content layers the path is drawn in, outermost first, by name, such as "Draft"; empty when it's
+    /// drawn outside optional content. A viewer can hide a layer, so its content may not show or print.
+    /// </summary>
+    public IReadOnlyList<string> Layers { get; init; } = [];
+}

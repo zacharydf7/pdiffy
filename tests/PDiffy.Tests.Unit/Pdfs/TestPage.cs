@@ -8,6 +8,7 @@ internal sealed class TestPage(double width, double height, int rotate, string? 
     private readonly StringBuilder _content = new();
     private readonly List<string> _imagePixels = [];
     private readonly List<string> _annotations = [];
+    private readonly List<string> _layers = [];
     private string _pageEntries = "";
     private int _nextLineY = 720;
 
@@ -63,6 +64,15 @@ internal sealed class TestPage(double width, double height, int rotate, string? 
     /// <summary>A rectangle that is filled and then also used as the clip, so it is drawn.</summary>
     public TestPage FilledClippingPath() => Raw("q 72 440 100 20 re W f Q");
 
+    /// <summary>What <paramref name="draw"/> adds, inside optional content (/OC) for a layer of that name.</summary>
+    public TestPage InLayer(string layer, Action<TestPage> draw)
+    {
+        _layers.Add(layer);
+        Raw($"/OC /L{_layers.Count} BDC");
+        draw(this);
+        return Raw("EMC");
+    }
+
     /// <summary>Raw content-stream operators, for marked content the helpers don't cover.</summary>
     public TestPage Raw(string operators)
     {
@@ -98,7 +108,10 @@ internal sealed class TestPage(double width, double height, int rotate, string? 
 
             var images = string.Concat(_imagePixels.Select((gray, i) => $" /Im{i + 1} {AddImage(pdf, gray)} 0 R"));
             var xObjects = images.Length == 0 ? "" : $" /XObject <<{images} >>";
-            resources = $" /Resources << /Font << {fonts} >>{xObjects} >>";
+            var groups = string.Concat(_layers.Select((name, i) =>
+                $" /L{i + 1} {pdf.Add($"<< /Type /OCG /Name ({name}) >>")} 0 R"));
+            var properties = groups.Length == 0 ? "" : $" /Properties <<{groups} >>";
+            resources = $" /Resources << /Font << {fonts} >>{xObjects}{properties} >>";
         }
 
         var tabsEntry = tabs is null ? "" : $" /Tabs /{tabs}";

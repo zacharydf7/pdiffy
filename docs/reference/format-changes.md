@@ -16,6 +16,11 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### PDF (`pdfua-snapshot v1`, unchanged)
 
+- Text, images and paths drawn inside optional-content marked content (`/OC ... BDC`), a layer a viewer can hide or
+  leave out of print, list the layers they're in on their layout lines (`layers=["Draft"]`), outermost first, and text
+  runs end where a layer starts or ends. Wrapping a watermark or draft text in a layer used to give the same snapshot.
+  Only snapshots of documents with such content change. A run that a layer now splits shows as changed to its first
+  part, with the rest added. An image or form that puts itself in a layer with its own `/OC` entry isn't read yet.
 - Untagged text prints one `untagged` line per line of text instead of one per page, so a line added to an untagged
   page shows as that line alone. Snapshots of documents with untagged text on more than one line of a page change: the
   old page line usually shows as removed and each line as added (or, when the first line holds most of the page's

@@ -24,8 +24,7 @@ internal static class PdfPigReader
         var (formFields, form) = FormReader.Read(objects, catalog, pageTree, fileLength);
         var settings = DocumentSettingsReader.Read(document, objects, catalog, destinations);
         var layouts = readable.OrderBy(pair => pair.Key)
-            .Select(pair => LayoutReader.Read(pair.Key, pair.Value.Page, pair.Value.Content.Owners,
-                structure.ReferencedMcids, pair.Value.Content.TextRuns))
+            .Select(pair => LayoutReader.Read(pair.Key, pair.Value.Page, pair.Value.Content, structure.ReferencedMcids))
             .ToList();
 
         return new PdfUaDocument
@@ -68,7 +67,7 @@ internal static class PdfPigReader
             }
 
             pages.Add(ReadPageInfo(number, page, objects));
-            readable[number] = new ReadPage(page, PageContentReader.Read(page));
+            readable[number] = new ReadPage(page, PageContentReader.Read(page, objects));
         }
 
         return (pages, readable);

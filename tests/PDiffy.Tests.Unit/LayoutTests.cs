@@ -111,6 +111,77 @@ public class LayoutTests
     }
 
     [Fact]
+    public void Load_ShouldNameTheLayerContentIsDrawnIn_WhenItSitsInOptionalContent()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Untagged("Open daily")
+            .InLayer("Draft", page => page.Untagged("Draft copy").UntaggedImage().UntaggedPath());
+
+        var document = pdf.Load();
+
+        Assert.Equal([[], ["Draft"]], document.TextRuns.Select(run => run.Layers));
+        Assert.Equal(["Draft"], Assert.Single(document.Images).Layers);
+        Assert.Equal(["Draft"], Assert.Single(document.Paths).Layers);
+        Assert.Contains("p1 text untagged at=72,700 font=Helvetica size=12 color=gray:0 layers=[\"Draft\"] \"Draft copy\"",
+            document.ToSnapshot());
+    }
+
+    [Fact]
+    public void Load_ShouldEndATextRunWhereALayerStarts_WhenTheLayerContinuesTheLine()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("BT /F1 12 Tf 72 400 Td (Trail open) Tj ET")
+            .InLayer("Draft", page => page.Raw("BT /F1 12 Tf 140 400 Td (until May) Tj ET"));
+
+        var runs = pdf.Load().TextRuns;
+
+        Assert.Equal(["Trail open", "until May"], runs.Select(run => run.Text));
+    }
+
+    [Fact]
+    public void Load_ShouldKeepOneTextRun_WhenTwoPiecesOfOptionalContentInOneLayerContinueALine()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().InLayer("Draft", page => page.Raw("BT /F1 12 Tf 72 400 Td (Trail open) Tj ET"))
+            .InLayer("Draft", page => page.Raw("BT /F1 12 Tf 140 400 Td (until May) Tj ET"));
+
+        var run = Assert.Single(pdf.Load().TextRuns);
+
+        Assert.Equal("Trail open until May", run.Text);
+        Assert.Equal(["Draft"], run.Layers);
+    }
+
+    [Fact]
+    public void Load_ShouldNameEveryLayerOutermostFirst_WhenOptionalContentIsNested()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().InLayer("Draft", page => page.InLayer("Notes", inner => inner.Tagged(0, "Check the bridge")));
+        pdf.Structure(new TestElement("P", 0));
+
+        var run = Assert.Single(pdf.Load().Structure[0].TextRuns);
+
+        Assert.Equal(ContentRole.Tagged, run.Role);
+        Assert.Equal(["Draft", "Notes"], run.Layers);
+    }
+
+    // TestPage writes each layer as an optional content group; this one is a membership dictionary over two groups.
+    [Fact]
+    public void Load_ShouldNameTheGroupsAMembershipDictionaryDependsOn_WhenContentUsesOne()
+    {
+        var document = RawPdf.Load("<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R "
+                + "/Resources << /Properties << /M1 << /Type /OCMD /OCGs [5 0 R 6 0 R] >> >> >> >>",
+            TestPdf.Stream("/OC /M1 BDC 72 500 100 20 re f EMC"),
+            "<< /Type /OCG /Name (Draft) >>",
+            "<< /Type /OCG /Name (Print) >>");
+
+        var path = Assert.Single(document.Paths);
+
+        Assert.Equal(["Draft", "Print"], path.Layers);
+    }
+
+    [Fact]
     public void Load_ShouldGiveTheRoleToTheRightImage_WhenDifferentImagesShareAPosition()
     {
         var pdf = new TestPdf();

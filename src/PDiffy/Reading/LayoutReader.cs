@@ -8,16 +8,16 @@ namespace PDiffy.Reading;
 internal sealed record PageLayout(IReadOnlyList<TextRun> TextRuns, IReadOnlyList<ImageInfo> Images, IReadOnlyList<PathInfo> Paths);
 
 /// <summary>Every text run, image and painted path on a page, with its position, style and role.</summary>
-internal sealed class LayoutReader(int pageNumber, ContentOwners owners, IReadOnlySet<(int Page, int Mcid)> referencedMcids)
+internal sealed class LayoutReader(int pageNumber, PageContent content,
+    IReadOnlySet<(int Page, int Mcid)> referencedMcids)
 {
     private const string DefaultColor = "gray:0";
 
-    /// <param name="textRuns">The page's text runs, from <see cref="TextRunReader"/>.</param>
-    public static PageLayout Read(int pageNumber, Page page, ContentOwners owners,
-        IReadOnlySet<(int Page, int Mcid)> referencedMcids, IReadOnlyList<OwnedRun> textRuns)
+    public static PageLayout Read(int pageNumber, Page page, PageContent content,
+        IReadOnlySet<(int Page, int Mcid)> referencedMcids)
     {
-        var reader = new LayoutReader(pageNumber, owners, referencedMcids);
-        return new PageLayout(reader.Roles(textRuns), reader.ReadImages(page), reader.ReadPaths(page));
+        var reader = new LayoutReader(pageNumber, content, referencedMcids);
+        return new PageLayout(reader.Roles(content.TextRuns), reader.ReadImages(page), reader.ReadPaths(page));
     }
 
     // A run is read as tagged when marked content with an MCID draws it, and is untagged when no element points to that.
@@ -29,7 +29,8 @@ internal sealed class LayoutReader(int pageNumber, ContentOwners owners, IReadOn
 
     private List<ImageInfo> ReadImages(Page page)
     {
-        var unmatched = owners.Images.ToList();
+        var unmatched = content.Owners.Images.ToList();
+        var inLayers = content.Layers.Images.ToList();
         var images = new List<ImageInfo>();
         foreach (var image in page.GetImages())
         {
@@ -45,9 +46,17 @@ internal sealed class LayoutReader(int pageNumber, ContentOwners owners, IReadOn
                 unmatched.RemoveAt(match);
             }
 
+            var inLayer = inLayers.FindIndex(candidate => SameImage(candidate.Image, image));
+            IReadOnlyList<string> layers = [];
+            if (inLayer >= 0)
+            {
+                layers = inLayers[inLayer].Layers;
+                inLayers.RemoveAt(inLayer);
+            }
+
             var bounds = image.BoundingBox;
             images.Add(new ImageInfo(pageNumber, Round(bounds.Left), Round(bounds.Bottom), Round(bounds.Width), Round(bounds.Height),
-                image.WidthInSamples, image.HeightInSamples, hash ?? Hash(image), RoleOf(owner)));
+                image.WidthInSamples, image.HeightInSamples, hash ?? Hash(image), RoleOf(owner)) { Layers = layers });
         }
 
         return images;
@@ -59,13 +68,13 @@ internal sealed class LayoutReader(int pageNumber, ContentOwners owners, IReadOn
         foreach (var path in page.Paths.Where(IsPainted))
         {
             var bounds = path.GetBoundingRectangle() ?? new PdfRectangle();
-            ContentOwner? owner = owners.Paths.TryGetValue(path, out var found) ? found : null;
+            ContentOwner? owner = content.Owners.Paths.TryGetValue(path, out var found) ? found : null;
             // PdfPig leaves a color unset when the PDF never chose one; PDF's starting color is black in DeviceGray.
             var fill = path.IsFilled ? ColorText.Format(path.FillColor) ?? DefaultColor : null;
             var stroke = path.IsStroked ? ColorText.Format(path.StrokeColor) ?? DefaultColor : null;
             double? lineWidth = path.IsStroked ? Math.Round((double)path.LineWidth, 1, MidpointRounding.AwayFromZero) : null;
             paths.Add(new PathInfo(pageNumber, Round(bounds.Left), Round(bounds.Bottom), Round(bounds.Width), Round(bounds.Height),
-                fill, stroke, lineWidth, RoleOf(owner)));
+                fill, stroke, lineWidth, RoleOf(owner)) { Layers = content.Layers.Paths.GetValueOrDefault(path) ?? [] });
         }
 
         return paths;

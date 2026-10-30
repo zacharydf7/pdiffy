@@ -23,7 +23,7 @@ internal sealed class ContentOwners
 internal sealed record PageContent(IReadOnlyDictionary<int, List<Letter>> LettersByMcid,
     IReadOnlyDictionary<int, List<MarkedSpan>> SpansByMcid, IReadOnlyDictionary<int, List<string>> ImagesByMcid,
     IReadOnlyList<PageText> Artifacts, IReadOnlyList<string> UntaggedLines, ContentOwners Owners,
-    IReadOnlyList<OwnedRun> TextRuns, IReadOnlyDictionary<int, List<TextRun>> TextRunsByMcid);
+    IReadOnlyList<OwnedRun> TextRuns, IReadOnlyDictionary<int, List<TextRun>> TextRunsByMcid, ContentLayers Layers);
 
 internal sealed class PageContentReader
 {
@@ -34,17 +34,20 @@ internal sealed class PageContentReader
     // Each letter's place in page.Letters, which is in content order, so letters gathered by nesting can be put back.
     private readonly Dictionary<Letter, int> _drawingOrder = [];
 
-    public static PageContent Read(Page page) => new PageContentReader(page.Number).ReadPage(page);
+    public static PageContent Read(Page page, PdfObjects objects) =>
+        new PageContentReader(page.Number, objects).ReadPage(page);
 
     private readonly int _pageNumber;
+    private readonly PdfObjects _objects;
 
-    private PageContentReader(int pageNumber) => _pageNumber = pageNumber;
+    private PageContentReader(int pageNumber, PdfObjects objects) => (_pageNumber, _objects) = (pageNumber, objects);
 
     private PageContent ReadPage(Page page)
     {
         for (var i = 0; i < page.Letters.Count; i++) _drawingOrder[page.Letters[i]] = i;
+        var markedContents = page.GetMarkedContents();
         var pending = new Stack<(MarkedContentElement MarkedContent, int? EnclosingMcid)>();
-        foreach (var markedContent in page.GetMarkedContents().Reverse())
+        foreach (var markedContent in markedContents.Reverse())
         {
             pending.Push((markedContent, null));
         }
@@ -74,11 +77,12 @@ internal sealed class PageContentReader
 
         var imagesByMcid = _owners.Images.Where(image => image.Owner.Mcid is not null).GroupBy(image => image.Owner.Mcid!.Value)
             .ToDictionary(group => group.Key, group => group.Select(image => image.Hash).ToList());
-        var textRuns = TextRunReader.Read(_pageNumber, page, _owners);
+        var layers = ContentLayers.Read(markedContents, _objects);
+        var textRuns = TextRunReader.Read(_pageNumber, page, _owners, layers);
         var textRunsByMcid = textRuns.Where(owned => owned.Mcid is not null).GroupBy(owned => owned.Mcid!.Value)
             .ToDictionary(group => group.Key, group => group.Select(owned => owned.Run).ToList());
         return new PageContent(lettersByMcid, _spansByMcid, imagesByMcid, _artifacts, TextJoiner.JoinLines(untagged), _owners,
-            textRuns, textRunsByMcid);
+            textRuns, textRunsByMcid, layers);
     }
 
     // Marked content without its own MCID belongs to the nearest enclosing MCID, if there is one. Children go on the

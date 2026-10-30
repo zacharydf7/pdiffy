@@ -602,6 +602,33 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowOnlyTheNewKey_WhenASnapshotFromBeforeLayersMeetsOneWithThem()
+    {
+        var before = SnapshotText.Header + "layout\n  p1 path untagged at=72,500 size=100x20 fill=gray:0\n";
+        var after = SnapshotText.Header
+            + "layout\n  p1 path untagged at=72,500 size=100x20 fill=gray:0 layers=[\"Draft\"]\n";
+
+        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+
+        Assert.Equal((ChangeKind.AttributeChanged, "layers: (missing) -> [\"Draft\"]"), (change.Kind, change.Detail));
+    }
+
+    [Fact]
+    public void Compare_ShouldShowTheRunsALayerSplits_WhenASnapshotFromBeforeLayersMeetsOneWithThem()
+    {
+        var before = SnapshotText.Header + "layout\n"
+            + "  p1 text untagged at=72,400 font=Helvetica size=12 color=gray:0 \"Trail open until May\"\n";
+        var after = SnapshotText.Header + "layout\n"
+            + "  p1 text untagged at=72,400 font=Helvetica size=12 color=gray:0 \"Trail open\"\n"
+            + "  p1 text untagged at=140,400 font=Helvetica size=12 color=gray:0 layers=[\"Draft\"] \"until May\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Equal([ChangeKind.TextChanged, ChangeKind.Added], changes.Select(change => change.Kind));
+        Assert.Equal("\"Trail open [-until May-]\"", changes[0].Detail);
+    }
+
+    [Fact]
     public void Compare_ShouldShowTheLinesThePageSplitInto_WhenASnapshotFromBeforeUntaggedLinesMeetsOneWithThem()
     {
         var before = SnapshotText.Header + "untagged\n  p1 \"Trail closed Bring water Ranger on duty\"\n";

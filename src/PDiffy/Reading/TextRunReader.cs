@@ -10,12 +10,12 @@ internal readonly record struct OwnedRun(TextRun Run, int? Mcid);
 /// A page's text runs, with each one's style and owner, read before the structure tree so elements can list their own.
 /// A run drawn by marked content with an MCID is tagged until <see cref="LayoutReader"/> finds no element points to it.
 /// </summary>
-internal sealed class TextRunReader(int pageNumber, ContentOwners owners)
+internal sealed class TextRunReader(int pageNumber, ContentOwners owners, ContentLayers layers)
 {
-    public static List<OwnedRun> Read(int pageNumber, Page page, ContentOwners owners) =>
-        new TextRunReader(pageNumber, owners).ReadTextRuns(page);
+    public static List<OwnedRun> Read(int pageNumber, Page page, ContentOwners owners, ContentLayers layers) =>
+        new TextRunReader(pageNumber, owners, layers).ReadTextRuns(page);
 
-    // A run ends where the style or owner changes, or where the text moves to another line.
+    // A run ends where the style, owner or layers change, or where the text moves to another line.
     private List<OwnedRun> ReadTextRuns(Page page)
     {
         var runs = new List<OwnedRun>();
@@ -52,7 +52,11 @@ internal sealed class TextRunReader(int pageNumber, ContentOwners owners)
 
         var start = letters[0].StartBaseLine;
         var run = new TextRun(pageNumber, LayoutReader.Round(start.X), LayoutReader.Round(start.Y), style.Font, style.Size,
-            style.Color, style.RenderMode, RoleOf(style.Owner), text) { Angle = TextJoiner.Angle(letters[0]) };
+            style.Color, style.RenderMode, RoleOf(style.Owner), text)
+        {
+            Angle = TextJoiner.Angle(letters[0]),
+            Layers = layers.Letters.GetValueOrDefault(letters[0]) ?? [],
+        };
         runs.Add(new OwnedRun(run, style.Owner?.Mcid));
     }
 
@@ -68,7 +72,9 @@ internal sealed class TextRunReader(int pageNumber, ContentOwners owners)
         var font = FontReader.WithoutSubsetPrefix(letter.FontName ?? "(none)");
         var size = Math.Round(letter.PointSize, 1, MidpointRounding.AwayFromZero);
         ContentOwner? owner = owners.Letters.TryGetValue(letter, out var found) ? found : null;
-        return new RunStyle(font, size, ColorText.Format(letter.Color), ToRenderMode(letter.RenderingMode), owner);
+        var color = ColorText.Format(letter.Color);
+        var inLayers = string.Join('\n', layers.Letters.GetValueOrDefault(letter) ?? []);
+        return new RunStyle(font, size, color, ToRenderMode(letter.RenderingMode), owner, inLayers);
     }
 
     // Text that jumps back to the start of its line starts a new run even on the same baseline.
@@ -88,5 +94,7 @@ internal sealed class TextRunReader(int pageNumber, ContentOwners owners)
         _ => TextRenderMode.Fill,
     };
 
-    private readonly record struct RunStyle(string Font, double Size, string? Color, TextRenderMode RenderMode, ContentOwner? Owner);
+    // Layers are compared by their names, so two pieces of optional content in one layer don't split a run.
+    private readonly record struct RunStyle(string Font, double Size, string? Color, TextRenderMode RenderMode,
+        ContentOwner? Owner, string Layers);
 }

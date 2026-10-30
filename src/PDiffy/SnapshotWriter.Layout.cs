@@ -32,6 +32,7 @@ internal sealed partial class SnapshotWriter
         Key(line, Field.Colors, "color", run.Color);
         if (run.RenderMode != TextRenderMode.Fill) Key(line, "mode", RenderModeName(run.RenderMode));
         if (run.Angle != 0) Key(line, "angle", run.Angle.ToString(CultureInfo.InvariantCulture));
+        Key(line, "layers", Bracketed(run.Layers.Select(Quote)));
         return line.Append(' ').Append(Quote(run.Text)).ToString();
     }
 
@@ -42,6 +43,7 @@ internal sealed partial class SnapshotWriter
         Key(line, Field.Positions, "size", $"{image.Width}x{image.Height}");
         Key(line, Field.ImageContents, "pixels", $"{image.PixelWidth}x{image.PixelHeight}");
         Key(line, Field.ImageContents, "hash", image.Hash);
+        Key(line, "layers", Bracketed(image.Layers.Select(Quote)));
         return line.ToString();
     }
 
@@ -53,6 +55,7 @@ internal sealed partial class SnapshotWriter
         Key(line, Field.Colors, "fill", path.Fill);
         Key(line, Field.Colors, "stroke", path.Stroke);
         Key(line, Field.LineWidths, "width", path.LineWidth is double width ? Number(width) : null);
+        Key(line, "layers", Bracketed(path.Layers.Select(Quote)));
         return line.ToString();
     }
 
