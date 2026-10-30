@@ -89,6 +89,43 @@ public class MalformedPdfTests
         Assert.Equal((1, null), (paragraph.McidsWithoutPage, paragraph.Text));
     }
 
+    [Fact]
+    public void Load_ShouldCountAMarkedContentReferenceIntoAForm_WhenItNamesAFormXObjectStream()
+    {
+        var form = "<< /Type /XObject /Subtype /Form /BBox [0 0 612 792] /Length 0 >>\nstream\n\nendstream";
+        var document = OnePage(catalogEntries: "/StructTreeRoot 6 0 R",
+            extraObjects: ["<< /Type /StructTreeRoot /K [7 0 R] >>",
+                "<< /Type /StructElem /S /P /P 6 0 R /K [<< /Type /MCR /MCID 0 /Pg 3 0 R /Stm 8 0 R >>] >>", form]);
+
+        var paragraph = Assert.Single(document.Structure);
+
+        Assert.Equal(1, paragraph.McidsInXObject);
+        Assert.Contains("  P p1 mcids-in-xobject=1 \"Loop\"\n", document.ToSnapshot());
+    }
+
+    [Fact]
+    public void Load_ShouldReadAFormsTaggedText_WhenAReferenceIntoTheFormSharesNoMcidWithThePage()
+    {
+        var content = "/P << /MCID 5 >> BDC BT /F1 12 Tf 72 600 Td (Stamp) Tj ET EMC";
+        var form = "<< /Type /XObject /Subtype /Form /BBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> "
+            + $"/Length {content.Length} >>\nstream\n{content}\nendstream";
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R /MarkInfo << /Marked true >> /StructTreeRoot 6 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> /XObject << /Fm1 8 0 R >> >> "
+                + "/Contents 4 0 R >>",
+            TestPdf.Stream("/Fm1 Do"),
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+            "<< /Type /StructTreeRoot /K [7 0 R] >>",
+            "<< /Type /StructElem /S /P /P 6 0 R /K [<< /Type /MCR /MCID 5 /Pg 3 0 R /Stm 8 0 R >>] >>",
+            form);
+
+        var paragraph = Assert.Single(document.Structure);
+
+        Assert.Equal((1, "Stamp"), (paragraph.McidsInXObject, paragraph.Text));
+        Assert.Empty(document.Untagged);
+    }
+
     // Objects 1-5 are a one-page document whose page shows "Loop" as MCID 0; extra objects are numbered from 6.
     private static PdfUaDocument OnePage(string catalogEntries = "", string pagesKids = "3 0 R", string[]? extraObjects = null)
     {

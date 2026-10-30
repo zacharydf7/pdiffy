@@ -64,6 +64,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         var annotations = new List<Annotation>();
         var children = new List<StructureElement>();
         var mcidsWithoutPage = 0;
+        var mcidsInXObject = 0;
         var unreadChildren = 0;
 
         foreach (var kid in objects.Items(element.Data.GetValueOrDefault("K")))
@@ -80,6 +81,10 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
                     var referencePage = pages.NumberOf(reference.Data.GetValueOrDefault("Pg")) ?? page;
                     if (referencePage is null) mcidsWithoutPage++;
                     else if (objects.Integer(reference, "MCID") is int mcrMcid) AddText(referencePage.Value, mcrMcid);
+
+                    // PdfPig reads a form's content into the page's, so its MCIDs can't be told from the page's: the
+                    // text is read as usual, and marked in case the page uses the same MCID.
+                    if (referencePage is not null && reference.Data.ContainsKey("Stm")) mcidsInXObject++;
                     break;
                 case DictionaryToken reference when objects.Name(reference, "Type") == "OBJR":
                     if (ReadAnnotation(reference, page) is { } annotation)
@@ -140,6 +145,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
             Summary = FirstAttribute(attributes, a => objects.Text(a, "Summary")),
             Annotations = annotations,
             McidsWithoutPage = mcidsWithoutPage,
+            McidsInXObject = mcidsInXObject,
             UnreadChildren = unreadChildren,
             MarkedSpans = spans,
             Text = Join(pieces),

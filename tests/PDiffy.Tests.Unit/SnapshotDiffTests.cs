@@ -514,6 +514,17 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowOnlyTheNewKey_WhenASnapshotFromBeforeFormReferencesMeetsOneWithThem()
+    {
+        var before = SnapshotText.Header + "structure\n  P p1 \"Stamp\"\n";
+        var after = SnapshotText.Header + "structure\n  P p1 mcids-in-xobject=1 \"Stamp\"\n";
+
+        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+
+        Assert.Equal((ChangeKind.AttributeChanged, "mcids-in-xobject: (missing) -> 1"), (change.Kind, change.Detail));
+    }
+
+    [Fact]
     public void Compare_ShouldReportOneBookmarkChanged_WhenABookmarkToAnotherFileLosesItsPage()
     {
         var before = SnapshotText.Header + "bookmarks\n  \"Atlas\" -> p1\n";

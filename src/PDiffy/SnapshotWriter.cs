@@ -212,6 +212,7 @@ internal sealed partial class SnapshotWriter(SnapshotOptions options)
 
         AppendMarkedSpans(line, element.MarkedSpans);
         Key(line, "mcids-without-page", element.McidsWithoutPage > 0 ? element.McidsWithoutPage.ToString() : null);
+        Key(line, "mcids-in-xobject", element.McidsInXObject > 0 ? element.McidsInXObject.ToString() : null);
         Key(line, "unread-children", element.UnreadChildren > 0 ? element.UnreadChildren.ToString() : null);
         if (element.Text is not null) line.Append(' ').Append(Quote(element.Text));
         Line(depth, line.ToString());
