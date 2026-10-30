@@ -93,7 +93,7 @@ What happens on each run:
 | `PDIFFY_ACCEPT=1` is set | Writes the snapshot as the new verified file | Passes |
 | `PDIFFY_ACCEPT=1` is set on a build server (`CI` or `TF_BUILD` is set) | Ignores it | Fails as usual |
 
-To accept a change, review the received file, then copy it over the verified one, run the tests again with `PDIFFY_ACCEPT=1`, or run `pdiffy accept` (see [Command line](#command-line)). Either way the change shows up in code review as a diff of the `.verified.pdfua.txt` file.
+To accept a change, review the received file, then copy it over the verified one, run the tests again with `PDIFFY_ACCEPT=1`, or run `pdiffy accept` (see [Command line](#command-line)); a failing test prints the `dotnet pdiffy accept` command for its received file, ready to paste. Either way the change shows up in code review as a diff of the `.verified.pdfua.txt` file.
 
 Snapshot files sit next to the test file by default. To keep them all in one folder, set it once, for example in a module initializer. `Snapshot.ProjectFolder` gives a folder in the test project, which PDiffy's build file records when the project builds, so it's right whatever the output folder or runtime, as long as the tests run in the checkout that built them:
 

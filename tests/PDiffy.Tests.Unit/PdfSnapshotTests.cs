@@ -106,6 +106,9 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
         Assert.Equal(SnapshotOf("Goodbye"), File.ReadAllText(Path.Combine(Folder, "Guide.received.pdfua.txt")));
         Assert.Contains($"report: {Path.Combine(Folder, "Guide.diff.html")}", error.Message);
         Assert.Contains("<mark>", File.ReadAllText(Path.Combine(Folder, "Guide.diff.html")));
+        var received = Path.Combine(Folder, "Guide.received.pdfua.txt");
+        var newLine = Environment.NewLine;
+        Assert.Contains($"To accept, run:{newLine}  dotnet pdiffy accept \"{received}\"{newLine}", error.Message);
     }
 
     [Fact]
@@ -176,6 +179,17 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
         await PdfSnapshot.VerifyAsync(new MemoryStream(bytes), "Guide");
 
         Assert.Contains("info Note=\"A\u2028B\"", File.ReadAllText(Path.Combine(Folder, "Guide.verified.pdfua.txt")));
+    }
+
+    [Fact]
+    public void Verify_ShouldPrintTheAcceptCommandWithTheFullPath_WhenTheFolderIsRelative()
+    {
+        var relative = Path.GetRelativePath(Environment.CurrentDirectory, Folder);
+
+        var error = Assert.Throws<SnapshotException>(
+            () => PdfSnapshot.Verify(Pdf("Hello"), "Guide", directory: relative));
+
+        Assert.Contains($"dotnet pdiffy accept \"{Path.Combine(Folder, "Guide.received.pdfua.txt")}\"", error.Message);
     }
 
     [Fact]

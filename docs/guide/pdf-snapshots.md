@@ -83,7 +83,9 @@ by section: structure 3
 verified: Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.verified.pdfua.txt
 received: Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.received.pdfua.txt
 report: Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.diff.html
-To accept: set PDIFFY_ACCEPT=1 and run the test again, or copy the received file over the verified one.
+To accept, run:
+  dotnet pdiffy accept "/home/me/trails/tests/Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.received.pdfua.txt"
+(pdiffy accept with a global install), or set PDIFFY_ACCEPT=1 and run the test again, or copy the received file over the verified one.
 ```
 
 - **The counts** come first: by kind, then by section, so a reflow that moves 200 layout lines doesn't hide one change
