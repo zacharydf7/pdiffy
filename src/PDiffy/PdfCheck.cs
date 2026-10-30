@@ -21,11 +21,15 @@ public enum PdfCheck
     UntaggedContent,
 
     /// <summary>
-    /// Every link has a description: its contents, or the alt text or text of the element that tags it.
+    /// Every link has a description in its contents (/Contents), as PDF/UA asks, even when the element that tags it has
+    /// text or alt text.
     /// </summary>
     LinkDescriptions,
 
-    /// <summary>Every form field has an accessible name (its tooltip, TU).</summary>
+    /// <summary>
+    /// Every form field has an accessible name: its tooltip (TU), or alt text on the Form element of each of its
+    /// widgets.
+    /// </summary>
     FormFieldNames,
 
     /// <summary>

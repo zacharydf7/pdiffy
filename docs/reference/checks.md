@@ -150,15 +150,15 @@ form XObjects draw outside the structure is reported by [`UntaggedContent`](#unt
 
 ## LinkDescriptions
 
-**Finds:** a link with no description: no contents, and no alt text or text on the element that tags it.
-**Category:** `Annotations`. **Severity:** `Error`. **From:** ISO 14289-1 7.18.5.
+**Finds:** a link with no description in its contents (`/Contents`). Visible text or alt text on the `Link` element
+doesn't count, since PDF/UA asks for the description on the link itself. **Category:** `Annotations`. **Severity:**
+`Error`. **From:** ISO 14289-1 7.18.5.
 
 **Why it matters:** a screen reader announces a link by its description. A link on an icon or image with none reads as
 "link", with no hint of where it goes.
 
 **How to fix it:** give each link annotation a `/Contents` entry that says where it goes, such as "Trail conditions
-page", as PDF/UA-1 asks. Visible link text in its `Link` element, or alt text on that element, also passes this check,
-but not that clause of the standard.
+page".
 
 ## AnnotationTags
 
@@ -203,8 +203,8 @@ setting for it, often called tab order or "use document structure".
 
 ## FormFieldNames
 
-**Finds:** a form field with no accessible name (tooltip). **Category:** `Forms`. **Severity:** `Error`. **From:**
-ISO 14289-1 7.18.1.
+**Finds:** a form field with no accessible name: no tooltip (`/TU`), and not every widget tagged by a `Form` element
+with alt text, which PDF/UA accepts instead. **Category:** `Forms`. **Severity:** `Error`. **From:** ISO 14289-1 7.18.1.
 
 **Why it matters:** a screen reader announces a field by its accessible name. Without one, a reader hears "edit text"
 and has to guess what to type.

@@ -50,8 +50,8 @@ that the document conforms.
 | `DocumentTitle` | A document with no title, or one whose viewer shows the file name instead | `Document` | 7.1 |
 | `FigureAltText` | A figure with no alt text or replacement text | `AltText` | 7.3 |
 | `UntaggedContent` | Text, images and paths that are neither tagged nor artifacts, page by page | `Content` | 7.1 |
-| `LinkDescriptions` | A link with no description: no contents, and no alt text or text on the element that tags it | `Annotations` | 7.18.5 |
-| `FormFieldNames` | A form field with no accessible name (tooltip) | `Forms` | 7.18.1 |
+| `LinkDescriptions` | A link with no description in its contents (`/Contents`), even when its element has text or alt text | `Annotations` | 7.18.5 |
+| `FormFieldNames` | A form field with no accessible name: no tooltip, and not every widget's Form element has alt text | `Forms` | 7.18.1 |
 | `TableHeaders` | A header with no scope that no cell names, and a cell that names a header that doesn't exist | `Tables` | 7.5 |
 | `HeadingLevels` | A heading that skips a level, or one that comes before any H1 | `Headings` | 7.4.2 |
 | `HeadingTypes` | Unnumbered (H) and numbered (H1 to H6) headings in one document, and an element with more than one H | `Headings` | 7.4.4 |

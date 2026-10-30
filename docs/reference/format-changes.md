@@ -25,9 +25,15 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   ([#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#76](https://github.com/zacharydf7/pdiffy/issues/76),
   [#78](https://github.com/zacharydf7/pdiffy/issues/78), [#79](https://github.com/zacharydf7/pdiffy/issues/79),
   [#164](https://github.com/zacharydf7/pdiffy/issues/164)). A
-  release's own set, such as `PdfCheckSet.Version0_3`, keeps its rules, but `FontsMapToUnicode`, in every set, now
-  also finds codes a font's ToUnicode map sends to U+0000, U+FEFF or U+FFFE, so a document with such a font can gain
-  a finding ([#76](https://github.com/zacharydf7/pdiffy/issues/76)).
+  release's own set, such as `PdfCheckSet.Version0_3`, keeps its rules, but three of them, in every set, now find
+  what their PDF/UA clause asks, so a document can gain or lose a finding:
+  - `FontsMapToUnicode` also finds codes a font's ToUnicode map sends to U+0000, U+FEFF or U+FFFE
+    ([#76](https://github.com/zacharydf7/pdiffy/issues/76)).
+  - `LinkDescriptions` finds a tagged link without `/Contents` even when its `Link` element has text or alt text, and
+    its findings for tagged links say "has no description in its Contents"
+    ([#158](https://github.com/zacharydf7/pdiffy/issues/158)).
+  - `FormFieldNames` no longer finds a field whose widgets' `Form` elements all have alt text
+    ([#158](https://github.com/zacharydf7/pdiffy/issues/158)).
 
 ### Document setup
 

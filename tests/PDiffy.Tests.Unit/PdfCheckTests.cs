@@ -76,13 +76,14 @@ public class PdfCheckTests
         Assert.Equal("Untagged text on p1: \"Draft Trail notes\"", finding.Message);
     }
 
+    // PDF/UA asks for the link's own Contents; text or alt text on its element doesn't stand in for it.
     [Theory]
     [InlineData("", "", "", 1)]
     [InlineData("Our website", "", "", 0)]
-    [InlineData("", "/Alt (Our website)", "", 0)]
-    [InlineData("", "", "Our website", 0)]
-    public void Check_ShouldFindATaggedLinkWithoutADescription_WhenNeitherItNorItsElementHasOne(string contents,
-        string entries, string text, int findings)
+    [InlineData("", "/Alt (Our website)", "", 1)]
+    [InlineData("", "", "Our website", 1)]
+    public void Check_ShouldFindATaggedLinkWithoutADescription_WhenItHasNoContents(string contents, string entries,
+        string text, int findings)
     {
         var pdf = new TestPdf();
         pdf.AddPage().Tagged(0, text, "Link");
@@ -90,7 +91,11 @@ public class PdfCheckTests
         object[] kids = text.Length > 0 ? [0, link] : [link];
         pdf.Structure(new TestElement("Link", kids) { Entries = entries });
 
-        Assert.Equal(findings, pdf.Load().Check(PdfCheck.LinkDescriptions).Count);
+        var found = pdf.Load().Check(PdfCheck.LinkDescriptions);
+
+        Assert.Equal(findings, found.Count);
+        Assert.All(found, finding => Assert.Equal("structure > Link: Link on p1 has no description in its Contents",
+            $"{finding.Path}: {finding.Message}"));
     }
 
     [Theory]
@@ -101,7 +106,11 @@ public class PdfCheckTests
         var pdf = new TestPdf();
         pdf.AddPage().Annotation($"/Subtype /Link /Rect [72 700 172 720] {contents}");
 
-        Assert.Equal(findings, pdf.Load().Check(PdfCheck.LinkDescriptions).Count);
+        var found = pdf.Load().Check(PdfCheck.LinkDescriptions);
+
+        Assert.Equal(findings, found.Count);
+        Assert.All(found, finding => Assert.Equal("annotations: Untagged link on p1 has no description",
+            $"{finding.Path}: {finding.Message}"));
     }
 
     [Theory]
@@ -195,6 +204,56 @@ public class PdfCheckTests
 
         Assert.Equal(("fonts > Trail", $"Font Trail: {message}", $"ISO 14289-1 {clause}"),
             (finding.Path, finding.Message, finding.Reference));
+    }
+
+    // The field is its own widget, or its widget is its kid; either way the Form element tags the widget.
+    [Theory]
+    [InlineData(true, "", "/Alt (Emergency contact phone)", 0)]
+    [InlineData(false, "", "/Alt (Emergency contact phone)", 0)]
+    [InlineData(true, "", "", 1)]
+    [InlineData(false, "", "/Alt ( )", 1)]
+    [InlineData(true, "/TU (Emergency contact phone)", "", 0)]
+    public void Check_ShouldFindAFieldWithoutAName_WhenNeitherItsTooltipNorItsFormElementNamesIt(bool combined,
+        string tooltip, string alt, int findings)
+    {
+        var widget = "/Type /Annot /Subtype /Widget /Rect [72 300 272 320]";
+        var field = combined ? $"<< {widget} /FT /Tx /T (phone) {tooltip} >>"
+            : $"<< /FT /Tx /T (phone) {tooltip} /Kids [7 0 R] >>";
+        var tagged = combined ? 4 : 7;
+
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R] >> /StructTreeRoot 5 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [{tagged} 0 R] >>",
+            field,
+            "<< /Type /StructTreeRoot /K [6 0 R] >>",
+            $"<< /Type /StructElem /S /Form /P 5 0 R /Pg 3 0 R /K [<< /Type /OBJR /Obj {tagged} 0 R /Pg 3 0 R >>] "
+                + $"{alt} >>",
+            $"<< {widget} /Parent 4 0 R >>");
+
+        Assert.Equal(findings, document.Check(PdfCheck.FormFieldNames).Count);
+    }
+
+    // A radio group with two buttons, each tagged by its own Form element; the first one has alt text.
+    [Theory]
+    [InlineData("/Alt (Ridge route)", 0)]
+    [InlineData("", 1)]
+    public void Check_ShouldFindAFieldWithoutAName_WhenOnlySomeOfItsWidgetsHaveAltText(string secondAlt, int findings)
+    {
+        var widget = "/Type /Annot /Subtype /Widget /Rect [72 300 92 320] /Parent 4 0 R";
+
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R] >> /StructTreeRoot 5 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [7 0 R 8 0 R] >>",
+            "<< /FT /Btn /Ff 32768 /T (route) /Kids [7 0 R 8 0 R] >>",
+            "<< /Type /StructTreeRoot /K [6 0 R 9 0 R] >>",
+            "<< /Type /StructElem /S /Form /P 5 0 R /K [<< /Type /OBJR /Obj 7 0 R /Pg 3 0 R >>] /Alt (Valley route) >>",
+            $"<< {widget} >>",
+            $"<< {widget} >>",
+            $"<< /Type /StructElem /S /Form /P 5 0 R /K [<< /Type /OBJR /Obj 8 0 R /Pg 3 0 R >>] {secondAlt} >>");
+
+        Assert.Equal(findings, document.Check(PdfCheck.FormFieldNames).Count);
     }
 
     [Fact]

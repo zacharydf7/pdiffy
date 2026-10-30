@@ -163,6 +163,13 @@ public sealed record PdfFormField
     public string? AccessibleName { get; init; }
 
     /// <summary>
+    /// The alt text of the Form elements that tag the field's widgets, which PDF/UA accepts in place of a tooltip when
+    /// every widget has one: the first widget's. Null when any widget's element has none. Snapshots leave it out, since
+    /// the structure section prints it.
+    /// </summary>
+    public string? WidgetAltText { get; init; }
+
+    /// <summary>
     /// Whether the field and its widget are one dictionary, so its accessible name is on the widget too; false when its
     /// widgets are its kids, as a radio group's are. Snapshots leave it out.
     /// </summary>

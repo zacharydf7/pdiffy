@@ -8,7 +8,8 @@ using UglyToad.PdfPig.Tokens;
 namespace PDiffy.Reading;
 
 /// <summary>Reads every field in the AcroForm field tree.</summary>
-internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLength, DictionaryToken form)
+internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLength, DictionaryToken form,
+    IReadOnlyDictionary<IndirectReference, string> altTexts)
 {
     // The keys of a field's own /AA and of its widget's /AA, with /A (a widget's click action) as Activate.
     private static readonly (string Key, PdfFormScriptTrigger Trigger)[] FieldTriggers =
@@ -50,15 +51,16 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
     private readonly Dictionary<IndirectReference, string> _names = [];
 
     /// <param name="fileLength">The file's length in bytes, to tell whether a signature covers all of it.</param>
+    /// <param name="altTexts">The alt text of the structure element that tags each annotation, where it has one.</param>
     public static (IReadOnlyList<PdfFormField> Fields, PdfFormSettings? Settings) Read(PdfObjects objects, DictionaryToken catalog,
-        PageTree pages, long fileLength)
+        PageTree pages, long fileLength, IReadOnlyDictionary<IndirectReference, string> altTexts)
     {
         if (objects.Dictionary(catalog, "AcroForm") is not { } form)
         {
             return ([], null);
         }
 
-        var reader = new FormReader(objects, pages, fileLength, form);
+        var reader = new FormReader(objects, pages, fileLength, form, altTexts);
         reader.MapWidgetPages();
         var pending = new Stack<(IToken Field, Inherited Parent)>();
         var formDefaults = new Inherited(null, null, null, null, null, null, objects.Text(form, "DA"), objects.Integer(form, "Q"));
@@ -146,12 +148,17 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLe
         var (font, size, color) = ReadAppearance(widgets.Select(widget => objects.Text(widget, "DA")).FirstOrDefault(da => da is not null)
             ?? current.Appearance);
         var alignment = widgets.Select(widget => objects.Integer(widget, "Q")).FirstOrDefault(q => q is not null) ?? current.Alignment;
+        IReadOnlyList<IToken> widgetTokens = field.Data.ContainsKey("Subtype") ? [token] : kids;
+        var widgetAltTexts = widgetTokens.OfType<IndirectReferenceToken>()
+            .Select(reference => altTexts.GetValueOrDefault(reference.Data)).ToList();
         _fields.Add(new PdfFormField
         {
             Name = name ?? "(unnamed)",
             Type = type,
             Page = PageOf(field.Data.ContainsKey("Subtype") ? token : kids.FirstOrDefault()),
             AccessibleName = objects.Text(field, "TU"),
+            WidgetAltText = widgetAltTexts.Count > 0 && widgetAltTexts.All(alt => alt is not null)
+                ? widgetAltTexts[0] : null,
             CombinedWithWidget = field.Data.ContainsKey("Subtype"),
             Value = FormatValue(objects.Resolve(current.Value)),
             Options = ReadOptions(field),

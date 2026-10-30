@@ -286,16 +286,15 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
+    // PDF/UA asks for the description in the link's Contents, even when its element has text or alt text.
     private void LinkDescriptions()
     {
         foreach (var (element, path) in Elements)
         {
-            foreach (var link in element.Annotations.Where(IsLink))
+            foreach (var link in element.Annotations.Where(link => IsLink(link) && IsBlank(link.Contents)))
             {
-                if (IsBlank(link.Contents) && IsBlank(element.AltText) && IsBlank(element.Text))
-                {
-                    Add(PdfCheck.LinkDescriptions, link.Page, path, $"Link{On(link.Page)} has no description");
-                }
+                Add(PdfCheck.LinkDescriptions, link.Page, path,
+                    $"Link{On(link.Page)} has no description in its Contents");
             }
         }
 
@@ -309,7 +308,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
 
     private void FormFieldNames()
     {
-        foreach (var field in document.FormFields.Where(field => IsBlank(field.AccessibleName)))
+        var unnamed = document.FormFields.Where(field => IsBlank(field.AccessibleName) && IsBlank(field.WidgetAltText));
+        foreach (var field in unnamed)
         {
             Add(PdfCheck.FormFieldNames, field.Page, $"{Name(PdfSection.Forms)} > {field.Name}",
                 $"Form field \"{field.Name}\" has no accessible name");

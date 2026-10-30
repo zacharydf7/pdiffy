@@ -6,10 +6,11 @@ namespace PDiffy.Reading;
 
 /// <param name="ReferencedMcids">Every (page, MCID) an element points to, so content no element reaches can be found.</param>
 /// <param name="ReferencedObjects">Every object, such as an annotation, that an element points to.</param>
+/// <param name="ObjectAltTexts">The alt text of the element that points to each object, where it has one.</param>
 internal sealed record StructureTree(
     IReadOnlyList<PdfRoleMapping> RoleMap, IReadOnlyList<PdfStructureElement> Elements,
     IReadOnlySet<(int Page, MarkedContentId Mcid)> ReferencedMcids,
-    IReadOnlySet<IndirectReference> ReferencedObjects);
+    IReadOnlySet<IndirectReference> ReferencedObjects, IReadOnlyDictionary<IndirectReference, string> ObjectAltTexts);
 
 /// <summary>Turns the structure tree into <see cref="PdfStructureElement"/>s, joining each element to its marked-content text.</summary>
 internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, DestinationReader destinations,
@@ -19,6 +20,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
     private readonly Dictionary<string, string> _namesById = [];
     private readonly HashSet<(int Page, MarkedContentId Mcid)> _referencedMcids = [];
     private readonly HashSet<IndirectReference> _referencedObjects = [];
+    private readonly Dictionary<IndirectReference, string> _objectAltTexts = [];
     private readonly HashSet<IndirectReference> _readElements = [];
 
     /// <param name="contentOf">What a page's content stream holds behind each MCID, given the page number.</param>
@@ -28,7 +30,8 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         var root = objects.Dictionary(catalog, "StructTreeRoot");
         if (root is null)
         {
-            return new StructureTree([], [], new HashSet<(int, MarkedContentId)>(), new HashSet<IndirectReference>());
+            return new StructureTree([], [], new HashSet<(int, MarkedContentId)>(), new HashSet<IndirectReference>(),
+                new Dictionary<IndirectReference, string>());
         }
 
         return new StructureTreeReader(objects, pages, destinations, contentOf).ReadRoot(root);
@@ -50,7 +53,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         var read = topLevel.Select(element => ReadElement(element, inheritedPage: null, depth: 1).Element).ToList();
         var elements = StructurePaths.Assign(read, StructurePaths.Root);
         var mappings = _roleMap.Select(pair => new PdfRoleMapping { Custom = pair.Key, Standard = pair.Value }).ToList();
-        return new StructureTree(mappings, elements, _referencedMcids, _referencedObjects);
+        return new StructureTree(mappings, elements, _referencedMcids, _referencedObjects, _objectAltTexts);
     }
 
     // Elements nested deeper than ReadLimits.MaxDepth are counted, not read, so a hostile tree can't overflow the stack.
@@ -96,7 +99,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
                     if (referencePage is not null && reference.Data.ContainsKey("Stm")) mcidsInXObject++;
                     break;
                 case DictionaryToken reference when objects.Name(reference, "Type") == "OBJR":
-                    if (ReadAnnotation(reference, page) is { } annotation)
+                    if (ReadAnnotation(reference, page, objects.Text(element, "Alt")) is { } annotation)
                     {
                         annotations.Add(annotation);
                     }
@@ -201,11 +204,12 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
             || TextJoiner.Gap(last, first) >= -last.PointSize * TextJoiner.SpaceGap);
     }
 
-    private PdfAnnotation? ReadAnnotation(DictionaryToken objectReference, int? elementPage)
+    private PdfAnnotation? ReadAnnotation(DictionaryToken objectReference, int? elementPage, string? elementAltText)
     {
         if (objectReference.Data.GetValueOrDefault("Obj") is IndirectReferenceToken target)
         {
             _referencedObjects.Add(target.Data);
+            if (!string.IsNullOrWhiteSpace(elementAltText)) _objectAltTexts[target.Data] = elementAltText;
         }
 
         if (objects.Dictionary(objectReference, "Obj") is not { } annotation)
