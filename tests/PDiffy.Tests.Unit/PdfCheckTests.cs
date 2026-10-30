@@ -745,6 +745,67 @@ public class PdfCheckTests
             $"{finding.Path}: {finding.Message}"));
     }
 
+    [Theory]
+    [InlineData("en")]
+    [InlineData("en-US")]
+    [InlineData("zh-Hant-TW")]
+    [InlineData("es-419")]
+    [InlineData("de-CH-1996")]
+    [InlineData("sr-Latn-RS")]
+    [InlineData("en-US-x-trail")]
+    [InlineData("x-klingon")]
+    [InlineData("i-navajo")]
+    [InlineData("en-GB-oed")]
+    [InlineData("sgn-BE-FR")]
+    [InlineData("zh-min-nan")]
+    [InlineData("")]
+    public void Check_ShouldFindNothing_WhenTheDocumentLanguageIsAWellFormedTagOrEmpty(string language)
+    {
+        var document = OnePage(new TestPdf { Lang = language });
+
+        Assert.Empty(document.Check(PdfCheck.LanguageTags));
+    }
+
+    [Theory]
+    [InlineData("english")]
+    [InlineData("en_US")]
+    [InlineData("en-")]
+    [InlineData("en--US")]
+    [InlineData("e")]
+    [InlineData("abcdefghi")]
+    [InlineData("en-a")]
+    [InlineData("en-x")]
+    [InlineData("i-english")]
+    [InlineData("en\n")]
+    [InlineData(" ")]
+    public void Check_ShouldFindTheDocumentLanguage_WhenGivenAMalformedTag(string language)
+    {
+        var document = OnePage(new TestPdf { Lang = language });
+
+        var finding = Assert.Single(document.Check(PdfCheck.LanguageTags));
+
+        Assert.Equal("document > lang", finding.Path);
+    }
+
+    [Fact]
+    public void Check_ShouldFindLanguagesThatArentWellFormedTags_WhenTheDocumentElementsOrMarkedContentSetThem()
+    {
+        var pdf = new TestPdf { Lang = "english" };
+        pdf.AddPage().Tagged(0, "Bonjour")
+            .Raw("/P << /MCID 1 >> BDC BT /F1 12 Tf 72 300 Td /Span << /Lang (fr_FR) >> BDC (Salut) Tj EMC ET EMC");
+        pdf.Structure(new TestElement("P", 0) { Entries = "/Lang (en_US)" }, new TestElement("P", 1));
+
+        var findings = pdf.Load().Check(PdfCheck.LanguageTags);
+
+        Assert.Equal(
+        [
+            "document > lang: The document's language \"english\" isn't a valid language tag",
+            "structure > P[1]: P on p1 has the language \"en_US\", which isn't a valid language tag",
+            "structure > P[2] > span-lang: Marked content in P on p1 has the language \"fr_FR\", which isn't a valid "
+                + "language tag",
+        ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
     [Fact]
     public void Check_ShouldFindNoRoleMapProblem_WhenAnElementHasNoType()
     {
@@ -807,6 +868,7 @@ public class PdfCheckTests
     [InlineData(PdfCheck.AnnotationDescriptions, PdfCheckCategory.Annotations, PdfCheckSeverity.Error,
         "ISO 14289-1 7.18.1")]
     [InlineData(PdfCheck.TabOrder, PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.3")]
+    [InlineData(PdfCheck.LanguageTags, PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

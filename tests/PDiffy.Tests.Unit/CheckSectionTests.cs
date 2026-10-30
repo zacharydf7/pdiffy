@@ -11,7 +11,7 @@ public class CheckSectionTests
 
         var snapshot = document.ToSnapshot(options => options.Check(Rules));
 
-        Assert.Contains("# checks: latest, 2 rules\n", snapshot);
+        Assert.Contains("# checks: 0.3, 2 rules\n", snapshot);
         Assert.EndsWith("checks\n  DocumentLanguage document\n  FigureAltText p2 structure > Figure\n", snapshot);
     }
 
@@ -84,7 +84,7 @@ public class CheckSectionTests
 
     // The test PDF's font isn't embedded, so these tests apply only the rules they're about.
     private static readonly PdfCheckSet Rules =
-        PdfCheckSet.Latest.Only(PdfCheckCategory.Language, PdfCheckCategory.AltText);
+        PdfCheckSet.Version0_3.Only(PdfCheckCategory.Language, PdfCheckCategory.AltText);
 
     // A paragraph on page 1, and a figure with no alt text on page 2.
     private static TestPdf Guide(string? lang)

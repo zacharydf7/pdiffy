@@ -29,10 +29,10 @@ public class PdfCheckSetTests
     [Fact]
     public void Only_ShouldKeepTheRulesInTheCategories_WhenGivenSome()
     {
-        var set = PdfCheckSet.Latest.Only(PdfCheckCategory.Fonts, PdfCheckCategory.Language);
+        var set = PdfCheckSet.Version0_3.Only(PdfCheckCategory.Fonts, PdfCheckCategory.Language);
 
         Assert.Equal([PdfCheck.DocumentLanguage, PdfCheck.FontsEmbedded, PdfCheck.FontsMapToUnicode], set.Checks);
-        Assert.Equal("latest", set.Name);
+        Assert.Equal("0.3", set.Name);
     }
 
     [Fact]

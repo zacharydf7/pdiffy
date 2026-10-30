@@ -60,6 +60,7 @@ conforms.
 | `AnnotationTags` | A link not tagged with Link, a widget not tagged with Form, another annotation not tagged with Annot (or not tagged at all), a Form with no field role that holds anything but one widget, a TrapNet annotation, and a tagged printer mark | `Annotations` | 7.18 |
 | `AnnotationDescriptions` | An annotation other than a link or form field with no contents and no alt text on the element that tags it | `Annotations` | 7.18.1 |
 | `TabOrder` | A page with annotations whose tab order isn't the structure order (S) | `Annotations` | 7.18.3 |
+| `LanguageTags` | A document, element or marked-content language that isn't a well-formed language tag, such as `english` or `en_US` | `Language` | 7.2 |
 | `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |
 | `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
@@ -94,7 +95,7 @@ await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Check(PdfCheckS
 
 ```text
 # pdfua-snapshot v1
-# checks: latest, 25 rules
+# checks: latest, 26 rules
 ...
 checks
   FigureAltText p2 structure > Document > Figure[2]

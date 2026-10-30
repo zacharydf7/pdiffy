@@ -444,6 +444,7 @@ public async Task TrailMap_ShouldPassTheAccessibilityChecks_WhenGenerated()
 | `AnnotationTags` | A link not tagged with Link, a widget not tagged with Form, another annotation not tagged with Annot (or not tagged at all), a Form with no field role that holds anything but one widget, a TrapNet annotation, and a tagged printer mark | `Annotations` | 7.18 |
 | `AnnotationDescriptions` | An annotation other than a link or form field with no contents and no alt text on the element that tags it | `Annotations` | 7.18.1 |
 | `TabOrder` | A page with annotations whose tab order isn't the structure order (S) | `Annotations` | 7.18.3 |
+| `LanguageTags` | A document, element or marked-content language that isn't a well-formed language tag, such as `english` or `en_US` | `Language` | 7.2 |
 | `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |
 | `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
@@ -809,7 +810,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 | Release | Change |
 |---|---|
 | Next | `pdfua-snapshot v1`, unchanged version: the document line prints `suspects=yes` when MarkInfo says the tags may be unreliable, a structure element with no parent entry gets `parent=missing`, a Form element prints its field role (`field-role=cb`), and a file whose header says PDF 2.0 prints `version=2.0`, not `1.4`. Only snapshots of such documents change |
-| Next | `pdfua-snapshot v1`, unchanged version: `PdfCheckSet.Latest` has thirteen new rules (`RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`, `TocStructure`, `HeadingTypes`, `NoteIds`, `TableStructure`, `TableGrid`, `AnnotationTags`, `AnnotationDescriptions`, `TabOrder`), so a snapshot that records checks with it prints `# checks: latest, 25 rules` and what they find. A release's own set doesn't change |
+| Next | `pdfua-snapshot v1`, unchanged version: `PdfCheckSet.Latest` has fourteen new rules (`RoleMap`, `XmpMetadata`, `TaggedPdf`, `PdfVersion`, `ListStructure`, `TocStructure`, `HeadingTypes`, `NoteIds`, `TableStructure`, `TableGrid`, `AnnotationTags`, `AnnotationDescriptions`, `TabOrder`, `LanguageTags`), so a snapshot that records checks with it prints `# checks: latest, 26 rules` and what they find. A release's own set doesn't change |
 | Next | No snapshot changes. A new problem in the `checks` section from a rule that isn't a house rule is flagged as affecting accessibility |
 | Next | `pdfua-snapshot v1`, unchanged version: a test can opt into a `checks` section, with `Check(PdfCheckSet)`, that lists what the checks find, and a `# checks: ...` header line. Snapshots without the option don't change |
 | Next | `pdfua-snapshot v1`, unchanged version: an element whose marked content is in a form XObject reads its text from the form alone. A form numbers its MCIDs apart from the page, and before, both the page's element and the form's printed the text of both when the two used the same MCID. Only snapshots of documents whose forms reuse the page's MCIDs change, and text a form tags that no element points to now shows in `untagged` |

@@ -1,10 +1,21 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace PDiffy;
 
 /// <summary>Applies <see cref="PdfCheck"/> rules to a document's model, one method per rule.</summary>
 internal sealed class PdfChecker(PdfUaDocument document)
 {
+    // A well-formed BCP 47 tag: a language with its extended subtags, then an optional script, region, variants,
+    // extensions and private use; or a private-use tag, or one of the irregular tags BCP 47 lists by name. The grammar
+    // also allows a language of 4 to 8 letters, but the registry has none, so a word such as "english" isn't one.
+    private static readonly Regex LanguageTag = new(
+        @"^(?:[a-z]{2,3}(?:-[a-z]{3}){0,3}(?:-[a-z]{4})?(?:-(?:[a-z]{2}|[0-9]{3}))?"
+        + @"(?:-(?:[a-z0-9]{5,8}|[0-9][a-z0-9]{3}))*(?:-[0-9a-wy-z](?:-[a-z0-9]{2,8})+)*(?:-x(?:-[a-z0-9]{1,8})+)?"
+        + @"|x(?:-[a-z0-9]{1,8})+|en-GB-oed|sgn-(?:BE-FR|BE-NL|CH-DE)"
+        + @"|i-(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|tao|tay|tsu))\z",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
     private readonly List<PdfCheckFinding> _findings = [];
     private List<(PdfStructureElement Element, string Path)>? _elements;
 
@@ -44,6 +55,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.AnnotationTags: AnnotationTags(); break;
             case PdfCheck.AnnotationDescriptions: AnnotationDescriptions(); break;
             case PdfCheck.TabOrder: TabOrder(); break;
+            case PdfCheck.LanguageTags: LanguageTags(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -545,6 +557,34 @@ internal sealed class PdfChecker(PdfUaDocument document)
         }
     }
 
+    // An empty language means an unknown one, which DocumentLanguage reports for the document.
+    private void LanguageTags()
+    {
+        if (document.Document.Language is { } language && IsMalformed(language))
+        {
+            Add(PdfCheck.LanguageTags, null, $"{Name(PdfSection.Document)} > lang",
+                $"The document's language \"{language}\" isn't a valid language tag");
+        }
+
+        foreach (var (element, path) in Elements)
+        {
+            var (type, page) = (element.TypeOrMapped, element.FirstPage);
+            if (element.Language is { } own && IsMalformed(own))
+            {
+                Add(PdfCheck.LanguageTags, page, path, $"{type}{On(page)} has the language \"{own}\", "
+                    + "which isn't a valid language tag");
+            }
+
+            foreach (var span in element.MarkedSpans.Where(span => span.Language is { } lang && IsMalformed(lang)))
+            {
+                Add(PdfCheck.LanguageTags, page, $"{path} > span-lang", $"Marked content in {type}{On(page)} has the "
+                    + $"language \"{span.Language}\", which isn't a valid language tag");
+            }
+        }
+    }
+
+    private static bool IsMalformed(string language) => language.Length > 0 && !LanguageTag.IsMatch(language);
+
     // The element an annotation is tagged with, and the clause that says so.
     private static (string Element, string Clause) TagFor(string subtype) => subtype switch
     {
@@ -763,6 +803,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.AnnotationDescriptions =>
             new(PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.1"),
         PdfCheck.TabOrder => new(PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.3"),
+        PdfCheck.LanguageTags => new(PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

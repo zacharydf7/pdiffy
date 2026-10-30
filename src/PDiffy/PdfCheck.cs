@@ -124,6 +124,12 @@ public enum PdfCheck
 
     /// <summary>Every page with annotations has its tab order follow the structure (S).</summary>
     TabOrder,
+
+    /// <summary>
+    /// Every language the document, its structure elements and its marked content set is a well-formed language tag,
+    /// such as "en-US", not "english" or "en_US".
+    /// </summary>
+    LanguageTags,
 }
 
 /// <summary>

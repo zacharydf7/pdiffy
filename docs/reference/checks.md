@@ -18,6 +18,20 @@ guesses, and English text read with a French voice, or the other way round, is h
 **How to fix it:** set the document language, such as `en-US`, in the generator. In the PDF it's the catalog's `/Lang`
 entry. Text in another language inside the document sets its own language on its element or marked content.
 
+## LanguageTags
+
+**Finds:** a language on the document, a structure element or marked content that isn't a well-formed language tag
+(BCP 47), such as `english`, `en_US`, `en-` or a single space. An empty language means an unknown one, so it isn't
+reported here; for the document, [`DocumentLanguage`](#documentlanguage) reports it. **Category:** `Language`. **Severity:** `Error`.
+**From:** ISO 14289-1 7.2.
+
+**Why it matters:** a screen reader looks the tag up to choose its voice and pronunciation. One it can't parse is
+treated as no language at all, so the text is read with whatever voice it falls back to.
+
+**How to fix it:** use a language code with a hyphen before the region, such as `en`, `en-US`, `fr-CA` or `zh-Hant-TW`.
+Generators usually take it from a culture or locale setting; an underscore (`en_US`) is a sign the value came from a
+platform locale name rather than a language tag.
+
 ## DocumentTitle
 
 **Finds:** a document with no title, or one whose viewer shows the file name instead. **Category:** `Document`.

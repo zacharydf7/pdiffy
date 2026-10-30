@@ -122,6 +122,8 @@ library does.
 - `AnnotationDescriptions` finds an annotation other than a link or form field with no contents and no alt text on its
   element, as `LinkDescriptions` does for links, and `TabOrder` finds a page with annotations whose tab order isn't
   `S` ([#70](https://github.com/zacharydf7/pdiffy/issues/70)).
+- `LanguageTags` finds a document, element or marked-content language that isn't a well-formed language tag, such as
+  `english` or `en_US` ([#71](https://github.com/zacharydf7/pdiffy/issues/71)).
 - Snapshots print `suspects=yes` and `parent=missing` when a document has them, and a PDF 2.0 file's
   `version` is now `2.0`, not `1.4`. `PdfDocumentInfo` has `Suspects` and `HasStructureTree`, `PdfMetadata` has
   `HasXmp` and `PdfUaIdPrefix`, and `PdfStructureElement` has `ParentMissing`
