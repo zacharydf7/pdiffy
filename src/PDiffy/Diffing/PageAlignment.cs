@@ -117,7 +117,7 @@ internal sealed class PageAlignment
     private static string Range(int first, int last) => first == last ? $"p{first}" : $"p{first}-{last}";
 
     // The document line's pages= when the document section is there, else the highest page any line names.
-    private static int PageCount(Dictionary<string, List<SnapshotLine>> sections)
+    internal static int PageCount(Dictionary<string, List<SnapshotLine>> sections)
     {
         var document = sections.GetValueOrDefault(SnapshotWriter.Name(Section.Document)) ?? [];
         var count = document.SelectMany(line => line.Attributes).Where(pair => pair.Key == "pages")

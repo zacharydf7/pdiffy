@@ -87,7 +87,7 @@ What happens on each run:
 
 | Situation | PDiffy does | Test |
 |---|---|---|
-| No verified file yet | Writes the received file | Fails: "New PDF snapshot" |
+| No verified file yet | Writes the received file | Fails: "New PDF snapshot", with its size by section (`4 pages; 1,362 lines: layout 1,240 (91%), structure 58, ...`) and, when layout is most of it, a hint about the `Content` and `Accessibility` profiles |
 | Snapshot differs | Writes the received file and an HTML report (`.diff.html`) | Fails with a summary of what changed and where |
 | Snapshot matches | Deletes any received file or report left from an earlier run | Passes |
 | `PDIFFY_ACCEPT=1` is set | Writes the snapshot as the new verified file | Passes |

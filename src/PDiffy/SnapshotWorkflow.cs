@@ -44,7 +44,7 @@ internal static class SnapshotWorkflow
         if (diff is null) File.Delete(files.Report);
         else File.WriteAllText(files.Report, diff.ToHtml());
         var formatChange = verified is null ? null : FormatChange(verified, received);
-        throw new SnapshotException(FailureMessage(files, diff, kind, formatChange));
+        throw new SnapshotException(FailureMessage(received, files, diff, kind, formatChange));
     }
 
     // Two calls with one name write one file, so in accept mode the last silently wins and the others fail next run. The
@@ -84,13 +84,15 @@ internal static class SnapshotWorkflow
     }
 
     // A new snapshot has nothing to compare with, so it gets no diff and no report.
-    private static string FailureMessage(SnapshotFiles files, SnapshotDiff? diff, string kind, string? formatChange)
+    private static string FailureMessage(string received, SnapshotFiles files, SnapshotDiff? diff, string kind,
+        string? formatChange)
     {
         var message = new StringBuilder();
         if (formatChange is not null) message.AppendLine(formatChange).AppendLine();
         message.AppendLine(diff is null
             ? $"New {kind} snapshot. Review the received file, then accept it."
             : $"The {kind}'s snapshot differs from the verified one.");
+        if (diff is null && SnapshotBreakdown.Of(received) is { } breakdown) message.AppendLine(breakdown);
         if (diff is null && OnCi())
         {
             message.AppendLine("This is a build server, so the verified file was probably expected: it isn't in this "

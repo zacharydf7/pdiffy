@@ -52,7 +52,9 @@ The snapshot is named after the test file and method, and sits next to the test 
 ## 3. Run it and approve the snapshot
 
 The first run has nothing to compare with, so it fails with "New PDF snapshot" and writes what it got to a
-`.received.pdfua.txt` file. Open it, check that it describes your document, then accept it in any of these ways:
+`.received.pdfua.txt` file. The failure says how big it is, section by section, so you know what you're about to
+accept, and when layout is most of it, which profile leaves layout out. Open it, check that it describes your document,
+then accept it in any of these ways:
 
 - Run `dotnet pdiffy accept --all` to accept every received snapshot under the current folder.
 - Run the tests in accept mode: `PDIFFY_ACCEPT=1 dotnet test`, or in PowerShell `$env:PDIFFY_ACCEPT=1; dotnet test`.
@@ -85,7 +87,7 @@ Add these to `.gitignore`, since they only exist while a test is failing:
 
 | Situation | PDiffy does | Test |
 |---|---|---|
-| No verified file yet | Writes the received file | Fails: "New PDF snapshot" |
+| No verified file yet | Writes the received file | Fails: "New PDF snapshot", with its size by section (`4 pages; 1,362 lines: layout 1,240 (91%), structure 58, ...`) and, when layout is most of it, a hint about the `Content` and `Accessibility` profiles |
 | Snapshot differs | Writes the received file and an HTML report (`.diff.html`) | Fails with a summary of what changed and where |
 | Snapshot matches | Deletes any received file or report left from an earlier run | Passes |
 | `PDIFFY_ACCEPT=1` is set | Writes the snapshot as the new verified file | Passes |

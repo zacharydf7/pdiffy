@@ -14,6 +14,7 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
         var error = await Assert.ThrowsAsync<SnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide"));
 
         Assert.StartsWith("New PDF snapshot.", error.Message);
+        Assert.Contains($"{Environment.NewLine}1 page; ", error.Message);
         Assert.False(File.Exists(Path.Combine(Folder, "Guide.diff.html")));
         Assert.Equal(SnapshotOf("Hello"), File.ReadAllText(Path.Combine(Folder, "Guide.received.pdfua.txt")));
     }
@@ -101,6 +102,7 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
         var error = await Assert.ThrowsAsync<SnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Goodbye"), "Guide"));
 
         Assert.StartsWith("The PDF's snapshot differs from the verified one.", error.Message);
+        Assert.DoesNotContain(" lines: ", error.Message);
         Assert.Contains("~ text structure > P (p1)\n    \"[-Hello-] {+Goodbye+}\"", error.Message);
         Assert.Contains($"received: {Path.Combine(Folder, "Guide.received.pdfua.txt")}", error.Message);
         Assert.Equal(SnapshotOf("Goodbye"), File.ReadAllText(Path.Combine(Folder, "Guide.received.pdfua.txt")));
