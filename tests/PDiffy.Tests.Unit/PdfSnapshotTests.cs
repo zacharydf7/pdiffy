@@ -185,6 +185,7 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
     public void Verify_ShouldPrintTheAcceptCommandWithTheFullPath_WhenTheFolderIsRelative()
     {
         var relative = Path.GetRelativePath(Environment.CurrentDirectory, Folder);
+        Assert.SkipWhen(Path.IsPathRooted(relative), "The temp folder is on another drive, so no relative path reaches it.");
 
         var error = Assert.Throws<SnapshotException>(
             () => PdfSnapshot.Verify(Pdf("Hello"), "Guide", directory: relative));

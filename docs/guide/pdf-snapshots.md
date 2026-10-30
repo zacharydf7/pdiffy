@@ -80,9 +80,9 @@ by section: structure 3
 ~ text structure > Document > Table > TR[2] > TD[2] (p2)
     "Go [-with-] {+without+} a guide"
 
-verified: Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.verified.pdfua.txt
-received: Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.received.pdfua.txt
-report: Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.diff.html
+verified: /home/me/trails/tests/Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.verified.pdfua.txt
+received: /home/me/trails/tests/Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.received.pdfua.txt
+report: /home/me/trails/tests/Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.diff.html
 To accept, run:
   dotnet pdiffy accept "/home/me/trails/tests/Snapshots/TrailGuideTests.TrailGuide_ShouldMatchApprovedSnapshot_WhenGenerated.received.pdfua.txt"
 (pdiffy accept with a global install), or set PDIFFY_ACCEPT=1 and run the test again, or copy the received file over the verified one.

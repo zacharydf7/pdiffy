@@ -100,8 +100,7 @@ internal static class SnapshotWorkflow
         if (diff is not null) message.AppendLine().AppendLine(diff.Describe());
         message.AppendLine().AppendLine($"verified: {files.Verified}").AppendLine($"received: {files.Received}");
         if (diff is not null) message.AppendLine($"report: {files.Report}");
-        // A command to paste reads the same in every shell, unlike setting the variable.
-        // The folder can be relative to the test's working folder, so the command gets the full path to paste anywhere.
+        // A command reads the same in every shell, unlike setting the variable, and the full path works from any folder.
         message.AppendLine("To accept, run:");
         message.AppendLine($"  dotnet pdiffy accept \"{Path.GetFullPath(files.Received)}\"");
         message.Append("(pdiffy accept with a global install), ");
