@@ -100,6 +100,12 @@ Snapshot files sit next to the test file by default. To keep them all in one fol
 Snapshot.Directory = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Snapshots");
 ```
 
+A suite whose tests share options, such as a profile or scrubbers, can set them once beside the folder, with `PdfSnapshot.DefaultOptions`, `DocxSnapshot.DefaultOptions` or `Snapshot.DefaultOptions` for text and JSON. Each call's own `configure` runs after them and adds to them. A PDF or Word call can leave out more but can't bring back what the defaults leave out (its `Use(SnapshotProfile.Strict)` doesn't undo a default profile), so keep the defaults to what every test agrees on and set the rest in each test. A text or JSON call's `KeepDates()` or `KeepGuids()` does undo a default scrub. A PDF or Word snapshot's first lines list what's ignored, but not what's scrubbed.
+
+```csharp
+PdfSnapshot.DefaultOptions = options => options.Use(SnapshotProfile.Accessibility).ScrubDates();
+```
+
 `VerifyAsync` also takes the document as a `byte[]`, or one you've already loaded with `PdfUaDocument.Load`, so a test that asserts on the document and snapshots it reads it once. A stream is read from its start wherever the generator left it, and its position is put back afterwards; one that can't seek, such as a network response, is copied first. An empty stream, a Word document passed as a PDF, or a web page (a generator's error page, say) fails with an `InvalidDataException` that says so.
 
 A test whose snapshots belong somewhere else passes the folder: `await PdfSnapshot.VerifyAsync(pdf, directory: otherFolder)`.

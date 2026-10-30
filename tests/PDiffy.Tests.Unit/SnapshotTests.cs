@@ -84,6 +84,29 @@ public sealed class SnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public async Task VerifyAsync_ShouldApplyTheDefaultsThenTheCallsOwnOptions_WhenDefaultOptionsAreSet()
+    {
+        Snapshot.DefaultOptions = options => options.ScrubText(new Regex("trail"), "path");
+
+        await Assert.ThrowsAsync<SnapshotException>(
+            () => Snapshot.VerifyAsync("trail 12", "Export", o => o.ScrubText(new Regex("path"), "route")));
+
+        Assert.Equal("route 12", File.ReadAllText(Path.Combine(Folder, "Export.received.txt")));
+    }
+
+    [Fact]
+    public async Task VerifyJsonAsync_ShouldLetTheDefaultsKeepGuids_WhenDefaultOptionsSayTo()
+    {
+        Snapshot.DefaultOptions = options => options.KeepGuids();
+
+        await Assert.ThrowsAsync<SnapshotException>(
+            () => Snapshot.VerifyJsonAsync("""{"id":"0f8fad5b-d9cb-469f-a165-70867728950e"}""", "Export"));
+
+        var received = File.ReadAllText(Path.Combine(Folder, "Export.received.json"));
+        Assert.Contains("0f8fad5b-d9cb-469f-a165-70867728950e", received);
+    }
+
+    [Fact]
     public async Task VerifyAsync_ShouldAddTheVariantToTheName_WhenGivenOne()
     {
         await Assert.ThrowsAsync<SnapshotException>(() => Snapshot.VerifyAsync("one", variant: "Ridgeline"));

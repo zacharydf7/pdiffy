@@ -21,6 +21,14 @@ public static class Snapshot
     public static string? Directory { get; set; }
 
     /// <summary>
+    /// Options every text and JSON snapshot starts with, such as scrubbers, set once (in a module initializer, say)
+    /// instead of in each test. Each call's own <c>configure</c> runs after them. JSON's own scrubbing of GUIDs and
+    /// timestamps runs first, so these can keep them with <see cref="TextSnapshotOptions.KeepGuids"/> or <see
+    /// cref="TextSnapshotOptions.KeepDates"/>.
+    /// </summary>
+    public static Action<TextSnapshotOptions>? DefaultOptions { get; set; }
+
+    /// <summary>
     /// Compares text with the verified file exactly: whitespace counts, and only CRLF line endings are read as LF.
     /// </summary>
     /// <param name="text">The text to check.</param>
@@ -40,6 +48,7 @@ public static class Snapshot
         [CallerMemberName] string testName = "", string? variant = null)
     {
         var options = new TextSnapshotOptions();
+        DefaultOptions?.Invoke(options);
         configure?.Invoke(options);
         var files = SnapshotWorkflow.Files(name, variant, extension, directory, testFile, testName);
         return SnapshotWorkflow.VerifyAsync(Scrub(text, options), files, "text");
@@ -68,6 +77,7 @@ public static class Snapshot
         string? variant = null)
     {
         var options = new TextSnapshotOptions().ScrubJsonValues();
+        DefaultOptions?.Invoke(options);
         configure?.Invoke(options);
         var files = SnapshotWorkflow.Files(name, variant, "json", directory, testFile, testName);
         return SnapshotWorkflow.VerifyAsync(Scrub(Indent(json, files.Name), options), files, "JSON");

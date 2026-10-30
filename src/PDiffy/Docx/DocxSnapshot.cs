@@ -12,6 +12,14 @@ public static class DocxSnapshot
     internal const string Extension = "docx.txt";
 
     /// <summary>
+    /// Options every DOCX snapshot starts with, such as a profile or scrubbers, set once (in a module initializer, say)
+    /// instead of in each test. Each call's own <c>configure</c> runs after them and adds to them: it can leave out
+    /// more, but not bring back what these leave out, so keep them to what every test agrees on. The snapshot's first
+    /// lines list what's ignored, but not what's scrubbed.
+    /// </summary>
+    public static Action<DocxSnapshotOptions>? DefaultOptions { get; set; }
+
+    /// <summary>
     /// Compares the DOCX's snapshot with the verified one. On a mismatch it writes <c>{name}.received.docx.txt</c> and an
     /// HTML report, <c>{name}.diff.html</c>, and throws; when they match it deletes both if an earlier run left them.
     /// </summary>
@@ -50,7 +58,11 @@ public static class DocxSnapshot
         string? directory = null, [CallerFilePath] string testFile = "",
         [CallerMemberName] string testName = "", string? variant = null)
     {
-        var received = docx.ToSnapshot(configure);
+        var received = docx.ToSnapshot(options =>
+        {
+            DefaultOptions?.Invoke(options);
+            configure?.Invoke(options);
+        });
         var files = SnapshotWorkflow.Files(name, variant, Extension, directory, testFile, testName);
         await SnapshotWorkflow.VerifyAsync(received, files, "DOCX");
     }

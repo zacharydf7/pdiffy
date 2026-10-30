@@ -46,6 +46,19 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public async Task VerifyAsync_ShouldApplyTheDefaultsAndTheCallsOwnOptions_WhenDefaultOptionsAreSet()
+    {
+        PdfSnapshot.DefaultOptions = options => options.Use(SnapshotProfile.Accessibility);
+
+        await Assert.ThrowsAsync<SnapshotException>(
+            () => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide", o => o.Ignore(Section.Fonts)));
+
+        var expected = PdfUaDocument.Load(Pdf("Hello"))
+            .ToSnapshot(o => o.Use(SnapshotProfile.Accessibility).Ignore(Section.Fonts));
+        Assert.Equal(expected, File.ReadAllText(Path.Combine(Folder, "Guide.received.pdfua.txt")));
+    }
+
+    [Fact]
     public async Task VerifyAsync_ShouldFailWithTheChangedLines_WhenTheSnapshotDiffers()
     {
         Directory.CreateDirectory(Folder);

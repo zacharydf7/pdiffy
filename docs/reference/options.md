@@ -131,6 +131,18 @@ less.
 | `KeepDates()` | Keeps timestamp strings in JSON, which are scrubbed by default |
 | `KeepGuids()` | Keeps GUID strings in JSON, which are scrubbed by default |
 
+## Defaults for the whole suite
+
+| Property | Applies to | Combines with a call's `configure` |
+|---|---|---|
+| [`PdfSnapshot.DefaultOptions`](xref:PDiffy.PdfSnapshot.DefaultOptions) | `PdfSnapshot.VerifyAsync` | Runs first; the call adds to it and can't bring back what it leaves out |
+| [`DocxSnapshot.DefaultOptions`](xref:PDiffy.DocxSnapshot.DefaultOptions) | `DocxSnapshot.VerifyAsync` | Runs first; the call adds to it and can't bring back what it leaves out |
+| [`Snapshot.DefaultOptions`](xref:PDiffy.Snapshot.DefaultOptions) | `Snapshot.VerifyAsync` and `VerifyJsonAsync` | Runs first (after JSON's own scrubbing); a call's `KeepDates()` or `KeepGuids()` undoes a default scrub |
+
+Profiles and ignores add up: a default `Use(SnapshotProfile.Accessibility)` and a call's `Ignore(Section.Fonts)` leave
+out both, and a call's `Use(SnapshotProfile.Strict)` leaves out nothing more, so it doesn't undo the default.
+`ToSnapshot` and `CompareTo` don't use the defaults.
+
 ## Environment variables
 
 | Variable | Does |

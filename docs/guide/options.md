@@ -42,6 +42,21 @@ less.
 
 [Every profile](../reference/options.md#pdf-profiles), and what it leaves out, is listed in the reference.
 
+## Set options for the whole suite
+
+A suite whose tests share options, such as a profile or scrubbers, can set them once beside the folder, with
+`PdfSnapshot.DefaultOptions`, `DocxSnapshot.DefaultOptions` or `Snapshot.DefaultOptions` for text and JSON. Each call's
+own `configure` runs after them and adds to them. A PDF or Word call can leave out more but can't bring back what the
+defaults leave out (its `Use(SnapshotProfile.Strict)` doesn't undo a default profile), so keep the defaults to what
+every test agrees on and set the rest in each test. A text or JSON call's `KeepDates()` or `KeepGuids()` does undo a
+default scrub. A PDF or Word snapshot's first lines list what's ignored, but not what's scrubbed.
+
+```csharp
+PdfSnapshot.DefaultOptions = options => options.Use(SnapshotProfile.Accessibility).ScrubDates();
+```
+
+Set them in a module initializer, as for [`Snapshot.Directory`](getting-started.md#keep-snapshots-in-one-folder).
+
 ## Leave out sections
 
 Pass the sections to leave out. They print as `(ignored)` instead of their contents.

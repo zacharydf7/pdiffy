@@ -39,6 +39,19 @@ public sealed class DocxSnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public async Task VerifyAsync_ShouldApplyTheDefaultsAndTheCallsOwnOptions_WhenDefaultOptionsAreSet()
+    {
+        DocxSnapshot.DefaultOptions = options => options.Use(DocxProfile.Content);
+
+        await Assert.ThrowsAsync<SnapshotException>(
+            () => DocxSnapshot.VerifyAsync(Docx("Hello"), "Guide", o => o.Ignore(DocxSection.Headers)));
+
+        var expected = DocxDocument.Load(Docx("Hello"))
+            .ToSnapshot(o => o.Use(DocxProfile.Content).Ignore(DocxSection.Headers));
+        Assert.Equal(expected, File.ReadAllText(Path.Combine(Folder, "Guide.received.docx.txt")));
+    }
+
+    [Fact]
     public async Task VerifyAsync_ShouldPass_WhenTheDocumentMatchesItsAcceptedSnapshot()
     {
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, "1");
