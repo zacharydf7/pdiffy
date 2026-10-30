@@ -18,6 +18,7 @@ public class MutationTests
         { "header scope removed", new Sample { Scope = null }, Section.Structure, ChangeKind.AttributeChanged, true },
         { "cell headers changed", new Sample { Headers = "(h-other)" }, Section.Structure, ChangeKind.AttributeChanged, true },
         { "tagged text made untagged", new Sample { NoteTagged = false }, Section.Untagged, ChangeKind.Added, true },
+        { "tagged text made an artifact", new Sample { NoteArtifact = true }, Section.Layout, ChangeKind.Changed, true },
         { "artifact made tagged", new Sample { FooterTagged = true }, Section.Artifacts, ChangeKind.Removed, false },
         { "document language", new Sample { DocumentLang = "en-GB" }, Section.Document, ChangeKind.AttributeChanged, true },
         { "element language", new Sample { ElementLang = "fr-FR" }, Section.Structure, ChangeKind.AttributeChanged, true },
@@ -55,6 +56,7 @@ public class MutationTests
         public string? Scope { get; init; } = "Column";
         public string Headers { get; init; } = "(h-trail)";
         public bool NoteTagged { get; init; } = true;
+        public bool NoteArtifact { get; init; }
         public bool FooterTagged { get; init; }
         public string DocumentLang { get; init; } = "en-US";
         public string ElementLang { get; init; } = "es-ES";
@@ -76,7 +78,8 @@ public class MutationTests
             .TaggedImage(3, sample.ImageGray)
             .Raw($"/P << /MCID 6 >> BDC q BT /F1 {sample.FontSize} Tf {sample.TextColor} {sample.TextAt} Td (Styled) Tj ET Q EMC")
             .Tagged(7, "Trail", "TH").Tagged(8, "Ridgeline", "TD").Tagged(9, "example.com", "Link");
-        if (sample.NoteTagged) page.Tagged(4, "Pack light");
+        if (sample.NoteArtifact) page.Artifact("Pack light");
+        else if (sample.NoteTagged) page.Tagged(4, "Pack light");
         else page.Untagged("Pack light");
         if (sample.FooterTagged) page.Tagged(5, "Page 1");
         else page.Artifact("Page 1");
@@ -94,7 +97,7 @@ public class MutationTests
             new TestElement("TR", new TestElement("TH", 7) { Entries = $"/ID (h-trail) /A << /O /Table {scope} >>" }),
             new TestElement("TR", new TestElement("TD", 8) { Entries = $"/A << /O /Table /Headers [{sample.Headers}] >>" })));
         elements.Add(new TestElement("Link", 9, new TestLink(sample.LinkUri, "Trail database")));
-        if (sample.NoteTagged) elements.Add(new TestElement("Note", 4));
+        if (sample.NoteTagged && !sample.NoteArtifact) elements.Add(new TestElement("Note", 4));
         if (sample.FooterTagged) elements.Add(new TestElement("P", 5));
         elements.Add(new TestElement("P", 0) { Page = 2 });
         pdf.Structure(new TestElement("Document", [.. elements]));

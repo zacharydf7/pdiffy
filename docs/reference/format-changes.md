@@ -12,6 +12,16 @@ failure after an upgrade can be told apart from a change to your document.
 
 Either way, review the received files and accept them: `pdiffy accept --all`, or run the tests with `PDIFFY_ACCEPT=1`.
 
+## Next release
+
+### Accessibility flags
+
+No snapshot changes, but more changes are flagged as
+[affecting accessibility](accessibility-changes.md): tagged content made an artifact or untagged, `marked` or
+`display-doc-title` turned off, the title removed, replacement text or an expansion removed, a page's tab order no
+longer `S`, a font's text no longer mapping to Unicode, and permissions that stop text extraction for accessibility.
+Tests that assert on `AffectsAccessibility` can fail where they passed.
+
 ## 0.3.0
 
 ### PDF (`pdfua-snapshot v1`, unchanged)

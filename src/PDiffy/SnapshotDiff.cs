@@ -34,7 +34,7 @@ public enum ChangeKind
 public sealed record SnapshotChange(ChangeKind Kind, Section? Section, string Path, int? Page, string Detail)
 {
     /// <summary>
-    /// Whether the change can affect what assistive technology gets, by the fixed rules the README lists under "Changes
+    /// Whether the change can affect what assistive technology gets, by the rules the README lists under "Changes
     /// that affect accessibility", such as a heading that became a paragraph or a figure that lost its alt text.
     /// </summary>
     public bool AffectsAccessibility => AccessibilityRules.Affects(this);
