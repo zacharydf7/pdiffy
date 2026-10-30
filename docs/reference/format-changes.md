@@ -16,6 +16,9 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### PDF (`pdfua-snapshot v1`, unchanged)
 
+- A PDF that refers to an object it doesn't have, has a bookmark without a title, or has an image that can't be
+  decoded now loads: the reference reads as nothing, as the PDF standard says, the bookmarks print `unreadable`, and
+  the image is hashed as stored. Such files used to throw, so no approved snapshot changes.
 - Text, images and paths drawn inside optional-content marked content (`/OC ... BDC`), a layer a viewer can hide or
   leave out of print, list the layers they're in on their layout lines (`layers=["Draft"]`), outermost first, and text
   runs end where a layer starts or ends. Wrapping a watermark or draft text in a layer used to give the same snapshot.

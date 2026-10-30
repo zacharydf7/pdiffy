@@ -11,10 +11,13 @@ What you can rely on PDiffy for, and what it doesn't do.
   end of the file unsigned and shows as `covers-file=no` on its signatures.
 - **A small meaningful change does change a snapshot:** an edited word, removed alt text, a moved element, a changed
   color. Mutation tests change one thing at a time and expect the snapshot to change.
-- **A damaged part is marked, not dropped.** A PDF page or attachment that can't be read prints as `unreadable`, as
-  does a Word part. In a Word document, content PDiffy doesn't read yet, in a paragraph or between paragraphs, tables,
-  rows and cells, prints as `unsupported <element> hash=...`, so a change to it still fails the test. Settings and
-  style properties it doesn't read aren't recorded.
+- **A damaged part is marked, not dropped.** A PDF page, attachment or outline that can't be read prints as
+  `unreadable`, as does a Word part. In a Word document, content PDiffy doesn't read yet, in a paragraph or between
+  paragraphs, tables, rows and cells, prints as `unsupported <element> hash=...`, so a change to it still fails the
+  test. Settings and style properties it doesn't read aren't recorded.
+- **A missing object reads as nothing.** A reference to an object the PDF doesn't have, or can't find, reads as the
+  null object, as the PDF standard says, so what it pointed to is left out (a bookmark, say). An image that can't be
+  decoded is hashed as stored. A PDF too damaged to open at all throws.
 - **A file built to overflow the stack or exhaust memory doesn't crash PDiffy's own reading.** Structure elements and
   bookmarks are read 256 levels deep; form fields, name and number trees and marked content are walked without
   recursion; XML with a DTD or nested more than 256 deep is refused; and a Word part over 256 MB isn't loaded. What's

@@ -8,7 +8,10 @@ namespace PDiffy.Reading;
 /// <summary>Bookmarks and page labels.</summary>
 internal static class NavigationReader
 {
-    /// <summary>The bookmarks, or none when they nest deeper than <see cref="ReadLimits.MaxDepth"/> or loop back on themselves.</summary>
+    /// <summary>
+    /// The bookmarks, or none when they nest deeper than <see cref="ReadLimits.MaxDepth"/>, loop back on themselves or
+    /// have an item PdfPig can't read, such as one without a title.
+    /// </summary>
     public static (IReadOnlyList<Bookmark> Bookmarks, bool Unreadable) ReadBookmarks(PdfDocument document, PdfObjects objects,
         DictionaryToken catalog)
     {
@@ -18,9 +21,15 @@ internal static class NavigationReader
             return ([], true);
         }
 
-        if (!document.TryGetBookmarks(out var bookmarks))
+        // PdfPig refuses the whole outline when one item is damaged, such as one without a text title.
+        Bookmarks? bookmarks;
+        try
         {
-            return ([], false);
+            if (!document.TryGetBookmarks(out bookmarks)) return ([], false);
+        }
+        catch (PdfDocumentFormatException)
+        {
+            return ([], true);
         }
 
         return (bookmarks.Roots.Select(ToBookmark).ToList(), false);

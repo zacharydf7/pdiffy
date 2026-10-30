@@ -98,7 +98,7 @@ internal sealed class LayoutReader(int pageNumber, PageContent content,
         && a.RawMemory.Span.SequenceEqual(b.RawMemory.Span);
 
     // The first 16 hex digits of a SHA-256 of the decoded pixels, or of the raw stream when PdfPig can't decode it (e.g. JPEG).
-    // An image too large to decompress is hashed as stored, which still changes when the image does.
+    // An image too large to decompress, or too damaged to, is hashed as stored, which still changes when the image does.
     public static string Hash(IPdfImage image)
     {
         Memory<byte> bytes;
@@ -106,8 +106,9 @@ internal sealed class LayoutReader(int pageNumber, PageContent content,
         {
             bytes = image.TryGetBytesAsMemory(out var decoded) ? decoded : image.RawMemory;
         }
-        catch (CappedFilterProvider.StreamTooLargeException)
+        catch (Exception)
         {
+            // PdfPig's filters throw many exception types on damaged data, as PdfObjects.Contents notes.
             bytes = image.RawMemory;
         }
 

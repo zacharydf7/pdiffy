@@ -11,11 +11,20 @@ internal sealed class PdfObjects(PdfDocument document)
     // How deep Describe goes into nested arrays, so an array that contains itself can't loop forever.
     internal const int MaxArrayDepth = 4;
 
+    // A reference to an object the file doesn't define is the null object (ISO 32000-1, 7.3.10), and so is one whose
+    // place in the file is damaged.
     public IToken? Resolve(IToken? token)
     {
         while (token is IndirectReferenceToken reference)
         {
-            token = document.Structure.GetObject(reference.Data).Data;
+            try
+            {
+                token = document.Structure.GetObject(reference.Data).Data;
+            }
+            catch (Exception problem) when (problem is InvalidOperationException or ArgumentOutOfRangeException)
+            {
+                return null;
+            }
         }
 
         return token;

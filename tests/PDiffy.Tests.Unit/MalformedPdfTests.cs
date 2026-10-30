@@ -1,8 +1,13 @@
+using System.Security.Cryptography;
+using System.Text;
 using PDiffy.Tests.Unit.Pdfs;
 
 namespace PDiffy.Tests.Unit;
 
-/// <summary>Malformed files whose references loop back on themselves. Each must load instead of hanging or overflowing the stack.</summary>
+/// <summary>
+/// Malformed files, such as references that loop back on themselves or name objects the file doesn't have. Each must
+/// load instead of failing, hanging or overflowing the stack.
+/// </summary>
 public class MalformedPdfTests
 {
     [Fact]
@@ -126,17 +131,92 @@ public class MalformedPdfTests
         Assert.Empty(document.Untagged);
     }
 
-    // Objects 1-5 are a one-page document whose page shows "Loop" as MCID 0; extra objects are numbered from 6.
-    private static PdfUaDocument OnePage(string catalogEntries = "", string pagesKids = "3 0 R", string[]? extraObjects = null)
+    [Theory]
+    [InlineData("/StructTreeRoot 9 0 R", "3 0 R")]
+    [InlineData("", "3 0 R 9 0 R")]
+    public void Load_ShouldReadTheRest_WhenAReferenceNamesAnObjectTheFileDoesNotHave(string catalogEntries,
+        string pagesKids)
     {
-        string[] objects =
-        [
-            $"<< /Type /Catalog /Pages 2 0 R /MarkInfo << /Marked true >> {catalogEntries} >>",
-            $"<< /Type /Pages /Kids [{pagesKids}] /Count 1 >>",
-            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
-            TestPdf.Stream("/P << /MCID 0 >> BDC BT /F1 12 Tf 72 700 Td (Loop) Tj ET EMC"),
-            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
-        ];
-        return RawPdf.Load([.. objects, .. extraObjects ?? []]);
+        var document = OnePage(catalogEntries, pagesKids);
+
+        Assert.Contains(new PageText(1, "Loop"), document.Untagged);
     }
+
+    [Fact]
+    public void Load_ShouldReadTheRest_WhenAnObjectsPlaceInTheFileIsDamaged()
+    {
+        var document = WithDamagedPlace(6, "/StructTreeRoot 6 0 R", "<< /Type /StructTreeRoot >>");
+
+        Assert.Equal((1, 0), (document.Pages.Count, document.Structure.Count));
+    }
+
+    [Fact]
+    public void Load_ShouldMarkTheBookmarksUnreadable_WhenABookmarkHasNoTitle()
+    {
+        var document = OnePage("/Outlines 6 0 R", extraObjects:
+            ["<< /Type /Outlines /First 7 0 R /Last 7 0 R /Count 1 >>", "<< /Parent 6 0 R /Dest [3 0 R /Fit] >>"]);
+
+        Assert.Equal((true, 1), (document.BookmarksUnreadable, document.Pages.Count));
+    }
+
+    [Fact]
+    public void Load_ShouldReadABookmarkWithoutItsChildren_WhenItsFirstChildIsNotInTheFile()
+    {
+        var document = OnePage("/Outlines 6 0 R", extraObjects:
+        [
+            "<< /Type /Outlines /First 7 0 R /Last 7 0 R /Count 1 >>",
+            "<< /Title (Trails) /Parent 6 0 R /First 9 0 R /Dest [3 0 R /Fit] >>",
+        ]);
+
+        var bookmark = Assert.Single(document.Bookmarks);
+        Assert.Equal(("Trails", 0, false), (bookmark.Title, bookmark.Children.Count, document.BookmarksUnreadable));
+    }
+
+    // Like a reference to an object the file doesn't have, a bookmark the file can't find reads as none.
+    [Fact]
+    public void Load_ShouldReadNoBookmarks_WhenTheOnlyBookmarksPlaceInTheFileIsDamaged()
+    {
+        var document = WithDamagedPlace(7, "/Outlines 6 0 R", "<< /Type /Outlines /First 7 0 R /Last 7 0 R /Count 1 >>",
+            "<< /Title (Trails) /Parent 6 0 R /Dest [3 0 R /Fit] >>");
+
+        Assert.Equal((0, false, 1), (document.Bookmarks.Count, document.BookmarksUnreadable, document.Pages.Count));
+    }
+
+    [Fact]
+    public void Load_ShouldHashAnImageAsStored_WhenItsDataCannotBeDecoded()
+    {
+        var document = RawPdf.Load("<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /XObject << /Im1 5 0 R >> >> /Contents 4 0 R >>",
+            TestPdf.Stream("q 10 0 0 10 72 600 cm /Im1 Do Q"),
+            "<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 "
+                + "/Filter /LZWDecode /Length 5 >>\nstream\nhello\nendstream");
+
+        var image = Assert.Single(document.Images);
+
+        Assert.Equal(Convert.ToHexStringLower(SHA256.HashData("hello"u8))[..16], image.Hash);
+    }
+
+    // Objects 1-5 are a one-page document whose page shows "Loop" as MCID 0; extra objects are numbered from 6.
+    private static PdfUaDocument OnePage(string catalogEntries = "", string pagesKids = "3 0 R",
+        string[]? extraObjects = null) =>
+        RawPdf.Load([.. OnePageObjects(catalogEntries, pagesKids), .. extraObjects ?? []]);
+
+    // The same document, with one object's cross-reference entry pointing far past the end of the file.
+    private static PdfUaDocument WithDamagedPlace(int number, string catalogEntries, params string[] extraObjects)
+    {
+        var objects = OnePageObjects(catalogEntries, "3 0 R").Concat(extraObjects).ToList();
+        var text = Encoding.Latin1.GetString(RawPdf.Build(objects, catalog: 1, ""));
+        var entry = $"{text.IndexOf($"\n{number} 0 obj", StringComparison.Ordinal) + 1:D10} 00000 n";
+        return PdfUaDocument.Load(Encoding.Latin1.GetBytes(text.Replace(entry, "9999999999 00000 n")));
+    }
+
+    private static string[] OnePageObjects(string catalogEntries, string pagesKids) =>
+    [
+        $"<< /Type /Catalog /Pages 2 0 R /MarkInfo << /Marked true >> {catalogEntries} >>",
+        $"<< /Type /Pages /Kids [{pagesKids}] /Count 1 >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+        TestPdf.Stream("/P << /MCID 0 >> BDC BT /F1 12 Tf 72 700 Td (Loop) Tj ET EMC"),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+    ];
 }
