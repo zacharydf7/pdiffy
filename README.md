@@ -764,6 +764,8 @@ Text is normalized to Unicode NFC, with whitespace runs collapsed to one space a
 
 ## Format changes
 
+What each release added is in the [release notes](https://zacharydf7.github.io/pdiffy/project/release-notes.html), and what's planned is in the [roadmap](https://zacharydf7.github.io/pdiffy/project/roadmap.html). This section covers what each release changes in snapshots.
+
 A newer PDiffy can print some snapshots differently, when it records something new or reads something more accurately. Releases that change what a snapshot prints are minor versions (0.3.0, 0.4.0), and each one is listed below, so a failure after an upgrade can be told apart from a change to your document.
 
 - **Some snapshots change:** a new line or key that only some documents have (one that prints only when set), or a reader fix. The format version stays the same, and the entry below says which snapshots change.

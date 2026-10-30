@@ -1,0 +1,146 @@
+# Roadmap
+
+The order of work, phase by phase, with where each item stands. Every item is a GitHub issue; the working copy of this
+order is [issue #142](https://github.com/zacharydf7/pdiffy/issues/142). [Release notes](release-notes.md) lists what
+each release shipped.
+
+| Status | Meaning |
+|---|---|
+| Done | On `main`; ships in the release it's listed under |
+| Partly done | Some of the issue is on `main`; the rest is open |
+| Decision needed | Waiting on a design or naming choice before work starts or continues |
+| Open | Planned, not started |
+| Parked | Kept so the idea isn't lost, not planned |
+
+## At a glance
+
+| Phase | Status |
+|---|---|
+| [1. What snapshots miss](#1-what-snapshots-miss) | Done, except the full fix for #89 |
+| [2. API pass](#2-api-pass) | Decision needed: breaking changes, one release |
+| [3. Adoption traps](#3-adoption-traps) | Done |
+| [4. Accessibility checks](#4-accessibility-checks) | Decision needed: the breakdown is up for review |
+| [5. Double down on the niche](#5-double-down-on-the-niche) | 7 done, 2 partly done, the rest open |
+
+## Decisions needed
+
+| Issue | Decision |
+|---|---|
+| [#89](https://github.com/zacharydf7/pdiffy/issues/89) | Keep marking elements whose MCIDs sit in a form XObject, or also withhold their text when the tree shows a collision |
+| [#91](https://github.com/zacharydf7/pdiffy/issues/91)-[#95](https://github.com/zacharydf7/pdiffy/issues/95) | The API pass: names, record equality, enums and the comparison methods, all breaking |
+| [#50](https://github.com/zacharydf7/pdiffy/issues/50) | The breakdown of the accessibility checks epic |
+| [#118](https://github.com/zacharydf7/pdiffy/issues/118) | `width=` on text runs prints on every run, so nearly every snapshot changes and the format version goes up |
+| [#125](https://github.com/zacharydf7/pdiffy/issues/125) | How a snapshot links structure lines to layout lines, so the report can draw reading order |
+| [#145](https://github.com/zacharydf7/pdiffy/issues/145) | Recording East Asian and right-to-left fonts changes many Word snapshots |
+| [#146](https://github.com/zacharydf7/pdiffy/issues/146) | A catch-all hash for Word formatting PDiffy doesn't read |
+| [#150](https://github.com/zacharydf7/pdiffy/issues/150) | Build `AllText` lazily (keeps letters in memory) or cap it (changes what it returns on very deep trees) |
+| [#156](https://github.com/zacharydf7/pdiffy/issues/156) | Wrap a failure to open a PDF in `InvalidDataException`, which changes what `Load` throws |
+| Next release | Confirm the new names before they ship: `layers=`, `PDIFFY_RUN_LOG`, `pdiffy unused`, `PDIFFY_OPEN_REPORT`, `StructureElement.TextRuns`, `DefaultOptions`, `ProjectFolder`, `variant:` |
+
+## 1. What snapshots miss
+
+Real changes that gave identical snapshots, or text recorded wrong. Their format changes ship together, so snapshots
+are re-approved once.
+
+| Issue | What | Status |
+|---|---|---|
+| [#82](https://github.com/zacharydf7/pdiffy/issues/82) | Accessibility flag gaps | Done |
+| [#83](https://github.com/zacharydf7/pdiffy/issues/83) | Link and bookmark targets | Done |
+| [#84](https://github.com/zacharydf7/pdiffy/issues/84) | Word hidden text and skipped formatting | Done |
+| [#85](https://github.com/zacharydf7/pdiffy/issues/85) | Rotated text | Done |
+| [#86](https://github.com/zacharydf7/pdiffy/issues/86) | Letter-spaced text | Done |
+| [#87](https://github.com/zacharydf7/pdiffy/issues/87) | Marked-content replacement text, language and artifact type | Done |
+| [#88](https://github.com/zacharydf7/pdiffy/issues/88) | Signatures and form behavior | Done |
+| [#89](https://github.com/zacharydf7/pdiffy/issues/89) | MCIDs inside form XObjects | Partly done: marked; the full fix needs a decision |
+| [#90](https://github.com/zacharydf7/pdiffy/issues/90) | Figures tied to their images | Done |
+
+Found and fixed along the way: [#143](https://github.com/zacharydf7/pdiffy/issues/143),
+[#144](https://github.com/zacharydf7/pdiffy/issues/144), [#147](https://github.com/zacharydf7/pdiffy/issues/147),
+[#149](https://github.com/zacharydf7/pdiffy/issues/149), [#151](https://github.com/zacharydf7/pdiffy/issues/151),
+[#152](https://github.com/zacharydf7/pdiffy/issues/152), [#153](https://github.com/zacharydf7/pdiffy/issues/153) and
+[#155](https://github.com/zacharydf7/pdiffy/issues/155).
+
+## 2. API pass
+
+Breaking changes, in one release, before the checks add more names.
+
+| Issue | What | Status |
+|---|---|---|
+| [#91](https://github.com/zacharydf7/pdiffy/issues/91) | Consistent names across PDF and Word | Decision needed |
+| [#92](https://github.com/zacharydf7/pdiffy/issues/92) | Model records with real equality | Decision needed |
+| [#93](https://github.com/zacharydf7/pdiffy/issues/93) | Enums instead of magic strings | Decision needed |
+| [#94](https://github.com/zacharydf7/pdiffy/issues/94) | `SnapshotChange` for Word | Decision needed |
+| [#95](https://github.com/zacharydf7/pdiffy/issues/95) | Comparison methods and one front door | Decision needed |
+
+## 3. Adoption traps
+
+Not breaking; each shipped as it was done.
+
+| Issue | What | Status |
+|---|---|---|
+| [#96](https://github.com/zacharydf7/pdiffy/issues/96) | Streams, byte arrays and error messages | Done |
+| [#97](https://github.com/zacharydf7/pdiffy/issues/97) | Duplicate snapshot names | Done |
+| [#98](https://github.com/zacharydf7/pdiffy/issues/98) | Suite-wide default options | Done |
+| [#99](https://github.com/zacharydf7/pdiffy/issues/99) | Finding the project folder | Done |
+| [#100](https://github.com/zacharydf7/pdiffy/issues/100) | Structure tree navigation | Done |
+| [#101](https://github.com/zacharydf7/pdiffy/issues/101) | Doc comments | Done |
+| [#102](https://github.com/zacharydf7/pdiffy/issues/102) | Missing await | Done |
+| [#103](https://github.com/zacharydf7/pdiffy/issues/103) | `--version` and tool pinning | Done |
+| [#104](https://github.com/zacharydf7/pdiffy/issues/104) | Accept command in the failure | Done |
+| [#105](https://github.com/zacharydf7/pdiffy/issues/105) | Missing-font hint | Done |
+| [#106](https://github.com/zacharydf7/pdiffy/issues/106) | New snapshot breakdown | Done |
+
+## 4. Accessibility checks
+
+The epic [#50](https://github.com/zacharydf7/pdiffy/issues/50) and its sub-issues, built on the names from the API pass.
+Findings are recorded in an opt-in `checks` section, so a new problem fails a test and a fixed one shows as fixed.
+
+| Issues | What | Status |
+|---|---|---|
+| [#51](https://github.com/zacharydf7/pdiffy/issues/51) | Catalog of the machine-checkable PDF/UA-1 rules | Open |
+| [#52](https://github.com/zacharydf7/pdiffy/issues/52)-[#54](https://github.com/zacharydf7/pdiffy/issues/54) | Severity, categories and rule sets per release | Open |
+| [#55](https://github.com/zacharydf7/pdiffy/issues/55)-[#57](https://github.com/zacharydf7/pdiffy/issues/57) | The `checks` section, its diff and the report | Open |
+| [#58](https://github.com/zacharydf7/pdiffy/issues/58)-[#61](https://github.com/zacharydf7/pdiffy/issues/61) | Help pages and command-line counts | Open |
+| [#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#77](https://github.com/zacharydf7/pdiffy/issues/77) | PDF/UA rules | Open |
+| [#78](https://github.com/zacharydf7/pdiffy/issues/78)-[#80](https://github.com/zacharydf7/pdiffy/issues/80) | Warnings: placeholder alt text, vague link text, jumpy reading order | Open |
+| [#81](https://github.com/zacharydf7/pdiffy/issues/81) | Checks for Word documents | Open |
+
+## 5. Double down on the niche
+
+| Issue | What | Status |
+|---|---|---|
+| [#107](https://github.com/zacharydf7/pdiffy/issues/107) | Accepted changes explained in pull requests | Open |
+| [#108](https://github.com/zacharydf7/pdiffy/issues/108) | A reflow as one change | Done |
+| [#111](https://github.com/zacharydf7/pdiffy/issues/111) | Screen reader transcript | Open |
+| [#126](https://github.com/zacharydf7/pdiffy/issues/126) | Accessibility flags for Word | Open, after [#94](https://github.com/zacharydf7/pdiffy/issues/94) |
+| [#116](https://github.com/zacharydf7/pdiffy/issues/116) | Docs: catching generator upgrades | Done |
+| [#119](https://github.com/zacharydf7/pdiffy/issues/119) | Encoding promise on real PDFs | Open |
+| [#109](https://github.com/zacharydf7/pdiffy/issues/109) | Grouped changes and accept rules | Open |
+| [#121](https://github.com/zacharydf7/pdiffy/issues/121) | `pdiffy review` | Open |
+| [#110](https://github.com/zacharydf7/pdiffy/issues/110) | Structure templates | Open |
+| [#112](https://github.com/zacharydf7/pdiffy/issues/112) | WCAG criteria on accessibility changes | Open |
+| [#113](https://github.com/zacharydf7/pdiffy/issues/113) | Changes that need a person | Open |
+| [#114](https://github.com/zacharydf7/pdiffy/issues/114) | Unused snapshots | Done |
+| [#115](https://github.com/zacharydf7/pdiffy/issues/115) | PDF 2.0 and PDF/UA-2 structure | Open |
+| [#117](https://github.com/zacharydf7/pdiffy/issues/117) | Untagged text by line | Done |
+| [#118](https://github.com/zacharydf7/pdiffy/issues/118) | Run width, transparency, optional content | Partly done: layers; width needs a decision; opacity open |
+| [#125](https://github.com/zacharydf7/pdiffy/issues/125) | Reading order on the page map | Decision needed (after [#148](https://github.com/zacharydf7/pdiffy/issues/148), done) |
+| [#127](https://github.com/zacharydf7/pdiffy/issues/127) | Word against its exported PDF | Open |
+| [#120](https://github.com/zacharydf7/pdiffy/issues/120) | Fuzzing | Partly done: a first pass found [#155](https://github.com/zacharydf7/pdiffy/issues/155); a checked-in harness is open |
+| [#123](https://github.com/zacharydf7/pdiffy/issues/123) | Generator recipes | Done |
+| [#124](https://github.com/zacharydf7/pdiffy/issues/124) | Standalone binary and GitHub Action | Open |
+| [#122](https://github.com/zacharydf7/pdiffy/issues/122) | Open the report on failure | Done |
+
+## Also open
+
+| Issue | What | Status |
+|---|---|---|
+| [#43](https://github.com/zacharydf7/pdiffy/issues/43) | Page-tree depth inside PdfPig | Open, waiting for PdfPig 0.1.17 |
+| [#46](https://github.com/zacharydf7/pdiffy/issues/46) | Load and snapshot time past 10 pages | Open |
+| [#48](https://github.com/zacharydf7/pdiffy/issues/48) | The report's word highlight takes in a closing quote | Open |
+| [#154](https://github.com/zacharydf7/pdiffy/issues/154) | Layers an image or form XObject puts itself in | Open |
+
+## Parked
+
+[#41](https://github.com/zacharydf7/pdiffy/issues/41) and [#128](https://github.com/zacharydf7/pdiffy/issues/128) to
+[#141](https://github.com/zacharydf7/pdiffy/issues/141): ideas kept with the `priority: someday` label, not planned.

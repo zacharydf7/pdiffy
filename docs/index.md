@@ -138,6 +138,8 @@ upgrade runs, and <code>pdiffy compare</code> checks every document before and a
       <li><a href="reference/docx-snapshot-format.md">Word snapshot format</a></li>
       <li><a href="reference/options.md">Every option</a></li>
       <li><a href="api/index.md">API reference</a></li>
+      <li><a href="project/release-notes.md">Release notes</a></li>
+      <li><a href="project/roadmap.md">Roadmap</a></li>
     </ul>
   </div>
 </div>
