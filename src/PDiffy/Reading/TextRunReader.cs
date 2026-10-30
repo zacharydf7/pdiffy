@@ -1,0 +1,92 @@
+using UglyToad.PdfPig.Content;
+using UglyToad.PdfPig.Core;
+
+namespace PDiffy.Reading;
+
+/// <summary>A text run, and the MCID of the marked content that draws it, if any.</summary>
+internal readonly record struct OwnedRun(TextRun Run, int? Mcid);
+
+/// <summary>
+/// A page's text runs, with each one's style and owner, read before the structure tree so elements can list their own.
+/// A run drawn by marked content with an MCID is tagged until <see cref="LayoutReader"/> finds no element points to it.
+/// </summary>
+internal sealed class TextRunReader(int pageNumber, ContentOwners owners)
+{
+    public static List<OwnedRun> Read(int pageNumber, Page page, ContentOwners owners) =>
+        new TextRunReader(pageNumber, owners).ReadTextRuns(page);
+
+    // A run ends where the style or owner changes, or where the text moves to another line.
+    private List<OwnedRun> ReadTextRuns(Page page)
+    {
+        var runs = new List<OwnedRun>();
+        var letters = new List<Letter>();
+        RunStyle? style = null;
+        foreach (var letter in page.Letters)
+        {
+            var letterStyle = StyleOf(letter);
+            if (letters.Count > 0 && (letterStyle != style || !OnSameLine(letters[^1], letter)))
+            {
+                AddRun(runs, letters, style!.Value);
+                letters.Clear();
+            }
+
+            letters.Add(letter);
+            style = letterStyle;
+        }
+
+        if (letters.Count > 0)
+        {
+            AddRun(runs, letters, style!.Value);
+        }
+
+        return runs;
+    }
+
+    private void AddRun(List<OwnedRun> runs, List<Letter> letters, RunStyle style)
+    {
+        var text = TextJoiner.Join(letters);
+        if (text.Length == 0)
+        {
+            return;
+        }
+
+        var start = letters[0].StartBaseLine;
+        var run = new TextRun(pageNumber, LayoutReader.Round(start.X), LayoutReader.Round(start.Y), style.Font, style.Size,
+            style.Color, style.RenderMode, RoleOf(style.Owner), text) { Angle = TextJoiner.Angle(letters[0]) };
+        runs.Add(new OwnedRun(run, style.Owner?.Mcid));
+    }
+
+    private static ContentRole RoleOf(ContentOwner? owner) => owner switch
+    {
+        { IsArtifact: true } => ContentRole.Artifact,
+        { Mcid: not null } => ContentRole.Tagged,
+        _ => ContentRole.Untagged,
+    };
+
+    private RunStyle StyleOf(Letter letter)
+    {
+        var font = FontReader.WithoutSubsetPrefix(letter.FontName ?? "(none)");
+        var size = Math.Round(letter.PointSize, 1, MidpointRounding.AwayFromZero);
+        ContentOwner? owner = owners.Letters.TryGetValue(letter, out var found) ? found : null;
+        return new RunStyle(font, size, ColorText.Format(letter.Color), ToRenderMode(letter.RenderingMode), owner);
+    }
+
+    // Text that jumps back to the start of its line starts a new run even on the same baseline.
+    private static bool OnSameLine(Letter previous, Letter next) =>
+        TextJoiner.OnSameLine(previous, next) && TextJoiner.Advance(previous, next) >= 0;
+
+    // PDF defines exactly these eight modes.
+    private static TextRenderMode ToRenderMode(TextRenderingMode mode) => mode switch
+    {
+        TextRenderingMode.Stroke => TextRenderMode.Stroke,
+        TextRenderingMode.FillThenStroke => TextRenderMode.FillStroke,
+        TextRenderingMode.Neither => TextRenderMode.Invisible,
+        TextRenderingMode.FillClip => TextRenderMode.FillClip,
+        TextRenderingMode.StrokeClip => TextRenderMode.StrokeClip,
+        TextRenderingMode.FillThenStrokeClip => TextRenderMode.FillStrokeClip,
+        TextRenderingMode.NeitherClip => TextRenderMode.Clip,
+        _ => TextRenderMode.Fill,
+    };
+
+    private readonly record struct RunStyle(string Font, double Size, string? Color, TextRenderMode RenderMode, ContentOwner? Owner);
+}

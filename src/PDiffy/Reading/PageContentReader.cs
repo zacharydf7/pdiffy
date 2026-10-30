@@ -22,7 +22,8 @@ internal sealed class ContentOwners
 /// </summary>
 internal sealed record PageContent(IReadOnlyDictionary<int, List<Letter>> LettersByMcid,
     IReadOnlyDictionary<int, List<MarkedSpan>> SpansByMcid, IReadOnlyDictionary<int, List<string>> ImagesByMcid,
-    IReadOnlyList<PageText> Artifacts, IReadOnlyList<string> UntaggedLines, ContentOwners Owners);
+    IReadOnlyList<PageText> Artifacts, IReadOnlyList<string> UntaggedLines, ContentOwners Owners,
+    IReadOnlyList<OwnedRun> TextRuns, IReadOnlyDictionary<int, List<TextRun>> TextRunsByMcid);
 
 internal sealed class PageContentReader
 {
@@ -73,7 +74,11 @@ internal sealed class PageContentReader
 
         var imagesByMcid = _owners.Images.Where(image => image.Owner.Mcid is not null).GroupBy(image => image.Owner.Mcid!.Value)
             .ToDictionary(group => group.Key, group => group.Select(image => image.Hash).ToList());
-        return new PageContent(lettersByMcid, _spansByMcid, imagesByMcid, _artifacts, TextJoiner.JoinLines(untagged), _owners);
+        var textRuns = TextRunReader.Read(_pageNumber, page, _owners);
+        var textRunsByMcid = textRuns.Where(owned => owned.Mcid is not null).GroupBy(owned => owned.Mcid!.Value)
+            .ToDictionary(group => group.Key, group => group.Select(owned => owned.Run).ToList());
+        return new PageContent(lettersByMcid, _spansByMcid, imagesByMcid, _artifacts, TextJoiner.JoinLines(untagged), _owners,
+            textRuns, textRunsByMcid);
     }
 
     // Marked content without its own MCID belongs to the nearest enclosing MCID, if there is one. Children go on the

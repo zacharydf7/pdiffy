@@ -91,6 +91,8 @@ the role map, nor used in the document, with a hint such as "Did you mean 'Figur
 
 - `Text`, the text of its own marked content, and `AllText`, its text with its descendants', such as a table cell's
   paragraph or a paragraph's link, joined by position as the snapshot joins text.
+- `TextRuns`, the text runs its own marked content draws, with each one's font, size and color, such as for checking
+  that every `H1` is 18 pt.
 - `Descendants()`, and `Elements(type)` for one type. An element's `Elements` doesn't check the type, so use the
   [`StructureType`](xref:PDiffy.StructureType) constants.
 - `Path`, the path a check finding shows, such as `structure > Document > Table > TR[2]`.

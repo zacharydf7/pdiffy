@@ -433,6 +433,13 @@ public sealed record StructureElement
     public IReadOnlyList<string> ImageHashes { get; init; } = [];
 
     /// <summary>
+    /// The text runs the element's own marked content draws, in the order the element lists its marked content and
+    /// each in drawing order, with the font, size and color each uses: the same runs
+    /// <see cref="PdfUaDocument.TextRuns"/> lists. Runs drawn by child elements are in each child's own list.
+    /// </summary>
+    public IReadOnlyList<TextRun> TextRuns { get; init; } = [];
+
+    /// <summary>
     /// The text of the element's own marked content. Text in child elements, such as a link in a paragraph or a
     /// paragraph in a table cell, is in <see cref="AllText"/>.
     /// </summary>

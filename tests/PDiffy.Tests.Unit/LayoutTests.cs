@@ -82,6 +82,35 @@ public class LayoutTests
     }
 
     [Fact]
+    public void Load_ShouldListEachElementsOwnTextRuns_WhenElementsDrawTextInDifferentStyles()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Tagged(0, "Trail Guide", "H1")
+            .Raw("/P << /MCID 1 >> BDC BT /F1 10 Tf 72 600 Td (Start at the lodge) Tj ET EMC").Tagged(2, "Map", "Span");
+        pdf.Structure(new TestElement("H1", 0), new TestElement("P", 1, new TestElement("Span", 2)));
+
+        var document = pdf.Load();
+
+        var (heading, paragraph) = (document.Structure[0], document.Structure[1]);
+        Assert.Equal([("Trail Guide", 12.0)], heading.TextRuns.Select(run => (run.Text, run.Size)));
+        Assert.Equal([("Start at the lodge", 10.0)], paragraph.TextRuns.Select(run => (run.Text, run.Size)));
+        Assert.Equal(["Map"], paragraph.Children[0].TextRuns.Select(run => run.Text));
+        Assert.Equal(document.TextRuns, [heading.TextRuns[0], paragraph.TextRuns[0], paragraph.Children[0].TextRuns[0]]);
+    }
+
+    [Fact]
+    public void Load_ShouldListTextRunsInTheElementsOrder_WhenItListsItsMarkedContentOutOfDrawingOrder()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Tagged(0, "Bring water").Tagged(1, "Trail closed");
+        pdf.Structure(new TestElement("P", 1, 0));
+
+        var runs = pdf.Load().Structure[0].TextRuns;
+
+        Assert.Equal(["Trail closed", "Bring water"], runs.Select(run => run.Text));
+    }
+
+    [Fact]
     public void Load_ShouldGiveTheRoleToTheRightImage_WhenDifferentImagesShareAPosition()
     {
         var pdf = new TestPdf();

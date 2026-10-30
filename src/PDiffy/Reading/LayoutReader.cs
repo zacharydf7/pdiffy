@@ -12,63 +12,20 @@ internal sealed class LayoutReader(int pageNumber, ContentOwners owners, IReadOn
 {
     private const string DefaultColor = "gray:0";
 
-    public static PageLayout Read(int pageNumber, Page page, ContentOwners owners, IReadOnlySet<(int Page, int Mcid)> referencedMcids)
+    /// <param name="textRuns">The page's text runs, from <see cref="TextRunReader"/>.</param>
+    public static PageLayout Read(int pageNumber, Page page, ContentOwners owners,
+        IReadOnlySet<(int Page, int Mcid)> referencedMcids, IReadOnlyList<OwnedRun> textRuns)
     {
         var reader = new LayoutReader(pageNumber, owners, referencedMcids);
-        return new PageLayout(reader.ReadTextRuns(page), reader.ReadImages(page), reader.ReadPaths(page));
+        return new PageLayout(reader.Roles(textRuns), reader.ReadImages(page), reader.ReadPaths(page));
     }
 
-    // A run ends where the style or owner changes, or where the text moves to another line.
-    private List<TextRun> ReadTextRuns(Page page)
-    {
-        var runs = new List<TextRun>();
-        var letters = new List<Letter>();
-        RunStyle? style = null;
-        foreach (var letter in page.Letters)
-        {
-            var letterStyle = StyleOf(letter);
-            if (letters.Count > 0 && (letterStyle != style || !OnSameLine(letters[^1], letter)))
-            {
-                AddRun(runs, letters, style!.Value);
-                letters.Clear();
-            }
+    // A run is read as tagged when marked content with an MCID draws it, and is untagged when no element points to that.
+    private List<TextRun> Roles(IReadOnlyList<OwnedRun> runs) =>
+        runs.Select(owned => owned.Mcid is int mcid && !referencedMcids.Contains((pageNumber, mcid))
+            ? owned.Run with { Role = ContentRole.Untagged }
+            : owned.Run).ToList();
 
-            letters.Add(letter);
-            style = letterStyle;
-        }
-
-        if (letters.Count > 0)
-        {
-            AddRun(runs, letters, style!.Value);
-        }
-
-        return runs;
-    }
-
-    private void AddRun(List<TextRun> runs, List<Letter> letters, RunStyle style)
-    {
-        var text = TextJoiner.Join(letters);
-        if (text.Length == 0)
-        {
-            return;
-        }
-
-        var start = letters[0].StartBaseLine;
-        runs.Add(new TextRun(pageNumber, Round(start.X), Round(start.Y), style.Font, style.Size, style.Color, style.RenderMode,
-            RoleOf(style.Owner), text) { Angle = TextJoiner.Angle(letters[0]) });
-    }
-
-    private RunStyle StyleOf(Letter letter)
-    {
-        var font = FontReader.WithoutSubsetPrefix(letter.FontName ?? "(none)");
-        var size = Math.Round(letter.PointSize, 1, MidpointRounding.AwayFromZero);
-        ContentOwner? owner = owners.Letters.TryGetValue(letter, out var found) ? found : null;
-        return new RunStyle(font, size, ColorText.Format(letter.Color), ToRenderMode(letter.RenderingMode), owner);
-    }
-
-    // Text that jumps back to the start of its line starts a new run even on the same baseline.
-    private static bool OnSameLine(Letter previous, Letter next) =>
-        TextJoiner.OnSameLine(previous, next) && TextJoiner.Advance(previous, next) >= 0;
 
     private List<ImageInfo> ReadImages(Page page)
     {
@@ -148,20 +105,5 @@ internal sealed class LayoutReader(int pageNumber, ContentOwners owners, IReadOn
         return Convert.ToHexStringLower(SHA256.HashData(bytes.Span))[..16];
     }
 
-    // PDF defines exactly these eight modes.
-    private static TextRenderMode ToRenderMode(TextRenderingMode mode) => mode switch
-    {
-        TextRenderingMode.Stroke => TextRenderMode.Stroke,
-        TextRenderingMode.FillThenStroke => TextRenderMode.FillStroke,
-        TextRenderingMode.Neither => TextRenderMode.Invisible,
-        TextRenderingMode.FillClip => TextRenderMode.FillClip,
-        TextRenderingMode.StrokeClip => TextRenderMode.StrokeClip,
-        TextRenderingMode.FillThenStrokeClip => TextRenderMode.FillStrokeClip,
-        TextRenderingMode.NeitherClip => TextRenderMode.Clip,
-        _ => TextRenderMode.Fill,
-    };
-
-    private static int Round(double value) => (int)Math.Round(value, MidpointRounding.AwayFromZero);
-
-    private readonly record struct RunStyle(string Font, double Size, string? Color, TextRenderMode RenderMode, ContentOwner? Owner);
+    internal static int Round(double value) => (int)Math.Round(value, MidpointRounding.AwayFromZero);
 }

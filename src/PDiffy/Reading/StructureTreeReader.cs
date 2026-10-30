@@ -63,6 +63,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         var allPieces = new List<(int Page, IReadOnlyList<Letter> Letters)>();
         var spans = new List<MarkedSpan>();
         var images = new List<string>();
+        var textRuns = new List<TextRun>();
         var pagesUsed = new SortedSet<int>();
         var annotations = new List<Annotation>();
         var children = new List<StructureElement>();
@@ -130,6 +131,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
 
             if (content?.SpansByMcid.GetValueOrDefault(mcid) is { } found) spans.AddRange(found);
             if (content?.ImagesByMcid.GetValueOrDefault(mcid) is { } hashes) images.AddRange(hashes);
+            if (content?.TextRunsByMcid.GetValueOrDefault(mcid) is { } runs) textRuns.AddRange(runs);
         }
 
         var attributes = Attributes(element);
@@ -157,6 +159,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
             UnreadChildren = unreadChildren,
             MarkedSpans = spans,
             ImageHashes = images,
+            TextRuns = textRuns,
             Text = Join(pieces),
             AllText = Join(allPieces),
             Children = children,
