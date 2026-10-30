@@ -181,7 +181,13 @@ public sealed record PdfUaDocument
     /// an empty list means every check passed. With no checks given, applies every check.
     /// </summary>
     public IReadOnlyList<PdfCheckFinding> Check(params PdfCheck[] checks) =>
-        PdfChecker.Run(this, checks.Length == 0 ? Enum.GetValues<PdfCheck>() : checks);
+        PdfChecker.Run(this, checks.Length == 0 ? PdfCheckSet.Latest.Checks : checks);
+
+    /// <summary>
+    /// Applies the rules in a set, such as <see cref="PdfCheckSet.Latest"/> or a release's own set that never changes,
+    /// and lists what they find as <see cref="Check(PdfCheck[])"/> does.
+    /// </summary>
+    public IReadOnlyList<PdfCheckFinding> Check(PdfCheckSet set) => PdfChecker.Run(this, set.Checks);
 
     /// <summary>Every structure element, in reading order.</summary>
     public IEnumerable<PdfStructureElement> AllElements() => Structure.SelectMany(root => root.Descendants().Prepend(root));

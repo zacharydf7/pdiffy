@@ -294,6 +294,16 @@ public class PdfCheckTests
         Assert.All(Enum.GetValues<PdfCheck>(), check => PdfChecker.RuleOf(check));
     }
 
+    [Fact]
+    public void Check_ShouldApplyOnlyTheSetsRules_WhenGivenASet()
+    {
+        var document = OnePage(new TestPdf { Lang = null, Title = null });
+
+        var findings = document.Check(PdfCheckSet.Latest.Only(PdfCheckCategory.Language));
+
+        Assert.Equal([PdfCheck.DocumentLanguage], findings.Select(finding => finding.Check));
+    }
+
     private static PdfUaDocument OnePage(TestPdf pdf)
     {
         pdf.AddPage().Tagged(0, "Hello");

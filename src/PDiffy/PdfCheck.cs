@@ -1,8 +1,8 @@
 namespace PDiffy;
 
 /// <summary>
-/// A rule <see cref="PdfUaDocument.Check"/> can apply: the mistakes generated documents make that keep them from being
-/// accessible or tidy. These are fast regression checks, not a PDF/UA validator such as veraPDF or PAC.
+/// A rule <see cref="PdfUaDocument.Check(PdfCheck[])"/> can apply: the mistakes generated documents make that keep them
+/// from being accessible or tidy. These are fast regression checks, not a PDF/UA validator such as veraPDF or PAC.
 /// </summary>
 public enum PdfCheck
 {

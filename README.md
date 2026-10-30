@@ -442,6 +442,8 @@ public async Task TrailMap_ShouldPassTheAccessibilityChecks_WhenGenerated()
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
 | `NoEmbeddedFiles` | Each embedded file | `HouseRules` | House rule |
 
+`Check()` applies every rule PDiffy has, so an upgrade that adds rules can fail a test that passed. To choose when that happens, pass a set: `document.Check(PdfCheckSet.Version0_3)` applies only the rules 0.3 shipped, whatever later releases add, while `PdfCheckSet.Latest` grows with each release, as .NET analyzers do with `AnalysisLevel`. `Only` and `Except` narrow a set: `PdfCheckSet.Latest.Only(PdfCheckCategory.Tables)` or `PdfCheckSet.Latest.Except(PdfCheck.HeadingLevels)`.
+
 These are fast regression checks, not a PDF/UA validator. To check conformance, use [veraPDF](https://verapdf.org/) or PAC.
 
 ### Check accessibility rules directly

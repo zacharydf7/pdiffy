@@ -36,6 +36,7 @@ them all.
 | <xref:PDiffy.PdfCheck> | Name a rule <xref:PDiffy.PdfUaDocument.Check*> applies |
 | <xref:PDiffy.PdfCheckFinding> | Describe what a rule found: where, how much it matters and the clause it comes from |
 | <xref:PDiffy.PdfCheckSeverity>, <xref:PDiffy.PdfCheckCategory> | Tell errors from warnings, and group rules by family |
+| <xref:PDiffy.PdfCheckSet> | Apply every rule, or only the rules a release shipped, narrowed by family or rule |
 
 ## The PDF model
 

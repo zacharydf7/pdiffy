@@ -58,6 +58,17 @@ conforms.
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
 | `NoEmbeddedFiles` | Each embedded file | `HouseRules` | House rule |
 
+`Check()` applies every rule PDiffy has, so an upgrade that adds rules can fail a test that passed. To choose when that
+happens, pass a [`PdfCheckSet`](xref:PDiffy.PdfCheckSet): a release's own set, such as `PdfCheckSet.Version0_3`, keeps
+the rules that release shipped whatever later releases add, while `PdfCheckSet.Latest` grows with each release, as .NET
+analyzers do with `AnalysisLevel`. `Only` and `Except` narrow a set:
+
+```csharp
+document.Check(PdfCheckSet.Version0_3);                          // only the rules 0.3 shipped
+document.Check(PdfCheckSet.Latest.Only(PdfCheckCategory.Tables));
+document.Check(PdfCheckSet.Latest.Except(PdfCheck.HeadingLevels));
+```
+
 These are fast regression checks for the mistakes generated documents make, not a PDF/UA validator: for conformance,
 use [veraPDF](https://verapdf.org/) or PAC. On the command line, [`pdiffy check`](../reference/command-line.md#check)
 runs them all. For a rule of your own, assert on the model, as the rest of this page shows.

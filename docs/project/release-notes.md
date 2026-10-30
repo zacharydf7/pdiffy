@@ -80,6 +80,10 @@ library does.
 - Each finding has a `Category` too, the family its rule belongs to, such as `Tables` or `Fonts`; `NoActions` and
   `NoEmbeddedFiles` are in `HouseRules`, apart from the accessibility rules
   ([#53](https://github.com/zacharydf7/pdiffy/issues/53)).
+- `Check(PdfCheckSet)` applies a set of rules: `PdfCheckSet.Latest`, which grows as PDiffy adds rules, or a
+  release's own set, such as `PdfCheckSet.Version0_3`, which never changes, so an upgrade adds no rules to a test
+  until it moves on. `Only` and `Except` narrow a set by category or rule
+  ([#54](https://github.com/zacharydf7/pdiffy/issues/54)).
 
 ### Read more accurately
 
