@@ -16,8 +16,8 @@ each release shipped.
 
 | Phase | Status |
 |---|---|
-| [1. What snapshots miss](#1-what-snapshots-miss) | Done, except the full fix for #89 |
-| [2. API pass](#2-api-pass) | Open: approved, for the release after the next one |
+| [1. What snapshots miss](#1-what-snapshots-miss) | Done, except the full fix for #89, which follows the API pass |
+| [2. API pass](#2-api-pass) | Partly done: #91, #92 and #94 on `main`, for the next release |
 | [3. Adoption traps](#3-adoption-traps) | Done |
 | [4. Accessibility checks](#4-accessibility-checks) | Open: after the API pass |
 | [5. Double down on the niche](#5-double-down-on-the-niche) | 7 done, 2 partly done, the rest open |
@@ -26,16 +26,16 @@ each release shipped.
 
 | Issue | Decision |
 |---|---|
-| [#89](https://github.com/zacharydf7/pdiffy/issues/89) | Keep marking elements whose MCIDs sit in a form XObject, or also withhold their text when the tree shows a collision |
 | [#118](https://github.com/zacharydf7/pdiffy/issues/118) | `width=` on text runs prints on every run, so nearly every snapshot changes and the format version goes up |
 | [#125](https://github.com/zacharydf7/pdiffy/issues/125) | How a snapshot links structure lines to layout lines, so the report can draw reading order |
 | [#145](https://github.com/zacharydf7/pdiffy/issues/145) | Recording East Asian and right-to-left fonts changes many Word snapshots |
 | [#146](https://github.com/zacharydf7/pdiffy/issues/146) | A catch-all hash for Word formatting PDiffy doesn't read |
 
-Decided for the next release: the `Accessibility` profile keeps leaving out `images=`
-([#90](https://github.com/zacharydf7/pdiffy/issues/90)), a `span-lang` change is flagged only when its languages change
-([#147](https://github.com/zacharydf7/pdiffy/issues/147)), `pdiffy check` reports untagged text once per page
-([#117](https://github.com/zacharydf7/pdiffy/issues/117)), and the new names stay as they are.
+Decided: [#89](https://github.com/zacharydf7/pdiffy/issues/89) gets the full fix, reading each form XObject's marked
+content apart from the page's so every element gets its own text. Decided for 0.4.0: the `Accessibility` profile keeps
+leaving out `images=` ([#90](https://github.com/zacharydf7/pdiffy/issues/90)), a `span-lang` change is flagged only when
+its languages change ([#147](https://github.com/zacharydf7/pdiffy/issues/147)), `pdiffy check` reports untagged text
+once per page ([#117](https://github.com/zacharydf7/pdiffy/issues/117)), and the new names stay as they are.
 
 ## 1. What snapshots miss
 
@@ -51,7 +51,7 @@ are re-approved once.
 | [#86](https://github.com/zacharydf7/pdiffy/issues/86) | Letter-spaced text | Done |
 | [#87](https://github.com/zacharydf7/pdiffy/issues/87) | Marked-content replacement text, language and artifact type | Done |
 | [#88](https://github.com/zacharydf7/pdiffy/issues/88) | Signatures and form behavior | Done |
-| [#89](https://github.com/zacharydf7/pdiffy/issues/89) | MCIDs inside form XObjects | Partly done: marked; the full fix needs a decision |
+| [#89](https://github.com/zacharydf7/pdiffy/issues/89) | MCIDs inside form XObjects | Partly done: marked; the full fix is next after the API pass |
 | [#90](https://github.com/zacharydf7/pdiffy/issues/90) | Figures tied to their images | Done |
 
 Found and fixed along the way: [#143](https://github.com/zacharydf7/pdiffy/issues/143),
@@ -67,10 +67,10 @@ changes are fine until 1.0; each one is listed in the release notes.
 
 | Issue | What | Status |
 |---|---|---|
-| [#91](https://github.com/zacharydf7/pdiffy/issues/91) | Consistent names across PDF and Word | Done, on the `api-pass` branch; `Images` keeps both shapes (see the issue) |
-| [#92](https://github.com/zacharydf7/pdiffy/issues/92) | Model records with real equality | Done, on the `api-pass` branch |
+| [#91](https://github.com/zacharydf7/pdiffy/issues/91) | Consistent names across PDF and Word | Done; `Images` keeps both shapes (see the issue) |
+| [#92](https://github.com/zacharydf7/pdiffy/issues/92) | Model records with real equality | Done |
 | [#93](https://github.com/zacharydf7/pdiffy/issues/93) | Enums instead of magic strings | Open |
-| [#94](https://github.com/zacharydf7/pdiffy/issues/94) | `SnapshotChange` for Word | Done, on the `api-pass` branch |
+| [#94](https://github.com/zacharydf7/pdiffy/issues/94) | `SnapshotChange` for Word | Done |
 | [#95](https://github.com/zacharydf7/pdiffy/issues/95) | Comparison methods and one front door | Open |
 
 ## 3. Adoption traps

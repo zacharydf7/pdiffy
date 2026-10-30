@@ -7,8 +7,7 @@ apart from a change to your document. After upgrading, review the received files
 
 ## Next release (not yet tagged)
 
-Everything below is on `main`. The snapshot format stays `pdfua-snapshot v1` and `docx-snapshot v1`, but many PDF
-snapshots gain keys or lines; see [Format changes](../reference/format-changes.md#next-release) for each one.
+Everything below is on `main`.
 
 ### Breaking API changes
 
@@ -48,6 +47,11 @@ library does.
   for them too, where it was `false`, so the JSON from `ToJson`, `pdiffy <before> <after> --json` and
   `pdiffy compare --json` is now `version` 2
   ([#94](https://github.com/zacharydf7/pdiffy/issues/94)).
+
+## 0.4.0 (2026-10-30)
+
+The snapshot format stays `pdfua-snapshot v1` and `docx-snapshot v1`, but many PDF snapshots gain keys or
+lines; see [Format changes](../reference/format-changes.md#040) for each one.
 
 ### Snapshots record more
 

@@ -12,7 +12,7 @@ failure after an upgrade can be told apart from a change to your document.
 
 Either way, review the received files and accept them: `pdiffy accept --all`, or run the tests with `PDIFFY_ACCEPT=1`.
 
-## Next release
+## 0.4.0
 
 ### PDF (`pdfua-snapshot v1`, unchanged)
 
