@@ -4,30 +4,29 @@ namespace PDiffy;
 
 /// <summary>
 /// Reads a document the way generators hand it over: from the stream's start wherever it was left, with its position put
-/// back afterwards, so it can be read again. A stream that can't seek is copied first. Input that plainly isn't the
-/// expected format fails with a message that says what it is.
+/// back afterwards, so it can be read again. A stream that isn't already in memory, such as a file, is copied first, so a
+/// failure to read it throws its own exception instead of being taken for a damaged document. Input that plainly isn't
+/// the expected format fails with a message that says what it is.
 /// </summary>
 internal static class InputStream
 {
     public static T Read<T>(Stream stream, DocumentFormat format, Func<Stream, T> read)
     {
-        if (!stream.CanSeek)
+        // A stream that can't seek is read from where it is, since it can't go back to its start.
+        var position = stream.CanSeek ? stream.Position : (long?)null;
+        try
         {
+            if (position is not null) stream.Position = 0;
+            if (stream is MemoryStream memory) return ReadFromStart(memory, format, read);
+
             using var copy = new MemoryStream();
             stream.CopyTo(copy);
             copy.Position = 0;
             return ReadFromStart(copy, format, read);
         }
-
-        var position = stream.Position;
-        try
-        {
-            stream.Position = 0;
-            return ReadFromStart(stream, format, read);
-        }
         finally
         {
-            stream.Position = position;
+            if (position is long start) stream.Position = start;
         }
     }
 

@@ -20,8 +20,9 @@ test that isn't async. `VerifyAsync` does its work before it returns, so a failu
 test forgets the `await`.
 
 A stream is read from its start wherever the generator left it, and its position is put back afterwards, so a test
-can load it, assert on it and snapshot it. A stream that can't seek, such as a network response, is copied first. Pass
-the loaded document instead to read the PDF only once:
+can load it, assert on it and snapshot it. A stream that isn't already a `MemoryStream`, such as a file or a network
+response, is read into memory first, so a stream that fails part way throws its own exception rather than looking like
+a damaged document. Pass the loaded document instead to read the PDF only once:
 
 ```csharp
 var document = PdfUaDocument.Load(pdf);

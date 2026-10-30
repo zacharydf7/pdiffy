@@ -111,7 +111,7 @@ A suite whose tests share options, such as a profile or scrubbers, can set them 
 PdfSnapshot.DefaultOptions = options => options.Use(SnapshotProfile.Accessibility).ScrubDates();
 ```
 
-`VerifyAsync` also takes the document as a `byte[]`, or one you've already loaded with `PdfUaDocument.Load`, so a test that asserts on the document and snapshots it reads it once. A stream is read from its start wherever the generator left it, and its position is put back afterwards; one that can't seek, such as a network response, is copied first. An empty stream, a Word document passed as a PDF, or a web page (a generator's error page, say) fails with an `InvalidDataException` that says so.
+`VerifyAsync` also takes the document as a `byte[]`, or one you've already loaded with `PdfUaDocument.Load`, so a test that asserts on the document and snapshots it reads it once. A stream is read from its start wherever the generator left it, and its position is put back afterwards. A stream that isn't already a `MemoryStream`, such as a file or a network response, is read into memory first, so a stream that fails part way throws its own exception rather than looking like a damaged document. An empty stream, a Word document passed as a PDF, or a web page (a generator's error page, say) fails with an `InvalidDataException` that says so.
 
 A test whose snapshots belong somewhere else passes the folder: `await PdfSnapshot.VerifyAsync(pdf, directory: otherFolder)`.
 

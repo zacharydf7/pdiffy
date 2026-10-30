@@ -45,7 +45,8 @@ snapshots gain keys or lines; see [Format changes](../reference/format-changes.m
   decoded now loads instead of throwing ([#155](https://github.com/zacharydf7/pdiffy/issues/155)).
 - A PDF too damaged to open, or encrypted with a password, throws `InvalidDataException`, as input that isn't a PDF
   does, instead of an exception from the PDF library underneath
-  ([#156](https://github.com/zacharydf7/pdiffy/issues/156)).
+  ([#156](https://github.com/zacharydf7/pdiffy/issues/156)). A file or other stream that fails part way through throws
+  its own exception, since every stream that isn't already in memory is read whole before parsing.
 
 ### Accessibility flags
 

@@ -72,6 +72,20 @@ public class InputStreamTests
         Assert.StartsWith(message, error.Message);
     }
 
+    [Theory]
+    [InlineData("pdf")]
+    [InlineData("docx")]
+    public void Load_ShouldLetTheStreamsErrorThrough_WhenReadingFailsPartWay(string format)
+    {
+        var bytes = format == "pdf" ? Pdf() : Docx().ToArray();
+        var file = new FailingFile(bytes, readable: bytes.Length - 64);
+        Action load = format == "pdf" ? () => PdfUaDocument.Load(file) : () => DocxDocument.Load(file);
+
+        var error = Assert.Throws<IOException>(load);
+
+        Assert.Equal("The network share went away.", error.Message);
+    }
+
     private static byte[] Bytes(string content) => System.Text.Encoding.Latin1.GetBytes(content);
 
     private static byte[] Pdf()
@@ -83,6 +97,35 @@ public class InputStreamTests
     }
 
     private static MemoryStream Docx() => new TestDocx { Body = "<w:p><w:r><w:t>Trailhead</w:t></w:r></w:p>" }.Build();
+
+    // A file that can seek, like one on a network share, that fails partway through, as if the share went away.
+    private sealed class FailingFile(byte[] bytes, int readable) : Stream
+    {
+        private readonly MemoryStream _inner = new(bytes);
+
+        public override bool CanRead => true;
+        public override bool CanSeek => true;
+        public override bool CanWrite => false;
+        public override long Length => _inner.Length;
+
+        public override long Position
+        {
+            get => _inner.Position;
+            set => _inner.Position = value;
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            var end = Position + Math.Min(count, Length - Position);
+            if (end > readable) throw new IOException("The network share went away.");
+            return _inner.Read(buffer, offset, count);
+        }
+
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
 
     // A stream that can only be read forward, like a network response.
     private sealed class ForwardOnlyStream(byte[] bytes) : Stream
