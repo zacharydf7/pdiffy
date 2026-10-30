@@ -107,6 +107,21 @@ or a file name and learns nothing about what the picture shows.
 **How to fix it:** write what the image shows or means, such as "Trail map of the ridge loop, 4.2 miles". Most
 generators fill alt text from the file name or a default when none was given, so set it where the image is added.
 
+## LinkText
+
+**Finds:** a link whose text is only "click", "click here", "here", "this", "this link", "link", "more", "read more",
+"learn more" or "more info", with or without trailing punctuation such as "Read more >". It looks at the link element's
+alt text, replacement text and text, including its child elements', and at the link's contents, and finds the link only
+when none of them says more. **Category:** `Annotations`.
+**Severity:** `Warning`. **From:** WCAG 2.2 2.4.4, which asks that a link's purpose be clear from its text and context;
+PDF/UA only asks that a link has a description.
+
+**Why it matters:** this link passes [`LinkDescriptions`](#linkdescriptions), but screen reader users often list a
+page's links to move around it, and a list of "click here" links says nothing about where each goes.
+
+**How to fix it:** make the link's text say where it goes, such as "Download the ridge loop trail map", or give the
+link contents that do.
+
 ## UntaggedContent
 
 **Finds:** text, images and paths that are neither tagged nor marked as artifacts, page by page. **Category:**

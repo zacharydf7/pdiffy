@@ -175,6 +175,12 @@ public enum PdfCheck
     /// which pass <see cref="FigureAltText"/> but say nothing.
     /// </summary>
     MeaningfulAltText,
+
+    /// <summary>
+    /// A warning: no link says only something vague, such as "click here", "read more" or "link", which passes
+    /// <see cref="LinkDescriptions"/> but doesn't say where the link goes.
+    /// </summary>
+    LinkText,
 }
 
 /// <summary>

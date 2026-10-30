@@ -72,6 +72,7 @@ that the document conforms.
 | `AccessibilityPermission` | Encryption that doesn't let assistive technology extract the text | `Document` | 7.16 |
 | `NoReferenceXObjects` | A reference XObject, which shows a page of another file, in the pages' resources | `Content` | 7.20 |
 | `MeaningfulAltText` | A warning: alt text that's a file name, such as `IMG_2041.jpg`, or a placeholder such as `image` or `graphic 3` | `AltText` | WCAG 1.1.1 |
+| `LinkText` | A warning: a link that says only something vague, such as "click here", "read more" or "link", with no other text saying where it goes | `Annotations` | WCAG 2.4.4 |
 | `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |
 | `FontsMapToUnicode` | A font whose text uses codes that don't map to Unicode | `Fonts` | 7.21.7 |
 | `NoActions` | JavaScript, actions run on events such as closing or printing, and an open action that does more than go to a page | `HouseRules` | House rule |
@@ -106,7 +107,7 @@ await Snapshot.VerifyPdfAsync(pdf, configure: options => options.Check(PdfCheckS
 
 ```text
 # pdfua-snapshot v1
-# checks: latest, 36 rules
+# checks: latest, 37 rules
 ...
 checks
   FigureAltText p2 structure > Document > Figure[2]

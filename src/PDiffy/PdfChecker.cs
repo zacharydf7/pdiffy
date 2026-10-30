@@ -9,9 +9,14 @@ internal sealed class PdfChecker(PdfUaDocument document)
     // A file name of at most six words, such as "IMG_2041 (1).jpg" or "Screenshot 2024-01-05 at 10.32.11.png", or a
     // placeholder word with an optional number, such as "image 3". A longer sentence ending in a file name describes.
     private static readonly Regex PlaceholderAltText = new(
-        @"^(?:(?:[\w().-]+ ){0,5}[\w().-]+\.(?:png|jpe?g|gif|bmp|tiff?|svg|webp|emf|wmf|eps|pdf)"
+        @"^(?:(?:[\w().-]+\s){0,5}[\w().-]+\.(?:png|jpe?g|gif|bmp|tiff?|svg|webp|emf|wmf|eps|pdf)"
         + @"|(?:image|img|picture|pic|photo|graphic|figure|icon|alt|alt text|untitled|placeholder|spacer|blank)"
         + @"(?:[\s_#-]*\d+)?)\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    // Link text that doesn't say where the link goes, such as "click here" or "Read more >".
+    private static readonly Regex VagueLinkText = new(
+        @"^(?:click(?: here)?|here|this|more|read more|learn more|more info|(?:this )?link)[\s.,:;!?>\u00BB\u2026-]*\z",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     // A well-formed BCP 47 tag: a language with its extended subtags, then an optional script, region, variants,
     // extensions and private use; or a private-use tag, or one of the irregular tags BCP 47 lists by name. The grammar
@@ -73,6 +78,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.AccessibilityPermission: AccessibilityPermission(); break;
             case PdfCheck.NoReferenceXObjects: NoReferenceXObjects(); break;
             case PdfCheck.MeaningfulAltText: MeaningfulAltText(); break;
+            case PdfCheck.LinkText: LinkText(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -230,6 +236,33 @@ internal sealed class PdfChecker(PdfUaDocument document)
     }
 
     private static bool IsPlaceholder(string altText) => PlaceholderAltText.IsMatch(altText.Trim());
+
+    private void LinkText()
+    {
+        // A vague text is fine when another of the link's descriptions says where it goes.
+        foreach (var (element, path) in Elements)
+        {
+            foreach (var link in element.Annotations.Where(IsLink))
+            {
+                string?[] descriptions = [element.AltText, element.ActualText, element.AllText, link.Contents];
+                var given = descriptions.OfType<string>().Where(text => !IsBlank(text)).ToList();
+                if (given.Count > 0 && given.All(IsVagueLinkText))
+                {
+                    Add(PdfCheck.LinkText, link.Page, path,
+                        $"Link{On(link.Page)} says \"{given[0].Trim()}\", which doesn't say where it goes");
+                }
+            }
+        }
+
+        var untagged = document.Annotations.Where(link => IsLink(link) && link.Role != PdfContentRole.Tagged);
+        foreach (var link in untagged.Where(link => link.Contents is { } contents && IsVagueLinkText(contents)))
+        {
+            Add(PdfCheck.LinkText, link.Page, Name(PdfSection.Annotations),
+                $"Untagged link{On(link.Page)} says \"{link.Contents!.Trim()}\", which doesn't say where it goes");
+        }
+    }
+
+    private static bool IsVagueLinkText(string text) => VagueLinkText.IsMatch(text.Trim());
 
     private void UntaggedContent()
     {
@@ -1044,6 +1077,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.AccessibilityPermission => new(PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 7.16"),
         PdfCheck.NoReferenceXObjects => new(PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.20"),
         PdfCheck.MeaningfulAltText => new(PdfCheckCategory.AltText, PdfCheckSeverity.Warning, "WCAG 2.2 1.1.1"),
+        PdfCheck.LinkText => new(PdfCheckCategory.Annotations, PdfCheckSeverity.Warning, "WCAG 2.2 2.4.4"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

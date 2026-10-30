@@ -145,6 +145,9 @@ library does.
 - The first warning from a standard other than PDF/UA, `MeaningfulAltText`, finds alt text that's a file name, such
   as `IMG_2041.jpg`, or a placeholder such as `image` or `graphic 3`. Its reference is WCAG 2.2 1.1.1, since PDF/UA
   doesn't check what alt text says ([#78](https://github.com/zacharydf7/pdiffy/issues/78)).
+- The `LinkText` warning finds a link that says only something vague, such as "click here", "read more" or "link",
+  when neither its element nor its contents say more. Its reference is WCAG 2.2 2.4.4
+  ([#79](https://github.com/zacharydf7/pdiffy/issues/79)).
 - Snapshots print `suspects=yes` and `parent=missing` when a document has them, and a PDF 2.0 file's
   `version` is now `2.0`, not `1.4`. `PdfDocumentInfo` has `Suspects` and `HasStructureTree`, `PdfMetadata` has
   `HasXmp` and `PdfUaIdPrefix`, and `PdfStructureElement` has `ParentMissing`

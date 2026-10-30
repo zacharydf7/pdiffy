@@ -104,6 +104,60 @@ public class PdfCheckTests
         Assert.Equal(findings, pdf.Load().Check(PdfCheck.LinkDescriptions).Count);
     }
 
+    [Theory]
+    [InlineData("", "", "click here", "click here")]
+    [InlineData("", "", "Read more >", "Read more >")]
+    [InlineData("", "", " here. ", "here.")]
+    [InlineData("", "", "Learn more \u00BB", "Learn more \u00BB")]
+    [InlineData("more", "", "", "more")]
+    [InlineData("this link", "", "", "this link")]
+    [InlineData("", "", "Click", "Click")]
+    [InlineData("", "", "More info:", "More info:")]
+    [InlineData("", "/ActualText (Download the ridge loop trail map)", "click here", null)]
+    [InlineData("", "/Alt (Link)", "", "Link")]
+    [InlineData("", "", "Trail map of the ridge loop", null)]
+    [InlineData("", "", "Here is the trail map", null)]
+    [InlineData("Download the ridge loop trail map", "", "click here", null)]
+    [InlineData("", "", "", null)]
+    public void Check_ShouldWarnAboutATaggedLink_WhenNoneOfItsTextSaysWhereItGoes(string contents, string entries,
+        string text, string? vague)
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Tagged(0, text, "Link");
+        var link = new TestLink("https://example.com", contents);
+        object[] kids = text.Length > 0 ? [0, link] : [link];
+        pdf.Structure(new TestElement("Link", kids) { Entries = entries });
+
+        var findings = pdf.Load().Check(PdfCheck.LinkText);
+
+        string[] expected = vague is null ? []
+            : [$"structure > Link: Link on p1 says \"{vague}\", which doesn't say where it goes"];
+        Assert.Equal(expected, findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Fact]
+    public void Check_ShouldNotWarnAboutALink_WhenAChildElementSaysWhereItGoes()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Tagged(0, "Download the ridge loop trail map", "Span");
+        var link = new TestLink("https://example.com", "click here");
+        pdf.Structure(new TestElement("Link", new TestElement("Span", 0), link));
+
+        Assert.Empty(pdf.Load().Check(PdfCheck.LinkText));
+    }
+
+    [Theory]
+    [InlineData("/Contents (Click here)", 1)]
+    [InlineData("/Contents (Our website)", 0)]
+    [InlineData("", 0)]
+    public void Check_ShouldWarnAboutAnUntaggedLink_WhenItsContentsAreVague(string contents, int findings)
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Annotation($"/Subtype /Link /Rect [72 700 172 720] {contents}");
+
+        Assert.Equal(findings, pdf.Load().Check(PdfCheck.LinkText).Count);
+    }
+
     [Fact]
     public void Check_ShouldFindTheFormFieldWithoutAnAccessibleName_WhenOnlyOneHasNone()
     {
@@ -1063,6 +1117,9 @@ public class PdfCheckTests
     [InlineData(" alt text ", true)]
     [InlineData("IMG_2041 (1).jpg", true)]
     [InlineData("Screenshot 2024-01-05 at 10.32.11.png", true)]
+    [InlineData("Screenshot 2024-01-05 at 10.32.11\u202FAM.png", true)]
+    [InlineData("ridge loop trail map draft two.png", true)]
+    [InlineData("ridge loop trail map draft two final.png", false)]
     [InlineData("Scan of the signed contract saved as contract.pdf", false)]
     [InlineData("Trail map of the ridge loop", false)]
     [InlineData("Image of the summit at dawn", false)]
@@ -1071,7 +1128,8 @@ public class PdfCheckTests
     {
         var pdf = new TestPdf();
         pdf.AddPage().TaggedImage(0);
-        pdf.Structure(new TestElement("Figure", 0) { Entries = $"/Alt ({altText})" });
+        var hex = Convert.ToHexString(Encoding.BigEndianUnicode.GetBytes(altText));
+        pdf.Structure(new TestElement("Figure", 0) { Entries = $"/Alt <FEFF{hex}>" });
 
         var findings = pdf.Load().Check(PdfCheck.MeaningfulAltText);
 
@@ -1168,6 +1226,7 @@ public class PdfCheckTests
         "ISO 14289-1 7.16")]
     [InlineData(PdfCheck.NoReferenceXObjects, PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.20")]
     [InlineData(PdfCheck.MeaningfulAltText, PdfCheckCategory.AltText, PdfCheckSeverity.Warning, "WCAG 2.2 1.1.1")]
+    [InlineData(PdfCheck.LinkText, PdfCheckCategory.Annotations, PdfCheckSeverity.Warning, "WCAG 2.2 2.4.4")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {
