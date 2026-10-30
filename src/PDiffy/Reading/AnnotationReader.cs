@@ -56,9 +56,8 @@ internal static class AnnotationReader
         };
     }
 
-    // /F is a file name, or a file specification whose /UF (Unicode) or /F holds it.
+    // /F is a file name, or a file specification.
     private static string? FileName(PdfObjects objects, DictionaryToken action) =>
-        objects.Text(action, "F") ?? (objects.Dictionary(action, "F") is { } specification
-            ? objects.Text(specification, "UF") ?? objects.Text(specification, "F")
-            : null);
+        objects.Text(action, "F")
+        ?? (objects.Dictionary(action, "F") is { } specification ? objects.FileName(specification) : null);
 }

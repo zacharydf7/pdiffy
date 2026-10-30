@@ -99,6 +99,23 @@ public class DocumentSettingsTests
         Assert.Equal((expected, hasJavaScript), (settings.OpenAction, settings.HasJavaScript));
     }
 
+    [Theory]
+    [InlineData("/OpenAction (intro)", "p1 FitH 700")]
+    [InlineData("/OpenAction << /S /GoTo /D /intro >>", "GoTo p1 FitH 700")]
+    [InlineData("/OpenAction (outro)", "named outro")]
+    [InlineData("/OpenAction [{page1} /XYZ 72.6 null 0]", "p1 XYZ 73 -")]
+    [InlineData("/OpenAction [0 /Fit]", "p1 Fit")]
+    public void Load_ShouldReadTheOpenActionsDestinationLikeALink_WhenItIsNamedUnroundedOrNumbered(string openAction,
+        string expected)
+    {
+        var pdf = new TestPdf().CatalogEntries(openAction + " /Names << /Dests << /Names [(intro) [{page1} /FitH 700.4]] >> >>");
+        pdf.AddPage();
+
+        var settings = pdf.Load().Settings;
+
+        Assert.Equal(expected, settings.OpenAction);
+    }
+
     // /O and /U are the standard security handler's hashes (revision 3, 128-bit RC4) for empty user and owner passwords,
     // this /P and this /ID, so PdfPig can open the file. The file has no strings or streams, so nothing else is encrypted.
     [Fact]

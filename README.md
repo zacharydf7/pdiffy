@@ -767,6 +767,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | `pdfua-snapshot v1`, unchanged version: the open action reads its destination the way links do, so a named one prints its page (`open-action="GoTo p2 Fit"`), positions are whole points, an unset zoom is left out and a page given as a number counts from 0 (`p1 Fit`, not `p? Fit`). Only snapshots of documents whose open action is named, has fractional positions, keeps a position or the zoom, gives its page as a number or is malformed change |
 | Next | `pdfua-snapshot v1`, unchanged version: an artifact whose text is split across nested marked content is read in drawing order (`"Page 1"`, not `"1Page"`). Only snapshots of documents with such artifacts change; a short one can show as removed and added |
 | Next | `pdfua-snapshot v1`, unchanged version: a form that sets a calculation order, `NeedAppearances` or XFA prints a `form` line first in `forms`, and `javascript=yes` now covers form field scripts, so `NoActions` and `pdiffy check` report them. Only snapshots of documents with such forms or scripts change |
 | Next | `pdfua-snapshot v1`, unchanged version: form fields print their default value, export values, alignment, typed text's font, size and color, and JavaScript by when it runs (`scripts=calculate:3f9c0a1b2d4e5f60`). Snapshots of documents with forms change |

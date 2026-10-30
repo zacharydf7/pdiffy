@@ -29,6 +29,9 @@ internal sealed class PdfObjects(PdfDocument document)
 
     public string? Text(DictionaryToken owner, string key) => TextOf(Get(owner, key));
 
+    /// <summary>The file name a file specification gives: its /UF (Unicode), or else its /F.</summary>
+    public string? FileName(DictionaryToken specification) => Text(specification, "UF") ?? Text(specification, "F");
+
     public int? Integer(DictionaryToken owner, string key) => Get(owner, key) is NumericToken number ? number.Int : null;
 
     public bool Boolean(DictionaryToken owner, string key) => Get(owner, key) is BooleanToken boolean && boolean.Data;

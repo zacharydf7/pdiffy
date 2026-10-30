@@ -92,6 +92,10 @@ Sections always appear in this order. Each can be left out with [`Section`](xref
 - A link to another file prints `file="maps.pdf"`, with the page it opens there for `action=GoToR`.
 - A bookmark prints `-> p2` and the view it opens at, or `uri="..."`, or `file="..."` with `dest=` for the page it opens
   in that file. A bookmark's zoom isn't read.
+- The open action reads its destination the same way, and prints it in the PDF's order inside `open-action="..."`: the
+  page, the view, its positions and an XYZ view's zoom (`GoTo p1 XYZ 72 720 2`). A name the PDF doesn't define prints
+  as `named intro`. The positions aren't left out with `Field.Positions`, since the whole value belongs to
+  `Field.OpenAction`.
 
 ### Fonts
 

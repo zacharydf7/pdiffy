@@ -6,7 +6,7 @@ using UglyToad.PdfPig.Tokens;
 
 namespace PDiffy.Reading;
 
-internal sealed class DocumentSettingsReader(PdfObjects objects, PageTree pages)
+internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationReader destinations)
 {
     // PDF numbers permission bits from 1; these are the ones with a meaning.
     private static readonly (int Bit, DocumentPermissions Permission)[] PermissionBits =
@@ -16,9 +16,10 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, PageTree pages)
         (11, DocumentPermissions.Assemble), (12, DocumentPermissions.PrintHighQuality),
     ];
 
-    public static DocumentSettings Read(PdfDocument document, PdfObjects objects, DictionaryToken catalog, PageTree pages)
+    public static DocumentSettings Read(PdfDocument document, PdfObjects objects, DictionaryToken catalog,
+        DestinationReader destinations)
     {
-        var reader = new DocumentSettingsReader(objects, pages);
+        var reader = new DocumentSettingsReader(objects, destinations);
         var names = objects.Dictionary(catalog, "Names");
         var openAction = catalog.Data.GetValueOrDefault("OpenAction");
         var openActions = reader.DescribeOpenActions(openAction);
@@ -59,17 +60,16 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, PageTree pages)
         };
     }
 
-    // A destination is [page view-type arguments...], such as [page /XYZ left top zoom], or the name of one.
+    // Read like a link's destination, so both agree, and printed in the PDF's order (p1 XYZ 72 720 2).
     private string? DescribeDestination(IToken? destination)
     {
-        if (objects.Resolve(destination) is not ArrayToken array || array.Data.Count == 0)
-        {
-            return objects.Describe(destination) is { } name ? $"named {name}" : null;
-        }
+        if (destinations.Read(destination) is not { } target) return null;
+        if (target.Name is { } name) return $"named {name}";
 
-        var page = pages.NumberOf(array.Data[0])?.ToString() ?? "?";
-        var view = array.Data.Skip(1).Select(item => objects.Describe(item) ?? "null");
-        return string.Join(" ", view.Prepend($"p{page}"));
+        var positions = target.Positions.Select(position => position?.ToString(CultureInfo.InvariantCulture) ?? "-");
+        var parts = new[] { $"p{target.Page?.ToString(CultureInfo.InvariantCulture) ?? "?"}", target.View }
+            .Concat(positions).Append(target.Zoom?.ToString(CultureInfo.InvariantCulture));
+        return string.Join(" ", parts.OfType<string>());
     }
 
     // The open action and those it chains through /Next, in the order they run, each described on its own.
@@ -147,8 +147,8 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, PageTree pages)
             var stream = streams is null ? null : (objects.Get(streams, "UF") ?? objects.Get(streams, "F")) as StreamToken;
             var contents = stream is null ? null : objects.Contents(stream);
             var hash = contents is null ? null : Convert.ToHexStringLower(SHA256.HashData(contents))[..16];
-            var file = new EmbeddedFile(name, objects.Text(specification, "UF") ?? objects.Text(specification, "F"),
-                objects.Text(specification, "Desc"), objects.Name(specification, "AFRelationship"), contents?.Length, hash);
+            var file = new EmbeddedFile(name, objects.FileName(specification), objects.Text(specification, "Desc"),
+                objects.Name(specification, "AFRelationship"), contents?.Length, hash);
             files.Add(file with { Unreadable = stream is not null && contents is null });
         }
 

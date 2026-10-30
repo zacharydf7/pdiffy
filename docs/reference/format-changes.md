@@ -16,6 +16,12 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### PDF (`pdfua-snapshot v1`, unchanged)
 
+- The open action reads its destination the way links do: a named destination is looked up and prints its page
+  (`open-action="GoTo p2 Fit"`, not `"GoTo named intro"`), positions are whole points with `-` for one the viewer
+  keeps, an XYZ view's zoom prints only when it sets one (`p1 XYZ 72 720`, not `p1 XYZ 72 720 0`), and a page given as
+  a number counts from 0, as it does for links (`p1 Fit`, not `p? Fit`). A destination that isn't one, such as a bare
+  number, is left out instead of printing as `named 5`. Only snapshots of documents whose open action is named, has
+  fractional positions, keeps a position or the zoom, gives its page as a number or is malformed change.
 - An artifact whose text is split across nested marked content is read in the order it's drawn (`"Page 1"`, not
   `"1Page"`). Only snapshots of documents with such artifacts change, and their artifact text was wrong. A short artifact,
   such as a page number, can show as removed and added, since the old text shares no word with the new.

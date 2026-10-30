@@ -602,6 +602,18 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowOnlyTheOpenAction_WhenASnapshotFromBeforeNamedOpenActionsMeetsOneWithThem()
+    {
+        var before = SnapshotText.Header + "settings\n  version=1.7 open-action=\"GoTo named intro\" javascript=no\n";
+        var after = SnapshotText.Header + "settings\n  version=1.7 open-action=\"GoTo p2 Fit\" javascript=no\n";
+
+        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+
+        Assert.Equal((ChangeKind.AttributeChanged, "open-action: \"GoTo named intro\" -> \"GoTo p2 Fit\""),
+            (change.Kind, change.Detail));
+    }
+
+    [Fact]
     public void Compare_ShouldShowOnlyTheReorderedText_WhenASnapshotFromBeforeNestedArtifactTextMeetsOneWithIt()
     {
         // The old reader put the nested text last and fused the two words where it jumped back.
