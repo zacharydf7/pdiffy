@@ -61,7 +61,7 @@ public enum PdfCheck
 /// </summary>
 /// <param name="Check">The rule that found it.</param>
 /// <param name="Page">The page number, counted from 1; null when the finding is about the whole document, such as a
-/// missing language or a font that isn't embedded.</param>
+/// missing language or a font that isn't embedded, or when its item's page isn't known.</param>
 /// <param name="Path">Where it is: a section's name alone, such as "metadata", or with the item, such as
 /// "fonts > Helvetica" or "forms > trail.name".</param>
 /// <param name="Message">What's wrong, as a sentence with no closing period, such as "Font Helvetica isn't

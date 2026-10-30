@@ -416,7 +416,8 @@ public sealed record DocxListItem(int List, int Level, string? Label);
 /// </summary>
 /// <param name="Id">The list's id (w:numId), which <see cref="DocxListItem.List"/> refers to it by.</param>
 /// <param name="Definition">
-/// The id of the definition the list numbers from, such as "3". Lists that share a definition share its counters.
+/// The id of the definition the list numbers from, such as "3". Lists that share a definition share its counters,
+/// unless one restarts its numbering with a start override.
 /// </param>
 /// <param name="Levels">The levels the document's paragraphs use, outermost first, not every level defined.</param>
 public sealed record DocxList(int Id, string Definition, IReadOnlyList<DocxListLevel> Levels);
