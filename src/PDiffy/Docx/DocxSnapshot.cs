@@ -26,6 +26,7 @@ public static class DocxSnapshot
         await VerifyAsync(DocxDocument.Load(docx), name, configure, directory, testFile, testName);
 
     /// <summary>Compares the snapshot of a DOCX in a byte array with the verified one, as for a stream.</summary>
+    /// <param name="docx">The DOCX to check, as bytes.</param>
     /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{DocxSnapshotOptions}?, string?, string, string)"/>
     public static async Task VerifyAsync(byte[] docx, string? name = null, Action<DocxSnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "", [CallerMemberName] string testName = "") =>
@@ -35,6 +36,7 @@ public static class DocxSnapshot
     /// Compares the snapshot of a DOCX already loaded with the verified one, as for a stream, so a test that also asserts
     /// on the document reads it once.
     /// </summary>
+    /// <param name="docx">The DOCX to check, already loaded with <see cref="DocxDocument.Load(Stream)"/>.</param>
     /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{DocxSnapshotOptions}?, string?, string, string)"/>
     public static async Task VerifyAsync(DocxDocument docx, string? name = null, Action<DocxSnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "", [CallerMemberName] string testName = "")

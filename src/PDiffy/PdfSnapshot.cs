@@ -27,6 +27,7 @@ public static class PdfSnapshot
         await VerifyAsync(PdfUaDocument.Load(pdf), name, configure, directory, testFile, testName);
 
     /// <summary>Compares the snapshot of a PDF in a byte array with the verified one, as for a stream.</summary>
+    /// <param name="pdf">The PDF to check, as bytes.</param>
     /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{SnapshotOptions}?, string?, string, string)"/>
     public static async Task VerifyAsync(byte[] pdf, string? name = null, Action<SnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "", [CallerMemberName] string testName = "") =>
@@ -36,6 +37,7 @@ public static class PdfSnapshot
     /// Compares the snapshot of a PDF already loaded with the verified one, as for a stream, so a test that also asserts
     /// on the document reads it once.
     /// </summary>
+    /// <param name="pdf">The PDF to check, already loaded with <see cref="PdfUaDocument.Load(Stream)"/>.</param>
     /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{SnapshotOptions}?, string?, string, string)"/>
     public static async Task VerifyAsync(PdfUaDocument pdf, string? name = null, Action<SnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "", [CallerMemberName] string testName = "")
