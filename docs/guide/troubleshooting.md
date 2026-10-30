@@ -3,8 +3,11 @@
 ## "The test file's folder doesn't exist"
 
 Your build maps source paths (deterministic builds, `ContinuousIntegrationBuild`), so the path the compiler records for
-the test file, such as `/_/tests/...`, isn't on disk. Set [`Snapshot.Directory`](xref:PDiffy.Snapshot.Directory) to the
-folder that holds your snapshots, for example in a module initializer. See
+the test file, such as `/_/tests/...`, isn't on disk, and PDiffy couldn't find the folder in the test project either.
+That happens when the project references PDiffy's source rather than its package, so PDiffy's build file didn't record
+the project folder, or when the test file sits outside the project folder. Set
+[`Snapshot.Directory`](xref:PDiffy.Snapshot.Directory) to the folder that holds your snapshots, such as
+`Snapshot.ProjectFolder("Snapshots")`, for example in a module initializer. See
 [Getting started](getting-started.md#keep-snapshots-in-one-folder).
 
 ## `PDIFFY_ACCEPT=1` doesn't accept anything

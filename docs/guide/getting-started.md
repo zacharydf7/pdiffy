@@ -100,13 +100,18 @@ static class SnapshotSetup
 {
     [ModuleInitializer]
     public static void Initialize() =>
-        Snapshot.Directory = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Snapshots");
+        Snapshot.Directory = Snapshot.ProjectFolder("Snapshots");
 }
 ```
 
-> [!IMPORTANT]
-> Set `Snapshot.Directory` if your build maps source paths (deterministic builds, common on CI). The test file's path
-> then doesn't exist on disk, and PDiffy says so in the failure.
+[`Snapshot.ProjectFolder`](xref:PDiffy.Snapshot.ProjectFolder*) gives a folder in the test project. PDiffy's build file
+records the project's folder when it builds, so the path is right whatever the output folder or runtime, as long as the
+tests run in the checkout that built them.
+
+> [!NOTE]
+> If your build maps source paths (deterministic builds, common on CI), the path the compiler records for a test file
+> isn't on disk. PDiffy finds the test file's folder in the recorded project folder instead, so snapshots next to test
+> files still work.
 
 ## Without a snapshot file
 

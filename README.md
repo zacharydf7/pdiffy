@@ -93,12 +93,14 @@ What happens on each run:
 
 To accept a change, review the received file, then copy it over the verified one, run the tests again with `PDIFFY_ACCEPT=1`, or run `pdiffy accept` (see [Command line](#command-line)). Either way the change shows up in code review as a diff of the `.verified.pdfua.txt` file.
 
-Snapshot files sit next to the test file by default. To keep them all in one folder, set it once, for example in a module initializer. Set it too if your build maps source paths (deterministic builds, common on CI), because the test file's path then doesn't exist on disk:
+Snapshot files sit next to the test file by default. To keep them all in one folder, set it once, for example in a module initializer. `Snapshot.ProjectFolder` gives a folder in the test project, which PDiffy's build file records when the project builds, so it's right whatever the output folder or runtime, as long as the tests run in the checkout that built them:
 
 ```csharp
 // Every snapshot, of any kind, goes to and is read from this folder.
-Snapshot.Directory = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Snapshots");
+Snapshot.Directory = Snapshot.ProjectFolder("Snapshots");
 ```
+
+If your build maps source paths (deterministic builds, common on CI), the path the compiler records for a test file, such as `/_/tests/...`, isn't on disk. PDiffy then finds the test file's folder in the test project it recorded, so snapshots next to test files still work. A new snapshot on a build server (`CI` or `TF_BUILD` set) asks whether the verified file was committed, since it was probably expected.
 
 A suite whose tests share options, such as a profile or scrubbers, can set them once beside the folder, with `PdfSnapshot.DefaultOptions`, `DocxSnapshot.DefaultOptions` or `Snapshot.DefaultOptions` for text and JSON. Each call's own `configure` runs after them and adds to them. A PDF or Word call can leave out more but can't bring back what the defaults leave out (its `Strict` profile doesn't undo a default one), so keep the defaults to what every test agrees on and set the rest in each test. A text or JSON call's `KeepDates()` or `KeepGuids()` does undo a default scrub. A PDF or Word snapshot's first lines list what's ignored, but not what's scrubbed.
 

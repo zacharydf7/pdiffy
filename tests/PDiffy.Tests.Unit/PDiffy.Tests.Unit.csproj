@@ -19,6 +19,9 @@
     <None Include="Producers\Fonts\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- A package reference imports this itself; a project reference doesn't. -->
+  <Import Project="..\..\src\PDiffy\buildTransitive\PDiffy.props" />
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\PDiffy\PDiffy.csproj" />
     <ProjectReference Include="..\..\src\PDiffy.Cli\PDiffy.Cli.csproj" />

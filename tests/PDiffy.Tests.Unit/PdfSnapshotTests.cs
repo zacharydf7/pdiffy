@@ -156,6 +156,36 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public async Task VerifyAsync_ShouldFindTheTestFilesFolderInTheProject_WhenTheBuildMappedItsPath()
+    {
+        Snapshot.Directory = null;
+        var inside = $"pdiffy-mapped-{Guid.NewGuid():N}";
+        var folder = Snapshot.ProjectFolder("obj", inside);
+        Directory.CreateDirectory(folder);
+        try
+        {
+            await Assert.ThrowsAsync<SnapshotException>(
+                () => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide", testFile: $"/_/tests/PDiffy.Tests.Unit/obj/{inside}/GuideTests.cs"));
+
+            Assert.True(File.Exists(Path.Combine(folder, "Guide.received.pdfua.txt")));
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task VerifyAsync_ShouldAskWhetherTheVerifiedFileWasCommitted_WhenASnapshotIsNewOnABuildServer()
+    {
+        Environment.SetEnvironmentVariable("CI", "true");
+
+        var error = await Assert.ThrowsAsync<SnapshotException>(() => PdfSnapshot.VerifyAsync(Pdf("Hello"), "Guide"));
+
+        Assert.Contains("it isn't in this checkout. Was it committed", error.Message);
+    }
+
+    [Fact]
     public async Task VerifyAsync_ShouldApplyTheOptions_WhenGivenSome()
     {
         await Assert.ThrowsAsync<SnapshotException>(

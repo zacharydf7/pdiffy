@@ -1,0 +1,10 @@
+<Project>
+  <!-- Records the test project's folder in its assembly, so Snapshot.ProjectFolder can find it from any output folder,
+       and snapshots next to test files are still found when the build maps source paths. -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>PDiffy.ProjectDirectory</_Parameter1>
+      <_Parameter2>$(MSBuildProjectDirectory)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+</Project>

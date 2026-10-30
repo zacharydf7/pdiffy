@@ -10,8 +10,12 @@ run easy to act on: keep what the run received, publish the HTML reports, and su
 - **One snapshot for every OS.** A snapshot is the same text on Windows and Linux, so one verified file serves a matrix
   build.
 - **Deterministic builds.** If your build maps source paths (`ContinuousIntegrationBuild`, common on CI), the test
-  file's path doesn't exist on disk. Set [`Snapshot.Directory`](xref:PDiffy.Snapshot.Directory) so PDiffy can find the
-  snapshots (see [Getting started](getting-started.md#keep-snapshots-in-one-folder)).
+  file's path doesn't exist on disk. PDiffy finds the test file's folder in the test project instead, using the project
+  folder its build file recorded. To keep snapshots in one folder, use
+  [`Snapshot.ProjectFolder`](xref:PDiffy.Snapshot.ProjectFolder*) (see
+  [Getting started](getting-started.md#keep-snapshots-in-one-folder)).
+- **New snapshots.** A new snapshot on a build server (`CI` or `TF_BUILD` set) usually means the verified file wasn't
+  committed, or the snapshot folder doesn't point into the checkout, and the failure says so.
 
 ## GitHub Actions
 

@@ -21,6 +21,12 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - run: dotnet test -c Release
+      # The build file that records a test project's folder reaches consumers only through the package.
+      - name: Check the package ships its build file
+        if: runner.os == 'Linux'
+        run: |
+          dotnet pack src/PDiffy -c Release -o pack-check
+          unzip -l pack-check/*.nupkg | grep -q 'buildTransitive/PDiffy.props'
 
   # A version tag such as v0.1.0 publishes that version to nuget.org, once the tests pass on both systems.
   publish:

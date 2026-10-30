@@ -13,6 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="buildTransitive\PDiffy.props" Pack="true" PackagePath="buildTransitive" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="PDiffy.Tests.Unit" />
     <InternalsVisibleTo Include="PDiffy.Cli" />
   </ItemGroup>

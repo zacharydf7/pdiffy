@@ -72,17 +72,15 @@ internal static class SnapshotWorkflow
     }
 
     // A build that maps source paths (deterministic builds, often on CI) records a path like /_/tests/..., which doesn't
-    // exist on disk, so snapshots next to the test file can't be found.
+    // exist on disk, so the folder is looked for again under the project folders the test assemblies recorded.
     private static string TestFolder(string testFile)
     {
         var folder = Path.GetDirectoryName(testFile);
-        if (folder is null || !Directory.Exists(folder))
-        {
-            throw new SnapshotException($"The test file's folder '{folder}' doesn't exist, which happens when the build maps "
-                + "source paths. Set Snapshot.Directory to the folder that holds the snapshots.");
-        }
-
-        return folder;
+        if (folder is not null && Directory.Exists(folder)) return folder;
+        if (folder is not null && ProjectFolders.Find(folder, ProjectFolders.Loaded()) is { } found) return found;
+        throw new SnapshotException($"The test file's folder '{folder}' doesn't exist, which happens when the build maps "
+            + "source paths. Set Snapshot.Directory to the folder that holds the snapshots, such as "
+            + "Snapshot.ProjectFolder(\"Snapshots\").");
     }
 
     // A new snapshot has nothing to compare with, so it gets no diff and no report.
@@ -93,6 +91,12 @@ internal static class SnapshotWorkflow
         message.AppendLine(diff is null
             ? $"New {kind} snapshot. Review the received file, then accept it."
             : $"The {kind}'s snapshot differs from the verified one.");
+        if (diff is null && OnCi())
+        {
+            message.AppendLine("This is a build server, so the verified file was probably expected: it isn't in this "
+                + "checkout. Was it committed, and does the snapshot folder point into the repository?");
+        }
+
         if (diff is not null) message.AppendLine().AppendLine(diff.Describe());
         message.AppendLine().AppendLine($"verified: {files.Verified}").AppendLine($"received: {files.Received}");
         if (diff is not null) message.AppendLine($"report: {files.Report}");

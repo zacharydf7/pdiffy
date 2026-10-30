@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -19,6 +20,26 @@ public static class Snapshot
     /// file that made it. A call's <c>directory</c> argument overrides it.
     /// </summary>
     public static string? Directory { get; set; }
+
+    /// <summary>
+    /// A folder in the test project, for <see cref="Directory"/>: <c>Snapshot.ProjectFolder("Snapshots")</c>. PDiffy's
+    /// build file records the project's folder when the test project builds, so this is right with any output folder,
+    /// runtime or build server, unlike a path worked out from the output folder.
+    /// </summary>
+    /// <param name="parts">The folders under the project folder, if any.</param>
+    /// <exception cref="SnapshotException">
+    /// The project's folder wasn't recorded, because PDiffy's build file didn't run.
+    /// </exception>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string ProjectFolder(params string[] parts)
+    {
+        var project = ProjectFolders.Of(Assembly.GetCallingAssembly())
+            ?? throw new SnapshotException("The test project's folder wasn't recorded. PDiffy's build file adds it "
+                + "when a project references the PDiffy package, unless the project sets GenerateAssemblyInfo to false; "
+                + "a project that references PDiffy's source instead needs "
+                + "<Import Project=\"path/to/PDiffy/buildTransitive/PDiffy.props\" />.");
+        return Path.Combine([project, .. parts]);
+    }
 
     /// <summary>
     /// Options every text and JSON snapshot starts with, such as scrubbers, set once (in a module initializer, say)
