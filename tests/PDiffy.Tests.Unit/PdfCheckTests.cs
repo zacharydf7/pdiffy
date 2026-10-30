@@ -522,6 +522,71 @@ public class PdfCheckTests
     }
 
     [Fact]
+    public void Check_ShouldFindNothing_WhenTablesHoldWhatTheyShould()
+    {
+        var pdf = new TestPdf();
+        var page = pdf.AddPage();
+        for (var i = 0; i < 6; i++) page.Tagged(i, $"Cell {i}");
+        pdf.Structure(
+            new TestElement("Table", new TestElement("Caption", 0),
+                new TestElement("THead", new TestElement("TR", new TestElement("TH", 1))),
+                new TestElement("TBody", new TestElement("TR", new TestElement("TD", 2))),
+                new TestElement("TFoot", new TestElement("TR", new TestElement("TD", 3)))),
+            new TestElement("Table", new TestElement("TR", new TestElement("TD", 4)), new TestElement("Caption", 5)));
+
+        Assert.Empty(pdf.Load().Check(PdfCheck.TableStructure));
+    }
+
+    [Fact]
+    public void Check_ShouldFindMisplacedRowsCellsAndGroupsAndExtraParts_WhenTablesHaveThem()
+    {
+        var pdf = new TestPdf();
+        var page = pdf.AddPage();
+        for (var i = 0; i < 19; i++) page.Tagged(i, $"Cell {i}");
+        pdf.Structure(
+            new TestElement("TR", new TestElement("TD", 0)),
+            new TestElement("Table",
+                new TestElement("TR", new TestElement("TD", 1), new TestElement("P", 2)),
+                new TestElement("THead", new TestElement("TR", new TestElement("TH", 3)), new TestElement("P", 14)),
+                new TestElement("THead", new TestElement("TR", new TestElement("TH", 4))),
+                new TestElement("Caption", 5), new TestElement("TFoot", new TestElement("P", 6)),
+                new TestElement("TFoot", new TestElement("TR", new TestElement("TD", 13))),
+                new TestElement("TD", 7), new TestElement("P", 12)),
+            new TestElement("Table",
+                new TestElement("TBody", new TestElement("TR", new TestElement("TD", 8)), new TestElement("P", 15)),
+                new TestElement("Caption", 9), new TestElement("Caption", 10)),
+            new TestElement("THead", new TestElement("TR", new TestElement("TH", 11))),
+            new TestElement("TBody", new TestElement("TR", new TestElement("TD", 16))),
+            new TestElement("TFoot", new TestElement("TR", new TestElement("TD", 17))),
+            new TestElement("TH", 18));
+
+        var findings = pdf.Load().Check(PdfCheck.TableStructure);
+
+        Assert.Equal(
+        [
+            "structure > TR: TR isn't inside Table, THead, TBody or TFoot",
+            "structure > THead: THead isn't inside Table",
+            "structure > TBody: TBody isn't inside Table",
+            "structure > TFoot: TFoot isn't inside Table",
+            "structure > TH: TH on p1 isn't inside TR",
+            "structure > Table[1] > Caption: Caption on p1 isn't the first or last child of its Table",
+            "structure > Table[1] > TD: TD on p1 isn't inside TR",
+            "structure > Table[1] > P: P on p1 is in Table, which holds only TR, THead, TBody, TFoot, Caption",
+            "structure > Table[1] > TR > P: P on p1 is in TR, which holds only TH, TD",
+            "structure > Table[1] > THead[1] > P: P on p1 is in THead, which holds only TR",
+            "structure > Table[1] > TFoot[1] > P: P on p1 is in TFoot, which holds only TR",
+            "structure > Table[2] > Caption[1]: Caption on p1 isn't the first or last child of its Table",
+            "structure > Table[2] > TBody > P: P on p1 is in TBody, which holds only TR",
+            "structure > Table[1] > THead[1]: THead is in a Table with no TBody",
+            "structure > Table[1] > THead[2]: THead is another THead in the same Table, which can hold only one",
+            "structure > Table[1] > TFoot[1]: TFoot is in a Table with no TBody",
+            "structure > Table[1] > TFoot[2]: TFoot is another TFoot in the same Table, which can hold only one",
+            "structure > Table[2] > Caption[2]: Caption on p1 is another Caption in the same Table, "
+                + "which can hold only one",
+        ], findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Fact]
     public void Check_ShouldFindNoRoleMapProblem_WhenAnElementHasNoType()
     {
         var document = Documents.Empty() with { Structure = [new PdfStructureElement { Type = StructureTypes.None }] };
@@ -577,6 +642,7 @@ public class PdfCheckTests
     [InlineData(PdfCheck.TocStructure, PdfCheckCategory.Lists, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     [InlineData(PdfCheck.HeadingTypes, PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.4")]
     [InlineData(PdfCheck.NoteIds, PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.9")]
+    [InlineData(PdfCheck.TableStructure, PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
         PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
     {

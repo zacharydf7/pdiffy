@@ -39,6 +39,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
             case PdfCheck.TocStructure: TocStructure(); break;
             case PdfCheck.HeadingTypes: HeadingTypes(); break;
             case PdfCheck.NoteIds: NoteIds(); break;
+            case PdfCheck.TableStructure: TableStructure(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a PdfCheck value.");
         }
     }
@@ -334,7 +335,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
     }
 
     private void ListStructure() => Nesting(PdfCheck.ListStructure,
-        new() { [StructureType.ListItem] = StructureType.List, [StructureType.ListBody] = StructureType.ListItem },
+        new() { [StructureType.ListItem] = [StructureType.List], [StructureType.ListBody] = [StructureType.ListItem] },
         new()
         {
             [StructureType.List] = [StructureType.List, StructureType.ListItem, StructureType.Caption],
@@ -342,12 +343,65 @@ internal sealed class PdfChecker(PdfUaDocument document)
         });
 
     private void TocStructure() => Nesting(PdfCheck.TocStructure,
-        new() { [StructureType.TableOfContentsItem] = StructureType.TableOfContents },
+        new() { [StructureType.TableOfContentsItem] = [StructureType.TableOfContents] },
         new()
         {
             [StructureType.TableOfContents] =
                 [StructureType.TableOfContents, StructureType.TableOfContentsItem, StructureType.Caption],
         });
+
+    // A table's caption can be its first or last child, unlike a list's.
+    private void TableStructure()
+    {
+        string[] table = [StructureType.Table];
+        string[] row = [StructureType.TableRow];
+        Nesting(PdfCheck.TableStructure,
+            new()
+            {
+                [StructureType.TableRow] =
+                    [StructureType.Table, StructureType.TableHead, StructureType.TableBody, StructureType.TableFoot],
+                [StructureType.TableHead] = table, [StructureType.TableBody] = table, [StructureType.TableFoot] = table,
+                [StructureType.TableHeaderCell] = row, [StructureType.TableDataCell] = row,
+            },
+            new()
+            {
+                [StructureType.Table] = [StructureType.TableRow, StructureType.TableHead, StructureType.TableBody,
+                    StructureType.TableFoot, StructureType.Caption],
+                [StructureType.TableRow] = [StructureType.TableHeaderCell, StructureType.TableDataCell],
+                [StructureType.TableHead] = row, [StructureType.TableBody] = row, [StructureType.TableFoot] = row,
+            },
+            captionCanBeLast: true);
+        TableParts();
+    }
+
+    // A table holds one THead, one TFoot and one Caption at most, and a TBody when it has a THead or TFoot. A caption
+    // in the middle is already reported by Nesting, so it isn't reported again as another caption.
+    private void TableParts()
+    {
+        foreach (var (table, tablePath) in Elements.Where(pair => pair.Element.TypeOrMapped == StructureType.Table))
+        {
+            var parts = StructurePaths.WithPaths(table.Children, tablePath).ToList();
+            var hasBody = parts.Any(part => part.Element.TypeOrMapped == StructureType.TableBody);
+            var seen = new HashSet<string>();
+            for (var i = 0; i < parts.Count; i++)
+            {
+                var (part, path) = parts[i];
+                var (type, page) = (part.TypeOrMapped, part.FirstPage);
+                if (type is not (StructureType.TableHead or StructureType.TableFoot or StructureType.Caption)) continue;
+
+                var inMiddle = type == StructureType.Caption && i > 0 && i < parts.Count - 1;
+                if (!seen.Add(type) && !inMiddle)
+                {
+                    Add(PdfCheck.TableStructure, page, path,
+                        $"{type}{On(page)} is another {type} in the same Table, which can hold only one");
+                }
+                else if (type != StructureType.Caption && !hasBody)
+                {
+                    Add(PdfCheck.TableStructure, page, path, $"{type}{On(page)} is in a Table with no TBody");
+                }
+            }
+        }
+    }
 
     // The first heading says which kind the document uses, so each heading of the other kind is reported. An H names
     // the section it's in, so a second H in one element, or in the root, is reported too, unless every H already is.
@@ -399,8 +453,10 @@ internal sealed class PdfChecker(PdfUaDocument document)
     }
 
     // Each element of a type that must sit in another, each child a container can't hold, and a caption that isn't
-    // its container's first child. A child is reported once, for the first of these it breaks.
-    private void Nesting(PdfCheck check, Dictionary<string, string> parents, Dictionary<string, string[]> holds)
+    // its container's first child (or last, when it can be). A child is reported once, for the first of these it
+    // breaks.
+    private void Nesting(PdfCheck check, Dictionary<string, string[]> parents, Dictionary<string, string[]> holds,
+        bool captionCanBeLast = false)
     {
         foreach (var (parent, children) in Families())
         {
@@ -410,22 +466,28 @@ internal sealed class PdfChecker(PdfUaDocument document)
             {
                 var (child, path) = children[i];
                 var (type, page) = (child.TypeOrMapped, child.FirstPage);
-                if (parents.TryGetValue(type, out var required) && parentType != required)
+                if (parents.TryGetValue(type, out var required) && !required.Contains(parentType))
                 {
-                    Add(check, page, path, $"{type}{On(page)} isn't inside {required}");
+                    Add(check, page, path, $"{type}{On(page)} isn't inside {Either(required)}");
                 }
                 else if (allowed is not null && !allowed.Contains(type))
                 {
                     Add(check, page, path, $"{type}{On(page)} is in {parentType}, which holds only "
                         + string.Join(", ", allowed));
                 }
-                else if (allowed is not null && type == StructureType.Caption && i > 0)
+                else if (allowed is not null && type == StructureType.Caption && i > 0
+                    && !(captionCanBeLast && i == children.Count - 1))
                 {
-                    Add(check, page, path, $"Caption{On(page)} isn't the first child of its {parentType}");
+                    var where = captionCanBeLast ? "first or last" : "first";
+                    Add(check, page, path, $"Caption{On(page)} isn't the {where} child of its {parentType}");
                 }
             }
         }
     }
+
+    // "L", or "Table, THead or TBody".
+    private static string Either(string[] types) =>
+        types.Length == 1 ? types[0] : $"{string.Join(", ", types[..^1])} or {types[^1]}";
 
     // The structure tree root's children, then each element's, with their paths.
     private IEnumerable<(PdfStructureElement? Parent, List<(PdfStructureElement Element, string Path)> Children)>
@@ -515,6 +577,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
         PdfCheck.HeadingLevels => new(PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.2"),
         PdfCheck.HeadingTypes => new(PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.4"),
         PdfCheck.NoteIds => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.9"),
+        PdfCheck.TableStructure => new(PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
         PdfCheck.FontsEmbedded => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1"),
         PdfCheck.FontsMapToUnicode => new(PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7"),
         PdfCheck.RoleMap => new(PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1"),

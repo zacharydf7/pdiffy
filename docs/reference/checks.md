@@ -86,6 +86,22 @@ A header it can't tie to its cells leaves each value without its meaning.
 **How to fix it:** give each `TH` a scope (`Row`, `Column` or `Both`), or give its cells a `/Headers` list that names
 the header's ID. Make sure every ID a cell names belongs to a header in the table.
 
+## TableStructure
+
+**Finds:** a row (`TR`) outside a `Table`, `THead`, `TBody` or `TFoot`; a row group (`THead`, `TBody`, `TFoot`) outside a
+`Table`; a cell (`TH`, `TD`) outside a `TR`; a table, row or row group holding something it can't; a second `THead`,
+`TFoot` or `Caption` in one table; a `THead` or `TFoot` in a table with no `TBody`; and a caption that isn't the
+table's first or last child. **Category:** `Tables`. **Severity:** `Error`. **From:** ISO 14289-1 7.2.
+
+**Why it matters:** a screen reader moves through a table by row and column, and tells the reader where they are, such
+as "row 3, column 2". It can only count rows and columns that sit where a table keeps them, so a cell outside a row,
+or text loose in a table, breaks the count and the headers it reads with each cell.
+
+**How to fix it:** keep the standard nesting: `Table`, then optional `THead`, `TBody` and `TFoot` (at most one head and
+one foot, with a body whenever there's either), then `TR`, then `TH` and `TD`. Text goes inside a cell, and the caption
+goes first or last. Most generators get this right for tables built with their table feature; the usual cause is a
+layout made of positioned text or nested tables used for spacing.
+
 ## HeadingLevels
 
 **Finds:** a heading that skips a level, or one that comes before any `H1`. **Category:** `Headings`. **Severity:**

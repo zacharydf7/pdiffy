@@ -96,6 +96,12 @@ public enum PdfCheck
 
     /// <summary>Every note (footnote or endnote) has an ID, and no two notes share one.</summary>
     NoteIds,
+
+    /// <summary>
+    /// Rows, cells and row groups sit where a table has them, each holds only what it can, a table has at most one
+    /// THead, TFoot and Caption, a TBody when it has a THead or TFoot, and its caption first or last.
+    /// </summary>
+    TableStructure,
 }
 
 /// <summary>
