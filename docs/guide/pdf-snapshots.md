@@ -9,10 +9,23 @@ await PdfSnapshot.VerifyAsync(pdf);
 
 | Parameter | Use it to | Default |
 |---|---|---|
-| `pdf` | Pass the PDF, as any readable stream. It's left open. | Required |
+| `pdf` | Pass the PDF: a stream (read from its start and left open), a `byte[]`, or a `PdfUaDocument` already loaded | Required |
 | `name` | Name the snapshot, when one test makes several | `{TestFile}.{TestMethod}` |
 | `configure` | [Ignore or scrub](options.md) what the test doesn't care about | Everything is compared |
 | `directory` | Keep this snapshot in another folder | [`Snapshot.Directory`](xref:PDiffy.Snapshot.Directory), else the test file's folder |
+
+A stream is read from its start wherever the generator left it, and its position is put back afterwards, so a test
+can load it, assert on it and snapshot it. A stream that can't seek, such as a network response, is copied first. Pass
+the loaded document instead to read the PDF only once:
+
+```csharp
+var document = PdfUaDocument.Load(pdf);
+Assert.Equal("Trail Guide", document.Metadata.Title);
+await PdfSnapshot.VerifyAsync(document);
+```
+
+An empty stream, a Word document passed as a PDF, or a web page (a generator's error page, say) fails with an
+`InvalidDataException` that says so.
 
 ## What a snapshot looks like
 

@@ -32,9 +32,18 @@ public sealed record PdfUaDocument
     public IReadOnlyList<ImageInfo> Images { get; init; } = [];
     public IReadOnlyList<PathInfo> Paths { get; init; } = [];
 
-    /// <summary>Reads the PDF in a stream. The stream is left open.</summary>
-    /// <remarks>A page that can't be loaded comes back as <see cref="PageInfo.Unreadable"/>; a file that can't be opened throws.</remarks>
-    public static PdfUaDocument Load(Stream pdf) => PdfPigReader.Read(pdf);
+    /// <summary>
+    /// Reads the PDF in a stream from its start, wherever the stream was left, and puts its position back afterwards. The
+    /// stream is left open.
+    /// </summary>
+    /// <remarks>
+    /// A page that can't be loaded comes back as <see cref="PageInfo.Unreadable"/>; a file that can't be opened throws.
+    /// An empty stream, a ZIP file or a web page throws <see cref="InvalidDataException"/> saying so.
+    /// </remarks>
+    public static PdfUaDocument Load(Stream pdf) => InputStream.Read(pdf, DocumentFormat.Pdf, PdfPigReader.Read);
+
+    /// <summary>Reads the PDF in a byte array.</summary>
+    public static PdfUaDocument Load(byte[] pdf) => Load(new MemoryStream(pdf, writable: false));
 
     /// <summary>Reads the PDF file at a path.</summary>
     /// <remarks>A page that can't be loaded comes back as <see cref="PageInfo.Unreadable"/>; a file that can't be opened throws.</remarks>

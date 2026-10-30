@@ -31,9 +31,18 @@ public sealed record DocxDocument
     /// <summary>Footnotes, endnotes and comments, with what each says.</summary>
     public IReadOnlyList<DocxNote> Notes { get; init; } = [];
 
-    /// <summary>Reads the DOCX in a stream. The stream is left open.</summary>
-    /// <remarks>A part that can't be read is listed in <see cref="DocxInfo.UnreadableParts"/>; a file that can't be opened throws.</remarks>
-    public static DocxDocument Load(Stream docx) => DocxReader.Read(docx);
+    /// <summary>
+    /// Reads the DOCX in a stream from its start, wherever the stream was left, and puts its position back afterwards. The
+    /// stream is left open.
+    /// </summary>
+    /// <remarks>
+    /// A part that can't be read is listed in <see cref="DocxInfo.UnreadableParts"/>; a file that can't be opened throws.
+    /// An empty stream, a PDF or a web page throws <see cref="InvalidDataException"/> saying so.
+    /// </remarks>
+    public static DocxDocument Load(Stream docx) => InputStream.Read(docx, DocumentFormat.Docx, DocxReader.Read);
+
+    /// <summary>Reads the DOCX in a byte array.</summary>
+    public static DocxDocument Load(byte[] docx) => Load(new MemoryStream(docx, writable: false));
 
     /// <summary>Reads the DOCX file at a path.</summary>
     public static DocxDocument Load(string path)

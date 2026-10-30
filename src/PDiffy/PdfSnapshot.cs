@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 namespace PDiffy;
 
 /// <summary>
-/// Snapshot tests for PDFs. <see cref="VerifyAsync"/> compares a PDF's snapshot with the approved one in
+/// Snapshot tests for PDFs. <c>VerifyAsync</c> compares a PDF's snapshot with the approved one in
 /// <c>{name}.verified.pdfua.txt</c> and throws <see cref="SnapshotException"/> when they differ, so it works with any
 /// test framework.
 /// </summary>
@@ -23,9 +23,24 @@ public static class PdfSnapshot
     /// <param name="testFile">Filled in by the compiler with the calling test's file; leave it out.</param>
     /// <param name="testName">Filled in by the compiler with the calling test's method; leave it out.</param>
     public static async Task VerifyAsync(Stream pdf, string? name = null, Action<SnapshotOptions>? configure = null,
+        string? directory = null, [CallerFilePath] string testFile = "", [CallerMemberName] string testName = "") =>
+        await VerifyAsync(PdfUaDocument.Load(pdf), name, configure, directory, testFile, testName);
+
+    /// <summary>Compares the snapshot of a PDF in a byte array with the verified one, as for a stream.</summary>
+    /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{SnapshotOptions}?, string?, string, string)"/>
+    public static async Task VerifyAsync(byte[] pdf, string? name = null, Action<SnapshotOptions>? configure = null,
+        string? directory = null, [CallerFilePath] string testFile = "", [CallerMemberName] string testName = "") =>
+        await VerifyAsync(PdfUaDocument.Load(pdf), name, configure, directory, testFile, testName);
+
+    /// <summary>
+    /// Compares the snapshot of a PDF already loaded with the verified one, as for a stream, so a test that also asserts
+    /// on the document reads it once.
+    /// </summary>
+    /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{SnapshotOptions}?, string?, string, string)"/>
+    public static async Task VerifyAsync(PdfUaDocument pdf, string? name = null, Action<SnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "", [CallerMemberName] string testName = "")
     {
-        var received = PdfUaDocument.Load(pdf).ToSnapshot(configure);
+        var received = pdf.ToSnapshot(configure);
         var files = SnapshotWorkflow.Files(name, Extension, directory, testFile, testName);
         await SnapshotWorkflow.VerifyAsync(received, files, "PDF");
     }

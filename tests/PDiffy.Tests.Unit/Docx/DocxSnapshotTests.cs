@@ -27,6 +27,18 @@ public sealed class DocxSnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public async Task VerifyAsync_ShouldPass_WhenGivenTheBytesOrTheLoadedDocumentOfAMatchingDocx()
+    {
+        Directory.CreateDirectory(Folder);
+        File.WriteAllText(Path.Combine(Folder, "Guide.verified.docx.txt"), DocxDocument.Load(Docx("Hello")).ToSnapshot());
+
+        await DocxSnapshot.VerifyAsync(Docx("Hello").ToArray(), "Guide");
+        await DocxSnapshot.VerifyAsync(DocxDocument.Load(Docx("Hello")), "Guide");
+
+        Assert.False(File.Exists(Path.Combine(Folder, "Guide.received.docx.txt")));
+    }
+
+    [Fact]
     public async Task VerifyAsync_ShouldPass_WhenTheDocumentMatchesItsAcceptedSnapshot()
     {
         Environment.SetEnvironmentVariable(Snapshot.AcceptVariable, "1");

@@ -33,6 +33,19 @@ public sealed class PdfSnapshotTests : SnapshotFolderTests
     }
 
     [Fact]
+    public async Task VerifyAsync_ShouldPass_WhenGivenTheBytesOrTheLoadedDocumentOfAMatchingPdf()
+    {
+        Directory.CreateDirectory(Folder);
+        File.WriteAllText(Path.Combine(Folder, "Guide.verified.pdfua.txt"), SnapshotOf("Hello"));
+        var pdf = Pdf("Hello");
+
+        await PdfSnapshot.VerifyAsync(pdf.ToArray(), "Guide");
+        await PdfSnapshot.VerifyAsync(PdfUaDocument.Load(pdf), "Guide");
+
+        Assert.False(File.Exists(Path.Combine(Folder, "Guide.received.pdfua.txt")));
+    }
+
+    [Fact]
     public async Task VerifyAsync_ShouldFailWithTheChangedLines_WhenTheSnapshotDiffers()
     {
         Directory.CreateDirectory(Folder);
