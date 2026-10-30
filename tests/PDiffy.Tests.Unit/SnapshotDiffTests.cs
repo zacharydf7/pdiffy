@@ -432,6 +432,20 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowOnlyTheNewKeys_WhenADocxSnapshotFromBeforeParagraphBordersMeetsOneWithThem()
+    {
+        var before = "# docx-snapshot v1\nbody\n  P style=Note \"Walk with care\"\n";
+        var after = "# docx-snapshot v1\nbody\n  P style=Note rtl-paragraph borders=top:single:0.5 shading=FFFF00 \"Walk with care\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.All(changes, change => Assert.Equal("body > P", change.Path));
+        Assert.Equal(["AttributeChanged borders: (missing) -> top:single:0.5", "AttributeChanged shading: (missing) -> FFFF00",
+            "Changed P style=Note \"Walk with care\" -> P style=Note rtl-paragraph borders=top:single:0.5 shading=FFFF00 \"Walk with care\""],
+            changes.Select(change => $"{change.Kind} {change.Detail}"));
+    }
+
+    [Fact]
     public void Compare_ShouldReportOneBookmarkChanged_WhenABookmarkToAnotherFileLosesItsPage()
     {
         var before = SnapshotText.Header + "bookmarks\n  \"Atlas\" -> p1\n";

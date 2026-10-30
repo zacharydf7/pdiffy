@@ -85,11 +85,91 @@ public class DocxFormattingTests
     [InlineData("""<w:spacing w:line="276" w:lineRule="auto"/>""", "line=1.15")]
     [InlineData("""<w:spacing w:line="240" w:lineRule="exact"/>""", "line=12-exact")]
     [InlineData("""<w:ind w:hanging="360" w:firstLine="720"/>""", "hanging=18")]
+    [InlineData("""<w:bidi/>""", "rtl-paragraph")]
+    [InlineData("""<w:pBdr><w:top w:val="single" w:sz="4" w:color="ff0000"/></w:pBdr>""", "borders=top:single:0.5:FF0000")]
+    [InlineData("""<w:shd w:val="clear" w:fill="ffff00"/>""", "shading=FFFF00")]
     public void ToSnapshot_ShouldPrintTheParagraphsLayout_WhenItSetsSpacingOrIndents(string properties, string expected)
     {
         var docx = new TestDocx { Body = $"<w:p><w:pPr>{properties}</w:pPr><w:r><w:t>Text</w:t></w:r></w:p>" };
 
         Assert.Contains($"  P {expected} \"Text\"\n", docx.Load().ToSnapshot());
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldReplaceOnlyThatSide_WhenAParagraphSetsOneBorderItsStyleHas()
+    {
+        var docx = new TestDocx
+        {
+            Styles = """
+                <w:style w:type="paragraph" w:styleId="Boxed"><w:pPr><w:pBdr>
+                  <w:top w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/>
+                </w:pBdr></w:pPr></w:style>
+                """,
+            Body = """<w:p><w:pPr><w:pStyle w:val="Boxed"/><w:pBdr><w:bottom w:val="double" w:sz="12"/></w:pBdr></w:pPr><w:r><w:t>Text</w:t></w:r></w:p>""",
+        };
+
+        var snapshot = docx.Load().ToSnapshot();
+
+        Assert.Contains("  P style=Boxed borders=top:single:0.5,bottom:double:1.5 \"Text\"\n", snapshot);
+        Assert.Contains("  Boxed paragraph borders=top:single:0.5,bottom:single:0.5\n", snapshot);
+    }
+
+    [Theory]
+    [InlineData("""<w:pBdr><w:bottom w:val="nil"/></w:pBdr>""", "borders=top:single:0.5")]
+    [InlineData("""<w:pBdr><w:top w:val="none"/><w:bottom w:val="nil"/></w:pBdr>""", "borders=none")]
+    [InlineData("""<w:shd w:fill="auto"/>""", "shading=none")]
+    [InlineData("""<w:bidi w:val="0"/>""", "rtl-paragraph=no")]
+    public void ToSnapshot_ShouldShowWhatAParagraphClears_WhenItTurnsOffItsStylesBordersShadingOrDirection(string properties,
+        string expected)
+    {
+        var docx = new TestDocx
+        {
+            Styles = """
+                <w:style w:type="paragraph" w:styleId="Boxed"><w:pPr><w:bidi/><w:shd w:fill="FFFF00"/><w:pBdr>
+                  <w:top w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/>
+                </w:pBdr></w:pPr></w:style>
+                """,
+            Body = $"""<w:p><w:pPr><w:pStyle w:val="Boxed"/>{properties}</w:pPr><w:r><w:t>Text</w:t></w:r></w:p>""",
+        };
+
+        Assert.Contains($"  P style=Boxed {expected} \"Text\"\n", docx.Load().ToSnapshot());
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldTellTheParagraphsDirectionFromItsTexts_WhenAStyleSetsBoth()
+    {
+        var docx = new TestDocx
+        {
+            Styles = """<w:style w:type="paragraph" w:styleId="Arabic"><w:pPr><w:bidi/></w:pPr><w:rPr><w:rtl/></w:rPr></w:style>""",
+            Body = """<w:p><w:pPr><w:pStyle w:val="Arabic"/></w:pPr></w:p>""",
+        };
+
+        Assert.Contains("  Arabic paragraph rtl rtl-paragraph\n", docx.Load().ToSnapshot());
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldNotPrintBorders_WhenAParagraphsDifferFromItsStylesOnlyInColorAndColorsAreIgnored()
+    {
+        var docx = new TestDocx
+        {
+            Styles = """<w:style w:type="paragraph" w:styleId="Boxed"><w:pPr><w:pBdr><w:top w:val="single" w:sz="4" w:color="FF0000"/></w:pBdr></w:pPr></w:style>""",
+            Body = """<w:p><w:pPr><w:pStyle w:val="Boxed"/><w:pBdr><w:top w:val="single" w:sz="4" w:color="0000FF"/></w:pBdr></w:pPr><w:r><w:t>Text</w:t></w:r></w:p>""",
+        };
+
+        Assert.Contains("  P style=Boxed \"Text\"\n", docx.Load().ToSnapshot(o => o.Ignore(DocxDetail.Colors)));
+    }
+
+    [Fact]
+    public void ToSnapshot_ShouldLeaveOutBorderColorsAndShading_WhenColorsAreIgnored()
+    {
+        var docx = new TestDocx
+        {
+            Body = """<w:p><w:pPr><w:pBdr><w:top w:val="single" w:sz="4" w:color="FF0000"/></w:pBdr><w:shd w:fill="FFFF00"/></w:pPr><w:r><w:t>Text</w:t></w:r></w:p>""",
+        };
+
+        var snapshot = docx.Load().ToSnapshot(o => o.Ignore(DocxDetail.Colors));
+
+        Assert.Contains("  P borders=top:single:0.5 \"Text\"\n", snapshot);
     }
 
     [Fact]

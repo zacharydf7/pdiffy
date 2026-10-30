@@ -12,6 +12,10 @@ public class DocxMutationTests
         { "alignment", new Sample { Alignment = "center" }, DocxSection.Body, ChangeKind.AttributeChanged },
         { "indent", new Sample { IndentTwips = 1440 }, DocxSection.Body, ChangeKind.AttributeChanged },
         { "spacing", new Sample { SpacingAfterTwips = 240 }, DocxSection.Body, ChangeKind.AttributeChanged },
+        { "right-to-left paragraph", new Sample { ParagraphFormat = "<w:bidi/>" }, DocxSection.Body, ChangeKind.Changed },
+        { "paragraph border", new Sample { ParagraphFormat = "<w:pBdr><w:top w:val=\"single\" w:sz=\"4\"/></w:pBdr>" },
+            DocxSection.Body, ChangeKind.AttributeChanged },
+        { "paragraph shading", new Sample { ParagraphFormat = "<w:shd w:fill=\"FFFF00\"/>" }, DocxSection.Body, ChangeKind.AttributeChanged },
         { "bold word", new Sample { WordFormat = "<w:b/>" }, DocxSection.Body, ChangeKind.Added },
         { "italic word", new Sample { WordFormat = "<w:i/>" }, DocxSection.Body, ChangeKind.Added },
         { "word size", new Sample { WordFormat = "<w:sz w:val=\"32\"/>" }, DocxSection.Body, ChangeKind.Added },
@@ -54,6 +58,7 @@ public class DocxMutationTests
         public string Alignment { get; init; } = "left";
         public int IndentTwips { get; init; } = 720;
         public int SpacingAfterTwips { get; init; } = 120;
+        public string ParagraphFormat { get; init; } = "";
         public string WordFormat { get; init; } = "";
         public int SecondItemLevel { get; init; }
         public int SecondItemList { get; init; } = 1;
@@ -94,7 +99,7 @@ public class DocxMutationTests
         var header = sample.HeaderRow ? "<w:trPr><w:tblHeader/></w:trPr>" : "";
         var body = $"""
             <w:p><w:pPr><w:pStyle w:val="{sample.Style}"/><w:jc w:val="{sample.Alignment}"/><w:ind w:left="{sample.IndentTwips}"/>
-                <w:spacing w:after="{sample.SpacingAfterTwips}"/></w:pPr>
+                <w:spacing w:after="{sample.SpacingAfterTwips}"/>{sample.ParagraphFormat}</w:pPr>
               <w:r><w:t xml:space="preserve">Go </w:t></w:r><w:r><w:rPr>{sample.WordFormat}</w:rPr><w:t>with</w:t></w:r>
               <w:r><w:t xml:space="preserve"> a guide</w:t></w:r>{insert}<w:r><w:footnoteReference w:id="1"/></w:r>{comment}
               <w:r><w:t xml:space="preserve"> page </w:t></w:r><w:fldSimple w:instr="PAGE"><w:r><w:t>{sample.PageResult}</w:t></w:r></w:fldSimple></w:p>

@@ -5,8 +5,8 @@ using static PDiffy.Docx.Reading.DocxXml;
 namespace PDiffy.Docx.Reading;
 
 /// <summary>
-/// Reads the widths, margins and borders of tables and cells (w:tblW, w:tcW, w:tblCellMar, w:tcMar, w:tblBorders,
-/// w:tcBorders) into the short forms <see cref="DocxTable"/> describes.
+/// Reads the widths, margins, borders and shading of tables, cells and paragraphs (w:tblW, w:tcW, w:tblCellMar, w:tcMar,
+/// w:tblBorders, w:tcBorders, w:pBdr, w:shd) into the short forms <see cref="DocxTable"/> describes.
 /// </summary>
 internal static class TableFormat
 {
@@ -34,6 +34,10 @@ internal static class TableFormat
         var line = $"{Side(side)}:{Attr(side, "val") ?? "none"}:{Points((Integer(side, "sz") ?? 0) / 8.0)}";
         return Attr(side, "color") is { } color and not "auto" ? $"{line}:{color.ToUpperInvariant()}" : line;
     }).ToList() ?? [];
+
+    // A fill color in hex; "auto" is no fill.
+    public static string? Shading(XElement? shading) =>
+        NonEmpty(Attr(shading, "fill")) is { } fill and not "auto" ? fill.ToUpperInvariant() : null;
 
     private static string Side(XElement side) => SideNames.GetValueOrDefault(side.Name.LocalName, side.Name.LocalName);
 }

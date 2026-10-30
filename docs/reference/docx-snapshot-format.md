@@ -56,7 +56,7 @@ Sections always appear in this order. Each can be left out with [`DocxSection`](
 
 | Line | Means |
 |---|---|
-| `P ... "text"` | A paragraph: its style, list item and label, layout that differs from its style, then its text |
+| `P ... "text"` | A paragraph: its style, list item and label, layout that differs from its style (such as `align=`, `indent-left=`, `rtl-paragraph`, `borders=` or `shading=`), then its text |
 | `span "text" ...` | Part of the paragraph whose formatting differs from the paragraph's, such as `bold`, `font=`, `hidden` (text Word doesn't show or print), `double-strike`, `rtl` (right to left) or `lang=fr-FR` |
 | `Table ...` | A table: style, grid widths, width, cell margins, borders |
 | `Row` / `Row header` | A table row; a header row repeats on each page |

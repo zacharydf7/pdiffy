@@ -270,6 +270,15 @@ public sealed record ParagraphFormat
 
     /// <summary>Custom tab stops, such as "left:72" or "right:468:dot".</summary>
     public IReadOnlyList<string> Tabs { get; init; } = [];
+
+    /// <summary>A paragraph set right to left, such as one in Arabic or Hebrew.</summary>
+    public bool RightToLeft { get; init; }
+
+    /// <summary>Borders around the paragraph, written like a table's, such as "top:single:0.5:000000".</summary>
+    public IReadOnlyList<string> Borders { get; init; } = [];
+
+    /// <summary>The paragraph's fill color in hex.</summary>
+    public string? Shading { get; init; }
 }
 
 /// <summary>

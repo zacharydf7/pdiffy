@@ -308,7 +308,7 @@ internal sealed class DocxReader
     {
         var properties = cell.Element(W + "tcPr");
         var merge = properties?.Element(W + "vMerge") is { } vMerge ? Attr(vMerge, "val") ?? "continue" : null;
-        var shading = NonEmpty(Attr(properties?.Element(W + "shd"), "fill")) is { } fill and not "auto" ? fill.ToUpperInvariant() : null;
+        var shading = TableFormat.Shading(properties?.Element(W + "shd"));
         return new DocxCell(Blocks(cell).ToList(), Integer(properties?.Element(W + "gridSpan"), "val") ?? 1, merge, shading)
         {
             Width = TableFormat.Width(properties?.Element(W + "tcW")),

@@ -54,7 +54,7 @@ public enum DocxDetail
     /// <summary>The font size of styles and of text that differs from its style.</summary>
     FontSizes,
 
-    /// <summary>Text color, highlight color, cell shading and border colors.</summary>
+    /// <summary>Text color, highlight color, cell and paragraph shading, and border colors.</summary>
     Colors,
 
     /// <summary>Space before and after paragraphs, and line spacing.</summary>

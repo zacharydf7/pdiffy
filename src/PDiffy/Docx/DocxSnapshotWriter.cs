@@ -432,6 +432,10 @@ internal sealed class DocxSnapshotWriter
         Flag(line, "keep-lines", format.KeepLines, baseFormat.KeepLines);
         Flag(line, "page-break-before", format.PageBreakBefore, baseFormat.PageBreakBefore);
         if (!format.Tabs.SequenceEqual(baseFormat.Tabs)) Key(line, "tabs", format.Tabs.Count > 0 ? string.Join(",", format.Tabs) : "none");
+        Flag(line, "rtl-paragraph", format.RightToLeft, baseFormat.RightToLeft);
+        var (borders, inheritedBorders) = (Borders(format.Borders), Borders(baseFormat.Borders));
+        if (!borders.SequenceEqual(inheritedBorders)) Key(line, "borders", List(borders) ?? "none");
+        if (Shows(DocxDetail.Colors)) Changed(line, "shading", format.Shading, baseFormat.Shading, "none");
     }
 
     private bool Shows(DocxDetail detail) => !_options.Ignores(detail);

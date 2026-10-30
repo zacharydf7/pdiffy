@@ -180,8 +180,22 @@ internal sealed class StyleResolver
             // Outline levels 0 to 8 are headings 1 to 9; 9 means body text, which is how a style stops being a heading.
             HeadingLevel = outline is null ? format.HeadingLevel : Integer(outline, "val") is >= 0 and <= 8 and var level ? level + 1 : null,
             Tabs = Tabs(format.Tabs, pPr.Element(W + "tabs")),
+            RightToLeft = Toggle(pPr, "bidi") ?? format.RightToLeft,
+            Borders = BorderSides(format.Borders, TableFormat.Borders(pPr.Element(W + "pBdr"))),
+            Shading = pPr.Element(W + "shd") is { } shading ? TableFormat.Shading(shading) : format.Shading,
         };
     }
+
+    private static readonly string[] SideOrder = ["top", "left", "bottom", "right", "between", "bar"];
+
+    // Each side of a paragraph's borders is its own setting, so one set further down the chain replaces only that side,
+    // and "nil" or "none" clears it.
+    private static List<string> BorderSides(IReadOnlyList<string> inherited, IReadOnlyList<string> set) =>
+        inherited.Where(side => !set.Any(other => SideOf(other) == SideOf(side))).Concat(set)
+            .Where(side => side.Split(':')[1] is not ("nil" or "none"))
+            .OrderBy(side => Array.IndexOf(SideOrder, SideOf(side))).ToList();
+
+    private static string SideOf(string border) => border[..border.IndexOf(':')];
 
     // A tab stop with val="clear" removes one set further up the chain at the same position.
     private static List<string> Tabs(IReadOnlyList<string> inherited, XElement? tabs)

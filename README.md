@@ -634,7 +634,7 @@ For Word documents, each `DocxSection` value leaves out one section, and each `D
 | `FieldResults` | Each field's `result=` and the result's text in the paragraph, also inside links, formatted text, tracked changes and content controls' values, so a PAGE or DATE field or a table of contents that shows something new doesn't fail the test. Positions after the result move back |
 | `Fonts` | The font of styles and of text that differs from its style. A symbol's or a bullet's font stays, since it decides which character shows |
 | `FontSizes` | The font size of styles and of text that differs from its style |
-| `Colors` | Text color, highlight, cell shading and border colors |
+| `Colors` | Text color, highlight, cell and paragraph shading, and border colors |
 | `Spacing` | Space before and after paragraphs, and line spacing |
 | `Indents` | Left, right, first-line and hanging indents of paragraphs, styles and list levels |
 | `RevisionAuthors` | Who made each tracked change |
@@ -727,6 +727,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 |---|---|
 | Next | `pdfua-snapshot v1`, unchanged version: links print where they go (`dest=p3 view=XYZ view-at=72,720`, `zoom=` when set, a named destination looked up, `file=` for another file) instead of `dest=yes`, and bookmarks print their view, web address or file (a bookmark to another file prints `file="..." dest=p1` instead of `-> p1`). Snapshots of documents with internal links or bookmarks change |
 | Next | `docx-snapshot v1`, unchanged version: hidden text (`w:vanish`), double strikethrough, right-to-left runs and a run's language are read, so a run that differs from its paragraph in one of them prints a span (`span "care" hidden`), and a style whose language isn't the one on the document line prints `lang=`. An inserted Word document's styles are compared with that language too, so an inserted document in another language prints `lang=` on its styles. Only snapshots of documents with such runs or styles change |
+| Next | `docx-snapshot v1`, unchanged version: right-to-left paragraphs, paragraph borders and paragraph shading are read, and a paragraph or style that sets them prints `rtl-paragraph`, `borders=` or `shading=`. Only snapshots of documents with such paragraphs or styles change |
 | Next | No snapshot changes. More changes are flagged as affecting accessibility: tagged content made an artifact or untagged, `marked` or `display-doc-title` turned off, the title removed, replacement text or an expansion removed, a page's tab order no longer `S`, a font's text no longer mapping to Unicode, and permissions that stop extraction for accessibility |
 | 0.3.0 | `pdfua-snapshot v1`, unchanged version: when an element's text is split into tagged pieces, a space now goes between two pieces on the same page only where the page shows a gap (`"Num ber:"` becomes `"Number:"`). Snapshots with such elements change in `structure` |
 | 0.3.0 | `pdfua-snapshot v1`, unchanged version: an element with marked-content references that name no page gets `mcids-without-page=N`. Only snapshots with such elements change |

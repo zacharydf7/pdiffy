@@ -22,6 +22,9 @@ public class DocxDetailTests
     [InlineData(DocxDetail.Colors,
         """<w:tbl><w:tblPr><w:tblBorders><w:top w:val="single" w:sz="4" w:color="D9D9D9"/></w:tblBorders></w:tblPr></w:tbl>""",
         """<w:tbl><w:tblPr><w:tblBorders><w:top w:val="single" w:sz="4" w:color="BFBFBF"/></w:tblBorders></w:tblPr></w:tbl>""")]
+    [InlineData(DocxDetail.Colors,
+        """<w:p><w:pPr><w:pBdr><w:top w:val="single" w:sz="4" w:color="D9D9D9"/></w:pBdr><w:shd w:fill="D9D9D9"/></w:pPr></w:p>""",
+        """<w:p><w:pPr><w:pBdr><w:top w:val="single" w:sz="4" w:color="BFBFBF"/></w:pBdr><w:shd w:fill="FFFF00"/></w:pPr></w:p>""")]
     [InlineData(DocxDetail.Spacing,
         """<w:p><w:pPr><w:spacing w:after="120" w:line="276" w:lineRule="auto"/></w:pPr></w:p>""",
         """<w:p><w:pPr><w:spacing w:after="240" w:line="360" w:lineRule="auto"/></w:pPr></w:p>""")]

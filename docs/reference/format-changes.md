@@ -30,6 +30,10 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   the document line prints `lang=`. An inserted Word document's styles are compared with that language too, so an
   inserted document in another language prints `lang=` on its styles. Only snapshots of documents with such runs or
   styles change.
+- Right-to-left paragraphs (`w:bidi`), paragraph borders (`w:pBdr`) and paragraph shading are read: a paragraph or
+  style that sets them prints `rtl-paragraph`, `borders=top:single:0.5` and `shading=FFFF00`. A border set on a
+  paragraph replaces only that side of its style's, and `nil` or `none` removes it. Only snapshots of documents with
+  such paragraphs or styles change.
 
 ### Accessibility flags
 

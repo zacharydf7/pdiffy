@@ -111,7 +111,7 @@ less.
 | `FieldResults` | Each field's `result=` and the result's text in the paragraph, also inside links, formatted text, tracked changes and content controls' values. Positions after the result move back |
 | `Fonts` | The font of styles and of text that differs from its style. A symbol's or a bullet's font stays, since it decides which character shows |
 | `FontSizes` | The font size of styles and of text that differs from its style |
-| `Colors` | Text color, highlight, cell shading and border colors |
+| `Colors` | Text color, highlight, cell and paragraph shading, and border colors |
 | `Spacing` | Space before and after paragraphs, and line spacing |
 | `Indents` | Left, right, first-line and hanging indents of paragraphs, styles and list levels |
 | `RevisionAuthors` | Who made each tracked change |
