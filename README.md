@@ -554,11 +554,14 @@ public async Task Brochure_ShouldUseOnlyBrandFontsAndColors_WhenGenerated()
 
 ## Command line
 
-The `pdiffy` tool does the same outside of tests. Install it once as a .NET tool:
+The `pdiffy` tool does the same outside of tests. Install it as a local tool in the repository, at the same version as the PDiffy package your tests use, so `pdiffy snapshot` reads documents exactly as your tests do. The manifest is checked in, and `dotnet tool restore` installs that version anywhere, a build server included; run it as `dotnet pdiffy` (the examples here write `pdiffy`, as a global install runs it). `pdiffy --version` prints the version and the snapshot formats it writes.
 
 ```
-dotnet tool install --global PDiffy.Cli
+dotnet new tool-manifest
+dotnet tool install PDiffy.Cli --version <the PDiffy package version>
 ```
+
+A global install (`dotnet tool install --global PDiffy.Cli`) works too, but can drift from the package.
 
 ```
 # Compare two PDFs, two DOCX files or two snapshot files: prints what changed, exits with 0 when nothing did and 1 when

@@ -144,8 +144,9 @@ by section: structure 3
   </div>
   <div class="pd-card">
     <h3><a href="https://www.nuget.org/packages/PDiffy.Cli">PDiffy.Cli</a></h3>
-    <p>The <code>pdiffy</code> command-line tool.</p>
-    <pre><code>dotnet tool install --global PDiffy.Cli</code></pre>
+    <p>The <code>pdiffy</code> command-line tool, as a local tool at the package's version.</p>
+    <pre><code>dotnet new tool-manifest
+dotnet tool install PDiffy.Cli --version &lt;version&gt;</code></pre>
   </div>
 </div>
 

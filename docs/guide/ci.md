@@ -3,6 +3,9 @@
 Snapshot tests run in CI like any other test: `dotnet test` fails when a snapshot differs. Three things make a failed
 run easy to act on: keep what the run received, publish the HTML reports, and summarize the run on the job page.
 
+The examples run `pdiffy` as a local tool, pinned in the repository's tool manifest to the same version as the PDiffy
+package (see [Command line](../reference/command-line.md)), so the summary reads documents as the tests did.
+
 ## What PDiffy does on a build server
 
 - **Accept mode is ignored.** When `CI` or `TF_BUILD` is set, as GitHub Actions, GitLab, Bitbucket and Azure DevOps all
@@ -42,8 +45,8 @@ jobs:
       - name: Summarize snapshot changes
         if: failure()
         run: |
-          dotnet tool install --global PDiffy.Cli
-          pdiffy report --all --markdown "$GITHUB_STEP_SUMMARY" --html snapshot-summary.html
+          dotnet tool restore
+          dotnet pdiffy report --all --markdown "$GITHUB_STEP_SUMMARY" --html snapshot-summary.html
       - name: Keep received snapshots and reports
         if: failure()
         uses: actions/upload-artifact@v4
@@ -81,8 +84,8 @@ steps:
     displayName: Test
 
   - script: |
-      dotnet tool install --global PDiffy.Cli
-      pdiffy report --all --markdown $(Agent.TempDirectory)/snapshots.md --html snapshot-summary.html
+      dotnet tool restore
+      dotnet pdiffy report --all --markdown $(Agent.TempDirectory)/snapshots.md --html snapshot-summary.html
       echo "##vso[task.uploadsummary]$(Agent.TempDirectory)/snapshots.md"
     displayName: Summarize snapshot changes
     condition: failed()
@@ -102,9 +105,8 @@ test:
   script:
     - dotnet test
   after_script:
-    - dotnet tool install --global PDiffy.Cli
-    - export PATH="$PATH:$HOME/.dotnet/tools"
-    - pdiffy report --all --html snapshot-summary.html || true
+    - dotnet tool restore
+    - dotnet pdiffy report --all --html snapshot-summary.html || true
   artifacts:
     when: on_failure
     paths:
@@ -130,8 +132,8 @@ pipelines:
         after-script:
           - |
             if [ "$BITBUCKET_EXIT_CODE" -ne 0 ]; then
-              dotnet tool install --global PDiffy.Cli
-              ~/.dotnet/tools/pdiffy report --all --html snapshot-summary.html || true
+              dotnet tool restore
+              dotnet pdiffy report --all --html snapshot-summary.html || true
             fi
         artifacts:
           - name: Snapshots

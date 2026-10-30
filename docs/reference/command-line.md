@@ -3,9 +3,19 @@
 The `pdiffy` tool does outside of tests what the library does inside them: compare files, print snapshots, accept
 changes and summarize a run.
 
+Install it as a local tool, at the same version as the PDiffy package your tests use, so `pdiffy snapshot` reads
+documents exactly as your tests do. The manifest is checked in, and `dotnet tool restore` installs that version
+anywhere; run it as `dotnet pdiffy`. A global install (`dotnet tool install --global PDiffy.Cli`) works too, but can
+drift from the package.
+
 ```text
-dotnet tool install --global PDiffy.Cli
+dotnet new tool-manifest
+dotnet tool install PDiffy.Cli --version <the PDiffy package version>
 ```
+
+`pdiffy --version` prints the version and the snapshot formats it writes, such as
+`pdiffy 0.4.0 (pdfua-snapshot v1, docx-snapshot v1)`, and `pdiffy --help` (or `-h`) prints the commands. Both
+exit with `0`.
 
 | Command | Does |
 |---|---|
@@ -16,6 +26,8 @@ dotnet tool install --global PDiffy.Cli
 | [`pdiffy accept [targets]`](#accept) | Accepts received snapshots as verified |
 | [`pdiffy report [targets]`](#report) | Summarizes received snapshots, for review or a CI job page |
 | [`pdiffy coverage [targets]`](#coverage) | Counts what the verified snapshots compare and leave out |
+| `pdiffy --version` | Prints the version and the snapshot formats it writes |
+| `pdiffy --help`, `-h` | Prints the commands |
 
 ## Exit codes
 

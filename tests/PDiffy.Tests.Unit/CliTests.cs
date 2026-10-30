@@ -196,6 +196,26 @@ public sealed class CliTests : IDisposable
         Assert.Empty(_output.ToString());
     }
 
+    [Theory]
+    [InlineData("--help")]
+    [InlineData("-h")]
+    public void Run_ShouldPrintUsageAndReturnZero_WhenAskedForHelp(string flag)
+    {
+        var exitCode = Commands.Run([flag], _output, _error);
+
+        Assert.Equal((Commands.Same, ""), (exitCode, _error.ToString()));
+        Assert.StartsWith("Usage:", _output.ToString());
+    }
+
+    [Fact]
+    public void Run_ShouldPrintTheLibrarysVersionAndSnapshotFormats_WhenAskedForTheVersion()
+    {
+        var exitCode = Commands.Run(["--version"], _output, _error);
+
+        Assert.Equal(Commands.Same, exitCode);
+        Assert.Matches(@"^pdiffy \d+\.\d+\.\d+\S* \(pdfua-snapshot v1, docx-snapshot v1\)\r?\n$", _output.ToString());
+    }
+
     [Fact]
     public void Run_ShouldReportTheFileOnTheErrorOutputAndReturnTwo_WhenAFileIsMissing()
     {

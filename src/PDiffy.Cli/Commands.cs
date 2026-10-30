@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace PDiffy.Cli;
 
 /// <summary>
@@ -24,6 +26,8 @@ public static class Commands
                                                             Summarize received snapshots
           pdiffy coverage [<files or folders>] [--all] [--markdown <coverage.md>]
                                                             Count what the verified snapshots compare
+          pdiffy --version                                  Print the version and the snapshot formats it writes
+          pdiffy --help, -h                                 Print this help
 
         Comparing exits with 0 when nothing changed and 1 when something did; check, with 0 when it finds nothing and 1
         when it finds something; report, with 0 when no snapshot was received and 1 when one was.
@@ -36,6 +40,8 @@ public static class Commands
         {
             return args switch
             {
+                ["--version"] => Version(output),
+                ["--help" or "-h"] => Help(output),
                 ["snapshot", var document] => Snapshot(document, null, output),
                 ["snapshot", var document, var file] => Snapshot(document, file, output),
                 ["check", var document] => Check(document, output),
@@ -182,6 +188,21 @@ public static class Commands
         var start = new byte[1024];
         var length = file.ReadAtLeast(start, start.Length, throwOnEndOfStream: false);
         return start.AsSpan(0, length).IndexOf("%PDF-"u8) >= 0;
+    }
+
+    // The library's version decides how documents are read, so it's the one that has to match the tests' package.
+    private static int Version(TextWriter output)
+    {
+        var version = typeof(PdfUaDocument).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion.Split('+')[0];
+        output.WriteLine($"pdiffy {version} ({SnapshotWriter.FormatHeader[2..]}, {DocxSnapshotWriter.FormatHeader[2..]})");
+        return Same;
+    }
+
+    private static int Help(TextWriter output)
+    {
+        output.WriteLine(Usage);
+        return Same;
     }
 
     private static int ShowUsage(TextWriter error)

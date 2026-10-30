@@ -16,11 +16,15 @@ Add the library to your test project:
 dotnet add package PDiffy
 ```
 
-Optionally, install the command-line tool, used to accept snapshots, compare files and summarize a CI run:
+Optionally, install the command-line tool, used to accept snapshots, compare files and summarize a CI run. A local
+tool at the same version as the package reads documents exactly as your tests do:
 
 ```text
-dotnet tool install --global PDiffy.Cli
+dotnet new tool-manifest
+dotnet tool install PDiffy.Cli --version <the PDiffy package version>
 ```
+
+A local tool runs as `dotnet pdiffy`.
 
 ## 2. Write a test
 
@@ -50,7 +54,7 @@ The snapshot is named after the test file and method, and sits next to the test 
 The first run has nothing to compare with, so it fails with "New PDF snapshot" and writes what it got to a
 `.received.pdfua.txt` file. Open it, check that it describes your document, then accept it in any of these ways:
 
-- Run `pdiffy accept --all` to accept every received snapshot under the current folder.
+- Run `dotnet pdiffy accept --all` to accept every received snapshot under the current folder.
 - Run the tests in accept mode: `PDIFFY_ACCEPT=1 dotnet test`, or in PowerShell `$env:PDIFFY_ACCEPT=1; dotnet test`.
 - Rename the `.received.pdfua.txt` file to `.verified.pdfua.txt` by hand.
 
