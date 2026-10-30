@@ -22,7 +22,7 @@ internal sealed class ContentOwners
 /// </summary>
 internal sealed record PageContent(IReadOnlyDictionary<int, List<Letter>> LettersByMcid,
     IReadOnlyDictionary<int, List<MarkedSpan>> SpansByMcid, IReadOnlyDictionary<int, List<string>> ImagesByMcid,
-    IReadOnlyList<PageText> Artifacts, string? UntaggedText, ContentOwners Owners);
+    IReadOnlyList<PageText> Artifacts, IReadOnlyList<string> UntaggedLines, ContentOwners Owners);
 
 internal sealed class PageContentReader
 {
@@ -71,11 +71,9 @@ internal sealed class PageContentReader
             }
         }
 
-        var untaggedText = TextJoiner.Join(untagged);
         var imagesByMcid = _owners.Images.Where(image => image.Owner.Mcid is not null).GroupBy(image => image.Owner.Mcid!.Value)
             .ToDictionary(group => group.Key, group => group.Select(image => image.Hash).ToList());
-        return new PageContent(lettersByMcid, _spansByMcid, imagesByMcid, _artifacts, untaggedText.Length > 0 ? untaggedText : null,
-            _owners);
+        return new PageContent(lettersByMcid, _spansByMcid, imagesByMcid, _artifacts, TextJoiner.JoinLines(untagged), _owners);
     }
 
     // Marked content without its own MCID belongs to the nearest enclosing MCID, if there is one. Children go on the

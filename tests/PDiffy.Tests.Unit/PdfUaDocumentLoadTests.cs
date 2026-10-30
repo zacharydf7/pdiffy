@@ -237,6 +237,32 @@ public class PdfUaDocumentLoadTests
     }
 
     [Fact]
+    public void Load_ShouldReadUntaggedTextLineByLine_WhenAPageHasSeveralLines()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Untagged("Trail closed").Untagged("Bring water");
+
+        var document = pdf.Load();
+
+        Assert.Equal([new PageText(1, "Trail closed"), new PageText(1, "Bring water")], document.Untagged);
+    }
+
+    [Fact]
+    public void Compare_ShouldShowOnlyTheNewLine_WhenAnUntaggedPageGainsALine()
+    {
+        var before = new TestPdf();
+        before.AddPage().Untagged("Trail closed").Untagged("Bring water");
+        var after = new TestPdf();
+        after.AddPage().Untagged("Trail closed").Untagged("Ranger on duty").Untagged("Bring water");
+
+        var changes = SnapshotDiff.Compare(before.Load().ToSnapshot(), after.Load().ToSnapshot()).Changes
+            .Where(change => change.Section == Section.Untagged);
+
+        var change = Assert.Single(changes);
+        Assert.Equal((ChangeKind.Added, "p1 \"Ranger on duty\""), (change.Kind, change.Detail));
+    }
+
+    [Fact]
     public void Load_ShouldCountUntaggedImagesAndPaths_WhenGraphicsAreNeitherTaggedNorArtifacts()
     {
         var pdf = new TestPdf();

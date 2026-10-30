@@ -51,6 +51,28 @@ public class PdfCheckTests
         Assert.Equal(["Untagged text on p1: \"Draft\"", "1 untagged image(s) on p1", "2 untagged path(s) on p1"], findings);
     }
 
+    [Fact]
+    public void Check_ShouldFindUntaggedTextOncePerPage_WhenAPageHasSeveralUntaggedLines()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Untagged("Draft").Untagged("Not for release");
+
+        var finding = Assert.Single(pdf.Load().Check(PdfCheck.UntaggedContent));
+
+        Assert.Equal("Untagged text on p1: \"Draft Not for release\"", finding.Message);
+    }
+
+    [Fact]
+    public void Check_ShouldFindUntaggedTextOncePerPage_WhenThePageAlsoHasTaggedTextNoElementPointsTo()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Untagged("Draft").Tagged(0, "Trail notes");
+
+        var finding = Assert.Single(pdf.Load().Check(PdfCheck.UntaggedContent));
+
+        Assert.Equal("Untagged text on p1: \"Draft Trail notes\"", finding.Message);
+    }
+
     [Theory]
     [InlineData("", "", "", 1)]
     [InlineData("Our website", "", "", 0)]

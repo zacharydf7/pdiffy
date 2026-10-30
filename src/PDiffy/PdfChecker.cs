@@ -68,10 +68,11 @@ internal sealed class PdfChecker(PdfUaDocument document)
 
     private void UntaggedContent()
     {
-        foreach (var text in document.Untagged)
+        // One finding per page, not per line or marked-content ID.
+        foreach (var page in document.Untagged.GroupBy(text => text.Page))
         {
-            Add(PdfCheck.UntaggedContent, text.Page, Name(Section.Untagged),
-                $"Untagged text on p{text.Page}: \"{text.Text}\"");
+            var text = string.Join(" ", page.Select(line => line.Text));
+            Add(PdfCheck.UntaggedContent, page.Key, Name(Section.Untagged), $"Untagged text on p{page.Key}: \"{text}\"");
         }
 
         var images = document.Images.Where(image => image.Role == ContentRole.Untagged);

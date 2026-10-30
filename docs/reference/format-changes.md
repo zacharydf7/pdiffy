@@ -16,6 +16,12 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### PDF (`pdfua-snapshot v1`, unchanged)
 
+- Untagged text prints one `untagged` line per line of text instead of one per page, so a line added to an untagged
+  page shows as that line alone. Snapshots of documents with untagged text on more than one line of a page change: the
+  old page line usually shows as removed and each line as added (or, when the first line holds most of the page's
+  words, as changed to that line), and the added lines are flagged as affecting accessibility like any new untagged
+  text. `PdfCheck.UntaggedContent` and `pdiffy check` report untagged text once per page, now including tagged text no
+  structure element points to, which used to be a finding per marked-content ID.
 - `javascript=` in `settings` now also says `yes` when a link or other annotation, a page's open or close actions, or a
   bookmark runs JavaScript, including JavaScript chained after another action with `/Next`. A Rendition action (which
   plays media) with a script of its own (`/JS`) now counts as JavaScript too, wherever it runs, and a form field lists

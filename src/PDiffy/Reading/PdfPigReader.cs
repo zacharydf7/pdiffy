@@ -127,10 +127,7 @@ internal static class PdfPigReader
         foreach (var (number, (_, content)) in readable.OrderBy(pair => pair.Key))
         {
             loose.Artifacts.AddRange(content.Artifacts);
-            if (content.UntaggedText is not null)
-            {
-                loose.Untagged.Add(new PageText(number, content.UntaggedText));
-            }
+            loose.Untagged.AddRange(content.UntaggedLines.Select(line => new PageText(number, line)));
 
             foreach (var (mcid, letters) in content.LettersByMcid.OrderBy(pair => pair.Key))
             {

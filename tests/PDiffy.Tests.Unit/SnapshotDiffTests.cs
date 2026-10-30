@@ -602,6 +602,19 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowTheLinesThePageSplitInto_WhenASnapshotFromBeforeUntaggedLinesMeetsOneWithThem()
+    {
+        var before = SnapshotText.Header + "untagged\n  p1 \"Trail closed Bring water Ranger on duty\"\n";
+        var after = SnapshotText.Header + "untagged\n  p1 \"Trail closed\"\n  p1 \"Bring water\"\n  p1 \"Ranger on duty\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Equal([ChangeKind.Removed, ChangeKind.Added, ChangeKind.Added, ChangeKind.Added],
+            changes.Select(change => change.Kind));
+        Assert.Equal([false, true, true, true], changes.Select(change => change.AffectsAccessibility));
+    }
+
+    [Fact]
     public void Compare_ShouldShowOnlyJavaScript_WhenASnapshotFromBeforeLinkScriptsMeetsOneWithThem()
     {
         var before = SnapshotText.Header + "settings\n  version=1.7 javascript=no additional-actions=no\n";

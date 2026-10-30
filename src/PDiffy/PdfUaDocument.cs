@@ -48,8 +48,8 @@ public sealed record PdfUaDocument
     public IReadOnlyList<PageText> Artifacts { get; init; } = [];
 
     /// <summary>
-    /// Text assistive technology can't reach, page by page: text outside any tag, and tagged text that no structure
-    /// element points to.
+    /// Text assistive technology can't reach, page by page: text outside any tag, one entry per line, and tagged text that
+    /// no structure element points to, one entry per marked-content ID.
     /// </summary>
     public IReadOnlyList<PageText> Untagged { get; init; } = [];
 

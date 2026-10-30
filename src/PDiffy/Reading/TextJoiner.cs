@@ -45,6 +45,21 @@ internal static partial class TextJoiner
         return Normalize(sb.ToString());
     }
 
+    /// <summary>Each line's text, in content order, leaving out lines with no text.</summary>
+    public static List<string> JoinLines(IReadOnlyList<Letter> letters)
+    {
+        var lines = new List<string>();
+        var start = 0;
+        for (var i = 1; i <= letters.Count; i++)
+        {
+            if (i < letters.Count && OnSameLine(letters[i - 1], letters[i])) continue;
+            if (Join(letters.Skip(start).Take(i - start).ToList()) is { Length: > 0 } line) lines.Add(line);
+            start = i;
+        }
+
+        return lines;
+    }
+
     // Letter spacing widens every gap on a line, word gaps and gaps inside words alike, so the low end of the line's gaps
     // stands for it; word gaps only widen some of them.
     private static double LetterSpacing(IReadOnlyList<Letter> letters, int start)
