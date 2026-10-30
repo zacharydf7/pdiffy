@@ -616,7 +616,7 @@ pdiffy coverage --all
 | Section | Contents |
 |---|---|
 | `document` | Whether the PDF is tagged, its language, whether the viewer shows the title, page count |
-| `settings` | PDF version, page mode and layout, what happens when the file opens, whether it has JavaScript (in document-level scripts, the open action, document actions or form fields) or document actions, encryption and what it permits; viewer preferences, optional-content layers and embedded files |
+| `settings` | PDF version, page mode and layout, what happens when the file opens, whether it has JavaScript (in document-level scripts, the open action, document actions, form fields, links and other annotations, page actions or bookmarks) or document actions, encryption and what it permits; viewer preferences, optional-content layers and embedded files |
 | `metadata` | Title, author, subject, keywords; whether dates, producer and creator are present; PDF/UA identifier; XMP title, creator, description, language and PDF/A conformance, or `xmp=unreadable`; every other Info entry (such as a company name or classification label) |
 | `role-map` | Each custom tag type and the standard type it maps to |
 | `pages` | Size (named when standard, such as `letter` or `a4`), rotation, tab order; crop, bleed, trim and art boxes, user unit and transparency group when set; pages that couldn't be read; page label ranges |
@@ -767,6 +767,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | `pdfua-snapshot v1`, unchanged version: `javascript=yes` now also covers JavaScript in links and other annotations, page actions and bookmarks, so `NoActions` and `pdiffy check` report them. Only snapshots of documents with such scripts change |
 | Next | `pdfua-snapshot v1`, unchanged version: the open action reads its destination the way links do, so a named one prints its page (`open-action="GoTo p2 Fit"`), positions are whole points, an unset zoom is left out and a page given as a number counts from 0 (`p1 Fit`, not `p? Fit`). Only snapshots of documents whose open action is named, has fractional positions, keeps a position or the zoom, gives its page as a number or is malformed change |
 | Next | `pdfua-snapshot v1`, unchanged version: an artifact whose text is split across nested marked content is read in drawing order (`"Page 1"`, not `"1Page"`). Only snapshots of documents with such artifacts change; a short one can show as removed and added |
 | Next | `pdfua-snapshot v1`, unchanged version: a form that sets a calculation order, `NeedAppearances` or XFA prints a `form` line first in `forms`, and `javascript=yes` now covers form field scripts, so `NoActions` and `pdiffy check` report them. Only snapshots of documents with such forms or scripts change |

@@ -33,7 +33,8 @@ internal static class PdfPigReader
             Metadata = MetadataReader.ReadMetadata(document, objects),
             Settings = settings with
             {
-                HasJavaScript = settings.HasJavaScript || formFields.Any(field => field.Scripts.Count > 0),
+                HasJavaScript = settings.HasJavaScript || formFields.Any(field => field.Scripts.Count > 0)
+                    || ActionScripts.AnyIn(objects, pageTree, catalog),
             },
             RoleMap = structure.RoleMap,
             Pages = pages,

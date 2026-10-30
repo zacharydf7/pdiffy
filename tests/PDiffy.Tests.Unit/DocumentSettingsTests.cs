@@ -85,6 +85,52 @@ public class DocumentSettingsTests
     }
 
     [Theory]
+    [InlineData("", "/Subtype /Link /Rect [0 0 9 9] /A << /S /JavaScript /JS (x) >>", true)]
+    [InlineData("", "/Subtype /Link /Rect [0 0 9 9] /A << /S /URI /URI (https://example.com) "
+        + "/Next [<< /S /JavaScript /JS (x) >>] >>", true)]
+    [InlineData("", "/Subtype /Screen /Rect [0 0 9 9] /AA << /PO << /S /JavaScript /JS (x) >> >>", true)]
+    [InlineData("/AA << /O << /S /JavaScript /JS (x) >> >>", null, true)]
+    [InlineData("", "/Subtype /Link /Rect [0 0 9 9] /A << /S /URI /URI (https://example.com) >>", false)]
+    public void Load_ShouldReportJavaScript_WhenGivenAnAnnotationOrPageAction(string pageEntries, string? annotation,
+        bool expected)
+    {
+        var pdf = new TestPdf();
+        var page = pdf.AddPage().PageEntries(pageEntries);
+        if (annotation is not null) page.Annotation(annotation);
+
+        var settings = pdf.Load().Settings;
+
+        Assert.Equal(expected, settings.HasJavaScript);
+    }
+
+    [Fact]
+    public void Load_ShouldReportJavaScript_WhenALaterBookmarkRunsIt()
+    {
+        var pdf = new TestPdf().Bookmark("Trails", 1).Bookmark("Map", "/A << /S /JavaScript /JS (x) >>");
+        pdf.AddPage();
+
+        var settings = pdf.Load().Settings;
+
+        Assert.True(settings.HasJavaScript);
+    }
+
+    // Built by hand, since TestPdf doesn't nest bookmarks.
+    [Fact]
+    public void Load_ShouldReportJavaScript_WhenANestedBookmarkRunsIt()
+    {
+        var document = RawPdf.Load("<< /Type /Catalog /Pages 2 0 R /Outlines << /First 5 0 R /Last 5 0 R >> >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>",
+            TestPdf.Stream(""),
+            "<< /Title (Trails) /First 6 0 R /Last 6 0 R /Dest [3 0 R /Fit] >>",
+            "<< /Title (Map) /Parent 5 0 R /A << /S /JavaScript /JS (x) >> >>");
+
+        var settings = document.Settings;
+
+        Assert.True(settings.HasJavaScript);
+    }
+
+    [Theory]
     [InlineData("/OpenAction << /S /URI /URI (https://example.com) >>", "URI https://example.com", false)]
     [InlineData("/OpenAction << /S /JavaScript /JS (app.alert(1)) >>", "JavaScript", true)]
     [InlineData("/OpenAction << /S /URI /URI (https://example.com) /Next [<< /S /Launch /Next << /S /JavaScript /JS (x) >> >> "

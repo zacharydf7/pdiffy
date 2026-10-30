@@ -25,7 +25,8 @@ public sealed record DocumentSettings
     internal IReadOnlyList<string> OpenActions { get; init; } = [];
 
     /// <summary>
-    /// Whether the document has JavaScript in its document-level scripts, open action, document actions or form fields.
+    /// Whether the document has JavaScript in its document-level scripts, open action, document actions, form fields,
+    /// links and other annotations, page actions or bookmarks.
     /// </summary>
     public bool HasJavaScript { get; init; }
 

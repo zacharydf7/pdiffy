@@ -602,6 +602,17 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowOnlyJavaScript_WhenASnapshotFromBeforeLinkScriptsMeetsOneWithThem()
+    {
+        var before = SnapshotText.Header + "settings\n  version=1.7 javascript=no additional-actions=no\n";
+        var after = SnapshotText.Header + "settings\n  version=1.7 javascript=yes additional-actions=no\n";
+
+        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+
+        Assert.Equal((ChangeKind.AttributeChanged, "javascript: no -> yes"), (change.Kind, change.Detail));
+    }
+
+    [Fact]
     public void Compare_ShouldShowOnlyTheOpenAction_WhenASnapshotFromBeforeNamedOpenActionsMeetsOneWithThem()
     {
         var before = SnapshotText.Header + "settings\n  version=1.7 open-action=\"GoTo named intro\" javascript=no\n";
