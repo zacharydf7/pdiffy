@@ -9,6 +9,7 @@ internal static class PdfPigReader
 {
     public static PdfUaDocument Read(Stream pdf)
     {
+        var fileLength = pdf.Length;
         using var document = PdfDocument.Open(pdf, new ParsingOptions { FilterProvider = CappedFilterProvider.Instance });
         var objects = new PdfObjects(document);
         var catalog = document.Structure.Catalog.CatalogDictionary;
@@ -39,7 +40,7 @@ internal static class PdfPigReader
             Untagged = loose.Untagged,
             Fonts = FontReader.Read(objects, pageTree, readable.ToDictionary(pair => pair.Key, pair => pair.Value.Page)),
             Annotations = AnnotationReader.ReadAll(objects, pageTree, structure.ReferencedObjects, destinations),
-            FormFields = FormReader.Read(objects, catalog, pageTree),
+            FormFields = FormReader.Read(objects, catalog, pageTree, fileLength),
             TextRuns = layouts.SelectMany(layout => layout.TextRuns).ToList(),
             Images = layouts.SelectMany(layout => layout.Images).ToList(),
             Paths = layouts.SelectMany(layout => layout.Paths).ToList(),

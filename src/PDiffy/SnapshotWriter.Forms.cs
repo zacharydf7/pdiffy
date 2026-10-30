@@ -65,8 +65,20 @@ internal sealed partial class SnapshotWriter
             if (field.Options.Count > 0) line.Append($" options=[{string.Join(",", field.Options.Select(Quote))}]");
             Key(line, "maxlen", field.MaxLength?.ToString());
             Key(line, "flags", FlagNames(field.Flags));
+            if (field.Signature is { } signature) AppendSignature(line, signature);
             Line(1, line.ToString());
         }
+    }
+
+    private static void AppendSignature(StringBuilder line, SignatureInfo signature)
+    {
+        line.Append(" signed=yes");
+        Key(line, "subfilter", signature.SubFilter);
+        Key(line, "covers-file", signature.CoversWholeFile is bool covers ? YesNo(covers) : null);
+        Key(line, "reason", signature.HasReason ? Present(true) : null);
+        Key(line, "location", signature.HasLocation ? Present(true) : null);
+        Key(line, "signing-time", signature.HasSigningTime ? Present(true) : null);
+        Key(line, "certification", signature.Certification is { } level ? KebabCase(level.ToString()) : null);
     }
 
     // Set flags as kebab-case names, e.g. "print,no-zoom"; null when none are set.

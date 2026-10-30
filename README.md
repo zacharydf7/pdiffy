@@ -585,7 +585,7 @@ pdiffy coverage --all
 | `untagged` | Text that is neither tagged nor marked as an artifact (including tagged text that no structure element points to), and a count of such images and paths per page |
 | `fonts` | Each font: name, type, whether it's embedded, whether it has a Unicode map, and the character codes its text uses that don't map to Unicode (that text can't be copied, searched or read aloud) |
 | `annotations` | Every annotation (links, comments, form widgets and so on), page by page in the order each page lists them: type, `tagged` or `untagged`, rectangle, flags (such as `print` or `hidden`), where a link goes (a web address, or a page and the view it opens at, or another file), contents and accessible name |
-| `forms` | Every form field: type, full name (`address.city`), page, accessible name, value, options, maximum length and flags (such as `required` or `read-only`) |
+| `forms` | Every form field: type, full name (`address.city`), page, accessible name, value, options, maximum length and flags (such as `required` or `read-only`). A signed signature field prints `signed=yes`, the signature's format (`subfilter=`), whether the signed bytes run to the end of the file (`covers-file=no` after an update saved since signing), whether a reason, location and signing time are given (`reason=<present>`), and what a certifying signature still allows (`certification=form-filling`). The signature's bytes and signing time aren't recorded, so signing the same file again gives the same snapshot |
 | `layout` | Every text run, image and painted vector path, page by page, each labeled `tagged`, `artifact` or `untagged`. Text runs: position, font, size, color, render mode, angle. Images: position, size, pixel size, a hash of the pixels. Paths: bounding box, fill, stroke and line width |
 
 ## What you can ignore
@@ -726,6 +726,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | `pdfua-snapshot v1`, unchanged version: a signed signature field prints its signature (`signed=yes subfilter=adbe.pkcs7.detached covers-file=yes`, whether a reason, location and signing time are given, and a certification level), not its bytes. Only snapshots of signed documents change |
 | Next | `pdfua-snapshot v1`, unchanged version: an element whose marked content draws an image prints the image's hash (`images=[3f9c0a1b2d4e5f60]`), so swapping two figures' images shows on their lines. Left out with `Field.ImageContents`. Snapshots of tagged documents with images change |
 | Next | `pdfua-snapshot v1`, unchanged version: an element with marked-content references into a form XObject prints `mcids-in-xobject=N`, since its text may include the page's own text for the same MCID (and the page's element the form's). Only snapshots of documents with such references change, by the new key alone |
 | Next | `pdfua-snapshot v1`, unchanged version: marked content inside an element that sets its own language, replacement text, alt text or expansion is recorded on the element (`span-lang=[fr-FR]`, `span-actual=["fi"]`), and an artifact prints its kind (`type=Pagination subtype=Footer`). Snapshots with such marked content or typed artifacts change, and typed artifacts are common. A new `span-lang` key is flagged as affecting accessibility, like any language change |

@@ -7,7 +7,8 @@ What you can rely on PDiffy for, and what it doesn't do.
 - **The same document gives the same snapshot on Windows and Linux.** Every change is tested on both in CI.
 - **Encoding-only differences don't change a snapshot:** object numbers, compression, object order, cross-reference
   streams, incremental updates, font subset prefixes, zip order and relationship ids. Equivalence tests write each
-  document both ways and compare the snapshots.
+  document both ways and compare the snapshots. The exception is an update saved to a signed file, which leaves the
+  end of the file unsigned and shows as `covers-file=no` on its signatures.
 - **A small meaningful change does change a snapshot:** an edited word, removed alt text, a moved element, a changed
   color. Mutation tests change one thing at a time and expect the snapshot to change.
 - **A damaged part is marked, not dropped.** A PDF page or attachment that can't be read prints as `unreadable`, as

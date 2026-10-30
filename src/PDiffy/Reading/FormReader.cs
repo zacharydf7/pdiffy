@@ -4,7 +4,7 @@ using UglyToad.PdfPig.Tokens;
 namespace PDiffy.Reading;
 
 /// <summary>Reads every field in the AcroForm field tree.</summary>
-internal sealed class FormReader(PdfObjects objects, PageTree pages)
+internal sealed class FormReader(PdfObjects objects, PageTree pages, long fileLength)
 {
     // PDF numbers field flag bits from 1. Bits 16, 17 and 18 pick the button or choice type instead.
     private static readonly (int Bit, FormFieldFlags Flag)[] CommonFlags =
@@ -29,14 +29,15 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages)
     private readonly HashSet<IndirectReference> _visited = [];
     private readonly Dictionary<IndirectReference, int> _widgetPages = [];
 
-    public static IReadOnlyList<FormField> Read(PdfObjects objects, DictionaryToken catalog, PageTree pages)
+    /// <param name="fileLength">The file's length in bytes, to tell whether a signature covers all of it.</param>
+    public static IReadOnlyList<FormField> Read(PdfObjects objects, DictionaryToken catalog, PageTree pages, long fileLength)
     {
         if (objects.Dictionary(catalog, "AcroForm") is not { } form)
         {
             return [];
         }
 
-        var reader = new FormReader(objects, pages);
+        var reader = new FormReader(objects, pages, fileLength);
         reader.MapWidgetPages();
         var pending = new Stack<(IToken Field, Inherited Parent)>();
         foreach (var field in objects.Items(form.Data.GetValueOrDefault("Fields")).Reverse())
@@ -111,7 +112,54 @@ internal sealed class FormReader(PdfObjects objects, PageTree pages)
             Options = ReadOptions(field),
             MaxLength = current.MaxLength,
             Flags = FlagsOf(current.Type, flags),
+            Signature = current.Type == "Sig" ? ReadSignature(objects.Resolve(current.Value)) : null,
         });
+    }
+
+    private SignatureInfo? ReadSignature(IToken? value)
+    {
+        if (value is not DictionaryToken signature)
+        {
+            return null;
+        }
+
+        return new SignatureInfo
+        {
+            SubFilter = objects.Name(signature, "SubFilter"),
+            CoversWholeFile = CoversWholeFile(signature),
+            HasReason = objects.Text(signature, "Reason") is not null,
+            HasLocation = objects.Text(signature, "Location") is not null,
+            HasSigningTime = objects.Text(signature, "M") is not null,
+            Certification = CertificationOf(signature),
+        };
+    }
+
+    // The byte range is [start, length, start, length]: the file before the signature's contents and the file after it.
+    private bool? CoversWholeFile(DictionaryToken signature)
+    {
+        var range = objects.Items(signature.Data.GetValueOrDefault("ByteRange")).Select(objects.Resolve).ToList();
+        if (range.Count != 4 || range.Any(item => item is not NumericToken))
+        {
+            return null;
+        }
+
+        var numbers = range.Cast<NumericToken>().Select(number => number.Long).ToList();
+        return numbers[0] == 0 && numbers[2] + numbers[3] == fileLength;
+    }
+
+    // A certifying signature names the DocMDP transform; its /P defaults to 2, form filling.
+    private SignatureCertification? CertificationOf(DictionaryToken signature)
+    {
+        foreach (var item in objects.Items(signature.Data.GetValueOrDefault("Reference")))
+        {
+            if (objects.Resolve(item) is DictionaryToken reference && objects.Name(reference, "TransformMethod") == "DocMDP")
+            {
+                var level = objects.Dictionary(reference, "TransformParams") is { } parameters ? objects.Integer(parameters, "P") : null;
+                return level is 1 or 3 ? (SignatureCertification)level : SignatureCertification.FormFilling;
+            }
+        }
+
+        return null;
     }
 
     private bool IsVisited(IToken kid) => kid is IndirectReferenceToken reference && _visited.Contains(reference.Data);

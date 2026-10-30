@@ -158,4 +158,72 @@ public class FormsTests
         Assert.Equal(("phone.number", FormFieldType.Text, "555", 10, 2),
             (fields[1].Name, fields[1].Type, fields[1].Value, fields[1].MaxLength!.Value, fields[1].Page!.Value));
     }
+
+    [Fact]
+    public void Load_ShouldRecordTheSignatureButNotItsBytes_WhenASignatureFieldIsSigned()
+    {
+        var document = LoadSigned("/SubFilter /adbe.pkcs7.detached /Contents <0102> /M (D:20261030120000Z) /Reason (Approved) "
+            + "/Location (Trailhead office)");
+
+        var expected = new SignatureInfo
+        {
+            SubFilter = "adbe.pkcs7.detached", CoversWholeFile = true, HasReason = true, HasLocation = true, HasSigningTime = true,
+        };
+        Assert.Equal(expected, Assert.Single(document.FormFields).Signature);
+        Assert.Contains("  signature \"approval\" p1 signed=yes subfilter=adbe.pkcs7.detached covers-file=yes reason=<present> "
+            + "location=<present> signing-time=<present>\n", document.ToSnapshot());
+    }
+
+    [Fact]
+    public void Load_ShouldSayTheSignatureDoesNotCoverTheFile_WhenAnUpdateWasSavedAfterSigning()
+    {
+        var document = LoadSigned("/SubFilter /adbe.pkcs7.detached", updatedAfterSigning: true);
+
+        Assert.False(Assert.Single(document.FormFields).Signature!.CoversWholeFile);
+    }
+
+    [Theory]
+    [InlineData("/TransformParams << /P 1 >>", SignatureCertification.NoChanges)]
+    [InlineData("/TransformParams << /P 3 >>", SignatureCertification.FormFillingAndAnnotations)]
+    [InlineData("", SignatureCertification.FormFilling)]
+    public void Load_ShouldReadTheCertificationLevel_WhenTheSignatureCertifiesTheDocument(string parameters,
+        SignatureCertification level)
+    {
+        var document = LoadSigned($"/Reference [<< /Type /SigRef /TransformMethod /DocMDP {parameters} >>]");
+
+        Assert.Equal(level, Assert.Single(document.FormFields).Signature!.Certification);
+    }
+
+    [Fact]
+    public void Load_ShouldLeaveOutTheSignature_WhenASignatureFieldIsUnsigned()
+    {
+        var pdf = new TestPdf().FormField("blank", "/FT /Sig");
+        pdf.AddPage();
+
+        Assert.Null(Assert.Single(pdf.Load().FormFields).Signature);
+    }
+
+    [Fact]
+    public void Load_ShouldLeaveOutTheCertification_WhenTheSignatureOnlyLocksFields()
+    {
+        var document = LoadSigned("/Reference [<< /TransformMethod /FieldMDP >>]");
+
+        Assert.Null(Assert.Single(document.FormFields).Signature!.Certification);
+    }
+
+    // Built twice: once to learn the file's length, then with a byte range that runs to the end. The range's numbers are
+    // padded to a fixed width, so the second build is as long as the first. An update saved after signing comes after it.
+    private static PdfUaDocument LoadSigned(string signatureEntries, bool updatedAfterSigning = false)
+    {
+        TestPdf Build(long end, bool update)
+        {
+            var pdf = new TestPdf { Layout = new PdfLayout(EmptyUpdate: update) }.FormField("approval",
+                $"/FT /Sig /V << /Type /Sig /ByteRange [0 0000000010 0000000020 {end - 20:D10}] {signatureEntries} >>");
+            pdf.AddPage();
+            return pdf;
+        }
+
+        var length = Build(20, update: false).Build().Length;
+        return Build(length, updatedAfterSigning).Load();
+    }
 }

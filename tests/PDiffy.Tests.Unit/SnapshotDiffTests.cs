@@ -514,6 +514,20 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowOnlyTheNewKeys_WhenASnapshotFromBeforeSignaturesMeetsOneWithThem()
+    {
+        var before = SnapshotText.Header + "forms\n  signature \"approval\" p1\n";
+        var after = SnapshotText.Header + "forms\n  signature \"approval\" p1 signed=yes subfilter=adbe.pkcs7.detached "
+            + "covers-file=yes certification=form-filling\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
+        Assert.Equal(["signed: (missing) -> yes", "subfilter: (missing) -> adbe.pkcs7.detached", "covers-file: (missing) -> yes",
+            "certification: (missing) -> form-filling"], changes.Select(change => change.Detail));
+    }
+
+    [Fact]
     public void Compare_ShouldShowOnlyTheNewKey_WhenASnapshotFromBeforeFigureImagesMeetsOneWithThem()
     {
         var before = SnapshotText.Header + "structure\n  Figure p1 alt=\"Logo\"\n";

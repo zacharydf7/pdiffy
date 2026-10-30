@@ -66,4 +66,38 @@ public sealed record FormField
     public IReadOnlyList<string> Options { get; init; } = [];
     public int? MaxLength { get; init; }
     public FormFieldFlags Flags { get; init; }
+
+    /// <summary>The signature in a signed signature field; null for other fields and unsigned ones.</summary>
+    public SignatureInfo? Signature { get; init; }
+}
+
+/// <summary>
+/// What a signature field's signature records, without checking it. The signature's bytes and signing time are left out,
+/// since they change every time a file is signed.
+/// </summary>
+public sealed record SignatureInfo
+{
+    /// <summary>The signature's format, such as <c>adbe.pkcs7.detached</c> or <c>ETSI.CAdES.detached</c>.</summary>
+    public string? SubFilter { get; init; }
+
+    /// <summary>
+    /// Whether the signed bytes run to the end of the file. An update saved after signing leaves the end unsigned. Null
+    /// when the signature's byte range can't be read.
+    /// </summary>
+    public bool? CoversWholeFile { get; init; }
+
+    public bool HasReason { get; init; }
+    public bool HasLocation { get; init; }
+    public bool HasSigningTime { get; init; }
+
+    /// <summary>What a certifying signature still allows to change; null for a signature that doesn't certify.</summary>
+    public SignatureCertification? Certification { get; init; }
+}
+
+/// <summary>What a certifying signature allows to change after signing without invalidating it.</summary>
+public enum SignatureCertification
+{
+    NoChanges = 1,
+    FormFilling = 2,
+    FormFillingAndAnnotations = 3,
 }

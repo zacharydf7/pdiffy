@@ -33,6 +33,7 @@ public class MutationTests
         { "text color", new Sample { TextColor = "1 0 0 rg" }, Section.Layout, ChangeKind.AttributeChanged, false },
         { "field's accessible name removed", new Sample { FieldEntries = "/FT /Tx /Ff 2" }, Section.Forms, ChangeKind.AttributeChanged, true },
         { "field no longer required", new Sample { FieldEntries = "/FT /Tx /TU (Hiker name)" }, Section.Forms, ChangeKind.AttributeChanged, false },
+        { "signature removed", new Sample { SignatureEntries = "/FT /Sig" }, Section.Forms, ChangeKind.AttributeChanged, false },
         { "bookmark target page", new Sample { BookmarkPage = 1 }, Section.Bookmarks, ChangeKind.Changed, false },
     };
 
@@ -73,11 +74,13 @@ public class MutationTests
         public string FontSize { get; init; } = "12";
         public string TextColor { get; init; } = "0 g";
         public string FieldEntries { get; init; } = "/FT /Tx /TU (Hiker name) /Ff 2";
+        public string SignatureEntries { get; init; } =
+            "/FT /Sig /V << /Type /Sig /SubFilter /adbe.pkcs7.detached /Reason (Approved) /Reference [<< /TransformMethod /DocMDP >>] >>";
         public int BookmarkPage { get; init; } = 2;
     }
 
     // Page 1 has a heading, two paragraphs, a figure, a note, a footer, a styled line, a table, a link, a link to page 2
-    // and a form field; page 2 has the paragraph the bookmark points to.
+    // and two form fields, one signed; page 2 has the paragraph the bookmark points to.
     internal static PdfUaDocument Build(Sample sample)
     {
         var pdf = new TestPdf { Lang = sample.DocumentLang };
@@ -112,7 +115,7 @@ public class MutationTests
         elements.Add(new TestElement("P", 0) { Page = 2 });
         pdf.Structure(new TestElement("Document", [.. elements]));
         pdf.Bookmark("Safety", sample.BookmarkPage);
-        pdf.FormField("hiker", sample.FieldEntries);
+        pdf.FormField("hiker", sample.FieldEntries).FormField("approval", sample.SignatureEntries);
         return pdf.Load();
     }
 }
