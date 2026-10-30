@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using static PDiffy.Docx.Reading.DocxXml;
 
@@ -164,7 +165,10 @@ internal sealed class DocxSnapshotWriter
             else if (block is DocxTable table) WriteTable(table, depth);
             else if (block is DocxInserted inserted) WriteInserted(inserted, depth);
             else if (block is DocxControl control) WriteControl(control, depth);
-            else if (block is DocxBookmarkBlock bookmark) Line(depth, BookmarkLine(bookmark.Name, bookmark.Columns));
+            else if (block is DocxBookmarkBlock bookmark)
+            {
+                Line(depth, BookmarkLine(bookmark.Name, bookmark.FirstColumn, bookmark.LastColumn));
+            }
             else if (block is DocxUnsupportedBlock unsupported) Line(depth, $"unsupported {unsupported.Element} hash={unsupported.Hash}");
         }
     }
@@ -181,8 +185,8 @@ internal sealed class DocxSnapshotWriter
         }
     }
 
-    private string BookmarkLine(string name, string? columns) =>
-        columns is null ? $"bookmark {Quote(name)}" : $"bookmark {Quote(name)} columns={columns}";
+    private string BookmarkLine(string name, int? first, int? last) =>
+        first is null ? $"bookmark {Quote(name)}" : $"bookmark {Quote(name)} columns={first}-{last}";
 
     // A control around a cell is marked "around", since one inside the cell prints at the same depth.
     private void WriteControl(DocxControl control, int depth, bool around = false)
@@ -315,7 +319,7 @@ internal sealed class DocxSnapshotWriter
                 line.Append($"stray-text {Quote(stray.Text)}");
                 break;
             case DocxBookmark bookmark:
-                line.Append(BookmarkLine(bookmark.Name, bookmark.Columns));
+                line.Append(BookmarkLine(bookmark.Name, bookmark.FirstColumn, bookmark.LastColumn));
                 break;
             case DocxSymbol symbol:
                 line.Append("symbol");
@@ -350,8 +354,8 @@ internal sealed class DocxSnapshotWriter
         var line = new StringBuilder("Table");
         Key(line, "style", table.Style);
         Key(line, "widths", table.Widths.Count > 0 ? string.Join(",", table.Widths.Select(Points)) : null);
-        Key(line, "width", table.Width);
-        Key(line, "cell-margins", List(table.CellMargins));
+        Key(line, "width", Width(table.Width));
+        Key(line, "cell-margins", List(Margins(table.CellMargins)));
         Key(line, "borders", List(Borders(table.Borders)));
         Key(line, "caption", Quote(table.Caption));
         Key(line, "description", Quote(table.Description));
@@ -362,7 +366,7 @@ internal sealed class DocxSnapshotWriter
             var row = table.Rows[i];
             WriteBetween(table.Between, i, depth + 1);
             var rowLine = new StringBuilder(row.IsHeader ? "Row header" : "Row");
-            Key(rowLine, "height", row.Height);
+            Key(rowLine, "height", Height(row.Height));
 
             // A key rather than a bare word, so gaining it reads as an attribute change like the row's other keys.
             if (row.CantSplit) Key(rowLine, "split", "no");
@@ -377,8 +381,8 @@ internal sealed class DocxSnapshotWriter
                 if (cell.Span != 1) Key(cellLine, "span", cell.Span.ToString());
                 Key(cellLine, "merge", cell.Merge);
                 if (Shows(DocxDetail.Colors)) Key(cellLine, "shading", cell.Shading);
-                Key(cellLine, "width", cell.Width);
-                Key(cellLine, "margins", List(cell.Margins));
+                Key(cellLine, "width", Width(cell.Width));
+                Key(cellLine, "margins", List(Margins(cell.Margins)));
                 Key(cellLine, "borders", List(Borders(cell.Borders)));
                 Key(cellLine, "valign", cell.VerticalAlign);
                 Key(cellLine, "text-direction", cell.TextDirection);
@@ -438,13 +442,14 @@ internal sealed class DocxSnapshotWriter
         {
             Changed(line, "spacing-before", Length(format.SpacingBefore), Length(baseFormat.SpacingBefore), Missing);
             Changed(line, "spacing-after", Length(format.SpacingAfter), Length(baseFormat.SpacingAfter), Missing);
-            Changed(line, "line", format.LineSpacing?.Replace(' ', '-'), baseFormat.LineSpacing?.Replace(' ', '-'), Missing);
+            Changed(line, "line", LineSpacing(format.LineSpacing), LineSpacing(baseFormat.LineSpacing), Missing);
         }
 
         Flag(line, "keep-next", format.KeepNext, baseFormat.KeepNext);
         Flag(line, "keep-lines", format.KeepLines, baseFormat.KeepLines);
         Flag(line, "page-break-before", format.PageBreakBefore, baseFormat.PageBreakBefore);
-        if (!format.Tabs.SequenceEqual(baseFormat.Tabs)) Key(line, "tabs", format.Tabs.Count > 0 ? string.Join(",", format.Tabs) : "none");
+        var (tabs, inheritedTabs) = (format.Tabs.Select(Tab).ToList(), baseFormat.Tabs.Select(Tab).ToList());
+        if (!tabs.SequenceEqual(inheritedTabs)) Key(line, "tabs", List(tabs) ?? "none");
         Flag(line, "rtl-paragraph", format.RightToLeft, baseFormat.RightToLeft);
         var (borders, inheritedBorders) = (Borders(format.Borders), Borders(baseFormat.Borders));
         if (!borders.SequenceEqual(inheritedBorders)) Key(line, "borders", List(borders) ?? "none");
@@ -499,9 +504,45 @@ internal sealed class DocxSnapshotWriter
         return moved;
     }
 
-    // A border is side:style:width, then its color when it has one.
-    private IReadOnlyList<string> Borders(IReadOnlyList<string> borders) =>
-        Shows(DocxDetail.Colors) ? borders : borders.Select(side => string.Join(':', side.Split(':').Take(3))).ToList();
+    // A border is side:style:width, then its color when it has one and colors show.
+    private IReadOnlyList<string> Borders(IReadOnlyList<DocxBorder> borders) => borders.Select(border =>
+    {
+        var text = $"{border.Side}:{border.Style}:{Points(border.Width)}";
+        return border.Color is not null && Shows(DocxDetail.Colors) ? $"{text}:{border.Color}" : text;
+    }).ToList();
+
+    private static IReadOnlyList<string> Margins(IReadOnlyList<DocxMargin> margins) =>
+        margins.Select(margin => $"{margin.Side}:{Points(margin.Width)}").ToList();
+
+    // A tab stop is alignment:position, then its leader when it has one.
+    private static string Tab(DocxTabStop tab) =>
+        tab.Leader is null ? $"{tab.Alignment}:{Points(tab.Position)}"
+            : $"{tab.Alignment}:{Points(tab.Position)}:{tab.Leader}";
+
+    // A multiple prints as it is, such as "1.15"; a length prints with its rule, such as "12-exact".
+    private static string? LineSpacing(DocxLineSpacing? spacing) => spacing switch
+    {
+        null => null,
+        { Rule: DocxSizeRules.Auto } => spacing.Value.ToString("0.##", CultureInfo.InvariantCulture),
+        _ => $"{Points(spacing.Value)}-{spacing.Rule}",
+    };
+
+    private static string? Width(DocxWidth? width) => width?.Unit switch
+    {
+        null => null,
+        DocxWidthUnit.Auto => "auto",
+        DocxWidthUnit.Percent => width.Value.ToString("0.##########", CultureInfo.InvariantCulture) + "%",
+        _ => Points(width.Value),
+    };
+
+    // A row is at least its height unless the rule says "exact", or "auto" (sized by Word, the height ignored).
+    private static string? Height(DocxRowHeight? height) => height?.Rule switch
+    {
+        null => null,
+        DocxSizeRules.Auto => "auto",
+        DocxSizeRules.Exact => $"{Points(height.Value)}-exact",
+        _ => Points(height.Value),
+    };
 
     // A value prints when it differs from the base's; one that was cleared prints what clearing means, such as "none".
     private static void Changed(StringBuilder line, string key, string? value, string? baseValue, string cleared)

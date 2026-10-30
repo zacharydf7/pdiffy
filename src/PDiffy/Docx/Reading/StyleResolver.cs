@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Xml.Linq;
 using static PDiffy.Docx.Reading.DocxXml;
 
@@ -190,25 +189,23 @@ internal sealed class StyleResolver
 
     // Each side of a paragraph's borders is its own setting, so one set further down the chain replaces only that side,
     // and "nil" or "none" clears it.
-    private static List<string> BorderSides(IReadOnlyList<string> inherited, IReadOnlyList<string> set) =>
-        inherited.Where(side => !set.Any(other => SideOf(other) == SideOf(side))).Concat(set)
-            .Where(side => side.Split(':')[1] is not ("nil" or "none"))
-            .OrderBy(side => Array.IndexOf(SideOrder, SideOf(side))).ToList();
-
-    private static string SideOf(string border) => border[..border.IndexOf(':')];
+    private static List<DocxBorder> BorderSides(IReadOnlyList<DocxBorder> inherited, IReadOnlyList<DocxBorder> set) =>
+        inherited.Where(border => !set.Any(other => other.Side == border.Side)).Concat(set)
+            .Where(border => border.Style is not ("nil" or "none"))
+            .OrderBy(border => Array.IndexOf(SideOrder, border.Side)).ToList();
 
     // A tab stop with val="clear" removes one set further up the chain at the same position.
-    private static List<string> Tabs(IReadOnlyList<string> inherited, XElement? tabs)
+    private static List<DocxTabStop> Tabs(IReadOnlyList<DocxTabStop> inherited, XElement? tabs)
     {
         var stops = inherited.ToList();
         foreach (var tab in tabs?.Elements(W + "tab") ?? [])
         {
-            var position = Points(Twips(tab, "pos") ?? 0);
-            stops.RemoveAll(stop => stop.Split(':')[1] == position);
+            var position = Twips(tab, "pos") ?? 0;
+            stops.RemoveAll(stop => Points(stop.Position) == Points(position));
             if (Attr(tab, "val") is { } kind and not "clear")
             {
-                var leader = Attr(tab, "leader") is { } fill and not "none" ? $":{fill}" : "";
-                stops.Add($"{kind}:{position}{leader}");
+                var leader = Attr(tab, "leader") is { } fill and not "none" ? fill : null;
+                stops.Add(new DocxTabStop { Alignment = kind, Position = position, Leader = leader });
             }
         }
 
@@ -216,11 +213,12 @@ internal sealed class StyleResolver
     }
 
     // "auto" spacing is in 240ths of a line; "exact" and "atLeast" are lengths.
-    private static string? LineSpacing(XElement? spacing)
+    private static DocxLineSpacing? LineSpacing(XElement? spacing)
     {
         if (Integer(spacing, "line") is not int line) return null;
-        var rule = Attr(spacing, "lineRule") ?? "auto";
-        return rule == "auto" ? Math.Round(line / 240.0, 2).ToString("0.##", CultureInfo.InvariantCulture) : $"{Points(line / 20.0)} {rule}";
+        var rule = Attr(spacing, "lineRule") ?? DocxSizeRules.Auto;
+        var value = rule == DocxSizeRules.Auto ? Math.Round(line / 240.0, 2) : line / 20.0;
+        return new DocxLineSpacing { Value = value, Rule = rule };
     }
 
     // A theme font wins over a named one, which is often left over from before the theme changed.

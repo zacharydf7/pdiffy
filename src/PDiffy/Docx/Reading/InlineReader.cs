@@ -112,7 +112,8 @@ internal sealed partial class InlineReader(StyleResolver styles, DocxPackage pac
                     var columns = BookmarkColumns(element);
                     content.Inlines.Add(new DocxBookmark
                     {
-                        Name = bookmark, Position = content.Text.Length, Columns = columns,
+                        Name = bookmark, Position = content.Text.Length, FirstColumn = columns?.First,
+                        LastColumn = columns?.Last,
                     });
                 }
             }

@@ -53,6 +53,11 @@ library does.
 - Values PDiffy copies from the file stay strings, and new classes list their standard values, such as
   `PdfAnnotationTypes.Link`, `PdfTableScopes.Column` and `DocxAlignments.Justified` (`"both"`); the
   [API reference](../api/index.md) lists them all.
+- Word values that packed several parts into one string are small records: borders are `DocxBorder` (side, style,
+  width and color), cell margins `DocxMargin`, tab stops `DocxTabStop`, line spacing `DocxLineSpacing`, table and
+  cell widths `DocxWidth` and row heights `DocxRowHeight`, and a table bookmark's `Columns` is now `FirstColumn` and
+  `LastColumn`. Snapshots print them as before, except a percentage width written in an unusual way: `50.0%` now
+  prints as `50%`, and one that isn't a number is left out.
 
 ## 0.4.0 (2026-10-30)
 

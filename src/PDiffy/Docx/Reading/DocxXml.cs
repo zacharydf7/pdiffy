@@ -44,9 +44,9 @@ internal static class DocxXml
     public static string? NonEmpty(string? value) => string.IsNullOrEmpty(value) ? null : value;
 
     // A bookmark in a table can cover only some columns, from w:colFirst to w:colLast.
-    public static string? BookmarkColumns(XElement bookmarkStart) =>
+    public static (int First, int Last)? BookmarkColumns(XElement bookmarkStart) =>
         Integer(bookmarkStart, "colFirst") is int first && Integer(bookmarkStart, "colLast") is int last
-            ? $"{first}-{last}"
+            ? (first, last)
             : null;
 
     public static bool IsWrapper(XElement element) => element.Name.Namespace == W && Wrappers.Contains(element.Name.LocalName);

@@ -9,6 +9,44 @@ public class DocxFormattingTests
         """;
 
     [Fact]
+    public void ToSnapshot_ShouldLeaveOutTheTabs_WhenAParagraphRestatesItsStylesTabStopWithinARounding()
+    {
+        var docx = new TestDocx
+        {
+            Styles = Heading,
+            Body = """<w:p><w:pPr><w:tabs><w:tab w:val="right" w:pos="9361" w:leader="dot"/></w:tabs></w:pPr><w:r><w:t>Same</w:t></w:r></w:p>""",
+        };
+
+        var snapshot = docx.Load().ToSnapshot();
+
+        Assert.Contains("  P style=Heading \"Same\"\n", snapshot);
+    }
+
+    [Fact]
+    public void Load_ShouldReadLineSpacingAndTabStops_WhenAParagraphSetsThem()
+    {
+        var docx = new TestDocx
+        {
+            Body = """
+                <w:p><w:pPr><w:spacing w:line="240" w:lineRule="exact"/>
+                  <w:tabs><w:tab w:val="left" w:pos="1440" w:leader="none"/><w:tab w:val="decimal" w:pos="4320" w:leader="dot"/></w:tabs>
+                </w:pPr><w:r><w:t>Stops</w:t></w:r></w:p>
+                """,
+        };
+
+        var document = docx.Load();
+
+        var layout = Assert.Single(document.Paragraphs()).Layout;
+        Assert.Equal(new DocxLineSpacing { Value = 12, Rule = DocxSizeRules.Exact }, layout.LineSpacing);
+        Assert.Equal(
+        [
+            new DocxTabStop { Alignment = "left", Position = 72, Leader = null },
+            new DocxTabStop { Alignment = "decimal", Position = 216, Leader = "dot" },
+        ], layout.Tabs);
+        Assert.Contains(" line=12-exact tabs=left:72,decimal:216:dot \"Stops\"\n", document.ToSnapshot());
+    }
+
+    [Fact]
     public void ToSnapshot_ShouldListOnlyWhatAParagraphChanges_WhenItHasFormattingOfItsOwn()
     {
         var docx = new TestDocx

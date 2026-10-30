@@ -227,7 +227,7 @@ Assert.All(notes.Images(), image => Assert.NotNull(image.AltText));
 Assert.DoesNotContain(notes.Revisions(), revision => revision.Kind == DocxRevisionKind.Delete);
 ```
 
-Kinds PDiffy decides are enums: `DocxRevisionKind`, `DocxFormKind` and `DocxNoteKind`. Values PDiffy copies from the file stay strings, so a value outside the standard list still comes through, and classes list the standard ones: `DocxAlignments` (where `"both"` means justified), `DocxStyleTypes`, `DocxSectionBreaks`, `DocxHeaderFooterKinds`, `DocxBreakKinds`, `DocxGraphicKinds`, `DocxUnderlines`, `DocxHighlights`, `DocxRunVerticalAligns`, `DocxCellMerges`, `DocxCellVerticalAligns`, `DocxTextDirections` and `DocxProtections`.
+Kinds PDiffy decides are enums: `DocxRevisionKind`, `DocxFormKind` and `DocxNoteKind`. Values PDiffy copies from the file stay strings, so a value outside the standard list still comes through, and classes list the standard ones: `DocxAlignments` (where `"both"` means justified), `DocxStyleTypes`, `DocxSectionBreaks`, `DocxHeaderFooterKinds`, `DocxBreakKinds`, `DocxGraphicKinds`, `DocxUnderlines`, `DocxHighlights`, `DocxRunVerticalAligns`, `DocxCellMerges`, `DocxCellVerticalAligns`, `DocxTextDirections`, `DocxProtections` and `DocxSizeRules`. Borders, cell margins, tab stops, line spacing, widths and row heights are small records (`DocxBorder`, `DocxMargin`, `DocxTabStop`, `DocxLineSpacing`, `DocxWidth` with its `DocxWidthUnit`, `DocxRowHeight`), and a table bookmark gives the columns it covers as `FirstColumn` and `LastColumn`.
 
 ### Use a profile for what a test guards
 

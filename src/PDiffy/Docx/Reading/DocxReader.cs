@@ -274,8 +274,9 @@ internal sealed class DocxReader
     {
         if (element.Name == W + "bookmarkStart")
         {
+            var columns = BookmarkColumns(element);
             return Attr(element, "name") is { } name and not LastEditBookmark
-                ? new DocxBookmarkBlock { Name = name, Columns = BookmarkColumns(element) }
+                ? new DocxBookmarkBlock { Name = name, FirstColumn = columns?.First, LastColumn = columns?.Last }
                 : null;
         }
 

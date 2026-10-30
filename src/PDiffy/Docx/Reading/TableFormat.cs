@@ -15,34 +15,36 @@ internal static class TableFormat
     private static readonly Dictionary<string, string> SideNames = new() { ["start"] = "left", ["end"] = "right" };
 
     // Points for twips, a percentage (in fiftieths of a percent, or written with %), or "auto".
-    public static string? Width(XElement? width) => Attr(width, "type") switch
+    public static DocxWidth? Width(XElement? width) => Attr(width, "type") switch
     {
         _ when width is null => null,
-        "auto" => "auto",
-        "nil" => "0",
-        "pct" when Attr(width, "w") is { } value && value.EndsWith('%') => value,
-        "pct" => Integer(width, "w") is int fiftieths ? (fiftieths / 50.0).ToString("0.#", CultureInfo.InvariantCulture) + "%"
-            : null,
-        _ => Twips(width, "w") is double points ? Points(points) : null,
+        "auto" => new DocxWidth { Value = 0, Unit = DocxWidthUnit.Auto },
+        "nil" => new DocxWidth { Value = 0, Unit = DocxWidthUnit.Points },
+        "pct" when Attr(width, "w") is { } value && value.EndsWith('%')
+            && double.TryParse(value[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out var percent) =>
+            new DocxWidth { Value = percent, Unit = DocxWidthUnit.Percent },
+        "pct" => Integer(width, "w") is int fiftieths
+            ? new DocxWidth { Value = Math.Round(fiftieths / 50.0, 1), Unit = DocxWidthUnit.Percent } : null,
+        _ => Twips(width, "w") is double points ? new DocxWidth { Value = points, Unit = DocxWidthUnit.Points } : null,
     };
 
-    public static IReadOnlyList<string> Margins(XElement? margins) =>
-        margins?.Elements().Select(side => $"{Side(side)}:{Points(Twips(side, "w") ?? 0)}").ToList() ?? [];
+    public static IReadOnlyList<DocxMargin> Margins(XElement? margins) => margins?.Elements()
+        .Select(side => new DocxMargin { Side = Side(side), Width = Twips(side, "w") ?? 0 }).ToList() ?? [];
+
+    public static IReadOnlyList<DocxBorder> Borders(XElement? borders) =>
+        borders?.Elements().Select(Border).ToList() ?? [];
 
     // Border sizes are in eighths of a point.
-    public static IReadOnlyList<string> Borders(XElement? borders) => borders?.Elements().Select(side =>
+    private static DocxBorder Border(XElement side) => new()
     {
-        var line = $"{Side(side)}:{Attr(side, "val") ?? "none"}:{Points((Integer(side, "sz") ?? 0) / 8.0)}";
-        return Attr(side, "color") is { } color and not "auto" ? $"{line}:{color.ToUpperInvariant()}" : line;
-    }).ToList() ?? [];
+        Side = Side(side), Style = Attr(side, "val") ?? "none", Width = (Integer(side, "sz") ?? 0) / 8.0,
+        Color = Attr(side, "color") is { } color and not "auto" ? color.ToUpperInvariant() : null,
+    };
 
     // A row height is at least its value unless the rule says "exact", or "auto" (sized by Word, the value ignored).
-    public static string? Height(XElement? height) => Attr(height, "hRule") switch
+    public static DocxRowHeight? Height(XElement? height) => height is null ? null : new DocxRowHeight
     {
-        _ when height is null => null,
-        "auto" => "auto",
-        "exact" => $"{Points(Twips(height, "val") ?? 0)}-exact",
-        _ => Points(Twips(height, "val") ?? 0),
+        Value = Twips(height, "val") ?? 0, Rule = Attr(height, "hRule") ?? DocxSizeRules.AtLeast,
     };
 
     // A fill color in hex; "auto" is no fill.

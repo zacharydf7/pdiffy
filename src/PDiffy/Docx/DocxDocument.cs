@@ -412,8 +412,8 @@ public sealed record ParagraphFormat
     /// <summary>The space below the paragraph.</summary>
     public double? SpacingAfter { get; init; }
 
-    /// <summary>Line spacing: a multiple such as "1.15", or a length with its rule, such as "12 exact".</summary>
-    public string? LineSpacing { get; init; }
+    /// <summary>Line spacing: a multiple such as 1.15, or a length with its rule, such as exactly 12 points.</summary>
+    public DocxLineSpacing? LineSpacing { get; init; }
 
     /// <summary>Whether the paragraph is kept on the same page as the one after it.</summary>
     public bool KeepNext { get; init; }
@@ -427,18 +427,22 @@ public sealed record ParagraphFormat
     /// <summary>The heading level from 1, when the paragraph is a heading.</summary>
     public int? HeadingLevel { get; init; }
 
-    /// <summary>Custom tab stops, such as "left:72" or "right:468:dot".</summary>
-    public IReadOnlyList<string> Tabs { get; init => field = ValueList<string>.Of(value); } = ValueList<string>.Empty;
+    /// <summary>Custom tab stops, such as a right tab at 468 points with dots before it.</summary>
+    public IReadOnlyList<DocxTabStop> Tabs
+    {
+        get;
+        init => field = ValueList<DocxTabStop>.Of(value);
+    } = ValueList<DocxTabStop>.Empty;
 
     /// <summary>A paragraph set right to left, such as one in Arabic or Hebrew.</summary>
     public bool RightToLeft { get; init; }
 
-    /// <summary>Borders around the paragraph, written like a table's, such as "top:single:0.5:000000".</summary>
-    public IReadOnlyList<string> Borders
+    /// <summary>Borders around the paragraph, one per side it has.</summary>
+    public IReadOnlyList<DocxBorder> Borders
     {
         get;
-        init => field = ValueList<string>.Of(value);
-    } = ValueList<string>.Empty;
+        init => field = ValueList<DocxBorder>.Of(value);
+    } = ValueList<DocxBorder>.Empty;
 
     /// <summary>The paragraph's fill color in hex.</summary>
     public string? Shading { get; init; }
@@ -768,7 +772,7 @@ public sealed record DocxLink : DocxInline
 
 /// <summary>
 /// A named place in the document that links and cross-references can point to. A bookmark in a table can cover only
-/// some columns: <see cref="Columns"/> is then the first and last, counting from 0, such as "1-2".
+/// some columns: <see cref="FirstColumn"/> and <see cref="LastColumn"/> are then the first and last, counting from 0.
 /// </summary>
 public sealed record DocxBookmark : DocxInline
 {
@@ -782,11 +786,11 @@ public sealed record DocxBookmark : DocxInline
     /// </summary>
     public required string Name { get; init; }
 
-    /// <summary>
-    /// The first and last table columns covered, such as "1-2"; null unless it's a table bookmark covering only some
-    /// columns.
-    /// </summary>
-    public string? Columns { get; init; }
+    /// <summary>The first table column covered; null unless it's a table bookmark covering only some columns.</summary>
+    public int? FirstColumn { get; init; }
+
+    /// <summary>The last table column covered; null unless it's a table bookmark covering only some columns.</summary>
+    public int? LastColumn { get; init; }
 }
 
 /// <summary>A character from a symbol font, such as Wingdings: the font and the character's code in hex.</summary>
@@ -919,8 +923,13 @@ public sealed record DocxBookmarkBlock : DocxBlock
     /// <summary>The bookmark's name, as for <see cref="DocxBookmark.Name"/>.</summary>
     public required string Name { get; init; }
 
-    /// <summary>The columns a table-column bookmark covers, as for <see cref="DocxBookmark.Columns"/>.</summary>
-    public string? Columns { get; init; }
+    /// <summary>
+    /// The first column a table-column bookmark covers, as for <see cref="DocxBookmark.FirstColumn"/>.
+    /// </summary>
+    public int? FirstColumn { get; init; }
+
+    /// <summary>The last column a table-column bookmark covers, as for <see cref="DocxBookmark.LastColumn"/>.</summary>
+    public int? LastColumn { get; init; }
 }
 
 /// <summary>
@@ -1046,11 +1055,7 @@ public sealed record DocxInserted : DocxBlock
     public string? Hash { get; init; }
 }
 
-/// <summary>
-/// A table. <see cref="Width"/> and cell widths are in points, written as "468", or as "50%" of the page or "auto".
-/// Margins are "side:points", such as "left:5.4"; borders are "side:style:points:color", such as
-/// "top:single:0.5:000000", without a color when it's automatic.
-/// </summary>
+/// <summary>A table: its grid, rows and cells, and the widths, margins and borders it sets.</summary>
 public sealed record DocxTable : DocxBlock
 {
     internal DocxTable()
@@ -1063,22 +1068,22 @@ public sealed record DocxTable : DocxBlock
     /// <summary>The width of each column of the table's grid, in points.</summary>
     public IReadOnlyList<double> Widths { get; init => field = ValueList<double>.Of(value); } = ValueList<double>.Empty;
 
-    /// <summary>The width of the whole table.</summary>
-    public string? Width { get; init; }
+    /// <summary>The width of the whole table, or null when it doesn't set one.</summary>
+    public DocxWidth? Width { get; init; }
 
     /// <summary>The space between each cell's edge and its text, unless a cell sets its own.</summary>
-    public IReadOnlyList<string> CellMargins
+    public IReadOnlyList<DocxMargin> CellMargins
     {
         get;
-        init => field = ValueList<string>.Of(value);
-    } = ValueList<string>.Empty;
+        init => field = ValueList<DocxMargin>.Of(value);
+    } = ValueList<DocxMargin>.Empty;
 
-    /// <summary>The table's own borders, one per side the table sets, such as "top:single:0.5:000000".</summary>
-    public IReadOnlyList<string> Borders
+    /// <summary>The table's own borders, one per side the table sets.</summary>
+    public IReadOnlyList<DocxBorder> Borders
     {
         get;
-        init => field = ValueList<string>.Of(value);
-    } = ValueList<string>.Empty;
+        init => field = ValueList<DocxBorder>.Of(value);
+    } = ValueList<DocxBorder>.Empty;
 
     /// <summary>The table's title, the first part of its alt text in Word.</summary>
     public string? Caption { get; init; }
@@ -1124,10 +1129,8 @@ public sealed record DocxRow
     /// <summary>Whether the row is a header row (w:tblHeader).</summary>
     public bool IsHeader { get; init; }
 
-    /// <summary>
-    /// The row's height in points: at least that much ("20"), exactly that much ("20-exact"), or "auto" when Word sizes it.
-    /// </summary>
-    public string? Height { get; init; }
+    /// <summary>The row's height, or null when the row doesn't set one.</summary>
+    public DocxRowHeight? Height { get; init; }
 
     /// <summary>Whether the row is kept on one page rather than split across two.</summary>
     public bool CantSplit { get; init; }
@@ -1201,24 +1204,24 @@ public sealed record DocxCell
     /// <summary>The fill color in upper-case hex, such as "D9E2F3", or null when the cell has no fill.</summary>
     public string? Shading { get; init; }
 
-    /// <summary>The cell's width, such as "120", "25%" or "auto", or null when the cell doesn't set one.</summary>
-    public string? Width { get; init; }
+    /// <summary>The cell's width, such as 120 points or 25%, or null when the cell doesn't set one.</summary>
+    public DocxWidth? Width { get; init; }
 
     /// <summary>
-    /// The cell's own margins, such as "left:5.4", used instead of <see cref="DocxTable.CellMargins"/> on those sides.
+    /// The cell's own margins, used instead of <see cref="DocxTable.CellMargins"/> on those sides.
     /// </summary>
-    public IReadOnlyList<string> Margins
+    public IReadOnlyList<DocxMargin> Margins
     {
         get;
-        init => field = ValueList<string>.Of(value);
-    } = ValueList<string>.Empty;
+        init => field = ValueList<DocxMargin>.Of(value);
+    } = ValueList<DocxMargin>.Empty;
 
-    /// <summary>The cell's own borders, such as "bottom:double:1.5", one per side the cell sets.</summary>
-    public IReadOnlyList<string> Borders
+    /// <summary>The cell's own borders, one per side the cell sets.</summary>
+    public IReadOnlyList<DocxBorder> Borders
     {
         get;
-        init => field = ValueList<string>.Of(value);
-    } = ValueList<string>.Empty;
+        init => field = ValueList<DocxBorder>.Of(value);
+    } = ValueList<DocxBorder>.Empty;
 
     /// <summary>
     /// Where the text sits in the cell as Word writes it, such as "center" or "bottom";

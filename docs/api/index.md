@@ -75,6 +75,7 @@ Constants and flags that list every option, so you never need to know PDF names:
 | <xref:PDiffy.DocxBlock> | A paragraph, table, content control or inserted document: <xref:PDiffy.DocxParagraph>, <xref:PDiffy.DocxTable>, <xref:PDiffy.DocxControl>, <xref:PDiffy.DocxInserted> |
 | <xref:PDiffy.DocxInline> | Something inside a paragraph, such as a <xref:PDiffy.DocxLink>, <xref:PDiffy.DocxField>, <xref:PDiffy.DocxImage> or <xref:PDiffy.DocxRevision> |
 | <xref:PDiffy.DocxHeaderFooter>, <xref:PDiffy.DocxNote> | Headers, footers, notes and comments |
+| <xref:PDiffy.DocxBorder>, <xref:PDiffy.DocxMargin>, <xref:PDiffy.DocxTabStop>, <xref:PDiffy.DocxLineSpacing>, <xref:PDiffy.DocxWidth>, <xref:PDiffy.DocxRowHeight> | Borders, cell margins, tab stops, line spacing, widths and row heights |
 
 | Type | Lists |
 |---|---|
@@ -88,3 +89,4 @@ Constants and flags that list every option, so you never need to know PDF names:
 | <xref:PDiffy.DocxUnderlines>, <xref:PDiffy.DocxHighlights>, <xref:PDiffy.DocxRunVerticalAligns> | Underlines, highlight colors, superscript and subscript |
 | <xref:PDiffy.DocxCellMerges>, <xref:PDiffy.DocxCellVerticalAligns>, <xref:PDiffy.DocxTextDirections> | Merged cells, where a cell's text sits and which way it runs |
 | <xref:PDiffy.DocxProtections> | What editing a protected document allows |
+| <xref:PDiffy.DocxWidthUnit>, <xref:PDiffy.DocxSizeRules> | Width units, and how line spacing and row heights are measured |

@@ -86,19 +86,23 @@ public class DocxTableTests
     }
 
     [Theory]
-    [InlineData("w:w=\"2500\" w:type=\"pct\"", "50%")]
-    [InlineData("w:w=\"50%\" w:type=\"pct\"", "50%")]
-    [InlineData("w:w=\"0\" w:type=\"nil\"", "0")]
-    [InlineData("w:w=\"0\" w:type=\"auto\"", "auto")]
-    [InlineData("w:w=\"2880\" w:type=\"dxa\"", "144")]
-    [InlineData("w:w=\"2880\"", "144")]
-    public void Load_ShouldReadTheTablesWidth_WhenGivenEachKindOfWidth(string attributes, string expected)
+    [InlineData("w:w=\"2500\" w:type=\"pct\"", 50, DocxWidthUnit.Percent, "50%")]
+    [InlineData("w:w=\"50%\" w:type=\"pct\"", 50, DocxWidthUnit.Percent, "50%")]
+    [InlineData("w:w=\"1667\" w:type=\"pct\"", 33.3, DocxWidthUnit.Percent, "33.3%")]
+    [InlineData("w:w=\"0\" w:type=\"nil\"", 0, DocxWidthUnit.Points, "0")]
+    [InlineData("w:w=\"0\" w:type=\"auto\"", 0, DocxWidthUnit.Auto, "auto")]
+    [InlineData("w:w=\"2880\" w:type=\"dxa\"", 144, DocxWidthUnit.Points, "144")]
+    [InlineData("w:w=\"2880\"", 144, DocxWidthUnit.Points, "144")]
+    public void Load_ShouldReadTheTablesWidth_WhenGivenEachKindOfWidth(string attributes, double value,
+        DocxWidthUnit unit, string printed)
     {
         var body = $"<w:tbl><w:tblPr><w:tblW {attributes}/></w:tblPr><w:tr><w:tc><w:p/></w:tc></w:tr></w:tbl>";
 
-        var table = Assert.IsType<DocxTable>(Assert.Single(new TestDocx { Body = body }.Load().Body));
+        var document = new TestDocx { Body = body }.Load();
 
-        Assert.Equal(expected, table.Width);
+        var table = Assert.IsType<DocxTable>(Assert.Single(document.Body));
+        Assert.Equal(new DocxWidth { Value = value, Unit = unit }, table.Width);
+        Assert.Contains($"  Table width={printed}\n", document.ToSnapshot());
     }
 
     [Fact]
@@ -240,6 +244,34 @@ public class DocxTableTests
     }
 
     [Fact]
+    public void Load_ShouldReadBordersAndRowHeights_WhenATableSetsThem()
+    {
+        var body = """
+            <w:tbl><w:tblPr><w:tblBorders><w:top w:val="single" w:sz="4" w:color="auto"/>
+              <w:bottom w:val="double" w:sz="12" w:color="1f3864"/></w:tblBorders></w:tblPr>
+              <w:tr><w:trPr><w:trHeight w:val="400"/></w:trPr><w:tc><w:p/></w:tc></w:tr>
+              <w:tr><w:trPr><w:trHeight w:val="400" w:hRule="exact"/></w:trPr><w:tc><w:p/></w:tc></w:tr></w:tbl>
+            """;
+
+        var document = new TestDocx { Body = body }.Load();
+
+        var table = Assert.IsType<DocxTable>(Assert.Single(document.Body));
+        Assert.Equal(
+        [
+            new DocxBorder { Side = "top", Style = "single", Width = 0.5, Color = null },
+            new DocxBorder { Side = "bottom", Style = "double", Width = 1.5, Color = "1F3864" },
+        ], table.Borders);
+        Assert.Equal(
+            [
+                new DocxRowHeight { Value = 20, Rule = DocxSizeRules.AtLeast },
+                new DocxRowHeight { Value = 20, Rule = DocxSizeRules.Exact },
+            ],
+            table.Rows.Select(row => row.Height));
+        Assert.Contains("  Table borders=top:single:0.5,bottom:double:1.5:1F3864\n    Row height=20\n",
+            document.ToSnapshot());
+    }
+
+    [Fact]
     public void ToSnapshot_ShouldRecordTheColumnsABookmarkCovers_WhenItStartsInACellsParagraph()
     {
         var body = """
@@ -247,8 +279,12 @@ public class DocxTableTests
               <w:r><w:t>Trail</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
             """;
 
-        Assert.Contains("        P \"Trail\"\n          bookmark \"Stages\" columns=0-2 at=0\n",
-            new TestDocx { Body = body }.Load().ToSnapshot());
+        var document = new TestDocx { Body = body }.Load();
+
+        var bookmark = Assert.Single(
+            document.Paragraphs().SelectMany(paragraph => paragraph.Inlines).OfType<DocxBookmark>());
+        Assert.Equal((0, 2), (bookmark.FirstColumn, bookmark.LastColumn));
+        Assert.Contains("        P \"Trail\"\n          bookmark \"Stages\" columns=0-2 at=0\n", document.ToSnapshot());
     }
 
     [Fact]
