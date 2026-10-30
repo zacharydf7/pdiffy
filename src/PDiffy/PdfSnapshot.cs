@@ -33,7 +33,8 @@ public static class PdfSnapshot
 
     /// <summary>Compares the snapshot of a PDF in a byte array with the verified one, as for a stream.</summary>
     /// <param name="pdf">The PDF to check, as bytes.</param>
-    /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{SnapshotOptions}?, string?, string, string, string?)"/>
+    /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{SnapshotOptions}?, string?, string, string, string?)"
+    ///     path="/param[@name!='pdf']"/>
     public static async Task VerifyAsync(byte[] pdf, string? name = null, Action<SnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "",
         [CallerMemberName] string testName = "", string? variant = null) =>
@@ -44,7 +45,8 @@ public static class PdfSnapshot
     /// on the document reads it once.
     /// </summary>
     /// <param name="pdf">The PDF to check, already loaded with <see cref="PdfUaDocument.Load(Stream)"/>.</param>
-    /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{SnapshotOptions}?, string?, string, string, string?)"/>
+    /// <inheritdoc cref="VerifyAsync(Stream, string?, Action{SnapshotOptions}?, string?, string, string, string?)"
+    ///     path="/param[@name!='pdf']"/>
     public static async Task VerifyAsync(PdfUaDocument pdf, string? name = null, Action<SnapshotOptions>? configure = null,
         string? directory = null, [CallerFilePath] string testFile = "",
         [CallerMemberName] string testName = "", string? variant = null)
