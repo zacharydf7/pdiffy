@@ -50,6 +50,29 @@ Assert.True(diff.IsEmpty);
 > To fail a test only on accessibility changes, compare with `CompareTo` and assert on `AffectsAccessibility`. A
 > snapshot test always fails on any change; the flag only orders and marks the explanation.
 
+### New and fixed problems
+
+When both snapshots have a [`checks` section](checking-documents.md#approve-findings-with-the-snapshot), its changes
+read as progress or regression rather than as lines added and removed. A finding only the later snapshot has is a new
+problem, an `Added` change in the `checks` section whose path is the rule and whose detail is the finding's path; one
+only the earlier snapshot has is fixed, a `Removed` change. A new problem from an accessibility rule, not a house rule,
+can affect accessibility, so it's listed first:
+
+```text
+2 change(s): 1 new problem, 1 fixed
+by section: checks 2
+1 can affect accessibility, listed first
++ new problem FigureAltText (p4) [accessibility]
+    structure > Document > Figure[3]
+- fixed TableHeaders (p3)
+    structure > Document > Table > TR > TH[2] > scope
+```
+
+A fixed problem still fails the test until the snapshot is accepted, so it can't come back unnoticed. When an upgrade
+adds rules to the set, the summary says how many, so new problems can be told apart from changes to the document.
+Leaving the section out with `Ignore(PdfSection.Checks)` reads each finding the earlier snapshot recorded as fixed,
+next to the header change that says the section is now ignored.
+
 ## Print or save the result
 
 | Method | Gives |

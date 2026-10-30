@@ -11,7 +11,6 @@ internal sealed class SnapshotCoverage
 {
     private const string IgnoredSections = "# ignored sections: ";
     private const string IgnoredFields = "# ignored fields: ";
-    private const string ChecksHeader = "# checks: ";
 
     private readonly List<Format> _formats;
     private readonly int _others;
@@ -96,7 +95,8 @@ internal sealed class SnapshotCoverage
         // The checks section prints only in a snapshot that opts in, which its header says.
         public int ComparedIn(string section) => Headers.Count(header =>
             !Listed(header, IgnoredSections).Contains(section)
-            && (section != SnapshotWriter.Name(PdfSection.Checks) || header.Any(line => line.StartsWith(ChecksHeader))));
+            && (section != SnapshotWriter.Name(PdfSection.Checks)
+                || header.Any(line => line.StartsWith(SnapshotWriter.ChecksHeader))));
 
         // Most used first, such as "positions in 30, colors in 12".
         public string FieldsIgnored(bool code = false)

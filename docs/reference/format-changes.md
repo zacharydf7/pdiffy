@@ -14,6 +14,11 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ## Next release
 
+### Accessibility flags
+
+- A new problem in the `checks` section from a rule that isn't a house rule is flagged as affecting
+  accessibility ([#56](https://github.com/zacharydf7/pdiffy/issues/56)). No snapshot changes.
+
 ### PDF (`pdfua-snapshot v1`, unchanged)
 
 - A test can opt into a `checks` section with `Check(PdfCheckSet)`: what the checks find, one line per

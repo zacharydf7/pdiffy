@@ -87,6 +87,9 @@ library does.
 - `PdfSnapshotOptions.Check(PdfCheckSet)` records what the checks find in a `checks` section of the snapshot, so the
   findings are approved with it: a new problem fails the test, and a fixed one fails it until it's accepted
   ([#55](https://github.com/zacharydf7/pdiffy/issues/55)).
+- A change to the `checks` section reads as a new or a fixed problem, counted as such in the summary, and a new
+  problem from an accessibility rule is flagged as affecting accessibility. When an upgrade adds rules to the set,
+  the summary says how many ([#56](https://github.com/zacharydf7/pdiffy/issues/56)).
 - A finding's path names the setting, key or kind of content when one rule can find different things in one place:
   `untagged > images` and `untagged > paths` for untagged graphics, `settings > javascript`,
   `settings > additional-actions` and `settings > open-action` for `NoActions`, `settings > data.xml` for an embedded

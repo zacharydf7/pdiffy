@@ -17,6 +17,13 @@ internal static class AccessibilityRules
         var (before, after) = Sides(change.Detail);
         if (section == PdfSection.Untagged) return AddsUntagged(change.Kind, change.Detail, before, after);
 
+        // A new problem from an accessibility rule, not a house rule; a fixed one only makes the document better.
+        if (section == PdfSection.Checks)
+        {
+            return change.Kind == ChangeKind.Added && Enum.TryParse<PdfCheck>(change.Path, out var check)
+                && PdfChecker.RuleOf(check).Category != PdfCheckCategory.HouseRules;
+        }
+
         return change.Kind switch
         {
             ChangeKind.Moved => section == PdfSection.Structure,

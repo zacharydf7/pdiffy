@@ -62,7 +62,8 @@ public sealed record SnapshotChange
 
     /// <summary>
     /// Where the change is, as described above; "header" for the snapshot's first lines, "pages" for pages inserted or
-    /// removed, and "whitespace" when only blank lines or line endings differ.
+    /// removed, and "whitespace" when only blank lines or line endings differ. For a new or fixed problem in the checks
+    /// section, the rule, such as "FigureAltText", with the finding's own path as the <see cref="Detail"/>.
     /// </summary>
     public required string Path { get; init; }
 
@@ -240,6 +241,13 @@ public sealed class SnapshotDiff
         var tolerated = false;
         foreach (var name in beforeSections.Keys.Union(afterSections.Keys))
         {
+            if (pdf && name == SnapshotWriter.Name(PdfSection.Checks))
+            {
+                changes.AddRange(CheckChanges.Compare(beforeSections.GetValueOrDefault(name) ?? [],
+                    afterSections.GetValueOrDefault(name) ?? [], originals));
+                continue;
+            }
+
             var matcher = new TreeMatcher(name, format, originals, tolerances);
             changes.AddRange(matcher.Compare(beforeSections.GetValueOrDefault(name) ?? [],
                 afterSections.GetValueOrDefault(name) ?? []));
@@ -290,6 +298,11 @@ public sealed class SnapshotDiff
             text.Append($"\nby section: {string.Join(", ", CountsBySection())}");
         }
 
+        if (CheckRules(_after) - CheckRules(_before) is > 0 and var added)
+        {
+            text.Append($"\n{added} rule(s) added to the checks, so a new problem can come from a new rule");
+        }
+
         var flagged = Changes.Count(change => change.AffectsAccessibility == true);
         if (flagged > 0) text.Append($"\n{flagged} can affect accessibility, listed first");
         // A reflow's run of lines that all moved the same way is one item, so the edit that caused it isn't buried.
@@ -306,7 +319,7 @@ public sealed class SnapshotDiff
             else
             {
                 var tag = change.AffectsAccessibility == true ? " [accessibility]" : "";
-                text.Append($"\n{Symbol(change.Kind)} {Label(change.Kind)} {change.Path}{page}{tag}");
+                text.Append($"\n{Symbol(change.Kind)} {Label(change)} {change.Path}{page}{tag}");
                 foreach (var line in change.Detail.Split('\n')) text.Append($"\n    {line}");
             }
 
@@ -334,8 +347,11 @@ public sealed class SnapshotDiff
 
     internal bool IsSectioned => SnapshotTree.IsSectioned(_before) && SnapshotTree.IsSectioned(_after);
 
-    internal IEnumerable<string> CountsByKind() => Changes.GroupBy(change => change.Kind).OrderBy(group => group.Key)
-        .Select(group => $"{group.Count()} {Label(group.Key)}");
+    // Findings count apart from content, as new problems and fixed ones.
+    internal IEnumerable<string> CountsByKind() => Changes
+        .GroupBy(change => (change.Kind, Finding: change.PdfSection == PdfSection.Checks))
+        .OrderBy(group => group.Key.Kind).ThenBy(group => group.Key.Finding)
+        .Select(group => $"{group.Count()} {Label(group.First())}");
 
     // In the order sections first change.
     internal IEnumerable<string> CountsBySection() =>
@@ -353,10 +369,22 @@ public sealed class SnapshotDiff
         _ => "~",
     };
 
-    private static string Label(ChangeKind kind) => kind switch
+    private static string Label(SnapshotChange change) => (change.Kind, change.PdfSection) switch
     {
-        ChangeKind.AttributeChanged => "attribute",
-        ChangeKind.TextChanged => "text",
-        _ => kind.ToString().ToLowerInvariant(),
+        (ChangeKind.Added, PdfSection.Checks) => "new problem",
+        (ChangeKind.Removed, PdfSection.Checks) => "fixed",
+        (ChangeKind.AttributeChanged, _) => "attribute",
+        (ChangeKind.TextChanged, _) => "text",
+        _ => change.Kind.ToString().ToLowerInvariant(),
     };
+
+    // How many rules a snapshot's checks section applies, from its "# checks: latest, 12 rules" header line; 0 when it
+    // has none.
+    private static int CheckRules(string snapshot)
+    {
+        var header = snapshot.Split('\n').TakeWhile(line => line.StartsWith('#'))
+            .FirstOrDefault(line => line.StartsWith(SnapshotWriter.ChecksHeader, StringComparison.Ordinal));
+        var count = header?[(header.LastIndexOf(", ", StringComparison.Ordinal) + 2)..].Split(' ')[0];
+        return int.TryParse(count, out var rules) ? rules : 0;
+    }
 }

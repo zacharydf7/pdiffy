@@ -706,6 +706,7 @@ In a PDF snapshot, a change's `AffectsAccessibility` is true, and a failure list
 | The document's or an element's language changed or was removed, or one set on marked content inside an element (a change to only the words such marked content covers isn't flagged) | `lang: en-US -> en-GB`, `span-lang: [fr-FR:"bonjour"] -> [de-DE:"bonjour"]` |
 | Something was added to the untagged content: a line, words in a line, or more images or paths. Less untagged content doesn't count, except that a text line that loses more than half its words shows as removed and added, and the added line counts | `added`, `"Page 1 {+Draft+}"` or `images: 1 -> 2` in `untagged` |
 | An annotation became untagged | `... tagged ... -> ... untagged ...` in `annotations` |
+| A new problem in the `checks` section from a rule that isn't a house rule | `+ new problem FigureAltText (p4)` in `checks` |
 | Text, an image or a path that was tagged is now an artifact (decoration) or untagged, so a screen reader skips it | `p1 text tagged ... -> p1 text artifact ...` in `layout` |
 | The document is no longer marked as tagged, or the viewer no longer shows its title | `marked: yes -> no`, `display-doc-title: yes -> no` |
 | The document's title was removed or emptied | `title: "Trail Guide" -> (missing)`, `xmp-title: "Trail Guide" -> ""` |
@@ -782,6 +783,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | No snapshot changes. A new problem in the `checks` section from a rule that isn't a house rule is flagged as affecting accessibility |
 | Next | `pdfua-snapshot v1`, unchanged version: a test can opt into a `checks` section, with `Check(PdfCheckSet)`, that lists what the checks find, and a `# checks: ...` header line. Snapshots without the option don't change |
 | Next | `pdfua-snapshot v1`, unchanged version: an element whose marked content is in a form XObject reads its text from the form alone. A form numbers its MCIDs apart from the page, and before, both the page's element and the form's printed the text of both when the two used the same MCID. Only snapshots of documents whose forms reuse the page's MCIDs change, and text a form tags that no element points to now shows in `untagged` |
 | 0.4.0 | `pdfua-snapshot v1`, unchanged version: a PDF that refers to an object it doesn't have, has a bookmark without a title, or has an image that can't be decoded now loads (the bookmarks print `unreadable`). Such files used to throw, so no approved snapshot changes |

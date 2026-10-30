@@ -11,6 +11,7 @@ failure lists it first tagged `[accessibility]`, when it is one of these:
 | The document's or an element's language changed or was removed, or one set on marked content inside an element (a change to only the words such marked content covers isn't flagged) | `lang: en-US -> en-GB`, `span-lang: [fr-FR:"bonjour"] -> [de-DE:"bonjour"]` |
 | Something was added to the untagged content: a line, words in a line, or more images or paths | `added`, `"Page 1 {+Draft+}"` or `images: 1 -> 2` in `untagged` |
 | An annotation became untagged | `... tagged ... -> ... untagged ...` in `annotations` |
+| A new problem in the `checks` section from a rule that isn't a house rule | `+ new problem FigureAltText (p4)` in `checks` |
 | Text, an image or a path that was tagged is now an artifact (decoration) or untagged, so a screen reader skips it | `p1 text tagged ... -> p1 text artifact ...` in `layout` |
 | The document is no longer marked as tagged, or the viewer no longer shows its title | `marked: yes -> no`, `display-doc-title: yes -> no` |
 | The document's title was removed or emptied | `title: "Trail Guide" -> (missing)`, `xmp-title: "Trail Guide" -> ""` |

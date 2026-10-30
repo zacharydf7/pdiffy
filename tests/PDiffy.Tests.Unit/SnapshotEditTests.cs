@@ -132,8 +132,11 @@ public class SnapshotEditTests
     }
 
     // An indented line that isn't a section's "(none)" or "(ignored)" placeholder.
+    // The checks section is compared as a set of findings, so an edit there reads as a fixed and a new problem (see
+    // CheckChangesTests); its lines are still printed, so it mustn't disturb how the other sections match.
     private static bool IsContent(List<string> lines, int i) =>
-        i < lines.Count && lines[i].StartsWith("  ") && lines[i].Trim() is not ("(none)" or "(ignored)");
+        i < lines.Count && lines[i].StartsWith("  ") && lines[i].Trim() is not ("(none)" or "(ignored)")
+        && lines.Take(i).LastOrDefault(line => !line.StartsWith(' ')) != "checks";
 
     // The line after this one's nested lines.
     private static int SubtreeEnd(List<string> lines, int i)

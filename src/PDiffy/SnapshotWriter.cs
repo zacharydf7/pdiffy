@@ -13,6 +13,7 @@ internal sealed partial class SnapshotWriter(PdfSnapshotOptions options)
 
     internal const string None = "(none)";
     internal const string Ignored = "(ignored)";
+    internal const string ChecksHeader = "# checks: ";
     private const string Missing = "(missing)";
 
     private readonly StringBuilder _snapshot = new();
@@ -52,7 +53,7 @@ internal sealed partial class SnapshotWriter(PdfSnapshotOptions options)
         if (options.IgnoredFields.Any()) Line(0, $"# ignored fields: {string.Join(", ", options.IgnoredFields.Select(Name))}");
         if (options.ToleratedFields.Count > 0) Line(0, Tolerances.Header(options.ToleratedFields));
         if (options.Pages.Count > 0) Line(0, $"# only pages: {string.Join(", ", options.Pages)}");
-        if (options.CheckSet is { } set) Line(0, $"# checks: {set}");
+        if (options.CheckSet is { } set) Line(0, $"{ChecksHeader}{set}");
     }
 
     // A finding prints as its rule, page and path, with no message text, so rewording a message never changes a
