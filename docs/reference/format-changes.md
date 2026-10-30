@@ -22,6 +22,9 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   (`file="maps.pdf"`). Bookmarks print their view (`"Trails" -> p2 view=Fit`), web address (`uri="..."`) or file; a
   bookmark to another file prints `file="atlas.pdf" dest=p1` instead of `-> p1`, since that page isn't in this document.
   Snapshots of documents with internal links or bookmarks change.
+- Text drawn at an angle is read along its own baseline, so rotated text such as a column header or a chart label
+  keeps its words (`"Hello world"`, not `"H e llo w o rld"`) and stays one layout run, which prints `angle=90`.
+  Snapshots of documents with rotated text change.
 
 ### Word (`docx-snapshot v1`, unchanged)
 

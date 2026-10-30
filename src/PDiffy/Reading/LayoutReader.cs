@@ -55,7 +55,7 @@ internal sealed class LayoutReader(int pageNumber, ContentOwners owners, IReadOn
 
         var start = letters[0].StartBaseLine;
         runs.Add(new TextRun(pageNumber, Round(start.X), Round(start.Y), style.Font, style.Size, style.Color, style.RenderMode,
-            RoleOf(style.Owner), text));
+            RoleOf(style.Owner), text) { Angle = TextJoiner.Angle(letters[0]) });
     }
 
     private RunStyle StyleOf(Letter letter)
@@ -66,9 +66,9 @@ internal sealed class LayoutReader(int pageNumber, ContentOwners owners, IReadOn
         return new RunStyle(font, size, ColorText.Format(letter.Color), ToRenderMode(letter.RenderingMode), owner);
     }
 
-    // Text that jumps back to the left starts a new run even on the same baseline.
+    // Text that jumps back to the start of its line starts a new run even on the same baseline.
     private static bool OnSameLine(Letter previous, Letter next) =>
-        TextJoiner.OnSameLine(previous, next) && next.StartBaseLine.X >= previous.StartBaseLine.X;
+        TextJoiner.OnSameLine(previous, next) && TextJoiner.Advance(previous, next) >= 0;
 
     private List<ImageInfo> ReadImages(Page page)
     {

@@ -48,7 +48,7 @@ Sections always appear in this order. Each can be left out with [`Section`](xref
 | `fonts` | Each font: name, type, whether it's embedded, whether it has a Unicode map, and the character codes its text uses that don't map to Unicode (that text can't be copied, searched or read aloud) |
 | `annotations` | Every annotation (links, comments, form widgets and so on), page by page in the order each page lists them: type, `tagged` or `untagged`, rectangle, flags (such as `print` or `hidden`), where a link goes (a web address, or a page and the view it opens at, or another file), contents and accessible name |
 | `forms` | Every form field: type, full name (`address.city`), page, accessible name, value, options, maximum length and flags (such as `required` or `read-only`) |
-| `layout` | Every text run, image and painted vector path, page by page, each labeled `tagged`, `artifact` or `untagged`. Text runs: position, font, size, color, render mode. Images: position, size, pixel size, a hash of the pixels. Paths: bounding box, fill, stroke and line width |
+| `layout` | Every text run, image and painted vector path, page by page, each labeled `tagged`, `artifact` or `untagged`. Text runs: position, font, size, color, render mode, angle. Images: position, size, pixel size, a hash of the pixels. Paths: bounding box, fill, stroke and line width |
 
 ## Rules
 
@@ -75,6 +75,8 @@ Sections always appear in this order. Each can be left out with [`Section`](xref
 - Colors name their color space: `gray:0.5`, `#ff0000` (RGB), `cmyk:0,0,0,1`, or `pattern:shading` / `pattern:tiling`
   for gradients and tiled fills.
 - `mode=` appears only for text that isn't drawn the usual way (`invisible`, `stroke`, `fill-stroke`, ...).
+- `angle=` appears only for text that doesn't run across the page: the angle in degrees, counterclockwise, such as
+  `angle=90` for text that reads upward. (A page's `rotate=` is the PDF's own setting, which turns clockwise.)
 - `fill=`, `stroke=` and `width=` appear only for what a path actually paints.
 - An image's hash is taken from its decoded pixels where possible, so recompressing an image doesn't change it.
 - Annotation rectangles use the same convention: the bottom-left corner and size, in whole points.

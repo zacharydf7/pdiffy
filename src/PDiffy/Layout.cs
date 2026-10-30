@@ -31,7 +31,14 @@ public enum TextRenderMode
 /// bottom-left corner.
 /// </summary>
 public sealed record TextRun(
-    int Page, int X, int Y, string Font, double Size, string? Color, TextRenderMode RenderMode, ContentRole Role, string Text);
+    int Page, int X, int Y, string Font, double Size, string? Color, TextRenderMode RenderMode, ContentRole Role, string Text)
+{
+    /// <summary>
+    /// The angle the text runs at, in degrees counterclockwise, such as 90 for text that reads upward; 0 for text across
+    /// the page.
+    /// </summary>
+    public int Angle { get; init; }
+}
 
 /// <summary>An image. <see cref="Hash"/> comes from the decoded pixels where possible, so recompressing alone doesn't change it.</summary>
 public sealed record ImageInfo(

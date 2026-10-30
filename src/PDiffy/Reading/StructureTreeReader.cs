@@ -162,7 +162,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
     {
         var (last, first) = (previous.Letters[^1], next.Letters[0]);
         return next.Page == previous.Page && (!TextJoiner.OnSameLine(last, first)
-            || first.StartBaseLine.X >= last.EndBaseLine.X - last.PointSize * TextJoiner.SpaceGap);
+            || TextJoiner.Gap(last, first) >= -last.PointSize * TextJoiner.SpaceGap);
     }
 
     private Annotation? ReadAnnotation(DictionaryToken objectReference, int? elementPage)

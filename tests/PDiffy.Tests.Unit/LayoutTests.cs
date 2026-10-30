@@ -119,6 +119,50 @@ public class LayoutTests
         Assert.Equal(["Account Number:", "12345"], document.TextRuns.Select(run => run.Text));
     }
 
+    [Theory]
+    [InlineData("0 1 -1 0", 90)]
+    [InlineData("-1 0 0 -1", 180)]
+    [InlineData("0 -1 1 0", 270)]
+    [InlineData("0.866 0.5 -0.5 0.866", 30)]
+    public void Load_ShouldReadRotatedTextAsOneRunOfWholeWords_WhenTextIsDrawnAtAnAngle(string matrix, int angle)
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw($"/P << /MCID 0 >> BDC BT /F1 12 Tf {matrix} 300 400 Tm (Hello world) Tj ET EMC");
+        pdf.Structure(new TestElement("P", 0));
+
+        var document = pdf.Load();
+
+        var run = Assert.Single(document.TextRuns);
+        Assert.Equal(("Hello world", angle), (run.Text, run.Angle));
+        Assert.Equal("Hello world", Assert.Single(document.Structure).Text);
+        Assert.Contains($" angle={angle} \"Hello world\"\n", document.ToSnapshot());
+    }
+
+    [Theory]
+    [InlineData("0 1 -1 0", 90)]
+    [InlineData("0.866 0.5 -0.5 0.866", 30)]
+    public void Load_ShouldTakeTheAngleFromTheGlyphs_WhenRotatedLettersHaveNoWidth(string matrix, int angle)
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw($"BT /F1 12 Tf 0 Tz {matrix} 300 400 Tm (Hi there) Tj ET");
+
+        var run = Assert.Single(pdf.Load().TextRuns);
+
+        Assert.Equal(("Hi there", angle), (run.Text, run.Angle));
+    }
+
+    [Fact]
+    public void Load_ShouldKeepRotatedLinesApart_WhenTheyRunSideBySideOrNextToTextAcrossThePage()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Raw("BT /F1 12 Tf 0 1 -1 0 300 400 Tm (Trail) Tj ET BT /F1 12 Tf 0 1 -1 0 320 400 Tm (Length) Tj ET")
+            .Raw("BT /F1 12 Tf 330 400 Td (Across) Tj ET");
+
+        var runs = pdf.Load().TextRuns;
+
+        Assert.Equal([("Trail", 90), ("Length", 90), ("Across", 0)], runs.Select(run => (run.Text, run.Angle)));
+    }
+
     [Fact]
     public void Load_ShouldStartANewRun_WhenTextWrapsToTheNextLine()
     {

@@ -586,7 +586,7 @@ pdiffy coverage --all
 | `fonts` | Each font: name, type, whether it's embedded, whether it has a Unicode map, and the character codes its text uses that don't map to Unicode (that text can't be copied, searched or read aloud) |
 | `annotations` | Every annotation (links, comments, form widgets and so on), page by page in the order each page lists them: type, `tagged` or `untagged`, rectangle, flags (such as `print` or `hidden`), where a link goes (a web address, or a page and the view it opens at, or another file), contents and accessible name |
 | `forms` | Every form field: type, full name (`address.city`), page, accessible name, value, options, maximum length and flags (such as `required` or `read-only`) |
-| `layout` | Every text run, image and painted vector path, page by page, each labeled `tagged`, `artifact` or `untagged`. Text runs: position, font, size, color, render mode. Images: position, size, pixel size, a hash of the pixels. Paths: bounding box, fill, stroke and line width |
+| `layout` | Every text run, image and painted vector path, page by page, each labeled `tagged`, `artifact` or `untagged`. Text runs: position, font, size, color, render mode, angle. Images: position, size, pixel size, a hash of the pixels. Paths: bounding box, fill, stroke and line width |
 
 ## What you can ignore
 
@@ -697,6 +697,7 @@ layout
 - Two spaces of indent per nesting level. Keys appear in a fixed order and are left out when they have no value.
 - Text is quoted; `"` and `\` are escaped, and control characters print as `\uXXXX`.
 - Table header cells that other cells refer to get stable names (`TH1`, `TH2`) instead of the PDF's internal IDs.
+- In `layout`, `angle=` appears only for text that doesn't run across the page, in degrees counterclockwise (`angle=90` reads upward); a page's `rotate=` is the PDF's own clockwise setting.
 - In `layout`, positions and sizes are whole points from the page's bottom-left corner, and font sizes and line widths are rounded to 0.1 pt. Colors name their color space: `gray:0.5`, `#ff0000` (RGB), `cmyk:0,0,0,1`, or `pattern:shading` / `pattern:tiling` for gradients and tiled fills. `mode=` appears only for text that isn't drawn the usual way (`invisible`, `stroke`, `fill-stroke`, …). `fill=`, `stroke=` and `width=` appear only for what a path actually paints.
 - An image's hash is taken from its decoded pixels where possible, so recompressing an image doesn't change it.
 - Annotation rectangles use the same convention as `layout`: the bottom-left corner and size, in whole points.
@@ -725,6 +726,7 @@ Either way, review the received files and accept them (`pdiffy accept --all`, or
 
 | Release | Change |
 |---|---|
+| Next | `pdfua-snapshot v1`, unchanged version: text drawn at an angle is read along its own baseline, so it keeps its words and stays one layout run, which prints `angle=90`. Snapshots of documents with rotated text change |
 | Next | `pdfua-snapshot v1`, unchanged version: links print where they go (`dest=p3 view=XYZ view-at=72,720`, `zoom=` when set, a named destination looked up, `file=` for another file) instead of `dest=yes`, and bookmarks print their view, web address or file (a bookmark to another file prints `file="..." dest=p1` instead of `-> p1`). Snapshots of documents with internal links or bookmarks change |
 | Next | `docx-snapshot v1`, unchanged version: hidden text (`w:vanish`), double strikethrough, right-to-left runs and a run's language are read, so a run that differs from its paragraph in one of them prints a span (`span "care" hidden`), and a style whose language isn't the one on the document line prints `lang=`. An inserted Word document's styles are compared with that language too, so an inserted document in another language prints `lang=` on its styles. Only snapshots of documents with such runs or styles change |
 | Next | `docx-snapshot v1`, unchanged version: right-to-left paragraphs, paragraph borders and paragraph shading are read, and a paragraph or style that sets them prints `rtl-paragraph`, `borders=` or `shading=`. Only snapshots of documents with such paragraphs or styles change |

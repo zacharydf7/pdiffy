@@ -31,6 +31,7 @@ internal sealed partial class SnapshotWriter
         Key(line, Field.FontSizes, "size", Number(run.Size));
         Key(line, Field.Colors, "color", run.Color);
         if (run.RenderMode != TextRenderMode.Fill) Key(line, "mode", RenderModeName(run.RenderMode));
+        if (run.Angle != 0) Key(line, "angle", run.Angle.ToString(CultureInfo.InvariantCulture));
         return line.Append(' ').Append(Quote(run.Text)).ToString();
     }
 

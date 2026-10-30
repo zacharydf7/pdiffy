@@ -488,6 +488,17 @@ public class SnapshotDiffTests
     }
 
     [Fact]
+    public void Compare_ShouldShowOnlyTheNewKey_WhenASnapshotFromBeforeRotatedTextMeetsOneWithIt()
+    {
+        var before = SnapshotText.Header + "layout\n  p1 text tagged at=300,400 font=Helvetica size=12 \"Hello world\"\n";
+        var after = SnapshotText.Header + "layout\n  p1 text tagged at=300,400 font=Helvetica size=12 angle=90 \"Hello world\"\n";
+
+        var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
+
+        Assert.Equal((ChangeKind.AttributeChanged, "angle: (missing) -> 90"), (change.Kind, change.Detail));
+    }
+
+    [Fact]
     public void Compare_ShouldReportOneBookmarkChanged_WhenABookmarkToAnotherFileLosesItsPage()
     {
         var before = SnapshotText.Header + "bookmarks\n  \"Atlas\" -> p1\n";
