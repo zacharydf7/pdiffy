@@ -123,6 +123,7 @@ public class PdfCheckTests
     [InlineData(new[] { "H1", "H2", "H2", "H3", "H1" }, new string[0])]
     [InlineData(new[] { "H2" }, new[] { "H2 on p1 comes before any H1" })]
     [InlineData(new[] { "H1", "H3" }, new[] { "H3 on p1 follows H1, skipping a level" })]
+    [InlineData(new[] { "H2", "H7" }, new[] { "H2 on p1 comes before any H1" })]
     public void Check_ShouldFindSkippedHeadingLevels_WhenHeadingsSkipOne(string[] headings, string[] expected)
     {
         var pdf = new TestPdf();

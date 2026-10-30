@@ -59,7 +59,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
     {
         foreach (var (element, path) in Elements)
         {
-            if (TypeOf(element) == StructureType.Figure && IsBlank(element.Alt) && IsBlank(element.ActualText))
+            if (element.TypeOrMapped == StructureType.Figure && IsBlank(element.Alt) && IsBlank(element.ActualText))
             {
                 Add(PdfCheck.FigureAltText, element.FirstPage, path, $"Figure{On(element.FirstPage)} has no alt text");
             }
@@ -118,14 +118,14 @@ internal sealed class PdfChecker(PdfUaDocument document)
     // checked with that table, not again with the one around it.
     private void TableHeaders()
     {
-        foreach (var (table, tablePath) in Elements.Where(pair => TypeOf(pair.Element) == StructureType.Table))
+        foreach (var (table, tablePath) in Elements.Where(pair => pair.Element.TypeOrMapped == StructureType.Table))
         {
             var cells = Descendants(table, tablePath, stopAt: StructureType.Table).ToList();
             var named = cells.SelectMany(pair => pair.Element.Headers ?? []).ToHashSet();
             foreach (var (cell, path) in cells)
             {
                 var isNamed = cell.Name is { } name && named.Contains(name);
-                if (TypeOf(cell) == StructureType.TableHeaderCell && cell.Scope is null && !isNamed)
+                if (cell.TypeOrMapped == StructureType.TableHeaderCell && cell.Scope is null && !isNamed)
                 {
                     Add(PdfCheck.TableHeaders, cell.FirstPage, path,
                         $"Header{On(cell.FirstPage)} has no scope, and no cell names it");
@@ -145,7 +145,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
         var previous = 0;
         foreach (var (element, path) in Elements)
         {
-            if (StructureTypes.HeadingLevel(TypeOf(element)) is not int level) continue;
+            if (StructureTypes.HeadingLevel(element.TypeOrMapped) is not int level) continue;
 
             if (level > previous + 1)
             {
@@ -227,12 +227,10 @@ internal sealed class PdfChecker(PdfUaDocument document)
         foreach (var child in StructurePaths.WithPaths(element.Children, path))
         {
             yield return child;
-            if (TypeOf(child.Element) == stopAt) continue;
+            if (child.Element.TypeOrMapped == stopAt) continue;
             foreach (var descendant in Descendants(child.Element, child.Path, stopAt)) yield return descendant;
         }
     }
-
-    private static string TypeOf(StructureElement element) => element.MappedType ?? element.Type;
 
     private static string Name(Section section) => SnapshotWriter.Name(section);
 
