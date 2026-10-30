@@ -13,7 +13,7 @@ namespace PDiffy.Diffing;
 /// to line up with the later one's, <paramref name="originals"/> gives each line as it was written, for showing. A
 /// number that moved no more than <paramref name="tolerances"/> allow isn't a change.
 /// </summary>
-internal sealed class TreeMatcher(string name, PdfSection? section,
+internal sealed class TreeMatcher(string name, SnapshotFormat format,
     IReadOnlyDictionary<SnapshotLine, SnapshotLine>? originals = null, Tolerances? tolerances = null)
 {
     internal const double SameLineSimilarity = 0.5;
@@ -138,7 +138,7 @@ internal sealed class TreeMatcher(string name, PdfSection? section,
     private void Add(ChangeKind kind, string path, int? page, string detail) =>
         _entries.Add(new Entry(Change: new SnapshotChange
         {
-            Kind = kind, Section = section, Path = path, Page = page, Detail = detail,
+            Kind = kind, SectionName = name, Format = format, Path = path, Page = page, Detail = detail,
         }));
 
     // A removed subtree found elsewhere, as is or edited, was moved; leftover children of a move are checked too.
@@ -171,7 +171,7 @@ internal sealed class TreeMatcher(string name, PdfSection? section,
                 if (oldParent != newParent) details.Add($"parent: {oldParent} -> {newParent}");
                 var moved = new SnapshotChange
                 {
-                    Kind = ChangeKind.Moved, Section = section, Path = path, Page = line.Page,
+                    Kind = ChangeKind.Moved, SectionName = name, Format = format, Path = path, Page = line.Page,
                     Detail = string.Join("\n", details),
                 };
                 _entries.Insert(index++, new Entry(Change: moved));
@@ -191,12 +191,14 @@ internal sealed class TreeMatcher(string name, PdfSection? section,
         ?? (entry.Removed is { } removed
             ? new SnapshotChange
             {
-                Kind = ChangeKind.Removed, Section = section, Path = entry.Path!, Page = Original(removed).Page,
+                Kind = ChangeKind.Removed, SectionName = name, Format = format, Path = entry.Path!,
+                Page = Original(removed).Page,
                 Detail = Original(removed).Text.Trim(),
             }
             : new SnapshotChange
             {
-                Kind = ChangeKind.Added, Section = section, Path = entry.Path!, Page = entry.Added!.Page,
+                Kind = ChangeKind.Added, SectionName = name, Format = format, Path = entry.Path!,
+                Page = entry.Added!.Page,
                 Detail = entry.Added.Text.Trim(),
             });
 

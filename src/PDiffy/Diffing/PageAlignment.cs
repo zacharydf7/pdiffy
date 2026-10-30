@@ -48,8 +48,8 @@ internal sealed class PageAlignment
         var page = _inserted.Concat(_removed).Min();
         return new SnapshotChange
         {
-            Kind = ChangeKind.Changed, Section = PdfSection.Pages, Path = "pages", Page = page,
-            Detail = string.Join("; ", parts),
+            Kind = ChangeKind.Changed, SectionName = SnapshotWriter.Name(PdfSection.Pages), Path = "pages", Page = page,
+            Detail = string.Join("; ", parts), Format = SnapshotFormat.Pdf,
         };
     }
 

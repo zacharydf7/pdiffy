@@ -31,8 +31,8 @@ public enum ChangeKind
 /// <summary>
 /// One difference between two snapshots. <see cref="Path"/> locates it, such as
 /// "structure > Document > Table > TR[2] > TD[1]", or "line 12" in text without PDiffy's sections; <see cref="Detail"/>
-/// says what changed. <see cref="Section"/> is null for the snapshot's first lines (format version and options), for blank
-/// lines, and for every change in text without sections.
+/// says what changed. <see cref="SectionName"/> names the section it's in, and <see cref="PdfSection"/> or
+/// <see cref="DocxSection"/> gives that section as an enum.
 /// </summary>
 public sealed record SnapshotChange
 {
@@ -44,10 +44,21 @@ public sealed record SnapshotChange
     public required ChangeKind Kind { get; init; }
 
     /// <summary>
-    /// The PDF snapshot section the change is in. Besides the cases listed above, it's null for every change in a DOCX
-    /// snapshot.
+    /// The section the change is in, as the snapshot names it, such as "structure" or "body"; "header" for the
+    /// snapshot's first lines (format version and options), "whitespace" when only blank lines or line endings differ,
+    /// and null for every change in text without sections. The JSON output's "section" holds the same string.
     /// </summary>
-    public required PdfSection? Section { get; init; }
+    public required string? SectionName { get; init; }
+
+    /// <summary>
+    /// The section of a PDF snapshot the change is in; null for a Word or text snapshot, "header" and "whitespace".
+    /// </summary>
+    public PdfSection? PdfSection => Format == SnapshotFormat.Pdf ? Named<PdfSection>(SectionName) : null;
+
+    /// <summary>
+    /// The section of a Word snapshot the change is in; null for a PDF or text snapshot, "header" and "whitespace".
+    /// </summary>
+    public DocxSection? DocxSection => Format == SnapshotFormat.Docx ? Named<DocxSection>(SectionName) : null;
 
     /// <summary>
     /// Where the change is, as described above; "header" for the snapshot's first lines, "pages" for pages inserted or
@@ -70,9 +81,25 @@ public sealed record SnapshotChange
 
     /// <summary>
     /// Whether the change can affect what assistive technology gets, by the rules the README lists under "Changes
-    /// that affect accessibility", such as a heading that became a paragraph or a figure that lost its alt text.
+    /// that affect accessibility", such as a heading that became a paragraph or a figure that lost its alt text. Null
+    /// when the change isn't assessed: every change in a Word or text snapshot.
     /// </summary>
-    public bool AffectsAccessibility => AccessibilityRules.Affects(this);
+    public bool? AffectsAccessibility => Format == SnapshotFormat.Pdf ? AccessibilityRules.Affects(this) : null;
+
+    // Which kind of snapshot the change is in, which says what its section name means.
+    internal SnapshotFormat Format { get; init; }
+
+    private static T? Named<T>(string? name) where T : struct, Enum =>
+        Enum.GetValues<T>().Where(value => SnapshotWriter.Name(value) == name).Select(value => (T?)value)
+            .FirstOrDefault();
+}
+
+/// <summary>The kind of snapshot two texts are, which decides what their sections mean.</summary>
+internal enum SnapshotFormat
+{
+    Text,
+    Pdf,
+    Docx,
 }
 
 /// <summary>
@@ -111,8 +138,10 @@ public sealed class SnapshotDiff
     {
         before = before.Replace("\r\n", "\n");
         after = after.Replace("\r\n", "\n");
-        var (changes, matchedBefore, tolerated) = SnapshotTree.IsSectioned(before) && SnapshotTree.IsSectioned(after)
-            ? CompareSections(before, after)
+        var sectioned = SnapshotTree.IsSectioned(before) && SnapshotTree.IsSectioned(after);
+        var format = FormatOf(before, after);
+        var (changes, matchedBefore, tolerated) = sectioned
+            ? CompareSections(before, after, format)
             : (TextDiff.Compare(before, after), before, false);
 
         // The texts can still differ in what no line shows: blank lines, a missing newline at the end, or an indent.
@@ -121,8 +150,8 @@ public sealed class SnapshotDiff
         {
             changes.Add(new SnapshotChange
             {
-                Kind = ChangeKind.Changed, Section = null, Path = "whitespace", Page = null,
-                Detail = "Blank lines or line endings differ.",
+                Kind = ChangeKind.Changed, SectionName = sectioned ? "whitespace" : null, Path = "whitespace",
+                Page = null, Detail = "Blank lines or line endings differ.", Format = format,
             });
         }
 
@@ -132,7 +161,7 @@ public sealed class SnapshotDiff
     // Also returns the earlier snapshot as compared, its pages renumbered when pages were inserted or removed, and
     // whether a tolerance allowed any difference.
     private static (List<SnapshotChange> Changes, string MatchedBefore, bool Tolerated) CompareSections(string before,
-        string after)
+        string after, SnapshotFormat format)
     {
         var changes = new List<SnapshotChange>();
         var beforeHeader = before.Split('\n').Where(line => line.StartsWith('#')).ToList();
@@ -143,14 +172,12 @@ public sealed class SnapshotDiff
             var detail = removed.Concat(afterHeader.Except(beforeHeader).Select(line => $"+ {line}"));
             changes.Add(new SnapshotChange
             {
-                Kind = ChangeKind.Changed, Section = null, Path = "header", Page = null,
+                Kind = ChangeKind.Changed, SectionName = "header", Path = "header", Page = null, Format = format,
                 Detail = string.Join("\n", detail),
             });
         }
 
-        // Section names a PDF snapshot's sections; other formats, such as DOCX, have sections of their own.
-        var pdf = before.StartsWith(SnapshotWriter.FormatPrefix, StringComparison.Ordinal)
-            && after.StartsWith(SnapshotWriter.FormatPrefix, StringComparison.Ordinal);
+        var pdf = format == SnapshotFormat.Pdf;
         var beforeSections = SnapshotTree.Parse(before);
         var afterSections = SnapshotTree.Parse(after);
 
@@ -172,7 +199,7 @@ public sealed class SnapshotDiff
         var tolerated = false;
         foreach (var name in beforeSections.Keys.Union(afterSections.Keys))
         {
-            var matcher = new TreeMatcher(name, pdf ? SectionNamed(name) : null, originals, tolerances);
+            var matcher = new TreeMatcher(name, format, originals, tolerances);
             changes.AddRange(matcher.Compare(beforeSections.GetValueOrDefault(name) ?? [],
                 afterSections.GetValueOrDefault(name) ?? []));
             tolerated |= matcher.Tolerated;
@@ -191,9 +218,15 @@ public sealed class SnapshotDiff
             .ToDictionary(pair => pair.First, pair => pair.Second);
     }
 
-    private static PdfSection? SectionNamed(string name) =>
-        Enum.GetValues<PdfSection>().Where(section => SnapshotWriter.Name(section) == name)
-            .Select(section => (PdfSection?)section).FirstOrDefault();
+    // Both texts must be the same kind of snapshot for their section names to mean that kind's sections.
+    private static SnapshotFormat FormatOf(string before, string after)
+    {
+        bool Both(string prefix) =>
+            before.StartsWith(prefix, StringComparison.Ordinal) && after.StartsWith(prefix, StringComparison.Ordinal);
+        return Both(SnapshotWriter.FormatPrefix) ? SnapshotFormat.Pdf
+            : Both(DocxSnapshotWriter.FormatPrefix) ? SnapshotFormat.Docx
+            : SnapshotFormat.Text;
+    }
 
     /// <summary>
     /// A summary for a test failure: counts by kind and by section, then up to <paramref name="maxChanges"/> changes,
@@ -210,7 +243,7 @@ public sealed class SnapshotDiff
             text.Append($"\nby section: {string.Join(", ", CountsBySection())}");
         }
 
-        var flagged = Changes.Count(change => change.AffectsAccessibility);
+        var flagged = Changes.Count(change => change.AffectsAccessibility == true);
         if (flagged > 0) text.Append($"\n{flagged} can affect accessibility, listed first");
         // A reflow's run of lines that all moved the same way is one item, so the edit that caused it isn't buried.
         var shown = 0;
@@ -225,7 +258,7 @@ public sealed class SnapshotDiff
             }
             else
             {
-                var tag = change.AffectsAccessibility ? " [accessibility]" : "";
+                var tag = change.AffectsAccessibility == true ? " [accessibility]" : "";
                 text.Append($"\n{Symbol(change.Kind)} {Label(change.Kind)} {change.Path}{page}{tag}");
                 foreach (var line in change.Detail.Split('\n')) text.Append($"\n    {line}");
             }
@@ -257,15 +290,13 @@ public sealed class SnapshotDiff
     internal IEnumerable<string> CountsByKind() => Changes.GroupBy(change => change.Kind).OrderBy(group => group.Key)
         .Select(group => $"{group.Count()} {Label(group.Key)}");
 
-    // The section is the path's first part, such as "structure" or "body"; text without sections has none.
-    internal string? SectionOf(SnapshotChange change) => IsSectioned ? change.Path.Split(" > ")[0] : null;
-
     // In the order sections first change.
     internal IEnumerable<string> CountsBySection() =>
-        Changes.GroupBy(SectionOf).Select(group => $"{group.Key} {group.Count()}");
+        Changes.GroupBy(change => change.SectionName).Select(group => $"{group.Key} {group.Count()}");
 
     // Order is kept within each group, so changes still read in snapshot order.
-    internal IEnumerable<SnapshotChange> AccessibilityFirst() => Changes.OrderBy(change => !change.AffectsAccessibility);
+    internal IEnumerable<SnapshotChange> AccessibilityFirst() =>
+        Changes.OrderBy(change => change.AffectsAccessibility != true);
 
     private static string Symbol(ChangeKind kind) => kind switch
     {

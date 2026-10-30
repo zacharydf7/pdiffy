@@ -79,7 +79,7 @@ internal sealed class FolderComparison
 
         var root = new JsonObject
         {
-            ["version"] = 1,
+            ["version"] = 2,
             ["unchanged"] = Unchanged,
             ["notCompared"] = NotCompared,
             ["files"] = files,

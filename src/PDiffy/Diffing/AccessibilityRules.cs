@@ -12,8 +12,8 @@ internal static class AccessibilityRules
 
     public static bool Affects(SnapshotChange change)
     {
-        // Only PDF changes have a section; DOCX keys can mean other things, such as a section's headers.
-        if (change.Section is not { } section) return false;
+        // Header and whitespace changes have no PdfSection.
+        if (change.PdfSection is not { } section) return false;
         var (before, after) = Sides(change.Detail);
         if (section == PdfSection.Untagged) return AddsUntagged(change.Kind, change.Detail, before, after);
 

@@ -369,7 +369,7 @@ SnapshotDiff diff = before.CompareTo(after, options => options.Ignore(PdfSection
 Assert.DoesNotContain(diff.Changes, change => change.Kind == ChangeKind.Moved);
 
 // Or allow any change except those that can affect what a screen reader gets.
-Assert.DoesNotContain(diff.Changes, change => change.AffectsAccessibility);
+Assert.DoesNotContain(diff.Changes, change => change.AffectsAccessibility == true);
 
 // Or print the summary a failing VerifyAsync shows.
 Console.WriteLine(diff.Describe());
@@ -381,7 +381,7 @@ For scripts and tools outside .NET, `diff.ToJson()` (or `pdiffy before.pdf after
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "changes": [
     {
       "kind": "Changed",
@@ -398,6 +398,7 @@ For scripts and tools outside .NET, `diff.ToJson()` (or `pdiffy before.pdf after
 - `kind` is a `ChangeKind` name.
 - `section` is the section as the snapshot prints it, such as `structure` or `body`: `header` for the snapshot's first lines, `whitespace` when only blank lines or line endings differ, and `null` for text without sections, such as JSON.
 - `page` is `null` when the change isn't on a page.
+- `affectsAccessibility` is `null` for DOCX and text snapshots, which PDiffy doesn't assess.
 - `version` goes up only when a field is renamed, removed or changes meaning. New fields can be added without it.
 
 ### Catch a generator upgrade that breaks documents
@@ -706,7 +707,7 @@ In a PDF snapshot, a change's `AffectsAccessibility` is true, and a failure list
 | A font's text no longer maps to Unicode, or more of its character codes don't | `to-unicode: yes -> no`, `unmapped: [41] -> [41-43]` |
 | A document is newly encrypted, or its permissions changed, so screen readers can no longer extract its text | `permissions: (missing) -> print`, `permissions: print,extract-for-accessibility -> print` |
 
-The rules are the same for every project. A release can add rules, so an upgrade can flag a change that wasn't flagged before; [Format changes](#format-changes) lists each one. Content made an artifact is found through the layout section, so with layout left out (as the `Content` profile does) it shows as words leaving its structure element and, for text, a line added to `artifacts`, neither of which is flagged. DOCX and text snapshots have no flags. A test passes or fails on the whole snapshot as before; the flag only orders and marks the explanation. To fail only on these, compare with `CompareTo` and assert on `AffectsAccessibility`.
+The rules are the same for every project. A release can add rules, so an upgrade can flag a change that wasn't flagged before; [Format changes](#format-changes) lists each one. Content made an artifact is found through the layout section, so with layout left out (as the `Content` profile does) it shows as words leaving its structure element and, for text, a line added to `artifacts`, neither of which is flagged. In DOCX and text snapshots `AffectsAccessibility` is null, since PDiffy doesn't assess their changes. A test passes or fails on the whole snapshot as before; the flag only orders and marks the explanation. To fail only on these, compare with `CompareTo` and assert on `AffectsAccessibility`.
 
 ## Snapshot format
 

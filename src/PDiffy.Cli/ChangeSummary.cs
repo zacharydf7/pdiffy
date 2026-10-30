@@ -22,7 +22,8 @@ internal static class ChangeSummary
     /// <summary>Such as "structure 2, layout 1", or nothing for text that isn't a sectioned snapshot.</summary>
     public static string Sections(SnapshotDiff diff) => diff.IsSectioned ? string.Join(", ", diff.CountsBySection()) : "";
 
-    public static int Accessibility(SnapshotDiff diff) => diff.Changes.Count(change => change.AffectsAccessibility);
+    public static int Accessibility(SnapshotDiff diff) =>
+        diff.Changes.Count(change => change.AffectsAccessibility == true);
 
     /// <summary>
     /// Such as "changed guide.pdf: 3: 1 moved, 2 text; by section: structure 3; 1 can affect accessibility", or

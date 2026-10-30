@@ -232,7 +232,7 @@ public class LayoutTests
 
         var diff = Build("20", "E0").CompareTo(Build("E0", "20"));
 
-        var figures = diff.Changes.Where(change => change.Section == PdfSection.Structure).ToList();
+        var figures = diff.Changes.Where(change => change.PdfSection == PdfSection.Structure).ToList();
         Assert.Equal(2, figures.Count);
         Assert.All(figures, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
     }

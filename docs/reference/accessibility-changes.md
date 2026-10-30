@@ -33,4 +33,4 @@ added, and the added line counts.
   [JSON output](../guide/comparing.md#json-output) and `pdiffy report`.
 - To fail only on these changes, compare with [`CompareTo`](../guide/comparing.md) and assert on
   `AffectsAccessibility`.
-- Word and text snapshots have no flags.
+- Word and text snapshots have no flags: their `AffectsAccessibility` is null.

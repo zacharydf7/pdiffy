@@ -43,7 +43,8 @@ public class SnapshotDiffTests
         var path = "structure > Document > Table > TR[2] > TD[2]";
         Assert.Equal(new SnapshotChange
         {
-            Kind = ChangeKind.TextChanged, Section = PdfSection.Structure, Path = path, Page = 2,
+            Kind = ChangeKind.TextChanged, SectionName = "structure", Format = SnapshotFormat.Pdf, Path = path,
+            Page = 2,
             Detail = "\"Go [-with-] {+without+} a guide\"",
         }, change);
     }
@@ -59,12 +60,13 @@ public class SnapshotDiffTests
         [
             new()
             {
-                Kind = ChangeKind.AttributeChanged, Section = PdfSection.Structure,
+                Kind = ChangeKind.AttributeChanged, SectionName = "structure", Format = SnapshotFormat.Pdf,
                 Path = "structure > Document > Table > TR[1] > TH2", Page = 2, Detail = "scope: Column -> (missing)",
             },
             new()
             {
-                Kind = ChangeKind.AttributeChanged, Section = PdfSection.Layout, Path = "layout > p1", Page = 1,
+                Kind = ChangeKind.AttributeChanged, SectionName = "layout", Format = SnapshotFormat.Pdf,
+                Path = "layout > p1", Page = 1,
                 Detail = "color: gray:0 -> #ff0000",
             },
         ];
@@ -113,7 +115,8 @@ public class SnapshotDiffTests
 
         Assert.Equal(new SnapshotChange
         {
-            Kind = ChangeKind.Changed, Section = null, Path = "header", Page = null,
+            Kind = ChangeKind.Changed, SectionName = "header", Path = "header", Page = null,
+            Format = SnapshotFormat.Pdf,
             Detail = "+ # ignored fields: positions",
         }, change);
     }
@@ -123,7 +126,7 @@ public class SnapshotDiffTests
     {
         var change = Assert.Single(SnapshotDiff.Compare(Before, Before + "\n").Changes);
 
-        Assert.Equal(("whitespace", null), (change.Path, change.Section));
+        Assert.Equal(("whitespace", null), (change.Path, change.PdfSection));
     }
 
     [Fact]
@@ -136,7 +139,8 @@ public class SnapshotDiffTests
 
         var expected = new SnapshotChange
         {
-            Kind = ChangeKind.Moved, Section = PdfSection.Structure, Path = "structure > Document > Figure", Page = 1,
+            Kind = ChangeKind.Moved, SectionName = "structure", Format = SnapshotFormat.Pdf,
+            Path = "structure > Document > Figure", Page = 1,
             Detail = "reading position 3 -> 10",
         };
         Assert.Equal(expected, change);
@@ -153,12 +157,14 @@ public class SnapshotDiffTests
         [
             new()
             {
-                Kind = ChangeKind.Removed, Section = PdfSection.Structure, Path = "structure > Document > P", Page = 3,
+                Kind = ChangeKind.Removed, SectionName = "structure", Format = SnapshotFormat.Pdf,
+                Path = "structure > Document > P", Page = 3,
                 Detail = "P p3 \"Call your ranger\"",
             },
             new()
             {
-                Kind = ChangeKind.Added, Section = PdfSection.Structure, Path = "structure > Document > P", Page = 3,
+                Kind = ChangeKind.Added, SectionName = "structure", Format = SnapshotFormat.Pdf,
+                Path = "structure > Document > P", Page = 3,
                 Detail = "P p3 \"Ask questions\"",
             },
         ];
@@ -187,7 +193,8 @@ public class SnapshotDiffTests
 
         Assert.Equal(new SnapshotChange
         {
-            Kind = ChangeKind.Changed, Section = PdfSection.Structure, Path = "structure > Document > H2", Page = 1,
+            Kind = ChangeKind.Changed, SectionName = "structure", Format = SnapshotFormat.Pdf,
+            Path = "structure > Document > H2", Page = 1,
             Detail = "type: H1 -> H2",
         }, change);
     }
@@ -237,17 +244,19 @@ public class SnapshotDiffTests
         [
             new()
             {
-                Kind = ChangeKind.Moved, Section = PdfSection.Structure, Path = "structure > Document > Figure",
+                Kind = ChangeKind.Moved, SectionName = "structure", Format = SnapshotFormat.Pdf,
+                Path = "structure > Document > Figure",
                 Page = 1, Detail = "reading position 3 -> 10",
             },
             new()
             {
-                Kind = ChangeKind.AttributeChanged, Section = PdfSection.Structure,
+                Kind = ChangeKind.AttributeChanged, SectionName = "structure", Format = SnapshotFormat.Pdf,
                 Path = "structure > Document > Figure", Page = 1, Detail = "alt: \"Park logo\" -> \"Store logo\"",
             },
             new()
             {
-                Kind = ChangeKind.TextChanged, Section = PdfSection.Structure, Path = "structure > Document > P",
+                Kind = ChangeKind.TextChanged, SectionName = "structure", Format = SnapshotFormat.Pdf,
+                Path = "structure > Document > P",
                 Page = 3, Detail = "\"Call your [-ranger-] {+warden+}\"",
             },
         ];
@@ -325,12 +334,14 @@ public class SnapshotDiffTests
         [
             new()
             {
-                Kind = ChangeKind.Moved, Section = PdfSection.Structure, Path = "structure > L", Page = 1,
+                Kind = ChangeKind.Moved, SectionName = "structure", Format = SnapshotFormat.Pdf, Path = "structure > L",
+                Page = 1,
                 Detail = "reading position 2 -> 1",
             },
             new()
             {
-                Kind = ChangeKind.Moved, Section = PdfSection.Structure, Path = "structure > LI", Page = 1,
+                Kind = ChangeKind.Moved, SectionName = "structure", Format = SnapshotFormat.Pdf,
+                Path = "structure > LI", Page = 1,
                 Detail = "reading position 4 -> 5\nparent: L -> (top level)",
             },
         ];
@@ -379,12 +390,14 @@ public class SnapshotDiffTests
         [
             new()
             {
-                Kind = ChangeKind.Added, Section = PdfSection.Structure, Path = "structure > P[1]", Page = 1,
+                Kind = ChangeKind.Added, SectionName = "structure", Format = SnapshotFormat.Pdf,
+                Path = "structure > P[1]", Page = 1,
                 Detail = "P p1 \"S\"",
             },
             new()
             {
-                Kind = ChangeKind.Moved, Section = PdfSection.Structure, Path = "structure > P[6]", Page = 1,
+                Kind = ChangeKind.Moved, SectionName = "structure", Format = SnapshotFormat.Pdf,
+                Path = "structure > P[6]", Page = 1,
                 Detail = "reading position 4 -> 6",
             },
         ];
@@ -729,7 +742,7 @@ public class SnapshotDiffTests
 
         var change = Assert.Single(SnapshotDiff.Compare(before, after).Changes);
 
-        Assert.Equal((ChangeKind.TextChanged, PdfSection.Artifacts), (change.Kind, change.Section));
+        Assert.Equal((ChangeKind.TextChanged, PdfSection.Artifacts), (change.Kind, change.PdfSection));
     }
 
     [Fact]
@@ -841,11 +854,11 @@ public class SnapshotDiffTests
         var changes = SnapshotDiff.Compare($"{SnapshotText.Header}{section}\n  {before}\n", $"{SnapshotText.Header}{section}\n  {after}\n").Changes;
 
         Assert.NotEmpty(changes);
-        Assert.Equal(affects, changes.Any(change => change.AffectsAccessibility));
+        Assert.Equal(affects, changes.Any(change => change.AffectsAccessibility == true));
     }
 
     [Fact]
-    public void AffectsAccessibility_ShouldBeFalse_WhenTheChangeIsInADocxSnapshot()
+    public void AffectsAccessibility_ShouldBeNull_WhenTheChangeIsInADocxSnapshot()
     {
         var before = "# docx-snapshot v1\nsections\n  s1 letter headers=default\nbody\n  P lang=en-US \"Walk\"\n";
         var after = "# docx-snapshot v1\nsections\n  s1 letter\nbody\n  P lang=fr-FR \"Walk\"\n";
@@ -853,7 +866,31 @@ public class SnapshotDiffTests
         var changes = SnapshotDiff.Compare(before, after).Changes;
 
         Assert.Equal(2, changes.Count);
-        Assert.DoesNotContain(changes, change => change.AffectsAccessibility);
+        Assert.All(changes, change => Assert.Null(change.AffectsAccessibility));
+    }
+
+    [Fact]
+    public void Compare_ShouldNameTheDocxSection_WhenTheChangeIsInADocxSnapshot()
+    {
+        var before = "# docx-snapshot v1\nsections\n  s1 letter headers=default\nbody\n  P lang=en-US \"Walk\"\n";
+        var after = "# docx-snapshot v1\nsections\n  s1 letter\nbody\n  P lang=fr-FR \"Walk\"\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.Equal(["sections", "body"], changes.Select(change => change.SectionName));
+        Assert.Equal([DocxSection.Sections, DocxSection.Body], changes.Select(change => change.DocxSection));
+        Assert.All(changes, change => Assert.Null(change.PdfSection));
+    }
+
+    [Fact]
+    public void Compare_ShouldLeaveTheSectionsEmpty_WhenTheTextsAreNotSnapshots()
+    {
+        var change = Assert.Single(SnapshotDiff.Compare("a\nb\n", "a\nc\n").Changes);
+
+        Assert.Null(change.SectionName);
+        Assert.Null(change.PdfSection);
+        Assert.Null(change.DocxSection);
+        Assert.Null(change.AffectsAccessibility);
     }
 
     [Fact]
@@ -995,10 +1032,13 @@ public class SnapshotDiffTests
         [
             new()
             {
-                Kind = ChangeKind.TextChanged, Section = null, Path = "line 3", Page = null,
+                Kind = ChangeKind.TextChanged, SectionName = null, Path = "line 3", Page = null,
                 Detail = "[-\"b\": 2,-] {+\"c\": 4+}",
             },
-            new() { Kind = ChangeKind.Removed, Section = null, Path = "line 4", Page = null, Detail = "  \"c\": 3" },
+            new()
+            {
+                Kind = ChangeKind.Removed, SectionName = null, Path = "line 4", Page = null, Detail = "  \"c\": 3",
+            },
         ];
         Assert.Equal(expected, changes);
     }
@@ -1018,7 +1058,7 @@ public class SnapshotDiffTests
 
         var changes = SnapshotDiff.Compare(older, Before.Replace("Go with a guide", "Go without a guide")).Changes;
 
-        Assert.Equal([null, PdfSection.Structure], changes.Select(change => change.Section));
+        Assert.Equal([null, PdfSection.Structure], changes.Select(change => change.PdfSection));
         Assert.Equal("header", changes[0].Path);
     }
 
@@ -1031,22 +1071,25 @@ public class SnapshotDiffTests
         [
             new()
             {
-                Kind = ChangeKind.Changed, Section = PdfSection.Pages, Path = "pages", Page = 2,
+                Kind = ChangeKind.Changed, SectionName = "pages", Format = SnapshotFormat.Pdf, Path = "pages", Page = 2,
                 Detail = "p2 inserted; p2-10 -> p3-11",
             },
             new()
             {
-                Kind = ChangeKind.AttributeChanged, Section = PdfSection.Document, Path = "document > marked",
+                Kind = ChangeKind.AttributeChanged, SectionName = "document", Format = SnapshotFormat.Pdf,
+                Path = "document > marked",
                 Page = null, Detail = "pages: 10 -> 11",
             },
             new()
             {
-                Kind = ChangeKind.Added, Section = PdfSection.Structure, Path = "structure > Document > P[2]", Page = 2,
+                Kind = ChangeKind.Added, SectionName = "structure", Format = SnapshotFormat.Pdf,
+                Path = "structure > Document > P[2]", Page = 2,
                 Detail = "P p2 \"A new page\"",
             },
             new()
             {
-                Kind = ChangeKind.Added, Section = PdfSection.Layout, Path = "layout > p2", Page = 2,
+                Kind = ChangeKind.Added, SectionName = "layout", Format = SnapshotFormat.Pdf, Path = "layout > p2",
+                Page = 2,
                 Detail = "p2 text tagged at=72,700 \"A new page\"",
             },
         ];
@@ -1156,7 +1199,7 @@ public class SnapshotDiffTests
 
         Assert.Equal("""
             {
-              "version": 1,
+              "version": 2,
               "changes": [
                 {
                   "kind": "Changed",
@@ -1173,7 +1216,7 @@ public class SnapshotDiffTests
     }
 
     [Fact]
-    public void ToJson_ShouldWriteANullSectionAndPage_WhenTheTextIsNotASnapshot()
+    public void ToJson_ShouldWriteANullSectionPageAndFlag_WhenTheTextIsNotASnapshot()
     {
         var diff = SnapshotDiff.Compare("a\n", "b\n");
 
@@ -1181,6 +1224,7 @@ public class SnapshotDiffTests
 
         Assert.Contains("\"kind\": \"TextChanged\",\n      \"section\": null,\n      \"path\": \"line 1\",\n"
             + "      \"page\": null,", json);
+        Assert.Contains("\"affectsAccessibility\": null", json);
     }
 
     [Fact]
@@ -1202,6 +1246,7 @@ public class SnapshotDiffTests
 
         var change = Assert.Single(before.CompareTo(after).Changes);
 
-        Assert.Equal((ChangeKind.TextChanged, PdfSection.Structure, "structure > P"), (change.Kind, change.Section, change.Path));
+        Assert.Equal((ChangeKind.TextChanged, PdfSection.Structure, "structure > P"),
+            (change.Kind, change.PdfSection, change.Path));
     }
 }

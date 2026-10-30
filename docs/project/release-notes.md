@@ -41,6 +41,13 @@ library does.
   items. Their properties are `init` properties rather than constructor parameters, and the constructors are internal,
   so a later release can add a property without breaking code that reads them
   ([#92](https://github.com/zacharydf7/pdiffy/issues/92)).
+- `SnapshotChange.Section` is gone. `SectionName` holds the section as the snapshot prints it, the same string as
+  the JSON's `section`, and `PdfSection` or `DocxSection` gives it as an enum for its kind of snapshot. Word changes
+  now say which section they're in. `AffectsAccessibility` is a `bool?`: null for Word and text snapshots, which
+  PDiffy doesn't assess, so assert on `AffectsAccessibility == true`. The JSON's `affectsAccessibility` is `null`
+  for them too, where it was `false`, so the JSON from `ToJson`, `pdiffy <before> <after> --json` and
+  `pdiffy compare --json` is now `version` 2
+  ([#94](https://github.com/zacharydf7/pdiffy/issues/94)).
 
 ### Snapshots record more
 

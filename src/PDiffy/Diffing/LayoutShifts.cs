@@ -58,7 +58,7 @@ internal static class LayoutShifts
     private static (double X, double Y)? MoveOf(SnapshotChange change)
     {
         const string prefix = "at: ";
-        if (change is not { Section: PdfSection.Layout, Kind: ChangeKind.AttributeChanged }
+        if (change is not { PdfSection: PdfSection.Layout, Kind: ChangeKind.AttributeChanged }
             || !change.Detail.StartsWith(prefix, StringComparison.Ordinal))
         {
             return null;

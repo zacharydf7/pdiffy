@@ -24,18 +24,20 @@ A [`SnapshotDiff`](xref:PDiffy.SnapshotDiff) lists its [`Changes`](xref:PDiffy.S
 | Property | Holds | Example |
 |---|---|---|
 | [`Kind`](xref:PDiffy.SnapshotChange.Kind) | A [`ChangeKind`](xref:PDiffy.ChangeKind): `Added`, `Removed`, `Moved`, `AttributeChanged`, `TextChanged` or `Changed` | `TextChanged` |
-| [`Section`](xref:PDiffy.SnapshotChange.Section) | The PDF [`PdfSection`](xref:PDiffy.PdfSection) it's in; null for Word and text, and for the snapshot's first lines and whitespace-only changes | `PdfSection.Structure` |
+| [`SectionName`](xref:PDiffy.SnapshotChange.SectionName) | The section as the snapshot prints it, as in the [JSON output](#json-output); null for text without sections | `"structure"` |
+| [`PdfSection`](xref:PDiffy.SnapshotChange.PdfSection) | The [`PdfSection`](xref:PDiffy.PdfSection) it's in; null outside PDF snapshots, and for the snapshot's first lines and whitespace-only changes | `PdfSection.Structure` |
+| [`DocxSection`](xref:PDiffy.SnapshotChange.DocxSection) | The [`DocxSection`](xref:PDiffy.DocxSection) it's in; null outside Word snapshots, and for the snapshot's first lines and whitespace-only changes | `DocxSection.Body` |
 | [`Path`](xref:PDiffy.SnapshotChange.Path) | Where it is | `structure > Document > Table > TR[2] > TD[1]` |
 | [`Page`](xref:PDiffy.SnapshotChange.Page) | The page, when it's on one | `2` |
 | [`Detail`](xref:PDiffy.SnapshotChange.Detail) | What changed | `"Go [-with-] {+without+} a guide"` |
-| [`AffectsAccessibility`](xref:PDiffy.SnapshotChange.AffectsAccessibility) | Whether it can change what a screen reader gets | `true` |
+| [`AffectsAccessibility`](xref:PDiffy.SnapshotChange.AffectsAccessibility) | Whether it can change what a screen reader gets; null for Word and text, which PDiffy doesn't assess | `true` |
 
 ```csharp
 // No element changed place in reading order.
 Assert.DoesNotContain(diff.Changes, change => change.Kind == ChangeKind.Moved);
 
 // Any change is fine except one that can affect what a screen reader gets.
-Assert.DoesNotContain(diff.Changes, change => change.AffectsAccessibility);
+Assert.DoesNotContain(diff.Changes, change => change.AffectsAccessibility == true);
 
 // Nothing changed at all.
 Assert.True(diff.IsEmpty);
@@ -66,7 +68,7 @@ a small, versioned shape:
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "changes": [
     {
       "kind": "Changed",
@@ -88,7 +90,7 @@ a small, versioned shape:
 | `path` | Where the change is |
 | `page` | The page, or `null` when the change isn't on a page |
 | `detail` | What changed |
-| `affectsAccessibility` | Whether it can change what a screen reader gets |
+| `affectsAccessibility` | Whether it can change what a screen reader gets, or `null` for Word and text snapshots |
 
 ## See also
 

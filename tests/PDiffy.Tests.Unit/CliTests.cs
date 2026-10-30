@@ -62,7 +62,7 @@ public sealed class CliTests : IDisposable
         Commands.Run([before, after, "--json", json], _output, _error);
 
         Assert.StartsWith("1 change(s)", _output.ToString());
-        Assert.StartsWith("{\n  \"version\": 1,", File.ReadAllText(json));
+        Assert.StartsWith("{\n  \"version\": 2,", File.ReadAllText(json));
     }
 
     [Fact]
@@ -402,6 +402,7 @@ public sealed class CliTests : IDisposable
 
         Assert.Contains("<a href=\"notes/a.txt.diff.html\">notes/a.txt</a>", File.ReadAllText(index));
         Assert.StartsWith("<!doctype html>", File.ReadAllText(Path.Combine(_folder, "out", "notes", "a.txt.diff.html")));
+        Assert.StartsWith("{\n  \"version\": 2,", File.ReadAllText(json));
         var files = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(json))!["files"]!.AsArray();
         Assert.Equal(["changed notes/a.txt 1", "added extra.txt 0"],
             files.Select(file => $"{file!["status"]} {file["path"]} {file["changes"]?.AsArray().Count ?? 0}"));

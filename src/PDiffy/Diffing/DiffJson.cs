@@ -7,7 +7,7 @@ namespace PDiffy.Diffing;
 internal static class DiffJson
 {
     // Goes up only when a field is renamed, removed or changes meaning; new fields can be added without it.
-    private const int Version = 1;
+    private const int Version = 2;
 
     public static string Write(SnapshotDiff diff)
     {
@@ -21,12 +21,13 @@ internal static class DiffJson
             {
                 writer.WriteStartObject();
                 writer.WriteString("kind", change.Kind.ToString());
-                writer.WriteString("section", diff.SectionOf(change));
+                writer.WriteString("section", change.SectionName);
                 writer.WriteString("path", change.Path);
                 if (change.Page is int page) writer.WriteNumber("page", page);
                 else writer.WriteNull("page");
                 writer.WriteString("detail", change.Detail);
-                writer.WriteBoolean("affectsAccessibility", change.AffectsAccessibility);
+                if (change.AffectsAccessibility is bool affects) writer.WriteBoolean("affectsAccessibility", affects);
+                else writer.WriteNull("affectsAccessibility");
                 writer.WriteEndObject();
             }
 

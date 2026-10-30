@@ -43,7 +43,7 @@ internal static class TextDiff
     }
 
     private static SnapshotChange Change(ChangeKind kind, int line, string detail) =>
-        new() { Kind = kind, Section = null, Path = $"line {line}", Page = null, Detail = detail };
+        new() { Kind = kind, SectionName = null, Path = $"line {line}", Page = null, Detail = detail };
 
     // A change made only of spaces has no word to mark, so both lines are shown in quotes.
     private static string Show(string before, string after)

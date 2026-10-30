@@ -263,7 +263,7 @@ public class PdfUaDocumentLoadTests
         after.AddPage().Untagged("Trail closed").Untagged("Ranger on duty").Untagged("Bring water");
 
         var changes = SnapshotDiff.Compare(before.Load().ToSnapshot(), after.Load().ToSnapshot()).Changes
-            .Where(change => change.Section == PdfSection.Untagged);
+            .Where(change => change.PdfSection == PdfSection.Untagged);
 
         var change = Assert.Single(changes);
         Assert.Equal((ChangeKind.Added, "p1 \"Ranger on duty\""), (change.Kind, change.Detail));

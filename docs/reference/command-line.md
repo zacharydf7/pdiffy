@@ -102,7 +102,7 @@ shape as [comparing two files](../guide/comparing.md#json-output), or the `probl
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "unchanged": 12,
   "notCompared": 3,
   "files": [

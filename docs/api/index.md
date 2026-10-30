@@ -28,7 +28,7 @@ them all.
 | Type | Use it to |
 |---|---|
 | <xref:PDiffy.SnapshotDiff> | Hold the differences between two snapshots, and print them as a summary, HTML or JSON |
-| <xref:PDiffy.SnapshotChange> | Describe one difference: kind, section, path, page, detail |
+| <xref:PDiffy.SnapshotChange> | Describe one difference: kind, section, path, page, detail, accessibility flag |
 | <xref:PDiffy.ChangeKind> | Name the kind of a difference |
 
 ## The PDF model

@@ -62,7 +62,7 @@ internal static class DiffReport
         var was = PageMap.ByPage(before.GetValueOrDefault(layout) ?? []);
         var now = PageMap.ByPage(after.GetValueOrDefault(layout) ?? []);
         var sizes = PageMap.Sizes(after.GetValueOrDefault(SnapshotWriter.Name(PdfSection.Pages)) ?? []);
-        var maps = diff.Changes.Where(change => change.Section == PdfSection.Layout).Select(change => change.Page)
+        var maps = diff.Changes.Where(change => change.PdfSection == PdfSection.Layout).Select(change => change.Page)
             .OfType<int>().Distinct().Order()
             .Select(page => PageMap.Draw(page, was.GetValueOrDefault(page) ?? [], now.GetValueOrDefault(page) ?? [],
                 sizes.GetValueOrDefault(page, PageMap.DefaultSize)))
@@ -92,7 +92,7 @@ internal static class DiffReport
             html.Append($"<label><input type=\"checkbox\" checked data-kind=\"{kind}\"> {kind} ({count})</label>");
         }
 
-        var flagged = changes.Count(change => change.AffectsAccessibility);
+        var flagged = changes.Count(change => change.AffectsAccessibility == true);
         if (flagged > 0)
         {
             html.Append($"<label><input type=\"checkbox\" data-accessibility> Only accessibility ({flagged})</label>");
@@ -102,8 +102,9 @@ internal static class DiffReport
         foreach (var change in changes)
         {
             var page = change.Page is int number ? $" <a href=\"#p{number}\">p{number}</a>" : "";
-            var flag = change.AffectsAccessibility ? " data-accessibility" : "";
-            var label = change.AffectsAccessibility ? " <span class=\"accessibility\">accessibility</span>" : "";
+            var flag = change.AffectsAccessibility == true ? " data-accessibility" : "";
+            var label = change.AffectsAccessibility == true
+                ? " <span class=\"accessibility\">accessibility</span>" : "";
             html.Append($"<li data-kind=\"{change.Kind}\"{flag}><b>{change.Kind}</b> {Encode(change.Path)}{page}{label}");
             html.Append($"<pre>{Encode(change.Detail)}</pre></li>");
         }
@@ -117,7 +118,7 @@ internal static class DiffReport
     {
         var pages = diff.Changes.Select(change => change.Page).OfType<int>().ToHashSet();
         var changedIn = diff.Changes.Where(change => change.Page is not null)
-            .Select(change => (change.Page, diff.SectionOf(change))).ToHashSet();
+            .Select(change => (change.Page, change.SectionName)).ToHashSet();
         var rows = sections.SelectMany(section => section.Rows.Select(row => (Section: section.Name, Row: row)))
             .ToList();
         var candidates = rows.Where(item => item.Row.Kind != ' ')

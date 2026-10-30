@@ -51,8 +51,9 @@ public class MutationTests
         var diff = original.CompareTo(mutated);
 
         Assert.NotEqual(original.ToSnapshot(), mutated.ToSnapshot());
-        Assert.True(diff.Changes.Any(item => item.Section == section && item.Kind == kind), $"{mutation}:\n{diff.Describe()}");
-        Assert.Equal(affectsAccessibility, diff.Changes.Any(item => item.AffectsAccessibility));
+        Assert.True(diff.Changes.Any(item => item.PdfSection == section && item.Kind == kind),
+            $"{mutation}:\n{diff.Describe()}");
+        Assert.Equal(affectsAccessibility, diff.Changes.Any(item => item.AffectsAccessibility == true));
     }
 
     /// <summary>The details of the base document that a mutation can change.</summary>
