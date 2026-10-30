@@ -16,7 +16,7 @@ each release shipped.
 
 | Phase | Status |
 |---|---|
-| [1. What snapshots miss](#1-what-snapshots-miss) | Done, except the full fix for #89, which follows the API pass |
+| [1. What snapshots miss](#1-what-snapshots-miss) | Done |
 | [2. API pass](#2-api-pass) | Done, for the next release |
 | [3. Adoption traps](#3-adoption-traps) | Done |
 | [4. Accessibility checks](#4-accessibility-checks) | Open: after the API pass |
@@ -51,7 +51,7 @@ are re-approved once.
 | [#86](https://github.com/zacharydf7/pdiffy/issues/86) | Letter-spaced text | Done |
 | [#87](https://github.com/zacharydf7/pdiffy/issues/87) | Marked-content replacement text, language and artifact type | Done |
 | [#88](https://github.com/zacharydf7/pdiffy/issues/88) | Signatures and form behavior | Done |
-| [#89](https://github.com/zacharydf7/pdiffy/issues/89) | MCIDs inside form XObjects | Partly done: marked; the full fix is next after the API pass |
+| [#89](https://github.com/zacharydf7/pdiffy/issues/89) | MCIDs inside form XObjects | Done |
 | [#90](https://github.com/zacharydf7/pdiffy/issues/90) | Figures tied to their images | Done |
 
 Found and fixed along the way: [#143](https://github.com/zacharydf7/pdiffy/issues/143),

@@ -9,12 +9,12 @@ internal sealed record PageLayout(IReadOnlyList<PdfTextRun> TextRuns, IReadOnlyL
 
 /// <summary>Every text run, image and painted path on a page, with its position, style and role.</summary>
 internal sealed class LayoutReader(int pageNumber, PageContent content,
-    IReadOnlySet<(int Page, int Mcid)> referencedMcids)
+    IReadOnlySet<(int Page, MarkedContentId Mcid)> referencedMcids)
 {
     private const string DefaultColor = "gray:0";
 
     public static PageLayout Read(int pageNumber, Page page, PageContent content,
-        IReadOnlySet<(int Page, int Mcid)> referencedMcids)
+        IReadOnlySet<(int Page, MarkedContentId Mcid)> referencedMcids)
     {
         var reader = new LayoutReader(pageNumber, content, referencedMcids);
         return new PageLayout(reader.Roles(content.TextRuns), reader.ReadImages(page), reader.ReadPaths(page));
@@ -22,7 +22,7 @@ internal sealed class LayoutReader(int pageNumber, PageContent content,
 
     // A run is read as tagged when marked content with an MCID draws it, and is untagged when no element points to that.
     private List<PdfTextRun> Roles(IReadOnlyList<OwnedRun> runs) =>
-        runs.Select(owned => owned.Mcid is int mcid && !referencedMcids.Contains((pageNumber, mcid))
+        runs.Select(owned => owned.Mcid is { } mcid && !referencedMcids.Contains((pageNumber, mcid))
             ? owned.Run with { Role = PdfContentRole.Untagged }
             : owned.Run).ToList();
 
@@ -92,7 +92,7 @@ internal sealed class LayoutReader(int pageNumber, PageContent content,
     {
         null => PdfContentRole.Untagged,
         { IsArtifact: true } => PdfContentRole.Artifact,
-        { Mcid: int mcid } when referencedMcids.Contains((pageNumber, mcid)) => PdfContentRole.Tagged,
+        { Mcid: { } mcid } when referencedMcids.Contains((pageNumber, mcid)) => PdfContentRole.Tagged,
         _ => PdfContentRole.Untagged,
     };
 

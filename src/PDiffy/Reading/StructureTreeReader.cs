@@ -7,7 +7,8 @@ namespace PDiffy.Reading;
 /// <param name="ReferencedMcids">Every (page, MCID) an element points to, so content no element reaches can be found.</param>
 /// <param name="ReferencedObjects">Every object, such as an annotation, that an element points to.</param>
 internal sealed record StructureTree(
-    IReadOnlyList<PdfRoleMapping> RoleMap, IReadOnlyList<PdfStructureElement> Elements, IReadOnlySet<(int Page, int Mcid)> ReferencedMcids,
+    IReadOnlyList<PdfRoleMapping> RoleMap, IReadOnlyList<PdfStructureElement> Elements,
+    IReadOnlySet<(int Page, MarkedContentId Mcid)> ReferencedMcids,
     IReadOnlySet<IndirectReference> ReferencedObjects);
 
 /// <summary>Turns the structure tree into <see cref="PdfStructureElement"/>s, joining each element to its marked-content text.</summary>
@@ -16,7 +17,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
 {
     private readonly Dictionary<string, string> _roleMap = [];
     private readonly Dictionary<string, string> _namesById = [];
-    private readonly HashSet<(int Page, int Mcid)> _referencedMcids = [];
+    private readonly HashSet<(int Page, MarkedContentId Mcid)> _referencedMcids = [];
     private readonly HashSet<IndirectReference> _referencedObjects = [];
     private readonly HashSet<IndirectReference> _readElements = [];
 
@@ -27,7 +28,7 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         var root = objects.Dictionary(catalog, "StructTreeRoot");
         if (root is null)
         {
-            return new StructureTree([], [], new HashSet<(int, int)>(), new HashSet<IndirectReference>());
+            return new StructureTree([], [], new HashSet<(int, MarkedContentId)>(), new HashSet<IndirectReference>());
         }
 
         return new StructureTreeReader(objects, pages, destinations, contentOf).ReadRoot(root);
@@ -76,18 +77,22 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
             switch (objects.Resolve(kid))
             {
                 case NumericToken mcid when page is int mcidPage:
-                    AddText(mcidPage, mcid.Int);
+                    AddText(mcidPage, new MarkedContentId(null, mcid.Int));
                     break;
                 case NumericToken:
                     mcidsWithoutPage++;
                     break;
                 case DictionaryToken reference when objects.Name(reference, "Type") == "MCR":
+                    // A form XObject numbers its marked content on its own, so a reference into one names the form.
                     var referencePage = pages.NumberOf(reference.Data.GetValueOrDefault("Pg")) ?? page;
+                    var form = reference.Data.GetValueOrDefault("Stm") is IndirectReferenceToken stream ? stream.Data
+                        : (IndirectReference?)null;
                     if (referencePage is null) mcidsWithoutPage++;
-                    else if (objects.Integer(reference, "MCID") is int mcrMcid) AddText(referencePage.Value, mcrMcid);
+                    else if (objects.Integer(reference, "MCID") is int mcrMcid)
+                    {
+                        AddText(referencePage.Value, new MarkedContentId(form, mcrMcid));
+                    }
 
-                    // PdfPig reads a form's content into the page's, so its MCIDs can't be told from the page's: the
-                    // text is read as usual, and marked in case the page uses the same MCID.
                     if (referencePage is not null && reference.Data.ContainsKey("Stm")) mcidsInXObject++;
                     break;
                 case DictionaryToken reference when objects.Name(reference, "Type") == "OBJR":
@@ -118,8 +123,10 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
             }
         }
 
-        void AddText(int textPage, int mcid)
+        void AddText(int textPage, MarkedContentId reference)
         {
+            // On a page whose MCIDs couldn't be told apart by stream, a reference into a form reads the page's MCID.
+            var mcid = contentOf(textPage)?.FormsKnown == false ? reference with { Form = null } : reference;
             _referencedMcids.Add((textPage, mcid));
             pagesUsed.Add(textPage);
             var content = contentOf(textPage);

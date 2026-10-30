@@ -641,8 +641,8 @@ public sealed record PdfStructureElement
     public int McidsWithoutPage { get; init; }
 
     /// <summary>
-    /// How many of the element's marked-content references point into a form XObject. Their text is read, but a form's
-    /// MCIDs can't be told from the page's own, so it includes the page's content for the same MCID, if any.
+    /// How many of the element's marked-content references point into a form XObject, such as a stamp the page draws.
+    /// Their text is read from the form's own content, which numbers its MCIDs apart from the page's.
     /// </summary>
     public int McidsInXObject { get; init; }
 

@@ -1,10 +1,12 @@
 using UglyToad.PdfPig.Content;
+using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Graphics;
+using UglyToad.PdfPig.Tokens;
 
 namespace PDiffy.Reading;
 
 /// <summary>Which marked content a piece of page content sits in: an artifact, an MCID, or neither (no owner at all).</summary>
-internal readonly record struct ContentOwner(bool IsArtifact, int? Mcid);
+internal readonly record struct ContentOwner(bool IsArtifact, MarkedContentId? Mcid);
 
 internal sealed class ContentOwners
 {
@@ -20,33 +22,44 @@ internal sealed class ContentOwners
 /// What one page's content stream says: the letters behind each MCID, the marked content in each that sets its own
 /// language or replacement text, the artifacts, untagged text, and who owns what.
 /// </summary>
-internal sealed record PageContent(IReadOnlyDictionary<int, List<Letter>> LettersByMcid,
-    IReadOnlyDictionary<int, List<PdfMarkedSpan>> SpansByMcid, IReadOnlyDictionary<int, List<string>> ImagesByMcid,
-    IReadOnlyList<PdfPageText> Artifacts, IReadOnlyList<string> UntaggedLines, ContentOwners Owners,
-    IReadOnlyList<OwnedRun> TextRuns, IReadOnlyDictionary<int, List<PdfTextRun>> TextRunsByMcid, ContentLayers Layers);
+/// <param name="LettersByMcid">Each MCID's letters, the MCIDs in the order the page first draws them.</param>
+/// <param name="FormsKnown">
+/// Whether each MCID's content stream is known. When it isn't, every MCID is keyed as the page's own.
+/// </param>
+internal sealed record PageContent(OrderedDictionary<MarkedContentId, List<Letter>> LettersByMcid,
+    IReadOnlyDictionary<MarkedContentId, List<PdfMarkedSpan>> SpansByMcid,
+    IReadOnlyDictionary<MarkedContentId, List<string>> ImagesByMcid, IReadOnlyList<PdfPageText> Artifacts,
+    IReadOnlyList<string> UntaggedLines, ContentOwners Owners, IReadOnlyList<OwnedRun> TextRuns,
+    IReadOnlyDictionary<MarkedContentId, List<PdfTextRun>> TextRunsByMcid, ContentLayers Layers, bool FormsKnown);
 
 internal sealed class PageContentReader
 {
     private readonly ContentOwners _owners = new();
     private readonly List<PdfPageText> _artifacts = [];
-    private readonly Dictionary<int, List<PdfMarkedSpan>> _spansByMcid = [];
+    private readonly Dictionary<MarkedContentId, List<PdfMarkedSpan>> _spansByMcid = [];
+
+    // The content stream each marked-content element is in: the page's own (null) or a form XObject's.
+    private readonly Dictionary<MarkedContentElement, IndirectReference?> _streams =
+        new(ReferenceEqualityComparer.Instance);
 
     // Each letter's place in page.Letters, which is in content order, so letters gathered by nesting can be put back.
     private readonly Dictionary<Letter, int> _drawingOrder = [];
 
-    public static PageContent Read(Page page, PdfObjects objects) =>
-        new PageContentReader(page.Number, objects).ReadPage(page);
+    public static PageContent Read(Page page, DictionaryToken? resources, PdfObjects objects, FormXObjects forms) =>
+        new PageContentReader(page.Number, objects).ReadPage(page, resources, forms);
 
     private readonly int _pageNumber;
     private readonly PdfObjects _objects;
 
     private PageContentReader(int pageNumber, PdfObjects objects) => (_pageNumber, _objects) = (pageNumber, objects);
 
-    private PageContent ReadPage(Page page)
+    private PageContent ReadPage(Page page, DictionaryToken? resources, FormXObjects forms)
     {
         for (var i = 0; i < page.Letters.Count; i++) _drawingOrder[page.Letters[i]] = i;
         var markedContents = page.GetMarkedContents();
-        var pending = new Stack<(MarkedContentElement MarkedContent, int? EnclosingMcid)>();
+        var formsKnown = markedContents.Count == 0
+            || MatchStreams(markedContents, MarkedContentStreams.Read(page.Operations, resources, forms));
+        var pending = new Stack<(MarkedContentElement MarkedContent, MarkedContentId? EnclosingMcid)>();
         foreach (var markedContent in markedContents.Reverse())
         {
             pending.Push((markedContent, null));
@@ -55,7 +68,7 @@ internal sealed class PageContentReader
         while (pending.TryPop(out var next)) Visit(next.MarkedContent, next.EnclosingMcid, pending);
 
         // page.Letters is in content order, so each MCID's letters come out in reading order.
-        var lettersByMcid = new Dictionary<int, List<Letter>>();
+        var lettersByMcid = new OrderedDictionary<MarkedContentId, List<Letter>>();
         var untagged = new List<Letter>();
         foreach (var letter in page.Letters)
         {
@@ -63,7 +76,7 @@ internal sealed class PageContentReader
             {
                 untagged.Add(letter);
             }
-            else if (owner.Mcid is int mcid)
+            else if (owner.Mcid is { } mcid)
             {
                 if (!lettersByMcid.TryGetValue(mcid, out var letters))
                 {
@@ -82,13 +95,23 @@ internal sealed class PageContentReader
         var textRunsByMcid = textRuns.Where(owned => owned.Mcid is not null).GroupBy(owned => owned.Mcid!.Value)
             .ToDictionary(group => group.Key, group => group.Select(owned => owned.Run).ToList());
         return new PageContent(lettersByMcid, _spansByMcid, imagesByMcid, _artifacts, TextJoiner.JoinLines(untagged), _owners,
-            textRuns, textRunsByMcid, layers);
+            textRuns, textRunsByMcid, layers, formsKnown);
+    }
+
+    // Each element's content stream, matched to the sequences in the order they begin. When the counts disagree, as for
+    // a form nested deeper than PDiffy follows, nothing is matched and every MCID is keyed as the page's own.
+    private bool MatchStreams(IReadOnlyList<MarkedContentElement> markedContents, List<IndirectReference?> streams)
+    {
+        var elements = markedContents.SelectMany(SelfAndDescendants).ToList();
+        if (elements.Count != streams.Count) return false;
+        for (var i = 0; i < elements.Count; i++) _streams[elements[i]] = streams[i];
+        return true;
     }
 
     // Marked content without its own MCID belongs to the nearest enclosing MCID, if there is one. Children go on the
     // stack instead of being visited in turn, so content nested thousands deep can't overflow it.
-    private void Visit(MarkedContentElement markedContent, int? enclosingMcid,
-        Stack<(MarkedContentElement MarkedContent, int? EnclosingMcid)> pending)
+    private void Visit(MarkedContentElement markedContent, MarkedContentId? enclosingMcid,
+        Stack<(MarkedContentElement MarkedContent, MarkedContentId? EnclosingMcid)> pending)
     {
         if (markedContent.IsArtifact)
         {
@@ -115,8 +138,10 @@ internal sealed class PageContentReader
             return;
         }
 
-        var mcid = markedContent.MarkedContentIdentifier >= 0 ? markedContent.MarkedContentIdentifier : enclosingMcid;
-        if (mcid is int owner)
+        var mcid = markedContent.MarkedContentIdentifier >= 0
+            ? new MarkedContentId(_streams.GetValueOrDefault(markedContent), markedContent.MarkedContentIdentifier)
+            : enclosingMcid;
+        if (mcid is { } owner)
         {
             Own(markedContent, new ContentOwner(IsArtifact: false, mcid));
             if (Span(markedContent) is { } span) SpansOf(owner).Add(span);
@@ -153,7 +178,7 @@ internal sealed class PageContentReader
 
     private static string? NonEmpty(string? value) => string.IsNullOrEmpty(value) ? null : value;
 
-    private List<PdfMarkedSpan> SpansOf(int mcid)
+    private List<PdfMarkedSpan> SpansOf(MarkedContentId mcid)
     {
         if (!_spansByMcid.TryGetValue(mcid, out var spans))
         {

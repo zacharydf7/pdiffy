@@ -12,6 +12,16 @@ failure after an upgrade can be told apart from a change to your document.
 
 Either way, review the received files and accept them: `pdiffy accept --all`, or run the tests with `PDIFFY_ACCEPT=1`.
 
+## Next release
+
+### PDF (`pdfua-snapshot v1`, unchanged)
+
+- An element whose marked content is in a form XObject, such as a stamp the page draws, reads its text from the form
+  alone ([#89](https://github.com/zacharydf7/pdiffy/issues/89)). A form numbers its MCIDs apart from the page, and
+  before, when the two used the same MCID, both the page's element and the form's printed the text of both. Only
+  snapshots of documents whose forms reuse the page's MCIDs change, and text a form tags that no element points to now
+  shows in `untagged`.
+
 ## 0.4.0
 
 ### PDF (`pdfua-snapshot v1`, unchanged)

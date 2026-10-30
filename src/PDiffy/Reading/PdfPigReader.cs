@@ -17,7 +17,7 @@ internal static class PdfPigReader
         var pageTree = PageTree.Read(objects, catalog);
         var destinations = new DestinationReader(objects, pageTree, catalog);
 
-        var (pages, readable) = ReadPages(document, objects);
+        var (pages, readable) = ReadPages(document, objects, pageTree);
         var structure = StructureTreeReader.Read(objects, catalog, pageTree, destinations,
             page => readable.TryGetValue(page, out var read) ? read.Content : null);
         var loose = CollectLooseContent(readable, structure.ReferencedMcids);
@@ -79,10 +79,12 @@ internal static class PdfPigReader
         }
     }
 
-    private static (List<PdfPage> Pages, Dictionary<int, ReadPage> Readable) ReadPages(PdfDocument document, PdfObjects objects)
+    private static (List<PdfPage> Pages, Dictionary<int, ReadPage> Readable) ReadPages(PdfDocument document,
+        PdfObjects objects, PageTree pageTree)
     {
         var pages = new List<PdfPage>();
         var readable = new Dictionary<int, ReadPage>();
+        var forms = new FormXObjects(objects);
         for (var number = 1; number <= document.NumberOfPages; number++)
         {
             if (TryGetPage(document, number) is not { } page)
@@ -96,7 +98,8 @@ internal static class PdfPigReader
             }
 
             pages.Add(ReadPageInfo(number, page, objects));
-            readable[number] = new ReadPage(page, PageContentReader.Read(page, objects));
+            var resources = pageTree.Pages.ElementAtOrDefault(number - 1)?.Resources;
+            readable[number] = new ReadPage(page, PageContentReader.Read(page, resources, objects, forms));
         }
 
         return (pages, readable);
@@ -154,7 +157,8 @@ internal static class PdfPigReader
 
     // Artifact text, plus text assistive technology can't reach: text outside any tag, and tagged text that no
     // structure element points to.
-    private static LooseContent CollectLooseContent(Dictionary<int, ReadPage> readable, IReadOnlySet<(int Page, int Mcid)> referenced)
+    private static LooseContent CollectLooseContent(Dictionary<int, ReadPage> readable,
+        IReadOnlySet<(int Page, MarkedContentId Mcid)> referenced)
     {
         var loose = new LooseContent([], []);
         foreach (var (number, (_, content)) in readable.OrderBy(pair => pair.Key))
@@ -165,7 +169,9 @@ internal static class PdfPigReader
                 Page = number, Text = line,
             }));
 
-            foreach (var (mcid, letters) in content.LettersByMcid.OrderBy(pair => pair.Key))
+            // The page's own MCIDs in number order, then the forms', in the order the page draws them.
+            foreach (var (mcid, letters) in content.LettersByMcid.OrderBy(pair => pair.Key.Form is not null)
+                .ThenBy(pair => pair.Key.Form is null ? pair.Key.Mcid : 0))
             {
                 if (!referenced.Contains((number, mcid)) && TextJoiner.Join(letters) is { Length: > 0 } text)
                 {

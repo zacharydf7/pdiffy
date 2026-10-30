@@ -4,7 +4,7 @@ using UglyToad.PdfPig.Core;
 namespace PDiffy.Reading;
 
 /// <summary>A text run, and the MCID of the marked content that draws it, if any.</summary>
-internal readonly record struct OwnedRun(PdfTextRun Run, int? Mcid);
+internal readonly record struct OwnedRun(PdfTextRun Run, MarkedContentId? Mcid);
 
 /// <summary>
 /// A page's text runs, with each one's style and owner, read before the structure tree so elements can list their own.

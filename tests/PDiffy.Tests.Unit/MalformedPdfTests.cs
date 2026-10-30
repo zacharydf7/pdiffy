@@ -106,8 +106,9 @@ public class MalformedPdfTests
 
         var paragraph = Assert.Single(document.Structure);
 
-        Assert.Equal(1, paragraph.McidsInXObject);
-        Assert.Contains("  P p1 mcids-in-xobject=1 \"Loop\"\n", document.ToSnapshot());
+        Assert.Equal((1, null), (paragraph.McidsInXObject, paragraph.Text));
+        Assert.Contains("  P p1 mcids-in-xobject=1\n", document.ToSnapshot());
+        Assert.Equal(["Loop"], document.Untagged.Select(text => text.Text));
     }
 
     [Fact]

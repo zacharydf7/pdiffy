@@ -1,12 +1,8 @@
 using System.Text;
-using UglyToad.PdfPig;
-using UglyToad.PdfPig.Core;
-using UglyToad.PdfPig.Graphics;
 using UglyToad.PdfPig.Graphics.Operations;
 using UglyToad.PdfPig.Graphics.Operations.SpecialGraphicsState;
 using UglyToad.PdfPig.Graphics.Operations.TextShowing;
 using UglyToad.PdfPig.Graphics.Operations.TextState;
-using UglyToad.PdfPig.Parser;
 using UglyToad.PdfPig.Tokens;
 
 namespace PDiffy.Reading;
@@ -21,19 +17,9 @@ internal sealed record FontUse(DictionaryToken Font, List<byte[]> Bytes);
 /// </summary>
 internal sealed class FontUsageReader(PdfObjects objects)
 {
-    // Forms can draw other forms; this bounds a malformed chain that keeps going.
-    private const int MaxFormDepth = 10;
-
-    // The same settings PdfPig loads pages with. The depth guard keeps a running count, so each reader (one per Load)
-    // gets its own.
-    private readonly PageContentParser _parser = new(ReflectionGraphicsStateOperationFactory.Instance,
-        new StackDepthGuard(new ParsingOptions().MaxStackDepth), useLenientParsing: true);
-
+    private readonly FormXObjects _forms = new(objects);
     private readonly List<FontUse> _fonts = [];
     private readonly Dictionary<object, FontUse> _byKey = [];
-
-    // The forms being drawn right now. A malformed form that draws itself is skipped, as PdfPig skips it.
-    private readonly HashSet<IndirectReference> _drawing = [];
 
     public IReadOnlyList<FontUse> Fonts => _fonts;
 
@@ -87,31 +73,14 @@ internal sealed class FontUsageReader(PdfObjects objects)
                     }
 
                     break;
-                case InvokeNamedXObject invoke when depth < MaxFormDepth:
-                    AddFormText(invoke.Name.Data, resources, font, depth);
+                // A form starts with the graphics state of the content that draws it, so it inherits the current font.
+                case InvokeNamedXObject invoke when depth < FormXObjects.MaxDepth
+                    && _forms.Open(invoke.Name.Data, resources) is { } form:
+                    AddText(form.Operations, form.Resources, font, depth + 1);
+                    _forms.Close(form);
                     break;
             }
         }
-    }
-
-    // A form starts with the graphics state of the content that draws it, so it inherits the current font. A form with
-    // no resources of its own uses the resources of the content that draws it. PdfPig already decoded and parsed every
-    // form on a loaded page, with the same parser settings, so neither step fails here; a page where they would fail
-    // is recorded as unreadable before this runs.
-    private void AddFormText(string name, DictionaryToken? resources, FontUse? font, int depth)
-    {
-        var xObjects = resources is null ? null : objects.Dictionary(resources, "XObject");
-        if (xObjects?.Data.GetValueOrDefault(name) is not IndirectReferenceToken reference
-            || objects.Resolve(reference) is not StreamToken form || objects.Name(form.StreamDictionary, "Subtype") != "Form"
-            || objects.Contents(form) is not { } content || !_drawing.Add(reference.Data))
-        {
-            return;
-        }
-
-        var formResources = objects.Dictionary(form.StreamDictionary, "Resources") ?? resources;
-        var operations = _parser.Parse(0, new MemoryInputBytes(content), new ParsingOptions().Logger);
-        AddText(operations, formResources, font, depth + 1);
-        _drawing.Remove(reference.Data);
     }
 
     // The same font object is usually shared by many pages and forms; a font written inline belongs to one place.

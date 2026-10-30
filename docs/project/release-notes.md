@@ -68,6 +68,13 @@ library does.
   first, and `SnapshotDiff.CompareFiles(beforePath, afterPath)` compares two files the way `pdiffy before after`
   does. `CompareTo` names its parameter `after`.
 
+### Read more accurately
+
+- An element whose marked content is in a form XObject, such as a stamp, reads its text from the form alone, where it
+  could include the page's text for the same MCID ([#89](https://github.com/zacharydf7/pdiffy/issues/89)). Text a
+  form tags that no element points to now shows in `untagged`. See
+  [Format changes](../reference/format-changes.md#next-release).
+
 ## 0.4.0 (2026-10-30)
 
 The snapshot format stays `pdfua-snapshot v1` and `docx-snapshot v1`, but many PDF snapshots gain keys or
