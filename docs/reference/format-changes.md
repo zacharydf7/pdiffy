@@ -19,7 +19,8 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 - Links print where they go instead of `dest=yes`: the page, the view it opens at and the view's positions
   (`dest=p3 view=XYZ view-at=72,720`, and `zoom=` when an XYZ view sets one). A named destination is looked up; one the
   PDF doesn't define, or one in another file, prints `dest-name="..."`. GoTo actions print their destination too, and GoToR and Launch actions the file they open
-  (`file="maps.pdf"`). Bookmarks print their view (`"Trails" -> p2 view=Fit`), web address (`uri="..."`) or file.
+  (`file="maps.pdf"`). Bookmarks print their view (`"Trails" -> p2 view=Fit`), web address (`uri="..."`) or file; a
+  bookmark to another file prints `file="atlas.pdf" dest=p1` instead of `-> p1`, since that page isn't in this document.
   Snapshots of documents with internal links or bookmarks change.
 
 ### Accessibility flags

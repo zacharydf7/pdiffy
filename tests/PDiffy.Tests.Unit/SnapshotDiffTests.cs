@@ -391,6 +391,8 @@ public class SnapshotDiffTests
     [InlineData("positions 1pt", "p1 Link untagged dest=p2 view=XYZ view-at=72,720", "p1 Link untagged dest=p2 view=XYZ view-at=72,740", 1)]
     [InlineData("positions 1pt", "p1 Link untagged dest=p2 view=XYZ view-at=72,-", "p1 Link untagged dest=p2 view=XYZ view-at=73,-", 0)]
     [InlineData("positions 1pt", "p1 Link untagged dest=p2 view=XYZ view-at=72,-", "p1 Link untagged dest=p2 view=XYZ view-at=72,720", 1)]
+    [InlineData("positions 1pt", "\"Atlas\" file=\"atlas.pdf\" dest=p1 view=XYZ view-at=72,720",
+        "\"Atlas\" file=\"atlas.pdf\" dest=p1 view=XYZ view-at=72,721", 0)]
     public void Compare_ShouldCountOnlyNumbersBeyondTheTolerance_WhenTheHeaderGivesOne(string tolerance, string before,
         string after, int changes)
     {
@@ -414,6 +416,20 @@ public class SnapshotDiffTests
         Assert.All(changes, change => Assert.Equal(ChangeKind.AttributeChanged, change.Kind));
         Assert.Equal(["view: (missing) -> Fit", "dest: yes -> p2", "view: (missing) -> XYZ", "view-at: (missing) -> 72,720"],
             changes.Select(change => change.Detail));
+    }
+
+    [Fact]
+    public void Compare_ShouldReportOneBookmarkChanged_WhenABookmarkToAnotherFileLosesItsPage()
+    {
+        var before = SnapshotText.Header + "bookmarks\n  \"Atlas\" -> p1\n";
+        var after = SnapshotText.Header + "bookmarks\n  \"Atlas\" file=\"atlas.pdf\" dest=p1 view=Fit\n";
+
+        var changes = SnapshotDiff.Compare(before, after).Changes;
+
+        Assert.All(changes, change => Assert.Equal("bookmarks > Atlas", change.Path));
+        Assert.Equal(["AttributeChanged file: (missing) -> \"atlas.pdf\"", "AttributeChanged dest: (missing) -> p1",
+            "AttributeChanged view: (missing) -> Fit", "Changed \"Atlas\" -> p1 -> \"Atlas\" file=\"atlas.pdf\" dest=p1 view=Fit"],
+            changes.Select(change => $"{change.Kind} {change.Detail}"));
     }
 
     [Fact]

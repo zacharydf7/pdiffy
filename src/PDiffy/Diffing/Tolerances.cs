@@ -57,11 +57,13 @@ internal sealed class Tolerances(IReadOnlyDictionary<Field, double> points)
         SnapshotLine.Numbers(from) is [var before] && SnapshotLine.Numbers(to) is [var after]
         && Math.Abs(before - after) <= tolerance + Slack;
 
-    // A text run's size is its font size; every other size, every at= and a link's view-at= are positions. An embedded
-    // file's size, on a line with no page, is a byte count.
-    private static Field? FieldOf(SnapshotLine line, string key) => line.Page is null ? null : key switch
+    // A text run's size is its font size; every other size, every at= and a link's or bookmark's view-at= are positions.
+    // An embedded file's size, on a line with no page, is a byte count. A bookmark to another file has no page either.
+    private static Field? FieldOf(SnapshotLine line, string key) => key switch
     {
-        "at" or "view-at" => Field.Positions,
+        "view-at" => Field.Positions,
+        _ when line.Page is null => null,
+        "at" => Field.Positions,
         "size" => line.Words.ElementAtOrDefault(1) == "text" ? Field.FontSizes : Field.Positions,
         "width" => Field.LineWidths,
         _ => null,
