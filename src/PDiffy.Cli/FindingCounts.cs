@@ -9,6 +9,8 @@ namespace PDiffy.Cli;
 /// </summary>
 internal sealed class FindingCounts
 {
+    private const string WordRule = "Word: ";
+
     private readonly List<Snapshot> _snapshots;
     private readonly int _withoutChecks;
 
@@ -25,11 +27,13 @@ internal sealed class FindingCounts
         var withoutChecks = 0;
         foreach (var (file, lines) in verified)
         {
-            if (lines.FirstOrDefault()?.StartsWith(SnapshotWriter.FormatPrefix) != true) continue;
+            var first = lines.FirstOrDefault() ?? "";
+            var word = first.StartsWith(DocxSnapshotWriter.FormatPrefix);
+            if (!word && !first.StartsWith(SnapshotWriter.FormatPrefix)) continue;
 
             var findings = Findings(lines);
             if (findings is null) withoutChecks++;
-            else snapshots.Add(new Snapshot(file, findings));
+            else snapshots.Add(new Snapshot(file, findings, word));
         }
 
         return new FindingCounts(snapshots, withoutChecks);
@@ -96,8 +100,7 @@ internal sealed class FindingCounts
             foreach (var (rule, count) in ByRule())
             {
                 var name = WebUtility.HtmlEncode(rule);
-                var cell = Enum.TryParse<PdfCheck>(rule, out var check)
-                    ? $"<a href=\"{PdfCheckFinding.HelpUrlOf(check)}\">{name}</a>" : name;
+                var cell = HelpUrlOf(rule) is { } url ? $"<a href=\"{url}\">{name}</a>" : name;
                 html.Append($"<tr><td>{cell}</td><td>{count}</td></tr>");
             }
 
@@ -118,10 +121,24 @@ internal sealed class FindingCounts
     private IEnumerable<string> Keys() =>
         _snapshots.SelectMany(snapshot => snapshot.Findings.Select(finding => $"{snapshot.File}\n{finding}"));
 
-    // Most found first, such as "UntaggedContent 61, FigureAltText 30".
+    // Most found first, such as "UntaggedContent 61, FigureAltText 30". A Word rule is named as on its help page,
+    // "Word: TableHeaders", since some share a name with a PDF rule.
     private List<KeyValuePair<string, int>> ByRule() => _snapshots
-        .SelectMany(snapshot => snapshot.Findings.Select(finding => finding.Split(' ')[0])).CountBy(rule => rule)
+        .SelectMany(snapshot => snapshot.Findings
+            .Select(finding => (snapshot.Word ? WordRule : "") + finding.Split(' ')[0]))
+        .CountBy(rule => rule)
         .OrderByDescending(pair => pair.Value).ThenBy(pair => pair.Key, StringComparer.Ordinal).ToList();
+
+    private static string? HelpUrlOf(string rule)
+    {
+        if (rule.StartsWith(WordRule, StringComparison.Ordinal))
+        {
+            var name = rule[WordRule.Length..];
+            return Enum.TryParse<DocxCheck>(name, out var docx) ? DocxCheckFinding.HelpUrlOf(docx) : null;
+        }
+
+        return Enum.TryParse<PdfCheck>(rule, out var pdf) ? PdfCheckFinding.HelpUrlOf(pdf) : null;
+    }
 
     private IEnumerable<Snapshot> MostFirst() => _snapshots.Where(snapshot => snapshot.Findings.Count > 0)
         .OrderByDescending(snapshot => snapshot.Findings.Count)
@@ -140,7 +157,7 @@ internal sealed class FindingCounts
         return section.Where(line => line != SnapshotWriter.None).ToList();
     }
 
-    private sealed record Snapshot(string File, List<string> Findings)
+    private sealed record Snapshot(string File, List<string> Findings, bool Word)
     {
         public string Name => Path.GetRelativePath(Directory.GetCurrentDirectory(), File);
     }

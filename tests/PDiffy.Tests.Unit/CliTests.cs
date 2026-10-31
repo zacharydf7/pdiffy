@@ -549,6 +549,31 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void Run_ShouldPrintEveryFindingAndReturnOne_WhenCheckingADocxThatHasFindings()
+    {
+        var docx = WriteDocx("notes.docx", "Hello");
+
+        var exitCode = Commands.Run(["check", docx], _output, _error);
+
+        Assert.Equal(Commands.Different, exitCode);
+        var finding = "DocumentLanguage: Document has no language, and 1 paragraph has text without one (document)";
+        Assert.Equal(["1 finding(s):", finding, ""], _output.ToString().Split(Environment.NewLine));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Run_ShouldListNewProblemsOnlyWithChecks_WhenComparingDocxFiles(bool checks)
+    {
+        var before = WriteDocx("before.docx", "Hello", language: "en-US");
+        var after = WriteDocx("after.docx", "Hello");
+
+        Commands.Run([before, after, .. checks ? ["--checks"] : (string[])[]], _output, _error);
+
+        Assert.Equal(checks, _output.ToString().Contains("+ new problem DocumentLanguage"));
+    }
+
+    [Fact]
     public void Run_ShouldCountWhatTheVerifiedSnapshotsCompare_WhenAskedForCoverage()
     {
         Write("a.verified.pdfua.txt", "# pdfua-snapshot v1\n# ignored sections: layout\n# ignored fields: positions, colors\n");
@@ -621,6 +646,24 @@ public sealed class CliTests : IDisposable
             table);
         Assert.Contains("<td><a href=\"https://zacharydf7.github.io/pdiffy/reference/checks.html#figurealttext\">"
             + "FigureAltText</a></td><td>3</td>", File.ReadAllText(html));
+    }
+
+    // Word and PDF both have a TableHeaders rule, so a Word one is counted under its help page's name.
+    [Fact]
+    public void Run_ShouldCountWordFindingsApart_WhenAskedForFindingsOfDocxSnapshots()
+    {
+        Write("Guide.verified.pdfua.txt", "# pdfua-snapshot v1\n# checks: latest, 12 rules\nchecks\n"
+            + "  TableHeaders p2 structure > TH\n");
+        Write("Notes.verified.docx.txt", "# docx-snapshot v1\n# checks: latest, 3 rules\nchecks\n"
+            + "  TableHeaders body > Table\n  TableHeaders body > Table[2]\n");
+        var html = Path.Combine(_folder, "findings.html");
+
+        Commands.Run(["findings", _folder, "--html", html], _output, _error);
+
+        Assert.Equal("3 problem(s) in 2 snapshot(s)\nby rule: Word: TableHeaders 2, TableHeaders 1\n",
+            _output.ToString());
+        Assert.Contains("<td><a href=\"https://zacharydf7.github.io/pdiffy/reference/checks.html#word-tableheaders\">"
+            + "Word: TableHeaders</a></td><td>2</td>", File.ReadAllText(html));
     }
 
     [Fact]
@@ -791,11 +834,13 @@ public sealed class CliTests : IDisposable
         Assert.Equal(DocxDocument.Load(docx).ToSnapshot(), _output.ToString());
     }
 
-    private string WriteDocx(string name, string text, string? font = null)
+    private string WriteDocx(string name, string text, string? font = null, string? language = null)
     {
         var path = Path.Combine(_folder, name);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        var properties = font is null ? "" : $"<w:rPr><w:rFonts w:ascii=\"{font}\"/></w:rPr>";
+        var fontElement = font is null ? "" : $"<w:rFonts w:ascii=\"{font}\"/>";
+        var languageElement = language is null ? "" : $"<w:lang w:val=\"{language}\"/>";
+        var properties = font is null && language is null ? "" : $"<w:rPr>{fontElement}{languageElement}</w:rPr>";
         var docx = new Docx.TestDocx { Body = $"<w:p><w:r>{properties}<w:t>{text}</w:t></w:r></w:p>" };
         File.WriteAllBytes(path, docx.Build().ToArray());
         return path;

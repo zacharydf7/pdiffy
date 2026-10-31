@@ -624,7 +624,7 @@ pdiffy guide-v1.pdf guide-v2.pdf --json changes.json
 # Compare only what a profile guards: content, accessibility, layout or strict (the default).
 pdiffy guide-v1.pdf guide-v2.pdf --profile content
 
-# Also run the checks on both PDFs and list the problems the new version introduces or fixes.
+# Also run the checks on both PDFs or Word documents and list the problems the new version introduces or fixes.
 pdiffy guide-v1.pdf guide-v2.pdf --checks
 
 # Compare two folders file by file, such as the documents two releases generate. Files pair by their path inside each
@@ -633,7 +633,8 @@ pdiffy guide-v1.pdf guide-v2.pdf --checks
 pdiffy compare release-1.4/out release-1.5/out
 pdiffy compare release-1.4/out release-1.5/out --html compare/index.html
 
-# Run every built-in check on a PDF: prints each finding, exits with 0 when there are none and 1 when there are.
+# Run every built-in check on a PDF or Word document: prints each finding, exits with 0 when there are none and 1
+# when there are.
 pdiffy check guide.pdf
 
 # Print a PDF's or DOCX's snapshot, or save it to a file.

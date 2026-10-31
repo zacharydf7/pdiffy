@@ -22,7 +22,7 @@ exit with `0`.
 | [`pdiffy <before> <after>`](#compare) | Compares two PDFs, two DOCX files or two snapshot files |
 | [`pdiffy compare <before> <after>`](#compare-folders) | Compares two folders of documents, file by file |
 | [`pdiffy snapshot <file>`](#snapshot) | Prints or saves a PDF's or DOCX's snapshot |
-| [`pdiffy check <file.pdf>`](#check) | Runs every built-in check on a PDF |
+| [`pdiffy check <file.pdf\|file.docx>`](#check) | Runs every built-in check on a PDF or Word document |
 | [`pdiffy accept [targets]`](#accept) | Accepts received snapshots as verified |
 | [`pdiffy report [targets]`](#report) | Summarizes received snapshots, for review or a CI job page |
 | [`pdiffy coverage [targets]`](#coverage) | Counts what the verified snapshots compare and leave out |
@@ -54,7 +54,7 @@ Prints what changed between two files, the same summary a failing test shows, an
 | `--json` | Prints only the changes as [JSON](../guide/comparing.md#json-output), instead of the summary, so a script can read them from the pipe |
 | `--json <file>` | Saves the JSON to a file, and prints the summary as usual |
 | `--profile <profile>` | Leaves out what a [profile](options.md#pdf-profiles) leaves out: `content`, `accessibility`, `layout` or `strict` (the default). A Word document uses the [Word profile](options.md#word-profiles) of the same name, or `strict` when there's none. A snapshot file is compared as it is |
-| `--checks` | Also runs the latest [checks](checks.md) on both PDFs and compares what they find, so the summary lists each problem the new version introduces (`+ new problem DocumentTitle`) or fixes. Word documents and snapshot files are compared as they are |
+| `--checks` | Also runs the latest [checks](checks.md) on both PDFs or Word documents and compares what they find, so the summary lists each problem the new version introduces (`+ new problem DocumentTitle`) or fixes. Snapshot files are compared as they are |
 
 Each input can be:
 
@@ -99,7 +99,7 @@ the rest being compared.
 | `--json` | Prints only the result as JSON, instead of the summary |
 | `--json <file>` | Saves the JSON to a file, and prints the summary as usual |
 | `--profile <profile>` | Leaves out what the profile leaves out, as when comparing two files |
-| `--checks` | Also compares what the checks find in each pair of PDFs, as when comparing two files |
+| `--checks` | Also compares what the checks find in each pair of PDFs or Word documents, as when comparing two files |
 
 The JSON has one entry per file that differs, each with its `path`, its `status` and either its `changes`, in the same
 shape as [comparing two files](../guide/comparing.md#json-output), or the `problem` that stopped it being read:
@@ -137,10 +137,11 @@ pdiffy snapshot guide.pdf guide.pdfua.txt
 ## Check
 
 ```text
-pdiffy check <file.pdf>
+pdiffy check <file.pdf|file.docx>
 ```
 
-Runs every [built-in check](../guide/checking-documents.md#built-in-checks) on a PDF, prints each finding, and exits with
+Runs every [built-in check](../guide/checking-documents.md#built-in-checks) on a PDF, or every
+[Word check](checks.md#word-imagealttext) on a DOCX file, prints each finding, and exits with
 `0` when there are none and `1` when there are, so a pipeline can gate on a generated document without writing a test.
 
 ```text
@@ -244,8 +245,9 @@ pdiffy findings [<files or folders>] [--all] [--since <commit>] [--html <finding
 
 A snapshot that records [checks](../guide/checking-documents.md#approve-findings-with-the-snapshot) holds its
 document's findings, so `findings` can count the problems a suite's documents have without regenerating any of them.
-PDF snapshots without a `checks` section, or that ignore it, are counted apart; Word, text and JSON snapshots are left
-out.
+PDF and Word snapshots without a `checks` section, or that ignore it, are counted apart; text and JSON snapshots are
+left out. A Word rule is counted under its help page's name, such as `Word: TableHeaders`, since some share a name with
+a PDF rule.
 
 | Option | Does |
 |---|---|

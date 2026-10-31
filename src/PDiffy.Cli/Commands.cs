@@ -17,11 +17,11 @@ public static class Commands
           pdiffy <before> <after> [--html <report.html>]   Compare two PDFs, two DOCX files or two snapshot files
                  [--json [<changes.json>]]                  --json prints the changes as JSON instead, or saves them
                  [--profile <profile>]                      content, accessibility, layout or strict (the default)
-                 [--checks]                                 --checks also compares what the checks find in PDFs
+                 [--checks]                                 --checks also compares what the checks find
           pdiffy compare <before> <after> [--html <index.html>] [--json [<changes.json>]] [--profile <profile>]
                  [--checks]                                 Compare two folders, file by file
           pdiffy snapshot <file.pdf|file.docx> [<out>]      Print or save a PDF's or DOCX's snapshot
-          pdiffy check <file.pdf>                           Run every built-in check on a PDF
+          pdiffy check <file.pdf|file.docx>                 Run every built-in check on a PDF or DOCX
           pdiffy accept [<files or folders>] [--all]        Accept received snapshots as verified
           pdiffy report [<files or folders>] [--all] [--html <summary.html>] [--markdown <summary.md>]
                                                             Summarize received snapshots
@@ -118,7 +118,8 @@ public static class Commands
 
     private static int Check(string document, TextWriter output)
     {
-        var findings = PdfUaDocument.Load(document).Check();
+        IReadOnlyList<object> findings = DocumentFiles.IsDocx(document) ? DocxDocument.Load(document).Check()
+            : PdfUaDocument.Load(document).Check();
         output.WriteLine(findings.Count == 0 ? "No findings." : $"{findings.Count} finding(s):");
         foreach (var finding in findings) output.WriteLine(finding);
         return findings.Count == 0 ? Same : Different;
@@ -247,13 +248,13 @@ public static class Commands
     }
 
     // A snapshot file is compared as it is, which neither a profile nor checks can change. A Word document takes the
-    // profile of the same name, or Strict when there's none; checks are for PDFs only.
+    // profile of the same name, or Strict when there's none.
     internal static SnapshotDiff CompareFiles(string before, string after, PdfProfile profile, bool checks)
     {
         var docxProfile = Enum.TryParse<DocxProfile>(profile.ToString(), out var named) ? named : DocxProfile.Strict;
         return SnapshotDiff.CompareFiles(before, after,
             options => (checks ? options.Check(PdfCheckSet.Latest) : options).Use(profile),
-            options => options.Use(docxProfile));
+            options => (checks ? options.Check(DocxCheckSet.Latest) : options).Use(docxProfile));
     }
 
     // The library's version decides how documents are read, so it's the one that has to match the tests' package.

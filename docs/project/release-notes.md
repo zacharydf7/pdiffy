@@ -86,6 +86,10 @@ library does.
   ([#169](https://github.com/zacharydf7/pdiffy/issues/169)).
 - `DocumentLanguage` finds a Word document with text that gets no language from its defaults, styles or runs, as one
   finding for the whole document ([#170](https://github.com/zacharydf7/pdiffy/issues/170)).
+- On the command line, `pdiffy check` runs the Word checks on a DOCX file, `--checks` compares what they find in Word
+  documents too, and `pdiffy findings` counts Word snapshots' findings, a Word rule under its help page's name, such
+  as `Word: TableHeaders` ([#172](https://github.com/zacharydf7/pdiffy/issues/172)). Word snapshots without a
+  `checks` section now count among the snapshots that don't record checks.
 - Each `PdfCheckFinding` has a `Severity` (`Error` or `Warning`) and a `Reference` to the PDF/UA-1 clause its
   rule comes from, such as `ISO 14289-1 7.3`; `NoActions` and `NoEmbeddedFiles` are house rules, warnings with no
   reference ([#52](https://github.com/zacharydf7/pdiffy/issues/52)).
