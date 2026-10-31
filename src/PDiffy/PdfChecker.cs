@@ -481,7 +481,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
                     $"Standard structure type {type} is remapped to {target}");
             }
             else if (!StructureTypes.IsStandardInPdf17(type)
-                && Chain(type, map) is [.., var last] chain && last == type)
+                && StructureTypes.RoleMapChain(type, map) is [.., var last] chain && last == type)
             {
                 Add(PdfCheck.RoleMap, null, $"{roleMap} > {type} > loop",
                     $"Structure type {type} maps back to itself: {string.Join(" -> ", chain)}");
@@ -493,7 +493,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
             .Where(type => type != StructureTypes.None && !StructureTypes.IsStandardInPdf17(type));
         foreach (var (type, count) in used.CountBy(type => type))
         {
-            if (Chain(type, map) is [.., var last] && StructureTypes.IsStandardInPdf17(last)) continue;
+            var chain = StructureTypes.RoleMapChain(type, map);
+            if (StructureTypes.IsStandardInPdf17(chain[^1])) continue;
 
             Add(PdfCheck.RoleMap, null, $"{roleMap} > {type}",
                 $"Structure type {type}, used by {count} element(s), doesn't map to a standard type");
@@ -1037,24 +1038,6 @@ internal sealed class PdfChecker(PdfUaDocument document)
         {
             yield return (element, [.. StructurePaths.WithPaths(element.Children, path)]);
         }
-    }
-
-    // The type and the types it maps to in turn, up to the first standard type, a type with no mapping, or the first
-    // type seen twice, which ends the chain when it loops.
-    private static List<string> Chain(string type, Dictionary<string, string> map)
-    {
-        var chain = new List<string> { type };
-        var seen = new HashSet<string> { type };
-        var current = type;
-        while (map.TryGetValue(current, out var next))
-        {
-            chain.Add(next);
-            if (StructureTypes.IsStandardInPdf17(next) || !seen.Add(next)) break;
-
-            current = next;
-        }
-
-        return chain;
     }
 
     // A destination prints as its page (p1 Fit, or p? Fit for a page that can't be found), as GoTo and the page, or

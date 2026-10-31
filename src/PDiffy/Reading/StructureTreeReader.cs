@@ -261,17 +261,13 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         }
     }
 
-    // Follow custom -> custom -> standard to the first standard type, as PDF 1.7 does, stopping on a loop.
+    // A looping chain ends at the type before the repeat.
     private string? MapRole(string type)
     {
-        var current = type;
-        var seen = new HashSet<string> { type };
-        while (!StructureTypes.IsStandardInPdf17(current) && _roleMap.TryGetValue(current, out var next) && seen.Add(next))
-        {
-            current = next;
-        }
-
-        return current == type ? null : current;
+        var chain = StructureTypes.RoleMapChain(type, _roleMap);
+        var loops = chain.IndexOf(chain[^1]) < chain.Count - 1;
+        var last = loops ? chain[^2] : chain[^1];
+        return last == type ? null : last;
     }
 
     private void AddWithDescendants(DictionaryToken element, List<DictionaryToken> allElements, HashSet<IndirectReference> visited,

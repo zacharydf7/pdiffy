@@ -21,6 +21,24 @@ internal static class StructureTypes
     // PDF/UA-1 builds on PDF 1.7, so only its types are standard there.
     public static bool IsStandardInPdf17(string type) => Pdf17Types.Contains(type);
 
+    // A type and the types a role map maps it to in turn, up to the first standard type, as PDF 1.7 does, a type with no
+    // mapping, or up to and including the first repeat. A standard type isn't mapped.
+    public static List<string> RoleMapChain(string type, IReadOnlyDictionary<string, string> map)
+    {
+        var chain = new List<string> { type };
+        var seen = new HashSet<string> { type };
+        var current = type;
+        while (!IsStandardInPdf17(current) && map.TryGetValue(current, out var next))
+        {
+            chain.Add(next);
+            if (!seen.Add(next)) break;
+
+            current = next;
+        }
+
+        return chain;
+    }
+
     public static bool IsKnown(string type, IReadOnlyList<PdfRoleMapping> roleMap) =>
         Standard.Contains(type) || roleMap.Any(mapping => mapping.Custom == type || mapping.Standard == type);
 
