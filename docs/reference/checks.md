@@ -451,7 +451,9 @@ standard type that's remapped. **Category:** `Structure`. **Severity:** `Error`.
 **Why it matters:** assistive technology only knows the standard types, such as `P`, `H1` and `Table`. A custom type,
 such as `Callout`, means nothing to it unless the role map says which standard type it stands for, so an element of an
 unmapped type may be read as plain text or skipped. A loop never reaches a standard type, and remapping a standard
-type, such as `P` to `Span`, changes what every element of that type is.
+type, such as `P` to `Span`, changes what every element of that type is for the tools that follow it. PDiffy, as
+PDF 1.7 describes role mapping, ends a chain at the first standard type, so its other checks treat a `P` as a
+paragraph.
 
 **How to fix it:** map each custom type to the standard type closest in meaning, such as `Callout` to `Div` or
 `BodyText` to `P`, in the structure tree root's `/RoleMap`. A chain of custom types is fine as long as it ends at a

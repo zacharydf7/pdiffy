@@ -358,7 +358,8 @@ public sealed record PdfRoleMapping
 
     /// <summary>
     /// The type it maps to, usually a standard one such as <see cref="StructureType.Paragraph"/>. It can be another
-    /// custom type, which maps on in turn; <see cref="PdfStructureElement.MappedType"/> gives the end of the chain.
+    /// custom type, which maps on in turn; <see cref="PdfStructureElement.MappedType"/> gives the first standard type the
+    /// chain reaches.
     /// </summary>
     public required string Standard { get; init; }
 }
@@ -608,7 +609,8 @@ public sealed record PdfStructureElement
 
     /// <summary>
     /// The type the role map maps a custom <see cref="Type"/> to, at the end of the chain when one custom type maps to
-    /// another; null when the type isn't mapped.
+    /// another. The chain ends at the first standard type, so a standard type is never mapped; null when the type
+    /// isn't mapped.
     /// </summary>
     public string? MappedType { get; init; }
 

@@ -185,6 +185,9 @@ library does.
 
 ### Read more accurately
 
+- A role map chain ends at the first standard type, as PDF 1.7 describes, so an element's `MappedType` and its
+  snapshot line agree with the `RoleMap` check when a document remaps a standard type
+  ([#159](https://github.com/zacharydf7/pdiffy/issues/159)).
 - An element whose marked content is in a form XObject, such as a stamp, reads its text from the form alone, where it
   could include the page's text for the same MCID ([#89](https://github.com/zacharydf7/pdiffy/issues/89)). Text a
   form tags that no element points to now shows in `untagged`. See

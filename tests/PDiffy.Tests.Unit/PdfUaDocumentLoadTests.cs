@@ -140,6 +140,21 @@ public class PdfUaDocumentLoadTests
         Assert.Equal(roleMap, document.RoleMap);
     }
 
+    // Role mapping ends at the first standard type, so P keeps its meaning though the role map remaps it to Figure.
+    [Theory]
+    [InlineData("Para", "P")]
+    [InlineData("P", null)]
+    public void Load_ShouldStopAtTheFirstStandardType_WhenTheRoleMapRemapsOne(string type, string? mapped)
+    {
+        var pdf = new TestPdf().RoleMap("Para", "P").RoleMap("P", "Figure");
+        pdf.AddPage().Tagged(0, "Trail notes");
+        pdf.Structure(new TestElement(type, 0));
+
+        var element = Assert.Single(pdf.Load().Structure);
+
+        Assert.Equal(mapped, element.MappedType);
+    }
+
     [Fact]
     public void Load_ShouldStopAtTheLoop_WhenRoleMapIsCircular()
     {

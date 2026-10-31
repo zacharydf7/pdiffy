@@ -261,12 +261,12 @@ internal sealed class StructureTreeReader(PdfObjects objects, PageTree pages, De
         }
     }
 
-    // Role maps can chain (custom -> custom -> standard); follow the chain to its end, stopping on a loop.
+    // Follow custom -> custom -> standard to the first standard type, as PDF 1.7 does, stopping on a loop.
     private string? MapRole(string type)
     {
         var current = type;
         var seen = new HashSet<string> { type };
-        while (_roleMap.TryGetValue(current, out var next) && seen.Add(next))
+        while (!StructureTypes.IsStandardInPdf17(current) && _roleMap.TryGetValue(current, out var next) && seen.Add(next))
         {
             current = next;
         }

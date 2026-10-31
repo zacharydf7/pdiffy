@@ -67,6 +67,10 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   ([#77](https://github.com/zacharydf7/pdiffy/issues/77)). Only snapshots of fonts with such problems change, and
   `NoMissingGlyphs`, in every set, can gain a finding for them. A font whose TrueType program can't be read prints
   `problems=[unreadable-program]`.
+- A role map chain ends at the first standard type, as PDF 1.7 describes: with `Para` mapped to `P` and `P` to
+  `Figure`, a `Para` element prints `Para->P`, not `Para->Figure`, and a `P` element prints as `P`
+  ([#159](https://github.com/zacharydf7/pdiffy/issues/159)). Only snapshots of documents that remap a standard type,
+  which `RoleMap` reports, change, and checks treat such elements by the standard type they reach first.
 - A file whose header says PDF 2.0 prints `version=2.0`. PDiffy read the version through PdfPig, which reads a
   header it doesn't know as 1.4, so such snapshots printed `version=1.4` and change.
 

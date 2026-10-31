@@ -1209,6 +1209,22 @@ public class SnapshotDiffTests
             changes.Select(change => (change.Kind, change.PdfSection)));
     }
 
+    // The earlier release followed a role map chain past a standard type, so Para printed as Para->Figure.
+    [Fact]
+    public void Compare_ShouldReportOnlyTheElementsType_WhenASnapshotFromBeforeTheChainStopsIsCompared()
+    {
+        var pdf = new TestPdf().RoleMap("Para", "P").RoleMap("P", "Figure");
+        pdf.AddPage().Tagged(0, "Trail notes");
+        pdf.Structure(new TestElement("Para", 0));
+        var current = pdf.Load().ToSnapshot();
+        var earlier = current.Replace("Para->P ", "Para->Figure ");
+
+        var changes = SnapshotDiff.CompareSnapshots(earlier, current).Changes;
+
+        var change = Assert.Single(changes);
+        Assert.Equal((ChangeKind.Changed, PdfSection.Structure), (change.Kind, change.PdfSection));
+    }
+
     [Fact]
     public void Compare_ShouldReportTheShiftOnceAndOnlyTheNewPagesContent_WhenAPageIsInserted()
     {
