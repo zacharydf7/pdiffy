@@ -138,7 +138,7 @@ Findings are recorded in an opt-in `checks` section, so a new problem fails a te
 |---|---|---|
 | [#43](https://github.com/zacharydf7/pdiffy/issues/43) | Page-tree depth inside PdfPig | Open, waiting for PdfPig 0.1.17 |
 | [#46](https://github.com/zacharydf7/pdiffy/issues/46) | Load and snapshot time past 10 pages | Open |
-| [#48](https://github.com/zacharydf7/pdiffy/issues/48) | The report's word highlight takes in a closing quote | Open |
+| [#48](https://github.com/zacharydf7/pdiffy/issues/48) | The report's word highlight takes in a closing quote | Done |
 | [#154](https://github.com/zacharydf7/pdiffy/issues/154) | Layers an image or form XObject puts itself in | Open |
 
 ## Parked

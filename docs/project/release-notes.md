@@ -199,6 +199,9 @@ library does.
 
 ### Diffs
 
+- The HTML report and a change's detail mark only the changed word, not a quote mark next to it: at the start or end
+  of quoted text, in a key's value such as `alt="..."`, and in a JSON value. `"Walk with [-care-] {+caution+}"`
+  ([#48](https://github.com/zacharydf7/pdiffy/issues/48)).
 - A renamed attachment pairs as one file renamed, not as one removed and another added, when its description,
   relationship and size stay the same ([#162](https://github.com/zacharydf7/pdiffy/issues/162)).
 

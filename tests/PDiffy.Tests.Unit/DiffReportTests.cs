@@ -241,6 +241,31 @@ public class DiffReportTests
         Assert.Contains("<tr id=\"p1\"><td>    Sect p1</td>", html);
     }
 
+    // The quote marks around a line's text aren't part of its first or last word.
+    [Theory]
+    [InlineData("Go with a guide", "Go with a ranger", "&quot;Go with a <mark>guide</mark>&quot;</td>")]
+    [InlineData("Go with a guide", "Walk with a guide", "&quot;<mark>Walk </mark>with a guide&quot;</td>")]
+    public void ToHtml_ShouldMarkOnlyTheWord_WhenTheFirstOrLastWordOfQuotedTextChanges(string before, string after,
+        string marked)
+    {
+        var html = SnapshotDiff.CompareSnapshots(Before, Before.Replace(before, after)).ToHtml();
+
+        Assert.Contains(marked, html);
+    }
+
+    // In a key's quoted value and in a JSON value, only the word is marked, not the key or the quote and comma.
+    [Theory]
+    [InlineData("  H1 p1 \"Contents\"", "  H1 p1 \"Overview\"", "&quot;<mark>Overview</mark>&quot;</td>")]
+    [InlineData("  Figure p1 alt=\"Park logo\"", "  Figure p1 alt=\"Ridge logo\"", "alt=&quot;<mark>Ridge </mark>logo&quot;</td>")]
+    [InlineData("  \"title\": \"Walk with care\",", "  \"title\": \"Walk with caution\",", "with <mark>caution</mark>&quot;,</td>")]
+    public void ToHtml_ShouldMarkOnlyTheWord_WhenAQuotedValueChanges(string before, string after, string marked)
+    {
+        var html = SnapshotDiff.CompareSnapshots("structure\n" + before + "\n",
+            "structure\n" + after + "\n").ToHtml();
+
+        Assert.Contains(marked, html);
+    }
+
     [Fact]
     public void ToHtml_ShouldShowTheWholeTextAsOneSection_WhenTheTextIsNotASnapshot()
     {

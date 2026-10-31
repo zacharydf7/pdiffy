@@ -418,7 +418,7 @@ public class SnapshotDiffTests
     }
 
     [Theory]
-    [InlineData("P p1 \"He said \\\"stop\\\"\"", "P p1 \"He said \\\"go\\\"\"", "\"He said [-\"stop\"-] {+\"go\"+}\"")]
+    [InlineData("P p1 \"He said \\\"stop\\\"\"", "P p1 \"He said \\\"go\\\"\"", "\"He said \"[-stop-] {+go+}\"\"")]
     [InlineData("Figure p1", "Figure p1 \"Logo\"", "\"{+Logo+}\"")]
     public void Compare_ShouldShowReadableText_WhenTextHasQuotesOrStartsEmpty(string before, string after, string detail)
     {
@@ -1045,7 +1045,7 @@ public class SnapshotDiffTests
             new()
             {
                 Kind = ChangeKind.TextChanged, SectionName = null, Path = "line 3", Page = null,
-                Detail = "[-\"b\": 2,-] {+\"c\": 4+}",
+                Detail = "\"[-b-] {+c+}\": [-2,-] {+4+}",
             },
             new()
             {
@@ -1296,6 +1296,30 @@ public class SnapshotDiffTests
 
         Assert.Equal([(ChangeKind.AttributeChanged, PdfSection.Settings), (ChangeKind.Added, PdfSection.Settings)],
             changes.Select(change => (change.Kind, change.PdfSection)));
+    }
+
+    // Spacing comes from the side a word is on, and a tab stays inside its word.
+    [Theory]
+    [InlineData("Walk with", "Walk with care", "Walk with {+care+}")]
+    [InlineData("Walk with care", "Walk with", "Walk with [-care-]")]
+    [InlineData("\"Go\"", "\"Go\" now", "\"Go\" {+now+}")]
+    [InlineData("name\tGo with care", "name\tGo with caution", "name\tGo with [-care-] {+caution+}")]
+    public void Compare_ShouldShowTheWordsWithTheirSpacing_WhenAWordIsAddedOrRemoved(string before, string after,
+        string detail)
+    {
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots(before + "\n", after + "\n").Changes);
+
+        Assert.Equal(detail, change.Detail);
+    }
+
+    // A text file that isn't a snapshot is compared line by line, and the closing quote isn't part of the last word.
+    [Fact]
+    public void Compare_ShouldMarkOnlyTheWord_WhenTheLastWordInATextFilesQuoteChanges()
+    {
+        var change = Assert.Single(SnapshotDiff.CompareSnapshots("P p1 \"Walk with care\"\n",
+            "P p1 \"Walk with caution\"\n").Changes);
+
+        Assert.Equal("P p1 \"Walk with [-care-] {+caution+}\"", change.Detail);
     }
 
     [Fact]

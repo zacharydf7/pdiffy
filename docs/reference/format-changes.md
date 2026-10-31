@@ -92,6 +92,11 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### Diffs
 
+- A quote mark is kept apart from the word next to it when words are compared, so the HTML report and a change's
+  detail mark only the changed word: `Go with <mark>care</mark>"`, `alt="<mark>Ridge</mark> logo"` and
+  `He said "[-stop-] {+go+}"` ([#48](https://github.com/zacharydf7/pdiffy/issues/48)). No snapshot changes, but a
+  test that asserts on the detail of a change to quoted words, in PDF, Word or text-file comparisons, can see it
+  differ.
 - An embedded file whose name changes while its description, relationship and size stay the same pairs as one file
   renamed (the name, and the file name that repeats it), not as one file removed and another added
   ([#162](https://github.com/zacharydf7/pdiffy/issues/162)). No snapshot changes.

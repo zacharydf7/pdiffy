@@ -298,14 +298,23 @@ internal static class DiffReport
     {
         var left = new StringBuilder();
         var right = new StringBuilder();
-        foreach (var step in LineDiff.Compare(before.Split(' '), after.Split(' ')))
+        var (old, edited) = (WordDiff.Tokens(before), WordDiff.Tokens(after));
+        var (o, e) = (0, 0);
+        var steps = LineDiff.Compare(old.Select(token => token.Word).ToList(),
+            edited.Select(token => token.Word).ToList());
+        foreach (var step in steps)
         {
-            var word = Encode(step.Line) + " ";
-            if (step.Kind != '+') left.Append(step.Kind == '-' ? $"<mark>{word}</mark>" : word);
-            if (step.Kind != '-') right.Append(step.Kind == '+' ? $"<mark>{word}</mark>" : word);
+            if (step.Kind != '+') Mark(left, old[o++], step.Kind == '-');
+            if (step.Kind != '-') Mark(right, edited[e++], step.Kind == '+');
         }
 
         return (left.ToString().TrimEnd(), right.ToString().TrimEnd());
+    }
+
+    private static void Mark(StringBuilder line, (string Word, string After) token, bool changed)
+    {
+        var text = Encode(token.Word) + token.After;
+        line.Append(changed ? $"<mark>{text}</mark>" : text);
     }
 
     // Each section's lines in order, nesting kept as indentation. Plain text is one section.

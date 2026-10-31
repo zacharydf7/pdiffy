@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace PDiffy.Diffing;
 
@@ -393,22 +394,77 @@ internal sealed class TreeMatcher(string name, SnapshotFormat format,
 /// <summary>A word-level diff of two texts, marking removed words [-like this-] and added words {+like this+}.</summary>
 internal static class WordDiff
 {
+    private static readonly Regex WordAndSpaces = new(@"([^ ]+)( *)");
+
+    // Spacing comes from the side the words are on: the old text's before a removed or kept word, the new text's
+    // before an added one, and a removed word and the word that replaces it are always set apart.
     public static string Show(string before, string after)
     {
-        var steps = LineDiff.Compare(Words(before), Words(after));
+        var (old, edited) = (Tokens(before.Trim(' ')), Tokens(after.Trim(' ')));
+        var steps = LineDiff.Compare(old.Select(token => token.Word).ToList(),
+            edited.Select(token => token.Word).ToList());
         var text = new StringBuilder();
+        var (o, e) = (0, 0);
+        var (oldSpace, newSpace) = ("", "");
+        var previous = ' ';
         for (var i = 0; i < steps.Count;)
         {
             var kind = steps[i].Kind;
-            var words = new List<string>();
-            while (i < steps.Count && steps[i].Kind == kind) words.Add(steps[i++].Line);
-            var joined = string.Join(" ", words);
-            if (text.Length > 0) text.Append(' ');
-            text.Append(kind switch { '-' => $"[-{joined}-]", '+' => $"{{+{joined}+}}", _ => joined });
+            var lead = previous == '-' && kind == '+' ? " " : kind == '+' || previous == '+' ? newSpace : oldSpace;
+            var group = new StringBuilder();
+            for (var first = i; i < steps.Count && steps[i].Kind == kind; i++)
+            {
+                if (i > first) group.Append(kind == '+' ? newSpace : oldSpace);
+                if (kind != '+')
+                {
+                    group.Append(old[o].Word);
+                    oldSpace = Space(old[o++]);
+                }
+
+                if (kind != '-')
+                {
+                    if (kind == '+') group.Append(edited[e].Word);
+                    newSpace = Space(edited[e++]);
+                }
+            }
+
+            if (text.Length > 0) text.Append(lead);
+            text.Append(kind switch { '-' => $"[-{group}-]", '+' => $"{{+{group}+}}", _ => group.ToString() });
+            previous = kind;
         }
 
         return text.ToString();
     }
 
-    private static string[] Words(string text) => text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    private static string Space((string Word, string After) token) => token.After.Length == 0 ? "" : " ";
+
+    /// <summary>
+    /// A line's words, each with the spaces after it. Every quote mark is a word of its own, so changing a word next
+    /// to one, at the start or end of quoted text or in a key such as alt="...", doesn't mark the quote too.
+    /// </summary>
+    internal static List<(string Word, string After)> Tokens(string text)
+    {
+        var tokens = new List<(string Word, string After)>();
+        var indent = text.Length - text.TrimStart(' ').Length;
+        if (indent > 0) tokens.Add(("", text[..indent]));
+        foreach (Match match in WordAndSpaces.Matches(text, indent))
+        {
+            var (word, after) = (match.Groups[1].Value, match.Groups[2].Value);
+            var start = 0;
+            for (var i = 0; i < word.Length; i++)
+            {
+                // A quote escaped in a snapshot line (\") belongs to the word.
+                if (word[i] != '"' || i > 0 && word[i - 1] == '\\') continue;
+
+                if (i > start) tokens.Add((word[start..i], ""));
+                tokens.Add(("\"", ""));
+                start = i + 1;
+            }
+
+            if (start < word.Length) tokens.Add((word[start..], ""));
+            tokens[^1] = (tokens[^1].Word, after);
+        }
+
+        return tokens;
+    }
 }
