@@ -96,6 +96,7 @@ internal sealed class DocxSnapshotWriter
             if (setup.TitlePage) line.Append(" title-page");
             Key(line, "headers", setup.Headers.Count > 0 ? string.Join(",", setup.Headers) : null);
             Key(line, "footers", setup.Footers.Count > 0 ? string.Join(",", setup.Footers) : null);
+            if (Shows(DocxDetail.OtherFormatting)) Key(line, "other", setup.Other);
             Line(1, line.ToString());
             if (setup.Revision is { } revision) Line(2, RevisionLine(revision));
         }
@@ -124,6 +125,7 @@ internal sealed class DocxSnapshotWriter
             Key(line, "based-on", style.BasedOn);
             WriteRun(line, style.Run, new RunFormat { Language = style.Run.Language is null ? null : _language });
             WriteLayout(line, style.Paragraph, new ParagraphFormat());
+            if (Shows(DocxDetail.OtherFormatting)) Key(line, "other", style.Other);
             Line(depth, line.ToString());
         }
     }
@@ -243,6 +245,7 @@ internal sealed class DocxSnapshotWriter
         Key(line, "label", Quote(paragraph.List?.Label));
         var styleLayout = paragraph.Style is null ? null : _styleLayouts.GetValueOrDefault(paragraph.Style);
         WriteLayout(line, paragraph.Layout, styleLayout ?? new ParagraphFormat());
+        if (Shows(DocxDetail.OtherFormatting)) Key(line, "other", paragraph.Layout.Other);
         // The text is scrubbed once, with the positions of what sits in it, so those still point into the printed text.
         var results = Shows(DocxDetail.FieldResults) ? [] : FieldResults(paragraph);
         var positions = paragraph.Inlines.Select(inline => Moved(inline.Position, results)).ToArray();
@@ -359,6 +362,7 @@ internal sealed class DocxSnapshotWriter
         Key(line, "borders", List(Borders(table.Borders)));
         Key(line, "caption", Quote(table.Caption));
         Key(line, "description", Quote(table.Description));
+        if (Shows(DocxDetail.OtherFormatting)) Key(line, "other", table.Other);
         Line(depth, line.ToString());
         foreach (var revision in table.Revisions) Line(depth + 1, RevisionLine(revision));
         for (var i = 0; i < table.Rows.Count; i++)
@@ -370,6 +374,7 @@ internal sealed class DocxSnapshotWriter
 
             // A key rather than a bare word, so gaining it reads as an attribute change like the row's other keys.
             if (row.CantSplit) Key(rowLine, "split", "no");
+            if (Shows(DocxDetail.OtherFormatting)) Key(rowLine, "other", row.Other);
             Line(depth + 1, rowLine.ToString());
             foreach (var control in row.Controls) WriteControl(control, depth + 2);
             foreach (var revision in row.Revisions) Line(depth + 2, RevisionLine(revision));
@@ -386,6 +391,7 @@ internal sealed class DocxSnapshotWriter
                 Key(cellLine, "borders", List(Borders(cell.Borders)));
                 Key(cellLine, "valign", cell.VerticalAlign);
                 Key(cellLine, "text-direction", cell.TextDirection);
+                if (Shows(DocxDetail.OtherFormatting)) Key(cellLine, "other", cell.Other);
                 Line(depth + 2, cellLine.ToString());
                 foreach (var control in cell.Controls) WriteControl(control, depth + 3, around: true);
                 foreach (var revision in cell.Revisions) Line(depth + 3, RevisionLine(revision));
@@ -424,6 +430,7 @@ internal sealed class DocxSnapshotWriter
         Flag(line, "hidden", format.Hidden, baseFormat.Hidden);
         Flag(line, "rtl", format.RightToLeft, baseFormat.RightToLeft);
         Changed(line, "lang", format.Language, baseFormat.Language, Missing);
+        if (Shows(DocxDetail.OtherFormatting)) Changed(line, "other", format.Other, baseFormat.Other, "none");
     }
 
     private void WriteLayout(StringBuilder line, ParagraphFormat format, ParagraphFormat baseFormat)

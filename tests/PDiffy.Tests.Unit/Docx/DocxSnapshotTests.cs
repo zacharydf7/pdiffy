@@ -103,7 +103,7 @@ public sealed class DocxSnapshotTests : SnapshotFolderTests
         var snapshot = DocxDocument.Load(Docx("Text")).ToSnapshot(o => o.Use(DocxProfile.Content));
 
         Assert.StartsWith("# docx-snapshot v1\n# ignored sections: sections, styles\n"
-            + "# ignored fields: fonts, font-sizes, colors, spacing, indents\n", snapshot);
+            + "# ignored fields: fonts, font-sizes, colors, spacing, indents, other-formatting\n", snapshot);
     }
 
     [Fact]
@@ -120,7 +120,8 @@ public sealed class DocxSnapshotTests : SnapshotFolderTests
         var snapshot = DocxDocument.Load(Docx("Text")).ToSnapshot(o => o.Use(DocxProfile.Content).Ignore(DocxDetail.ImageHashes));
 
         Assert.StartsWith("# docx-snapshot v1\n# ignored sections: sections, styles\n"
-            + "# ignored fields: image-hashes, fonts, font-sizes, colors, spacing, indents\n", snapshot);
+            + "# ignored fields: image-hashes, fonts, font-sizes, colors, spacing, indents, "
+            + "other-formatting\n", snapshot);
     }
 
     [Fact]

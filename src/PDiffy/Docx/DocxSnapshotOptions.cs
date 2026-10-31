@@ -68,6 +68,12 @@ public enum DocxDetail
 
     /// <summary>Who wrote each comment.</summary>
     CommentAuthors,
+
+    /// <summary>
+    /// The hash of formatting PDiffy doesn't read (other=), on spans, paragraphs, styles, tables, rows, cells and
+    /// sections.
+    /// </summary>
+    OtherFormatting,
 }
 
 /// <summary>
@@ -81,8 +87,9 @@ public enum DocxProfile
     Strict,
 
     /// <summary>
-    /// The text and its structure: paragraphs, tables, lists, headers, footers, notes and inline formatting such as bold.
-    /// Leaves out the sections and styles sections, and fonts, font sizes, colors, spacing and indents.
+    /// The text and its structure: paragraphs, tables, lists, headers, footers, notes and inline formatting such as
+    /// bold. Leaves out the sections and styles sections, and fonts, font sizes, colors, spacing, indents and other
+    /// formatting.
     /// </summary>
     Content,
 }
@@ -122,7 +129,8 @@ public sealed class DocxSnapshotOptions
     {
         DocxProfile.Strict => this,
         DocxProfile.Content => Ignore(DocxSection.Sections, DocxSection.Styles)
-            .Ignore(DocxDetail.Fonts, DocxDetail.FontSizes, DocxDetail.Colors, DocxDetail.Spacing, DocxDetail.Indents),
+            .Ignore(DocxDetail.Fonts, DocxDetail.FontSizes, DocxDetail.Colors, DocxDetail.Spacing, DocxDetail.Indents,
+                DocxDetail.OtherFormatting),
         _ => throw new ArgumentOutOfRangeException(nameof(profile), profile, "Not a DocxProfile value."),
     };
 

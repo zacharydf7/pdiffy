@@ -146,6 +146,7 @@ internal sealed class DocxReader
             TitlePage = IsOn(sectPr.Element(W + "titlePg")),
             Headers = References(sectPr, "headerReference"),
             Footers = References(sectPr, "footerReference"),
+            Other = OtherProperties.Hash((sectPr, OtherProperties.ReadInSection)),
             Revision = sectPr.Element(W + "sectPrChange") is { } change
                 ? new DocxRevision
                 {
@@ -198,6 +199,7 @@ internal sealed class DocxReader
             Borders = TableFormat.Borders(properties?.Element(W + "tblBorders")),
             Caption = Attr(properties?.Element(W + "tblCaption"), "val"),
             Description = Attr(properties?.Element(W + "tblDescription"), "val"),
+            Other = OtherProperties.Hash((properties, OtherProperties.ReadInTable)),
             Rows = rows,
             Between = between,
             Revisions =
@@ -294,6 +296,8 @@ internal sealed class DocxReader
             Cells = cells, IsHeader = IsOn(properties?.Element(W + "tblHeader")),
             Height = TableFormat.Height(properties?.Element(W + "trHeight")),
             CantSplit = IsOn(properties?.Element(W + "cantSplit")),
+            Other = OtherProperties.Hash((properties, OtherProperties.ReadInRow),
+                (row.Element(W + "tblPrEx"), ["tblPrExChange"])),
             Revisions =
             [
                 .. Changes(properties, RowChanges),
@@ -347,6 +351,7 @@ internal sealed class DocxReader
             Borders = TableFormat.Borders(properties?.Element(W + "tcBorders")),
             VerticalAlign = Attr(properties?.Element(W + "vAlign"), "val"),
             TextDirection = Attr(properties?.Element(W + "textDirection"), "val"),
+            Other = OtherProperties.Hash((properties, OtherProperties.ReadInCell)),
             Revisions = Changes(properties, CellChanges), Controls = controls,
         };
     }
@@ -406,7 +411,10 @@ internal sealed class DocxReader
         {
             Style = style,
             List = list,
-            Layout = _styles.Layout(style, pPr),
+            Layout = _styles.Layout(style, pPr) with
+            {
+                Other = OtherProperties.Hash((pPr, OtherProperties.ReadInParagraph)),
+            },
             Run = paragraphRun,
             Text = content.Text.ToString(),
             Spans = content.Spans,

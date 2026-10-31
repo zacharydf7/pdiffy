@@ -549,6 +549,34 @@ public class SnapshotDiffTests
             changes.Select(change => $"{change.Kind} {change.Detail}"));
     }
 
+    // Two bold runs used to print as one span; the one with unread formatting now prints its own, under any profile.
+    [Fact]
+    public void Compare_ShouldShowTheNewKeysAndTheSplitSpan_WhenADocxSnapshotFromBeforeOtherFormattingMeetsOneWithIt()
+    {
+        var before = "# docx-snapshot v1\nbody\n  P \"Ridge loop\"\n    span \"Ridge loop\" bold\n";
+        var after = "# docx-snapshot v1\nbody\n  P other=0123456789abcdef \"Ridge loop\"\n    span \"Ridge \" bold\n"
+            + "    span \"loop\" bold other=fedcba9876543210\n";
+
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
+
+        Assert.Equal(["AttributeChanged other: (missing) -> 0123456789abcdef", "TextChanged \"Ridge [-loop-]\"",
+            "Added span \"loop\" bold other=fedcba9876543210"], changes.Select(change => $"{change.Kind} {change.Detail}"));
+    }
+
+    [Fact]
+    public void Compare_ShouldShowTheHeaderAndTheSplitSpan_WhenAContentSnapshotFromBeforeOtherFormattingMeetsOneWithIt()
+    {
+        var before = "# docx-snapshot v1\n# ignored fields: fonts, font-sizes, colors, spacing, indents\nbody\n"
+            + "  P \"Ridge loop\"\n    span \"Ridge loop\" bold\n";
+        var after = "# docx-snapshot v1\n# ignored fields: fonts, font-sizes, colors, spacing, indents, other-formatting\n"
+            + "body\n  P \"Ridge loop\"\n    span \"Ridge \" bold\n    span \"loop\" bold\n";
+
+        var changes = SnapshotDiff.CompareSnapshots(before, after).Changes;
+
+        Assert.Equal(["header", "body > P > span[1]", "body > P > span[2]"], changes.Select(change => change.Path));
+        Assert.Equal([ChangeKind.Changed, ChangeKind.TextChanged, ChangeKind.Added], changes.Select(change => change.Kind));
+    }
+
     [Fact]
     public void Compare_ShouldShowOnlyTheNewKeys_WhenADocxSnapshotFromBeforeParagraphBordersMeetsOneWithThem()
     {

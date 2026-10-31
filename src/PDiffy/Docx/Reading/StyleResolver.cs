@@ -57,6 +57,7 @@ internal sealed class StyleResolver
             IsDefault = IsTrue(Attr(style, "default")),
             Run = type == "character" ? CharacterStyleRun(id) : ParagraphRun(id),
             Paragraph = type == "paragraph" ? Layout(id, null) : new ParagraphFormat(),
+            Other = OtherProperties.HashStyle(style, type == "paragraph"),
         };
     }
 
@@ -87,7 +88,7 @@ internal sealed class StyleResolver
             };
         }
 
-        return ApplyRun(format, direct);
+        return ApplyRun(format, direct) with { Other = OtherProperties.Hash((direct, OtherProperties.ReadInRun)) };
     }
 
     /// <summary>The list and level a paragraph style puts its paragraphs in, set by the nearest style in its chain.</summary>

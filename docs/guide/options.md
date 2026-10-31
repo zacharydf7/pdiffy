@@ -211,8 +211,8 @@ await Snapshot.VerifyDocxAsync(docx, configure: options => options
 - [`DocxSection`](xref:PDiffy.DocxSection): `Document`, `Sections`, `Styles`, `Numbering`, `Body`, `Headers`,
   `Footers`, `Notes`.
 - [`DocxDetail`](xref:PDiffy.DocxDetail): image hashes, field results, fonts, font sizes, colors, spacing, indents,
-  revision and comment authors. See [the reference](../reference/options.md#word-details) for exactly what each leaves
-  out.
+  revision and comment authors, and other formatting. See [the reference](../reference/options.md#word-details) for
+  exactly what each leaves out.
 - DOCX scrubbers also apply to link addresses.
 
 > [!TIP]

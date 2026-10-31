@@ -101,6 +101,18 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   renamed (the name, and the file name that repeats it), not as one file removed and another added
   ([#162](https://github.com/zacharydf7/pdiffy/issues/162)). No snapshot changes.
 
+### Word (`docx-snapshot v1`, unchanged)
+
+- Formatting PDiffy doesn't read prints as a hash, `other=`, on the style, span, paragraph, table, row, cell or
+  section line it belongs to, so changing it changes the snapshot
+  ([#146](https://github.com/zacharydf7/pdiffy/issues/146)). Noise Word writes into nearly every document is left
+  out, but most Word documents still gain `other=` somewhere: Word writes `w:tblLook` into every table, and table
+  styles such as Table Grid and paragraph styles such as List Paragraph and Title set formatting PDiffy doesn't read.
+  A run whose only difference from its paragraph is such formatting now prints a span, and two runs that printed as
+  one span split in two when only one has it: the first span loses the second's text and the second is added. The
+  split shows under every profile. The `Content` profile leaves `other=` out, so every `Content` snapshot's header
+  now lists `other-formatting` as ignored. `DocxDetail.OtherFormatting` leaves it out on its own.
+
 ### PDF (`pdfua-snapshot v1`, unchanged)
 
 - A test can opt into a `checks` section with `Check(PdfCheckSet)`: what the checks find, one line per

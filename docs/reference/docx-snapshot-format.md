@@ -95,6 +95,15 @@ their line. See [`DocxRevisionKind`](xref:PDiffy.DocxRevisionKind) for every kin
 - When anything is ignored, the second line lists it: `# ignored sections: ...` and `# ignored fields: ...`.
 - An empty section prints `(none)` and an ignored one prints `(ignored)`.
 - Lengths are in points. Colors are hex.
+- `other=` is a hash of the formatting PDiffy doesn't read, such as character spacing or a table's indent, on a style,
+  span, paragraph, table, row, cell or section line, so a change to it still shows. Only the line's own properties
+  count, not what it inherits. A style's hash covers its table, row and cell properties and a table style's formatting
+  for header rows, banding and so on (`w:tblStylePr`); a row's covers its table exceptions (`w:tblPrEx`). A property
+  PDiffy reads part of, such as `w:spacing`, counts as read, so a change to an attribute PDiffy doesn't print, such as
+  automatic spacing, doesn't show. Noise Word writes into nearly every document is left out: proofing and web-view
+  marks, the complex-script copies of bold, italic and size, the document grid, conditional-format markers, a paragraph
+  mark's own formatting and later Word versions' extensions (`w14:` and so on). The document defaults (`w:docDefaults`)
+  aren't hashed.
 - Relationship ids, editing-session ids, the zip's layout and styles nothing uses are left out, so regenerating the
   same document gives the same snapshot.
 

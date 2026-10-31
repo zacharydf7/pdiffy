@@ -83,7 +83,7 @@ appears; the rest of each line is still compared.
 | DocxProfile | For tests that guard | Leaves out |
 |---|---|---|
 | `Strict` | Everything | Nothing, the same as no profile |
-| `Content` | The text and its structure: paragraphs, tables, lists, headers, footers, notes and inline formatting such as bold | The `Sections` and `Styles` sections, and `Fonts`, `FontSizes`, `Colors`, `Spacing` and `Indents` |
+| `Content` | The text and its structure: paragraphs, tables, lists, headers, footers, notes and inline formatting such as bold | The `Sections` and `Styles` sections, and `Fonts`, `FontSizes`, `Colors`, `Spacing`, `Indents` and `OtherFormatting` |
 
 The snapshot's header lists the sections and fields a profile leaves out, not the profile's name. If a later release
 changes what a profile leaves out, the header changes too, so the test fails and says so instead of quietly checking
@@ -118,6 +118,7 @@ less.
 | `Indents` | Left, right, first-line and hanging indents of paragraphs, styles and list levels |
 | `RevisionAuthors` | Who made each tracked change |
 | `CommentAuthors` | Who wrote each comment |
+| `OtherFormatting` | The hash of formatting PDiffy doesn't read (`other=`) |
 
 `ScrubDates()`, `ScrubGuids()` and `ScrubText(regex, replacement)` work as for PDFs, and also apply to link addresses.
 

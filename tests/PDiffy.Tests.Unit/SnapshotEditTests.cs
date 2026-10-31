@@ -131,7 +131,9 @@ public class SnapshotEditTests
         var pdfSharp = new PdfSharpPdf().Artifact("Page 1").Heading("Trail Guide").Paragraph("Pack ", "water")
             .Figure("Trail map").NewPage().Paragraph("Ask a ranger.");
         yield return ("PDFsharp PDF", pdfSharp.Load().ToSnapshot());
-        yield return ("DOCX", DocxMutationTests.Build(new DocxMutationTests.Sample()).ToSnapshot());
+        // With a row PDiffy reads only part of, so other= is edited too.
+        var docx = DocxMutationTests.Build(new DocxMutationTests.Sample { RowFormat = "<w:jc w:val=\"center\"/>" });
+        yield return ("DOCX", docx.ToSnapshot());
     }
 
     // An indented line that isn't a section's "(none)" or "(ignored)" placeholder.

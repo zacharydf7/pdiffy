@@ -29,13 +29,14 @@ each release shipped.
 | [#118](https://github.com/zacharydf7/pdiffy/issues/118) | `width=` on text runs prints on every run, so nearly every snapshot changes and the format version goes up |
 | [#125](https://github.com/zacharydf7/pdiffy/issues/125) | How a snapshot links structure lines to layout lines, so the report can draw reading order |
 | [#145](https://github.com/zacharydf7/pdiffy/issues/145) | Recording East Asian and right-to-left fonts changes many Word snapshots |
-| [#146](https://github.com/zacharydf7/pdiffy/issues/146) | A catch-all hash for Word formatting PDiffy doesn't read |
 
 Decided: [#89](https://github.com/zacharydf7/pdiffy/issues/89) gets the full fix, reading each form XObject's marked
 content apart from the page's so every element gets its own text. Decided for 0.4.0: the `Accessibility` profile keeps
 leaving out `images=` ([#90](https://github.com/zacharydf7/pdiffy/issues/90)), a `span-lang` change is flagged only when
 its languages change ([#147](https://github.com/zacharydf7/pdiffy/issues/147)), `pdiffy check` reports untagged text
 once per page ([#117](https://github.com/zacharydf7/pdiffy/issues/117)), and the new names stay as they are.
+Decided later: unread Word formatting prints as an `other=` hash, leaving out noise Word writes everywhere and the
+document defaults ([#146](https://github.com/zacharydf7/pdiffy/issues/146)).
 
 ## 1. What snapshots miss
 

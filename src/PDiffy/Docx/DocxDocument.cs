@@ -289,6 +289,13 @@ public sealed record PageSetup
     /// A tracked change to the section's settings (<see cref="DocxRevisionKind.SectionFormat"/>), or null.
     /// </summary>
     public DocxRevision? Revision { get; init; }
+
+    /// <summary>
+    /// A hash of the section's own settings PDiffy doesn't read, such as w:pgBorders or w:lnNumType, so changing it
+    /// changes the snapshot; null when it has none. Only its own formatting counts, not what it inherits, and noise
+    /// Word writes everywhere is left out.
+    /// </summary>
+    public string? Other { get; init; }
 }
 
 /// <summary>A style the document uses. <see cref="Run"/> and <see cref="Paragraph"/> are resolved through its based-on chain.</summary>
@@ -323,6 +330,13 @@ public sealed record DocxStyle
     /// How a paragraph style lays out paragraphs, document defaults included; empty for other kinds of style.
     /// </summary>
     public ParagraphFormat Paragraph { get; init; } = new();
+
+    /// <summary>
+    /// A hash of the style's own run, paragraph and table formatting PDiffy doesn't read, such as w:kern or
+    /// w:widowControl, so changing it changes the snapshot; null when it has none. Only its own formatting counts, not
+    /// what it inherits, and noise Word writes everywhere is left out.
+    /// </summary>
+    public string? Other { get; init; }
 }
 
 /// <summary>How text looks. Sizes are in points; null means not set.</summary>
@@ -384,6 +398,13 @@ public sealed record RunFormat
     /// character style's only from the style.
     /// </summary>
     public string? Language { get; init; }
+
+    /// <summary>
+    /// A hash of the run's own direct formatting PDiffy doesn't read, such as character spacing (w:spacing) or w:shd,
+    /// so changing it changes the snapshot; null when it has none. Only the run's own formatting counts, not its
+    /// styles', and noise Word writes everywhere is left out.
+    /// </summary>
+    public string? Other { get; init; }
 }
 
 /// <summary>How a paragraph is laid out. Lengths are in points; null means not set.</summary>
@@ -451,6 +472,13 @@ public sealed record ParagraphFormat
 
     /// <summary>The paragraph's fill color in hex.</summary>
     public string? Shading { get; init; }
+
+    /// <summary>
+    /// A hash of the paragraph's own formatting PDiffy doesn't read, such as w:widowControl or w:contextualSpacing, so
+    /// changing it changes the snapshot; null when it has none. Only its own formatting counts, not what it inherits,
+    /// and noise Word writes everywhere is left out.
+    /// </summary>
+    public string? Other { get; init; }
 }
 
 /// <summary>
@@ -1096,6 +1124,13 @@ public sealed record DocxTable : DocxBlock
     /// <summary>The table's description, the rest of its alt text in Word.</summary>
     public string? Description { get; init; }
 
+    /// <summary>
+    /// A hash of the table's own formatting PDiffy doesn't read, such as w:tblLook or w:tblInd, so changing it changes
+    /// the snapshot; null when it has none. Only its own formatting counts, not what it inherits, and noise Word writes
+    /// everywhere is left out.
+    /// </summary>
+    public string? Other { get; init; }
+
     /// <summary>The rows in order, including those inside content controls such as a repeating section.</summary>
     public IReadOnlyList<DocxRow> Rows
     {
@@ -1139,6 +1174,13 @@ public sealed record DocxRow
 
     /// <summary>Whether the row is kept on one page rather than split across two.</summary>
     public bool CantSplit { get; init; }
+
+    /// <summary>
+    /// A hash of the row's own formatting PDiffy doesn't read, such as w:jc, so changing it changes the snapshot; null
+    /// when it has none. Only its own formatting counts, not what it inherits, and noise Word writes everywhere is left
+    /// out.
+    /// </summary>
+    public string? Other { get; init; }
 
     /// <summary>
     /// Tracked changes to the row: <see cref="DocxRevisionKind.RowInsert"/>, <see cref="DocxRevisionKind.RowDelete"/>,
@@ -1239,6 +1281,13 @@ public sealed record DocxCell
     /// <see cref="DocxTextDirections"/> lists them.
     /// </summary>
     public string? TextDirection { get; init; }
+
+    /// <summary>
+    /// A hash of the cell's own formatting PDiffy doesn't read, such as w:noWrap, so changing it changes the snapshot;
+    /// null when it has none. Only its own formatting counts, not what it inherits, and noise Word writes everywhere is
+    /// left out.
+    /// </summary>
+    public string? Other { get; init; }
 
     /// <summary>
     /// Tracked changes to the cell: <see cref="DocxRevisionKind.CellInsert"/>,

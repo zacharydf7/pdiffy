@@ -184,6 +184,15 @@ library does.
   `settings > additional-actions` and `settings > open-action` for `NoActions`, `settings > data.xml` for an embedded
   file, and `> scope` or `> headers` after a table cell's path for `TableHeaders`.
 
+### Word snapshots
+
+- Formatting PDiffy doesn't read prints as a hash (`other=`) on its style, span, paragraph, table, row, cell or
+  section line, so a change to it no longer passes unseen. Noise Word writes everywhere is left out, but most Word
+  documents gain `other=` on a table, row or style line, and adjacent runs where only one has such formatting split
+  into two spans, under every profile. `DocxDetail.OtherFormatting` leaves it out, as the `Content` profile does,
+  so every `Content` snapshot's header changes. `RunFormat`, `ParagraphFormat`, `DocxStyle`, `DocxTable`, `DocxRow`,
+  `DocxCell` and `PageSetup` have `Other` ([#146](https://github.com/zacharydf7/pdiffy/issues/146)).
+
 ### Accessibility flags
 
 - A change to a Form element's field role (`field-role: cb -> tv`), or its removal, is flagged as affecting
