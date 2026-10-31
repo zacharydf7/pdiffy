@@ -333,10 +333,17 @@ internal sealed class TreeMatcher(string name, SnapshotFormat format,
         : first.SubtreeWords.Count > 0 && second.SubtreeWords.Count > 0 ? Overlap(first.SubtreeWords, second.SubtreeWords)
         : Overlap(first.AllWords, second.AllWords);
 
-    // A one-word value, such as a number in a table cell, replaced on a line that is otherwise the same.
+    // A one-word value, such as a number in a table cell or an attachment's name, replaced on a line that is otherwise
+    // the same. A key that repeats the value, such as the attachment's file name, can change with it.
     private static bool IsValueChange(SnapshotLine old, SnapshotLine line) =>
         old.TextWords.Count == 1 && line.TextWords.Count == 1 && old.Words.SequenceEqual(line.Words)
-        && old.Attributes.SequenceEqual(line.Attributes);
+        && OtherAttributes(old, old.QuotedText, line.QuotedText)
+            .SequenceEqual(OtherAttributes(line, old.QuotedText, line.QuotedText));
+
+    // The attributes whose value is neither line's quoted value.
+    private static IEnumerable<(string Key, string Value)> OtherAttributes(SnapshotLine line, string? oldText,
+        string? newText) =>
+        line.Attributes.Where(attribute => attribute.Value.Trim('"') != oldText && attribute.Value.Trim('"') != newText);
 
     // An edited copy elsewhere: when both subtrees have text, their words decide, so unrelated rows never pair.
     private static bool IsEditedCopy(SnapshotLine old, SnapshotLine line)

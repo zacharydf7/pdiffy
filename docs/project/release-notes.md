@@ -190,6 +190,11 @@ library does.
   accessibility, since it changes what kind of field a screen reader announces
   ([#160](https://github.com/zacharydf7/pdiffy/issues/160)).
 
+### Diffs
+
+- A renamed attachment pairs as one file renamed, not as one removed and another added, when its description,
+  relationship and size stay the same ([#162](https://github.com/zacharydf7/pdiffy/issues/162)).
+
 ### Read more accurately
 
 - A role map chain ends at the first standard type, as PDF 1.7 describes, so an element's `MappedType` and its

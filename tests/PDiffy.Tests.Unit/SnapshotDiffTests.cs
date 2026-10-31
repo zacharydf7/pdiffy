@@ -1248,6 +1248,30 @@ public class SnapshotDiffTests
         Assert.Equal(2, changes.Count);
     }
 
+    // A rename changes the name and the file name it repeats; the description and relationship stay, so it's one file.
+    [Fact]
+    public void Compare_ShouldPairARenamedAttachment_WhenItsOtherKeysAreTheSame()
+    {
+        var changes = SnapshotDiff.CompareSnapshots(Attachment("data.xml", "Trail counts by month"),
+            Attachment("data-2025.xml", "Trail counts by month")).Changes;
+
+        Assert.Equal([ChangeKind.AttributeChanged, ChangeKind.TextChanged],
+            changes.Select(change => change.Kind).Order());
+    }
+
+    [Fact]
+    public void Compare_ShouldReportOneFileRemovedAndAnotherAdded_WhenARenamedAttachmentsDescriptionChanges()
+    {
+        var changes = SnapshotDiff.CompareSnapshots(Attachment("data.xml", "Trail counts by month"),
+            Attachment("data-2025.xml", "Ridge counts by week")).Changes;
+
+        Assert.Equal([ChangeKind.Added, ChangeKind.Removed], changes.Select(change => change.Kind).Order());
+    }
+
+    private static string Attachment(string name, string description) =>
+        $"{SnapshotText.Header}settings\n  embedded-file \"{name}\" file=\"{name}\" "
+        + $"description=\"{description}\" relationship=Data\n";
+
     [Fact]
     public void Compare_ShouldReportTheShiftOnceAndOnlyTheNewPagesContent_WhenAPageIsInserted()
     {

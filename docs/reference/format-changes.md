@@ -46,8 +46,9 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   (`media-type=video/mp4 media-alt="Trail tour"`, with `media-type-2=` and `media-alt-2=` for a second clip), on its
   `annotations` line and, when it's tagged, on its element's `structure` line
   ([#74](https://github.com/zacharydf7/pdiffy/issues/74),
-  [#161](https://github.com/zacharydf7/pdiffy/issues/161)). Only snapshots of documents with such
-  annotations change, and a clip that loses its alternate text is flagged as affecting accessibility.
+  [#161](https://github.com/zacharydf7/pdiffy/issues/161)). The numbered keys are compared like any other key. Only
+  snapshots of documents with such annotations change, and a clip that loses its alternate text is flagged as affecting
+  accessibility.
 - A page whose artifacts and tagged content nest in each other prints how many artifacts do: `artifacts-in-tagged=1`,
   `artifacts-holding-tagged=1` ([#73](https://github.com/zacharydf7/pdiffy/issues/73)). Only snapshots of such pages
   change.
@@ -82,6 +83,12 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   accessibility ([#56](https://github.com/zacharydf7/pdiffy/issues/56)). No snapshot changes.
 - A Form element's field role that changes or goes missing (`field-role: cb -> tv`) is flagged as affecting
   accessibility ([#160](https://github.com/zacharydf7/pdiffy/issues/160)). No snapshot changes.
+
+### Diffs
+
+- An embedded file whose name changes while its description, relationship and size stay the same pairs as one file
+  renamed (the name, and the file name that repeats it), not as one file removed and another added
+  ([#162](https://github.com/zacharydf7/pdiffy/issues/162)). No snapshot changes.
 
 ### PDF (`pdfua-snapshot v1`, unchanged)
 

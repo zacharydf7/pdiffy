@@ -81,10 +81,13 @@ public class SnapshotEditTests
         var line = SnapshotLine.Parse(lines[i], 0);
         if (line.QuotedText is not { Length: > 0 } text || lines[i].TrimStart().StartsWith('"')) return null;
 
+        // One word changes, so a key that repeats the value, such as an attachment's file=, keeps it. A rename that
+        // changes both is SnapshotDiffTests' Compare_ShouldPairARenamedAttachment_WhenItsOtherKeysAreTheSame.
         var words = text.Split(' ');
         words[^1] = "Changed";
-        var quoted = SnapshotLine.Tokens(lines[i].Trim()).Last(token => token.StartsWith('"'));
-        return Replace(lines, i, lines[i].Replace(quoted, $"\"{string.Join(' ', words)}\""));
+        var tokens = SnapshotLine.Tokens(lines[i].Trim()).ToList();
+        tokens[tokens.FindLastIndex(token => token.StartsWith('"'))] = $"\"{string.Join(' ', words)}\"";
+        return Replace(lines, i, Indent(lines[i]) + string.Join(' ', tokens));
     }
 
     // The copy keeps the leading words and changes every plain value, so it's alike enough to pass for the line, but
@@ -122,9 +125,8 @@ public class SnapshotEditTests
 
     private static IEnumerable<(string Name, string Snapshot)> Snapshots()
     {
-        // Without its attachment: a renamed embedded file reads as one removed and another added (#162).
-        yield return ("PDF", MutationTests.Build(new MutationTests.Sample { AttachmentNames = null })
-            .ToSnapshot(o => o.Check(PdfCheckSet.Latest)));
+        var pdf = MutationTests.Build(new MutationTests.Sample());
+        yield return ("PDF", pdf.ToSnapshot(o => o.Check(PdfCheckSet.Latest)));
         yield return ("docs sample PDF", DocsSampleTests.Guide(revised: true).Load().ToSnapshot());
         var pdfSharp = new PdfSharpPdf().Artifact("Page 1").Heading("Trail Guide").Paragraph("Pack ", "water")
             .Figure("Trail map").NewPage().Paragraph("Ask a ranger.");
