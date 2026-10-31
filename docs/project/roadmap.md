@@ -104,7 +104,7 @@ Findings are recorded in an opt-in `checks` section, so a new problem fails a te
 | [#58](https://github.com/zacharydf7/pdiffy/issues/58)-[#61](https://github.com/zacharydf7/pdiffy/issues/61) | Help pages and command-line counts | Done |
 | [#62](https://github.com/zacharydf7/pdiffy/issues/62)-[#77](https://github.com/zacharydf7/pdiffy/issues/77), [#158](https://github.com/zacharydf7/pdiffy/issues/158), [#159](https://github.com/zacharydf7/pdiffy/issues/159), [#160](https://github.com/zacharydf7/pdiffy/issues/160), [#161](https://github.com/zacharydf7/pdiffy/issues/161), [#162](https://github.com/zacharydf7/pdiffy/issues/162), [#163](https://github.com/zacharydf7/pdiffy/issues/163), [#164](https://github.com/zacharydf7/pdiffy/issues/164), [#166](https://github.com/zacharydf7/pdiffy/issues/166), [#165](https://github.com/zacharydf7/pdiffy/issues/165) | PDF/UA rules | Partly done: #62-#77, #158-#164, #166 |
 | [#78](https://github.com/zacharydf7/pdiffy/issues/78)-[#80](https://github.com/zacharydf7/pdiffy/issues/80) | Warnings: placeholder alt text, vague link text, jumpy reading order | Partly done: #78, #79 |
-| [#81](https://github.com/zacharydf7/pdiffy/issues/81) | Checks for Word documents | Open |
+| [#81](https://github.com/zacharydf7/pdiffy/issues/81), [#167](https://github.com/zacharydf7/pdiffy/issues/167)-[#170](https://github.com/zacharydf7/pdiffy/issues/170) | Checks for Word documents | Open, split into #167-#170 |
 
 ## 5. Double down on the niche
 
