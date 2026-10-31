@@ -42,9 +42,11 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 - A Form element prints the kind of field it tags, from its PrintField Role attribute: `field-role=cb`
   ([#69](https://github.com/zacharydf7/pdiffy/issues/69)). Only snapshots of documents whose Form elements set one
   change.
-- A Screen annotation prints the media clip its Rendition action plays: its content type and alternate text
-  (`media-type=video/mp4 media-alt="Trail tour"`), on its `annotations` line and, when it's tagged, on its element's
-  `structure` line ([#74](https://github.com/zacharydf7/pdiffy/issues/74)). Only snapshots of documents with such
+- A Screen annotation prints each media clip its Rendition actions can play: its content type and alternate text
+  (`media-type=video/mp4 media-alt="Trail tour"`, with `media-type-2=` and `media-alt-2=` for a second clip), on its
+  `annotations` line and, when it's tagged, on its element's `structure` line
+  ([#74](https://github.com/zacharydf7/pdiffy/issues/74),
+  [#161](https://github.com/zacharydf7/pdiffy/issues/161)). Only snapshots of documents with such
   annotations change, and a clip that loses its alternate text is flagged as affecting accessibility.
 - A page whose artifacts and tagged content nest in each other prints how many artifacts do: `artifacts-in-tagged=1`,
   `artifacts-holding-tagged=1` ([#73](https://github.com/zacharydf7/pdiffy/issues/73)). Only snapshots of such pages

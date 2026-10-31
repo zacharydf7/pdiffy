@@ -839,6 +839,8 @@ public class SnapshotDiffTests
     [InlineData("structure", "Sect p1 title=\"Routes\"", "Sect p1", false)]
     [InlineData("pages", "p1 letter rotate=0 tabs=S", "p1 letter rotate=0 tabs=R", true)]
     [InlineData("structure", "Form p1 field-role=cb", "Form p1 field-role=tv", true)]
+    [InlineData("annotations", "Screen tagged media-type=video/mp4 media-alt=\"Tour\" media-type-2=video/webm media-alt-2=\"Tour\"",
+        "Screen tagged media-type=video/mp4 media-alt=\"Tour\" media-type-2=video/webm media-alt-2=(missing)", true)]
     [InlineData("structure", "Form p1 field-role=cb", "Form p1", true)]
     [InlineData("structure", "Form p1", "Form p1 field-role=cb", false)]
     [InlineData("pages", "p1 letter rotate=0 tabs=S", "p1 letter rotate=0 tabs=(missing)", true)]
@@ -1226,6 +1228,24 @@ public class SnapshotDiffTests
 
         var change = Assert.Single(changes);
         Assert.Equal((ChangeKind.Changed, PdfSection.Structure), (change.Kind, change.PdfSection));
+    }
+
+    // The earlier release printed only the first clip, so the second clip's two keys show as added.
+    [Fact]
+    public void Compare_ShouldReportOnlyTheLaterClipsKeys_WhenASnapshotFromBeforeEveryClipIsCompared()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Annotation("/Subtype /Screen /Rect [0 0 10 10] /A << /S /Rendition /R << /S /SR /R [<< /S /MR "
+            + "/C << /S /MCD /CT (video/mp4) /Alt [(en-US) (Trail tour)] >> >> "
+            + "<< /S /MR /C << /S /MCD /CT (video/webm) /Alt [(en-US) (Trail tour)] >> >>] >> >>");
+        var current = pdf.Load().ToSnapshot();
+        var earlier = current.Replace(" media-type-2=video/webm media-alt-2=\"Trail tour\"", "");
+
+        var changes = SnapshotDiff.CompareSnapshots(earlier, current).Changes;
+
+        Assert.All(changes, change => Assert.Equal((ChangeKind.AttributeChanged, PdfSection.Annotations),
+            (change.Kind, change.PdfSection)));
+        Assert.Equal(2, changes.Count);
     }
 
     [Fact]

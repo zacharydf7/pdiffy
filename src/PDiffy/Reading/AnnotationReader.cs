@@ -52,53 +52,62 @@ internal static class AnnotationReader
             File = type is "GoToR" or "Launch" ? FileName(objects, action!) : null,
             Contents = objects.Text(annotation, "Contents"),
             AccessibleName = objects.Text(annotation, "TU"),
-            MediaClip = MediaClip(objects, annotation),
+            MediaClips = MediaClips(objects, annotation),
         };
     }
 
-    // The clip the first Rendition action plays, among the annotation's own action (/A) and those it runs on events
-    // (/AA), each with the actions it chains through /Next. The clip has a content type and alternate text: a list of
-    // language and text pairs.
-    private static PdfMediaClip? MediaClip(PdfObjects objects, DictionaryToken annotation)
+    // Every clip the Rendition actions play, among the annotation's own action (/A) and those it runs on events (/AA),
+    // each with the actions it chains through /Next. A clip has a content type and alternate text: a list of language
+    // and text pairs.
+    private static List<PdfMediaClip> MediaClips(PdfObjects objects, DictionaryToken annotation)
     {
         var events = objects.Dictionary(annotation, "AA")?.Data.Values ?? [];
         var actions = events.Prepend(annotation.Data.GetValueOrDefault("A")).SelectMany(objects.Chain);
-        var clip = actions.Where(action => objects.Name(action, "S") == "Rendition")
-            .Select(action => ClipData(objects, objects.Dictionary(action, "R")))
-            .FirstOrDefault(data => data is not null);
-        if (clip is null) return null;
-
-        var texts = objects.Items(clip.Data.GetValueOrDefault("Alt")).Where((_, index) => index % 2 == 1)
-            .Select(item => PdfObjects.TextOf(objects.Resolve(item))).Where(text => !string.IsNullOrWhiteSpace(text))
-            .ToList();
-        return new PdfMediaClip
+        var seen = new HashSet<IndirectReference>();
+        var clips = actions.Where(action => objects.Name(action, "S") == "Rendition")
+            .SelectMany(action => ClipData(objects, action.Data.GetValueOrDefault("R"), seen));
+        return clips.Select(clip =>
         {
-            ContentType = objects.Text(clip, "CT"), AltText = texts.Count == 0 ? null : string.Join("; ", texts),
-        };
+            var texts = objects.Items(clip.Data.GetValueOrDefault("Alt")).Where((_, index) => index % 2 == 1)
+                .Select(item => PdfObjects.TextOf(objects.Resolve(item))).Where(text => !string.IsNullOrWhiteSpace(text))
+                .ToList();
+            return new PdfMediaClip
+            {
+                ContentType = objects.Text(clip, "CT"), AltText = texts.Count == 0 ? null : string.Join("; ", texts),
+            };
+        }).ToList();
     }
 
-    // A selector rendition (SR) plays the first of its renditions a viewer can, so its first is read. A media rendition
-    // (MR) names its clip (/C), and a clip section (MCS) the clip data (MCD) it's part of (/D). Each step is capped, so
-    // a loop can't hang the read.
-    private static DictionaryToken? ClipData(PdfObjects objects, DictionaryToken? rendition)
+    // A selector rendition (SR) lists renditions a viewer picks from, so each is read. A media rendition (MR) names its
+    // clip (/C), and a clip section (MCS) the clip data (MCD) it's part of (/D). A rendition object is read once, so one
+    // that two actions play prints once and a loop ends, and each step is capped.
+    private static IEnumerable<DictionaryToken> ClipData(PdfObjects objects, IToken? token,
+        HashSet<IndirectReference> seen, int depth = 0)
     {
-        for (var depth = 0; rendition is not null && depth < ReadLimits.MaxDepth; depth++)
-        {
-            if (objects.Name(rendition, "S") != "SR") break;
+        if (depth >= ReadLimits.MaxDepth) yield break;
+        if (token is IndirectReferenceToken reference && !seen.Add(reference.Data)) yield break;
+        if (objects.Resolve(token) is not DictionaryToken rendition) yield break;
 
-            rendition = objects.Items(rendition.Data.GetValueOrDefault("R")).Select(objects.Resolve)
-                .OfType<DictionaryToken>().FirstOrDefault();
+        if (objects.Name(rendition, "S") == "SR")
+        {
+            var choices = objects.Items(rendition.Data.GetValueOrDefault("R"));
+            foreach (var clip in choices.SelectMany(choice => ClipData(objects, choice, seen, depth + 1)))
+            {
+                yield return clip;
+            }
+
+            yield break;
         }
 
-        var clip = rendition is null ? null : objects.Dictionary(rendition, "C");
-        for (var depth = 0; depth < ReadLimits.MaxDepth && clip is not null; depth++)
+        var data = objects.Dictionary(rendition, "C");
+        for (var step = 0; step < ReadLimits.MaxDepth && data is not null; step++)
         {
-            if (objects.Name(clip, "S") != "MCS") break;
+            if (objects.Name(data, "S") != "MCS") break;
 
-            clip = objects.Dictionary(clip, "D");
+            data = objects.Dictionary(data, "D");
         }
 
-        return clip;
+        if (data is not null) yield return data;
     }
 
     // /F is a file name, or a file specification.

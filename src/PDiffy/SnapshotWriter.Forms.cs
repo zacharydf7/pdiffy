@@ -35,10 +35,11 @@ internal sealed partial class SnapshotWriter
 
         QuotedKey(line, PdfDetail.AnnotationContents, "contents", annotation.Contents);
         Key(line, "tu", QuoteIfPresent(annotation.AccessibleName));
-        if (annotation.MediaClip is { } clip)
+        for (var i = 0; i < annotation.MediaClips.Count; i++)
         {
-            Key(line, "media-type", clip.ContentType ?? Missing);
-            QuotedKey(line, PdfDetail.AltText, "media-alt", clip.AltText, showMissing: true);
+            var (clip, number) = (annotation.MediaClips[i], PdfMediaClip.KeySuffix(i));
+            Key(line, $"media-type{number}", clip.ContentType ?? Missing);
+            QuotedKey(line, PdfDetail.AltText, $"media-alt{number}", clip.AltText, showMissing: true);
         }
     }
 

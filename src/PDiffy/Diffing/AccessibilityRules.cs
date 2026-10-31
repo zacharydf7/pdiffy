@@ -37,8 +37,10 @@ internal static class AccessibilityRules
     }
 
     // A value gone or emptied, or a cell's headers pointing at a header that isn't there ("?id").
+    // A second media clip's alt text is media-alt-2, and so on (PdfMediaClip.KeySuffix).
     private static bool TakesAway(string key, string after) =>
-        RemovableKeys.Contains(key) && IsGone(after) || key == "headers" && after.Contains('?');
+        (RemovableKeys.Contains(key) || key.StartsWith("media-alt-", StringComparison.Ordinal)) && IsGone(after)
+        || key == "headers" && after.Contains('?');
 
     private static bool IsGone(string value) => value is "(missing)" or "\"\"";
 

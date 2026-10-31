@@ -1113,6 +1113,20 @@ public class PdfCheckTests
     }
 
     [Fact]
+    public void Check_ShouldNumberTheClip_WhenALaterClipHasNoAlternateText()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Annotation("/Subtype /Screen /Rect [0 0 10 10] /A << /S /Rendition /R << /S /SR /R [<< /S /MR "
+            + "/C << /S /MCD /CT (video/mp4) /Alt [(en-US) (Trail tour)] >> >> "
+            + "<< /S /MR /C << /S /MCD /CT (video/webm) >> >>] >> >>");
+
+        var findings = pdf.Load().Check(PdfCheck.MediaClips);
+
+        Assert.Equal(["annotations > media-alt-2: Media clip 2 on p1 has no alternate text"],
+            findings.Select(finding => $"{finding.Path}: {finding.Message}"));
+    }
+
+    [Fact]
     public void Check_ShouldFindArtifactsInsideTaggedContentAndTaggedContentInsideArtifacts_WhenAPageHasThem()
     {
         var pdf = new TestPdf();

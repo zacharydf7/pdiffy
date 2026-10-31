@@ -844,10 +844,14 @@ public sealed record PdfAnnotation
     public string? AccessibleName { get; init; }
 
     /// <summary>
-    /// The media clip a Screen annotation's first Rendition action plays, on click or on an event such as the page
-    /// opening; null when it plays none.
+    /// The media clips a Screen annotation's Rendition actions play, on click or on an event such as the page opening,
+    /// with every alternative a selector rendition offers; empty when it plays none.
     /// </summary>
-    public PdfMediaClip? MediaClip { get; init; }
+    public IReadOnlyList<PdfMediaClip> MediaClips
+    {
+        get;
+        init => field = ValueList<PdfMediaClip>.Of(value);
+    } = ValueList<PdfMediaClip>.Empty;
 }
 
 /// <summary>A media clip, such as a video, that a Screen annotation plays.</summary>
@@ -856,6 +860,10 @@ public sealed record PdfMediaClip
     internal PdfMediaClip()
     {
     }
+
+    // The first clip's snapshot keys and check paths have no number, so a single clip prints as it did before there
+    // could be more; the second's end in -2, and so on.
+    internal static string KeySuffix(int index) => index == 0 ? "" : $"-{index + 1}";
 
     /// <summary>Its content type, such as "video/mp4"; null when it doesn't say.</summary>
     public string? ContentType { get; init; }

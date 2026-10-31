@@ -129,9 +129,10 @@ library does.
   XMP title or description for the default language. `PdfMetadata` has `XmpHasDefaultLanguageText`
   ([#72](https://github.com/zacharydf7/pdiffy/issues/72)).
 - `FormulaAltText` finds a formula with no alt text or replacement text, and `MediaClips` finds a media clip a Screen
-  annotation plays with no content type or alternate text. Snapshots print a Screen annotation's media clip, and
-  `PdfAnnotation` has `MediaClip`, and `PdfFormField` has `CombinedWithWidget`
-  ([#74](https://github.com/zacharydf7/pdiffy/issues/74)).
+  annotation plays with no content type or alternate text: every clip, from each Rendition action and each choice a
+  selector rendition offers. Snapshots print a Screen annotation's media clips, `PdfAnnotation` has `MediaClips`, and
+  `PdfFormField` has `CombinedWithWidget` ([#74](https://github.com/zacharydf7/pdiffy/issues/74),
+  [#161](https://github.com/zacharydf7/pdiffy/issues/161)).
 - `ArtifactNesting` finds an artifact inside tagged content, and an artifact holding tagged content, page by page.
   Snapshots print the counts on the page's line, and `PdfPage` has `ArtifactsInTaggedContent` and
   `ArtifactsHoldingTaggedContent` ([#73](https://github.com/zacharydf7/pdiffy/issues/73)).

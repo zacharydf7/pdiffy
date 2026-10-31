@@ -55,7 +55,9 @@ internal sealed class SnapshotLine(string text, int depth)
         foreach (var token in Tokens(text.Trim()))
         {
             var equals = token.IndexOf('=');
-            var isAttribute = equals > 0 && token[..equals].All(c => char.IsAsciiLetterLower(c) || c == '-');
+            // A key is lowercase words joined by '-', and can end in a number, such as media-alt-2 for a second clip.
+            var isAttribute = equals > 0 && char.IsAsciiLetterLower(token[0])
+                && token[..equals].All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '-');
             if (token.StartsWith('"')) line.QuotedText = Unquote(token);
             else if (isAttribute) line.Attributes.Add((token[..equals], token[(equals + 1)..]));
             else line.Words.Add(token);

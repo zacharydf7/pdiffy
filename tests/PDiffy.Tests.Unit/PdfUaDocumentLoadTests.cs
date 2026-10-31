@@ -27,8 +27,62 @@ public class PdfUaDocumentLoadTests
 
         var annotation = Assert.Single(pdf.Load().Annotations);
 
-        Assert.Equal(new PdfMediaClip { ContentType = "video/mp4", AltText = "Trail tour; Visite" },
-            annotation.MediaClip);
+        Assert.Equal([new PdfMediaClip { ContentType = "video/mp4", AltText = "Trail tour; Visite" }],
+            annotation.MediaClips);
+    }
+
+    // A selector rendition offers two clips, and the page-visible event plays a third.
+    [Fact]
+    public void Load_ShouldReadEveryMediaClip_WhenAnAnnotationCanPlaySeveral()
+    {
+        var pdf = new TestPdf();
+        pdf.AddPage().Annotation("/Subtype /Screen /Rect [0 0 10 10] /A << /S /Rendition /R << /S /SR /R [<< /S /MR "
+            + "/C << /S /MCD /CT (video/mp4) /Alt [(en-US) (Trail tour)] >> >> "
+            + "<< /S /MR /C << /S /MCD /CT (video/webm) >> >>] >> >> /AA << /PV << /S /Rendition /R << /S /MR "
+            + "/C << /S /MCD /CT (audio/mpeg) /Alt [(en-US) (Narration)] >> >> >> >>");
+
+        var annotation = Assert.Single(pdf.Load().Annotations);
+
+        PdfMediaClip[] expected =
+        [
+            new() { ContentType = "video/mp4", AltText = "Trail tour" },
+            new() { ContentType = "video/webm" },
+            new() { ContentType = "audio/mpeg", AltText = "Narration" },
+        ];
+        Assert.Equal(expected, annotation.MediaClips);
+    }
+
+    // Both the click and the page-visible event play rendition 5, so its clip is listed once.
+    [Fact]
+    public void Load_ShouldListAClipOnce_WhenTwoActionsPlayTheSameRendition()
+    {
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [4 0 R] >>",
+            "<< /Type /Annot /Subtype /Screen /Rect [0 0 10 10] /A << /S /Rendition /R 5 0 R >> "
+                + "/AA << /PV << /S /Rendition /R 5 0 R >> >> >>",
+            "<< /S /MR /C << /S /MCD /CT (video/mp4) >> >>");
+
+        var annotation = Assert.Single(document.Annotations);
+
+        Assert.Equal([new PdfMediaClip { ContentType = "video/mp4" }], annotation.MediaClips);
+    }
+
+    // The selector rendition lists itself, so reading it once ends the loop.
+    [Fact]
+    public void Load_ShouldReadASelectorRenditionOnce_WhenItListsItself()
+    {
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [4 0 R] >>",
+            "<< /Type /Annot /Subtype /Screen /Rect [0 0 10 10] /A << /S /Rendition /R 5 0 R >> >>",
+            "<< /S /SR /R [5 0 R << /S /MR /C << /S /MCD /CT (video/mp4) >> >> 5 0 R] >>");
+
+        var annotation = Assert.Single(document.Annotations);
+
+        Assert.Equal([new PdfMediaClip { ContentType = "video/mp4" }], annotation.MediaClips);
     }
 
     [Fact]

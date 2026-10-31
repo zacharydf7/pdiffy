@@ -86,7 +86,10 @@ gets the math.
 ## MediaClips
 
 **Finds:** a media clip, such as a video a Screen annotation plays on click or when its page opens, with no content type
-(`/CT`) or no alternate text (`/Alt`). For a selector rendition, the first rendition is read. **Category:** `AltText`. **Severity:** `Error`. **From:** ISO 14289-1 7.18.6.2.
+(`/CT`) or no alternate text (`/Alt`). Every clip counts: each one a selector rendition offers, and each one the
+annotation plays on click or on an event. The second clip's findings have `media-type-2` or `media-alt-2` in their
+path, and so on.
+**Category:** `AltText`. **Severity:** `Error`. **From:** ISO 14289-1 7.18.6.2.
 
 **Why it matters:** a viewer needs the content type to know whether it can play the clip, and alternate text is what a
 screen reader reads in its place, so a reader who can't play or see it still knows what it shows.

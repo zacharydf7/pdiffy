@@ -43,6 +43,7 @@ public class MutationTests
         { "form field role", new Sample { FieldRole = "cb" }, PdfSection.Structure, ChangeKind.AttributeChanged, true },
         { "media clip alt text", new Sample { MediaAlt = "Ridge tour" }, PdfSection.Annotations, ChangeKind.AttributeChanged, false },
         { "media clip alt text removed", new Sample { MediaAlt = null }, PdfSection.Annotations, ChangeKind.AttributeChanged, true },
+        { "second media clip's alt text removed", new Sample { SecondMediaAlt = null }, PdfSection.Annotations, ChangeKind.AttributeChanged, true },
         { "artifact moved inside tagged content", new Sample { ArtifactInTagged = true }, PdfSection.Pages, ChangeKind.AttributeChanged, false },
         { "tagged content moved inside an artifact", new Sample { ArtifactHoldsTagged = true }, PdfSection.Pages, ChangeKind.AttributeChanged, false },
         { "layer configuration renamed", new Sample { LayerConfig = "Print" }, PdfSection.Settings, ChangeKind.TextChanged, false },
@@ -99,6 +100,7 @@ public class MutationTests
         public bool FigureWithoutParent { get; init; }
         public string FieldRole { get; init; } = "rb";
         public string? MediaAlt { get; init; } = "Trail tour";
+        public string? SecondMediaAlt { get; init; } = "Trail tour, captioned";
         public bool ArtifactInTagged { get; init; }
         public bool ArtifactHoldsTagged { get; init; }
         public string LayerConfig { get; init; } = "Screen";
@@ -135,10 +137,12 @@ public class MutationTests
         else page.Artifact("Page 1", $"/Type /Pagination /Subtype /{sample.FooterKind}");
         page.Raw($"/P << /MCID 10 >> BDC BT /F1 12 Tf 72 150 Td (Say ) Tj /Span << /Lang ({sample.SpanLang}) >> BDC (bonjour) Tj EMC ET EMC");
         var mediaAlt = sample.MediaAlt is null ? "" : $"/Alt [(en-US) ({sample.MediaAlt})]";
+        var secondMediaAlt = sample.SecondMediaAlt is null ? "" : $"/Alt [(en-US) ({sample.SecondMediaAlt})]";
         var watermark = sample.ArtifactInTagged ? "/P << /MCID 1 >> BDC /Artifact BMC EMC EMC"
             : sample.ArtifactHoldsTagged ? "/Artifact BMC /P << /MCID 1 >> BDC EMC EMC" : "/Artifact BMC EMC";
         pdf.AddPage().Tagged(0, "Safety").Annotation("/Subtype /Screen /Rect [0 0 10 10] /A << /S /Rendition "
-            + $"/R << /S /MR /C << /S /MCD /CT (video/mp4) {mediaAlt} >> >> >>").Raw(watermark);
+            + $"/R << /S /SR /R [<< /S /MR /C << /S /MCD /CT (video/mp4) {mediaAlt} >> >> "
+            + $"<< /S /MR /C << /S /MCD /CT (video/webm) {secondMediaAlt} >> >>] >> >>").Raw(watermark);
 
         var paragraphs = new[] { new TestElement("P", 1), new TestElement("P", 2) { Entries = $"/Lang ({sample.ElementLang})" } };
         if (sample.SwapParagraphs) paragraphs = [paragraphs[1], paragraphs[0]];

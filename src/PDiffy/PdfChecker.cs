@@ -125,21 +125,25 @@ internal sealed class PdfChecker(PdfUaDocument document)
 
     private void MediaClips()
     {
+        // Paths and messages number the clips after the first, as the snapshot's keys do.
         foreach (var annotation in document.Annotations)
         {
-            if (annotation.MediaClip is not { } clip) continue;
-
             var page = annotation.Page;
-            if (IsBlank(clip.ContentType))
+            for (var i = 0; i < annotation.MediaClips.Count; i++)
             {
-                Add(PdfCheck.MediaClips, page, $"{Name(PdfSection.Annotations)} > media-type",
-                    $"Media clip{On(page)} has no content type");
-            }
+                var (clip, number) = (annotation.MediaClips[i], PdfMediaClip.KeySuffix(i));
+                var name = i == 0 ? "Media clip" : $"Media clip {i + 1}";
+                if (IsBlank(clip.ContentType))
+                {
+                    Add(PdfCheck.MediaClips, page, $"{Name(PdfSection.Annotations)} > media-type{number}",
+                        $"{name}{On(page)} has no content type");
+                }
 
-            if (IsBlank(clip.AltText))
-            {
-                Add(PdfCheck.MediaClips, page, $"{Name(PdfSection.Annotations)} > media-alt",
-                    $"Media clip{On(page)} has no alternate text");
+                if (IsBlank(clip.AltText))
+                {
+                    Add(PdfCheck.MediaClips, page, $"{Name(PdfSection.Annotations)} > media-alt{number}",
+                        $"{name}{On(page)} has no alternate text");
+                }
             }
         }
     }
