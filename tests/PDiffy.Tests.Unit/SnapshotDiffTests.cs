@@ -1272,6 +1272,32 @@ public class SnapshotDiffTests
         $"{SnapshotText.Header}settings\n  embedded-file \"{name}\" file=\"{name}\" "
         + $"description=\"{description}\" relationship=Data\n";
 
+    // The earlier release didn't read a comment's attached file, or a reference XObject in an annotation's appearance.
+    [Fact]
+    public void Compare_ShouldReportOnlyTheAttachedFileAndTheCount_WhenASnapshotFromBeforeAnnotationFilesIsCompared()
+    {
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [4 0 R 5 0 R] >>",
+            "<< /Type /Annot /Subtype /FileAttachment /Rect [0 0 10 10] /FS << /F (photo.jpg) /UF (photo.jpg) "
+                + "/EF << /F 7 0 R >> >> >>",
+            "<< /Type /Annot /Subtype /Stamp /Rect [0 20 10 30] /AP << /N 6 0 R >> >>",
+            "<< /Type /XObject /Subtype /Form /BBox [0 0 10 10] /Ref << /F (map.pdf) /Page 0 >> /Length 0 >>"
+                + "\nstream\n\nendstream",
+            TestPdf.Stream("hello"));
+        var current = document.ToSnapshot();
+        var attached = "  embedded-file \"photo.jpg\" page=p1 file=\"photo.jpg\" size=5 "
+            + "hash=2cf24dba5fb0a30e\n";
+        var earlier = current.Replace(attached, "")
+            .Replace(" reference-xobjects=1", "");
+
+        var changes = SnapshotDiff.CompareSnapshots(earlier, current).Changes;
+
+        Assert.Equal([(ChangeKind.AttributeChanged, PdfSection.Settings), (ChangeKind.Added, PdfSection.Settings)],
+            changes.Select(change => (change.Kind, change.PdfSection)));
+    }
+
     [Fact]
     public void Compare_ShouldReportTheShiftOnceAndOnlyTheNewPagesContent_WhenAPageIsInserted()
     {

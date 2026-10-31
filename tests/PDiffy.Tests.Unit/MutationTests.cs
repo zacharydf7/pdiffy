@@ -49,6 +49,7 @@ public class MutationTests
         { "layer configuration renamed", new Sample { LayerConfig = "Print" }, PdfSection.Settings, ChangeKind.TextChanged, false },
         { "reference XObject added", new Sample { ReferenceForm = true }, PdfSection.Settings, ChangeKind.AttributeChanged, false },
         { "embedded file named one way", new Sample { AttachmentNames = "/F (data.xml)" }, PdfSection.Settings, ChangeKind.AttributeChanged, false },
+        { "file attached on a page", new Sample { PageAttachment = true }, PdfSection.Settings, ChangeKind.Added, false },
         { "TrueType font's encoding removed", new Sample { FontEncoding = "" }, PdfSection.Fonts, ChangeKind.AttributeChanged, false },
     };
 
@@ -105,6 +106,7 @@ public class MutationTests
         public bool ArtifactHoldsTagged { get; init; }
         public string LayerConfig { get; init; } = "Screen";
         public bool ReferenceForm { get; init; }
+        public bool PageAttachment { get; init; }
         public string? AttachmentNames { get; init; } = "/F (data.xml) /UF (data.xml)";
         public string FontEncoding { get; init; } = "/Encoding /WinAnsiEncoding";
     }
@@ -130,6 +132,8 @@ public class MutationTests
             .Tagged(7, "Trail", "TH").Tagged(8, "Ridgeline", "TD").Tagged(9, "example.com", "Link")
             .Annotation($"/Subtype /Link /Rect [72 200 172 220] /Dest [{{page{sample.LinkPage}}} /XYZ 72 720 0] /Contents (Safety)");
         if (sample.ReferenceForm) page.ReferenceForm();
+        if (sample.PageAttachment) page.FileAttachment("route.gpx");
+
         if (sample.NoteArtifact) page.Artifact("Pack light");
         else if (sample.NoteTagged) page.Tagged(4, "Pack light");
         else page.Untagged("Pack light");

@@ -382,10 +382,10 @@ that appear and disappear on their own change what a reader gets without them do
 
 ## EmbeddedFileNames
 
-**Finds:** a file in the document's list of embedded files (`/EmbeddedFiles`) whose file specification doesn't give
-its name both as `/F` and as `/UF` (Unicode). Files attached through a comment (a FileAttachment annotation) aren't
-read yet.
-**Category:** `Document`. **Severity:** `Error`. **From:** ISO 14289-1 7.11.
+**Finds:** an embedded file whose file specification doesn't give its name both as `/F` and as `/UF` (Unicode): one in
+the document's list of embedded files (`/EmbeddedFiles`), or one attached through a comment (a FileAttachment
+annotation's `/FS`), whose finding names its page. **Category:** `Document`. **Severity:** `Error`. **From:** ISO
+14289-1 7.11.
 
 **Why it matters:** a viewer and a screen reader show and announce the attachment by its name, and `/UF` is the one
 that holds any character; without both, a name can be lost or garbled.
@@ -415,8 +415,8 @@ settings. It can stay on even when copying is off.
 
 ## NoReferenceXObjects
 
-**Finds:** a reference XObject, a form that shows a page of another file (`/Ref`), in the pages' resources or the
-forms in them, drawn or not. Annotation appearances aren't read yet. **Category:** `Content`.
+**Finds:** a reference XObject, a form that shows a page of another file (`/Ref`), in the pages' resources, in their
+annotations' appearances (`/AP`), or in the forms in them, drawn or not. **Category:** `Content`.
 **Severity:** `Error`. **From:** ISO 14289-1 7.20.
 
 **Why it matters:** the page it shows lives in another file, outside this document's tags, so a reader can't reach it,

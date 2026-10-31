@@ -189,7 +189,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
     {
         foreach (var file in document.Settings.EmbeddedFiles.Where(file => !file.NamedBothWays))
         {
-            Add(PdfCheck.EmbeddedFileNames, null, Setting(file.Name),
+            Add(PdfCheck.EmbeddedFileNames, file.Page, Setting(file.Name),
                 $"Embedded file {file.Name} isn't named both as F and as UF");
         }
     }
@@ -218,7 +218,8 @@ internal sealed class PdfChecker(PdfUaDocument document)
         if (document.Settings.ReferenceXObjects > 0)
         {
             Add(PdfCheck.NoReferenceXObjects, null, Setting("reference-xobjects"),
-                $"The pages' resources hold {document.Settings.ReferenceXObjects} reference XObject(s)");
+                $"The pages' resources and annotation appearances hold {document.Settings.ReferenceXObjects} "
+                + "reference XObject(s)");
         }
     }
 
@@ -465,7 +466,7 @@ internal sealed class PdfChecker(PdfUaDocument document)
     {
         foreach (var file in document.Settings.EmbeddedFiles)
         {
-            Add(PdfCheck.NoEmbeddedFiles, null, Setting(file.Name), $"The document embeds {file.Name}");
+            Add(PdfCheck.NoEmbeddedFiles, file.Page, Setting(file.Name), $"The document embeds {file.Name}");
         }
     }
 

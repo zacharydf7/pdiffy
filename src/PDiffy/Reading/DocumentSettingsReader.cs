@@ -17,7 +17,7 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
     ];
 
     public static PdfSettings Read(PdfDocument document, PdfObjects objects, DictionaryToken catalog,
-        DestinationReader destinations)
+        DestinationReader destinations, PageTree pages)
     {
         var reader = new DocumentSettingsReader(objects, destinations);
         var names = objects.Dictionary(catalog, "Names");
@@ -40,7 +40,11 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
             ViewerPreferences = objects.Settings(objects.Dictionary(catalog, "ViewerPreferences"), "DisplayDocTitle"),
             Layers = reader.ReadLayers(catalog),
             LayerConfigurations = reader.ReadLayerConfigurations(catalog),
-            EmbeddedFiles = names is null ? [] : reader.ReadEmbeddedFiles(names.Data.GetValueOrDefault("EmbeddedFiles")),
+            EmbeddedFiles =
+            [
+                .. names is null ? [] : reader.ReadEmbeddedFiles(names.Data.GetValueOrDefault("EmbeddedFiles")),
+                .. reader.ReadAttachedFiles(pages),
+            ],
         };
     }
 
@@ -146,36 +150,59 @@ internal sealed class DocumentSettingsReader(PdfObjects objects, DestinationRead
         return items.OfType<IndirectReferenceToken>().Select(reference => reference.Data).ToHashSet();
     }
 
-    // Embedded files are a name tree of file specifications; the file's contents are in /EF.
-    private IReadOnlyList<PdfEmbeddedFile> ReadEmbeddedFiles(IToken? tree)
+    // Embedded files are a name tree of file specifications.
+    private List<PdfEmbeddedFile> ReadEmbeddedFiles(IToken? tree) =>
+        objects.TreeEntries(tree, "Names")
+            .Select(entry => ReadEmbeddedFile(PdfObjects.TextOf(objects.Resolve(entry.Key)) ?? "", entry.Value, null))
+            .ToList();
+
+    // A FileAttachment annotation, such as a viewer's "attach file" comment, holds a file specification (/FS) too. It
+    // has no key in a list, so its file name names it. One that only names a file outside (a string, or no /EF) embeds
+    // nothing, so it isn't listed.
+    private List<PdfEmbeddedFile> ReadAttachedFiles(PageTree pages)
     {
         var files = new List<PdfEmbeddedFile>();
-        foreach (var (key, value) in objects.TreeEntries(tree, "Names"))
+        for (var i = 0; i < pages.Pages.Count; i++)
         {
-            var name = PdfObjects.TextOf(objects.Resolve(key)) ?? "";
-            if (objects.Resolve(value) is not DictionaryToken specification)
+            foreach (var item in objects.Items(pages.Pages[i].Dictionary.Data.GetValueOrDefault("Annots")))
             {
-                files.Add(new PdfEmbeddedFile
-                {
-                    Name = name, FileName = null, Description = null, Relationship = null, Size = null, Hash = null,
-                });
-                continue;
-            }
+                if (objects.Resolve(item) is not DictionaryToken annotation) continue;
+                if (objects.Name(annotation, "Subtype") != PdfAnnotationTypes.FileAttachment) continue;
 
-            var streams = objects.Dictionary(specification, "EF");
-            var stream = streams is null ? null : (objects.Get(streams, "UF") ?? objects.Get(streams, "F")) as StreamToken;
-            var contents = stream is null ? null : objects.Contents(stream);
-            var hash = contents is null ? null : Convert.ToHexStringLower(SHA256.HashData(contents))[..16];
-            var file = new PdfEmbeddedFile
-            {
-                Name = name, FileName = objects.FileName(specification),
-                Description = objects.Text(specification, "Desc"),
-                Relationship = objects.Name(specification, "AFRelationship"), Size = contents?.Length, Hash = hash,
-                NamedBothWays = specification.Data.ContainsKey("F") && specification.Data.ContainsKey("UF"),
-            };
-            files.Add(file with { Unreadable = stream is not null && contents is null });
+                var specification = annotation.Data.GetValueOrDefault("FS");
+                if (objects.Resolve(specification) is not DictionaryToken dictionary) continue;
+                if (!dictionary.Data.ContainsKey("EF")) continue;
+
+                files.Add(ReadEmbeddedFile(objects.FileName(dictionary) ?? "(unnamed)", specification, i + 1));
+            }
         }
 
         return files;
+    }
+
+    // A file specification names the file, and its contents are in /EF.
+    private PdfEmbeddedFile ReadEmbeddedFile(string name, IToken? value, int? page)
+    {
+        if (objects.Resolve(value) is not DictionaryToken specification)
+        {
+            return new PdfEmbeddedFile
+            {
+                Name = name, Page = page, FileName = null, Description = null, Relationship = null, Size = null,
+                Hash = null,
+            };
+        }
+
+        var streams = objects.Dictionary(specification, "EF");
+        var stream = streams is null ? null : (objects.Get(streams, "UF") ?? objects.Get(streams, "F")) as StreamToken;
+        var contents = stream is null ? null : objects.Contents(stream);
+        var hash = contents is null ? null : Convert.ToHexStringLower(SHA256.HashData(contents))[..16];
+        return new PdfEmbeddedFile
+        {
+            Name = name, Page = page, FileName = objects.FileName(specification),
+            Description = objects.Text(specification, "Desc"),
+            Relationship = objects.Name(specification, "AFRelationship"), Size = contents?.Length, Hash = hash,
+            NamedBothWays = specification.Data.ContainsKey("F") && specification.Data.ContainsKey("UF"),
+            Unreadable = stream is not null && contents is null,
+        };
     }
 }

@@ -4,6 +4,80 @@ namespace PDiffy.Tests.Unit;
 
 public class DocumentSettingsTests
 {
+    // A comment's attached file follows the document's own list; one that only names a file outside embeds nothing.
+    [Fact]
+    public void Load_ShouldReadFilesAttachedOnPages_WhenFileAttachmentAnnotationsHoldThem()
+    {
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles << /Names [(data.xml) "
+                + "<< /F (data.xml) /UF (data.xml) >>] >> >> >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [4 0 R 5 0 R 7 0 R] >>",
+            "<< /Type /Annot /Subtype /FileAttachment /Rect [0 0 10 10] /FS << /Type /Filespec /F (photo.jpg) "
+                + "/Desc (Ridge view) /EF << /F 6 0 R >> >> >>",
+            "<< /Type /Annot /Subtype /FileAttachment /Rect [0 20 10 30] /FS (notes.txt) >>",
+            TestPdf.Stream("hello"),
+            "<< /Type /Annot /Subtype /FileAttachment /Rect [0 40 10 50] /FS << /F (map.pdf) /UF (map.pdf) >> >>");
+
+        var files = document.Settings.EmbeddedFiles;
+
+        PdfEmbeddedFile[] expected =
+        [
+            new()
+            {
+                Name = "data.xml", FileName = "data.xml", Description = null, Relationship = null, Size = null,
+                Hash = null, NamedBothWays = true,
+            },
+            new()
+            {
+                Name = "photo.jpg", Page = 1, FileName = "photo.jpg", Description = "Ridge view", Relationship = null,
+                Size = 5, Hash = "2cf24dba5fb0a30e",
+            },
+        ];
+        Assert.Equal(expected, files);
+        Assert.Equal(["  embedded-file \"photo.jpg\" page=p1 file=\"photo.jpg\" both-names=no "
+            + "description=\"Ridge view\" size=5 hash=2cf24dba5fb0a30e"],
+            document.ToSnapshot().Split('\n').Where(line => line.Contains("photo.jpg")));
+    }
+
+    // The document's own data.xml is on no page, so it stays whichever pages are printed; route.gpx is on page 1.
+    [Theory]
+    [InlineData(1, new[] { "data.xml", "route.gpx" })]
+    [InlineData(2, new[] { "data.xml" })]
+    public void ToSnapshot_ShouldKeepAPagesAttachments_WhenOnlySomePagesArePrinted(int page, string[] files)
+    {
+        var pdf = new TestPdf().CatalogEntries(" /Names << /EmbeddedFiles << /Names [(data.xml) "
+            + "<< /F (data.xml) /UF (data.xml) >>] >> >>");
+        pdf.AddPage().FileAttachment("route.gpx");
+        pdf.AddPage();
+
+        var snapshot = pdf.Load().ToSnapshot(options => options.OnlyPages(page));
+
+        Assert.Equal(files, snapshot.Split('\n').Where(line => line.Contains("embedded-file"))
+            .Select(line => line.Split('"')[1]));
+    }
+
+    // An annotation's appearance can be one stream, or one per state; either can be a reference XObject, or hold one in
+    // its resources. Objects 5 and 6 are forms with the given entries.
+    [Theory]
+    [InlineData("/AP << /N 5 0 R >>", "/Ref << /F (map.pdf) /Page 0 >>", "", 1)]
+    [InlineData("/AP << /N << /On 6 0 R /Off 5 0 R >> >>", "", "/Ref << /F (map.pdf) /Page 0 >>", 1)]
+    [InlineData("/AP << /D 5 0 R >>", "/Resources << /XObject << /Map 6 0 R >> >>", "/Ref << /F (map.pdf) /Page 0 >>", 1)]
+    [InlineData("/AP << /N 5 0 R >>", "", "", 0)]
+    public void Load_ShouldCountReferenceXObjectsInAppearances_WhenGivenAnAnnotationAppearance(string appearance,
+        string first, string second, int expected)
+    {
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [4 0 R] >>",
+            $"<< /Type /Annot /Subtype /Stamp /Rect [0 0 10 10] {appearance} >>",
+            $"<< /Type /XObject /Subtype /Form /BBox [0 0 10 10] {first} /Length 0 >>\nstream\n\nendstream",
+            $"<< /Type /XObject /Subtype /Form /BBox [0 0 10 10] {second} /Length 0 >>\nstream\n\nendstream");
+
+        Assert.Equal(expected, document.Settings.ReferenceXObjects);
+    }
+
     [Fact]
     public void Load_ShouldReadViewerSettingsLayersAndEmbeddedFiles_WhenCatalogSetsThem()
     {

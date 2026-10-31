@@ -61,7 +61,10 @@ public sealed record PdfSettings
         init => field = ValueList<PdfLayer>.Of(value);
     } = ValueList<PdfLayer>.Empty;
 
-    /// <summary>The files attached to the document, in the order its list of attachments has them; empty when none.</summary>
+    /// <summary>
+    /// The files embedded in the document: those in its list of attachments, in their order, then those attached through
+    /// comments (FileAttachment annotations), page by page; empty when none.
+    /// </summary>
     public IReadOnlyList<PdfEmbeddedFile> EmbeddedFiles
     {
         get;
@@ -79,8 +82,8 @@ public sealed record PdfSettings
     } = ValueList<PdfLayerConfiguration>.Empty;
 
     /// <summary>
-    /// How many reference XObjects (form XObjects that show a page of another file, /Ref) are in the pages' resources
-    /// and the resources of the forms in them, whether or not the pages draw them.
+    /// How many reference XObjects (form XObjects that show a page of another file, /Ref) are in the pages' resources,
+    /// their annotations' appearances and the resources of the forms in them, whether or not the pages draw them.
     /// </summary>
     public int ReferenceXObjects { get; init; }
 }
@@ -147,8 +150,9 @@ public static class PdfPageLayouts
 }
 
 /// <summary>
-/// A file attached to the document. <see cref="Name"/> is its key in the document's list of attachments; <see cref="Hash"/>
-/// is the first 16 hex digits of a SHA-256 of its contents. <see cref="Unreadable"/> is set when the contents are damaged.
+/// A file attached to the document, in its list of attachments or through a FileAttachment annotation on a page.
+/// <see cref="Hash"/> is the first 16 hex digits of a SHA-256 of its contents. <see cref="Unreadable"/> is set when the
+/// contents are damaged.
 /// </summary>
 public sealed record PdfEmbeddedFile
 {
@@ -156,8 +160,15 @@ public sealed record PdfEmbeddedFile
     {
     }
 
-    /// <summary>The file's key in the document's list of attachments.</summary>
+    /// <summary>
+    /// The file's key in the document's list of attachments, or for a file attached on a page, its file name.
+    /// </summary>
     public required string Name { get; init; }
+
+    /// <summary>
+    /// The page of the FileAttachment annotation that holds it; null for a file in the document's list.
+    /// </summary>
+    public int? Page { get; init; }
 
     /// <summary>The file name it was attached under; null when it has none.</summary>
     public required string? FileName { get; init; }

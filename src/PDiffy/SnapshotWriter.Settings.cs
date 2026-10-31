@@ -32,6 +32,7 @@ internal sealed partial class SnapshotWriter
     private string FormatEmbeddedFile(PdfEmbeddedFile file)
     {
         var line = new StringBuilder($"embedded-file {Quote(file.Name)}");
+        Key(line, "page", file.Page is { } page ? $"p{page}" : null);
         Key(line, "file", QuoteIfPresent(file.FileName));
         if (!file.NamedBothWays) line.Append(" both-names=no");
         Key(line, "description", QuoteIfPresent(file.Description));

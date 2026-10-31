@@ -27,6 +27,12 @@ internal static class PageScope
         TextRuns = document.TextRuns.Where(run => pages.Contains(run.Page)).ToList(),
         Images = document.Images.Where(image => pages.Contains(image.Page)).ToList(),
         Paths = document.Paths.Where(path => pages.Contains(path.Page)).ToList(),
+        Settings = document.Settings with
+        {
+            // A file in the document's own list is on no page, so it stays.
+            EmbeddedFiles = document.Settings.EmbeddedFiles.Where(file => file.Page is null || OnPage(file.Page, pages))
+                .ToList(),
+        },
     };
 
     private static List<PdfStructureElement> KeepElements(IReadOnlyList<PdfStructureElement> elements, IReadOnlySet<int> pages)

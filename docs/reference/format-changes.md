@@ -74,6 +74,12 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
   `Figure`, a `Para` element prints `Para->P`, not `Para->Figure`, and a `P` element prints as `P`
   ([#159](https://github.com/zacharydf7/pdiffy/issues/159)). Only snapshots of documents that remap a standard type,
   which `RoleMap` reports, change, and checks treat such elements by the standard type they reach first.
+- A file attached through a comment (a FileAttachment annotation) prints in `settings` like the document's own
+  embedded files, by its file name and with its page: `embedded-file "photo.jpg" page=p1`, and `reference-xobjects=`
+  also counts reference XObjects in annotation appearances
+  ([#163](https://github.com/zacharydf7/pdiffy/issues/163)). Only snapshots of documents with such annotations change,
+  and `EmbeddedFileNames` and `NoEmbeddedFiles`, in every set, can gain findings for them. A `NoReferenceXObjects`
+  finding now says "The pages' resources and annotation appearances hold 1 reference XObject(s)".
 - A file whose header says PDF 2.0 prints `version=2.0`. PDiffy read the version through PdfPig, which reads a
   header it doesn't know as 1.4, so such snapshots printed `version=1.4` and change.
 

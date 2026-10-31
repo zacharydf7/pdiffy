@@ -67,10 +67,10 @@ that the document conforms.
 | `MediaClips` | A media clip a Screen annotation plays with no content type or no alternate text | `AltText` | 7.18.6.2 |
 | `ArtifactNesting` | An artifact inside tagged content, or an artifact holding tagged content, page by page | `Content` | 7.1 |
 | `LayerConfigurations` | An optional-content configuration with no name, or one that turns layers on or off by itself (`AS`) | `Document` | 7.10 |
-| `EmbeddedFileNames` | A file in the document's list of embedded files not named both as `F` and as `UF` | `Document` | 7.11 |
+| `EmbeddedFileNames` | An embedded file, in the document's list or attached through a comment, not named both as `F` and as `UF` | `Document` | 7.11 |
 | `NoDynamicXfa` | A dynamic XFA form | `Forms` | 7.15 |
 | `AccessibilityPermission` | Encryption that doesn't let assistive technology extract the text | `Document` | 7.16 |
-| `NoReferenceXObjects` | A reference XObject, which shows a page of another file, in the pages' resources | `Content` | 7.20 |
+| `NoReferenceXObjects` | A reference XObject, which shows a page of another file, in the pages' resources or annotation appearances | `Content` | 7.20 |
 | `MeaningfulAltText` | A warning: alt text that's a file name, such as `IMG_2041.jpg`, or a placeholder such as `image` or `graphic 3` | `AltText` | WCAG 1.1.1 |
 | `LinkText` | A warning: a link that says only something vague, such as "click here", "read more" or "link", with no other text saying where it goes | `Annotations` | WCAG 2.4.4 |
 | `FontsEmbedded` | A font that isn't embedded | `Fonts` | 7.21.4.1 |

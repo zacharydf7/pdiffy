@@ -1230,6 +1230,28 @@ public class PdfCheckTests
             $"{finding.Path}: {finding.Message}"));
     }
 
+    // The comment on page 1 embeds photo.jpg, named only as /F; the one on page 2 only names a file outside.
+    [Fact]
+    public void Check_ShouldFindAnAttachedFileNamedOneWay_WhenAFileAttachmentAnnotationEmbedsIt()
+    {
+        var document = RawPdf.Load(
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 6 0 R] /Count 2 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [4 0 R] >>",
+            "<< /Type /Annot /Subtype /FileAttachment /Rect [0 0 10 10] /FS << /F (photo.jpg) /EF << /F 5 0 R >> >> >>",
+            TestPdf.Stream("hello"),
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [7 0 R] >>",
+            "<< /Type /Annot /Subtype /FileAttachment /Rect [0 0 10 10] /FS (notes.txt) >>");
+
+        var findings = document.Check(PdfCheck.EmbeddedFileNames, PdfCheck.NoEmbeddedFiles);
+
+        Assert.Equal(
+        [
+            (1, "settings > photo.jpg", "The document embeds photo.jpg"),
+            (1, "settings > photo.jpg", "Embedded file photo.jpg isn't named both as F and as UF"),
+        ], findings.Select(finding => (finding.Page, finding.Path, finding.Message)));
+    }
+
     [Fact]
     public void Check_ShouldFindReferenceXObjects_WhenAPageHasOne()
     {
@@ -1239,7 +1261,8 @@ public class PdfCheckTests
 
         var findings = pdf.Load().Check(PdfCheck.NoReferenceXObjects);
 
-        Assert.Equal(["settings > reference-xobjects: The pages' resources hold 1 reference XObject(s)"],
+        Assert.Equal(["settings > reference-xobjects: The pages' resources and annotation appearances hold 1 "
+            + "reference XObject(s)"],
             findings.Select(finding => $"{finding.Path}: {finding.Message}"));
     }
 

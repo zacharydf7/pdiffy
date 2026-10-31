@@ -190,6 +190,13 @@ library does.
   accessibility, since it changes what kind of field a screen reader announces
   ([#160](https://github.com/zacharydf7/pdiffy/issues/160)).
 
+### Snapshots record more
+
+- Files attached through comments (FileAttachment annotations) are read with the document's embedded files, print
+  with their page and are checked by `EmbeddedFileNames` and `NoEmbeddedFiles`, and `NoReferenceXObjects` also
+  counts reference XObjects in annotation appearances. `PdfEmbeddedFile` has `Page`
+  ([#163](https://github.com/zacharydf7/pdiffy/issues/163)).
+
 ### Diffs
 
 - A renamed attachment pairs as one file renamed, not as one removed and another added, when its description,

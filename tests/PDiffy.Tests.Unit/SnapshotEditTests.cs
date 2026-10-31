@@ -125,7 +125,7 @@ public class SnapshotEditTests
 
     private static IEnumerable<(string Name, string Snapshot)> Snapshots()
     {
-        var pdf = MutationTests.Build(new MutationTests.Sample());
+        var pdf = MutationTests.Build(new MutationTests.Sample { PageAttachment = true });
         yield return ("PDF", pdf.ToSnapshot(o => o.Check(PdfCheckSet.Latest)));
         yield return ("docs sample PDF", DocsSampleTests.Guide(revised: true).Load().ToSnapshot());
         var pdfSharp = new PdfSharpPdf().Artifact("Page 1").Heading("Trail Guide").Paragraph("Pack ", "water")

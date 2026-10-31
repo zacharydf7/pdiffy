@@ -129,6 +129,12 @@ internal sealed class TestPdf
         for (var i = 0; i < _pages.Count; i++)
         {
             annotations[i].AddRange(_pages[i].Annotations.Select(entries => Add($"<< /Type /Annot {PageReferences(entries, pageObjects)} >>")));
+            foreach (var name in _pages[i].Attachments)
+            {
+                var file = Add(Stream($"Contents of {name}"));
+                annotations[i].Add(Add("<< /Type /Annot /Subtype /FileAttachment /Rect [72 50 82 60] "
+                    + $"/FS << /Type /Filespec /F ({name}) /UF ({name}) /EF << /F {file} 0 R >> >> >>"));
+            }
         }
 
         if (_formFields.Count > 0)

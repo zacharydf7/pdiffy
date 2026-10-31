@@ -9,6 +9,7 @@ internal sealed class TestPage(double width, double height, int rotate, string? 
     private readonly List<string> _imagePixels = [];
     private int _referenceForms;
     private readonly List<string> _annotations = [];
+    private readonly List<string> _attachments = [];
     private readonly List<string> _layers = [];
     private string _pageEntries = "";
     private int _nextLineY = 720;
@@ -33,6 +34,18 @@ internal sealed class TestPage(double width, double height, int rotate, string? 
         _annotations.Add(entries);
         return this;
     }
+
+    /// <summary>
+    /// A comment (FileAttachment annotation) that embeds a file of this name, named both as /F and /UF.
+    /// </summary>
+    public TestPage FileAttachment(string name)
+    {
+        _attachments.Add(name);
+        return this;
+    }
+
+    /// <summary>The names of the files attached with <see cref="FileAttachment"/>.</summary>
+    public IReadOnlyList<string> Attachments => _attachments;
 
     /// <summary>Text inside marked content with an MCID, which a structure element can point to.</summary>
     public TestPage Tagged(int mcid, string text, string tag = "P") => Raw($"/{tag} << /MCID {mcid} >> BDC {TextLine(text)} EMC");
