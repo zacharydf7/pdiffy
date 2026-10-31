@@ -57,6 +57,8 @@ internal static class AccessibilityRules
         (PdfSection.Document, "marked" or "display-doc-title") => from == "yes" && to != "yes",
         (PdfSection.Metadata, "title" or "xmp-title") => IsGone(to),
         (PdfSection.Pages, "tabs") => from == "S" && to != "S",
+        // A Form element's field role tells a screen reader what kind of field it is; adding one only adds to that.
+        (PdfSection.Structure, "field-role") => !IsGone(from),
         (PdfSection.Fonts, "to-unicode") => from == "yes" && to != "yes",
         (PdfSection.Fonts, "unmapped" or "missing-glyphs") => AddsCodes(from, to),
         (PdfSection.Settings, "permissions") => AllowsExtraction(from) && !AllowsExtraction(to),

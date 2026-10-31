@@ -78,6 +78,8 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 - A new problem in the `checks` section from a rule that isn't a house rule is flagged as affecting
   accessibility ([#56](https://github.com/zacharydf7/pdiffy/issues/56)). No snapshot changes.
+- A Form element's field role that changes or goes missing (`field-role: cb -> tv`) is flagged as affecting
+  accessibility ([#160](https://github.com/zacharydf7/pdiffy/issues/160)). No snapshot changes.
 
 ### PDF (`pdfua-snapshot v1`, unchanged)
 

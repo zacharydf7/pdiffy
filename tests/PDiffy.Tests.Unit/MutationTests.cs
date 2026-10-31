@@ -40,7 +40,7 @@ public class MutationTests
         { "bookmark target page", new Sample { BookmarkPage = 1 }, PdfSection.Bookmarks, ChangeKind.Changed, false },
         { "tags marked as unreliable", new Sample { MarkInfo = "/Marked true /Suspects true" }, PdfSection.Document, ChangeKind.AttributeChanged, false },
         { "parent entry left out", new Sample { FigureWithoutParent = true }, PdfSection.Structure, ChangeKind.AttributeChanged, false },
-        { "form field role", new Sample { FieldRole = "cb" }, PdfSection.Structure, ChangeKind.AttributeChanged, false },
+        { "form field role", new Sample { FieldRole = "cb" }, PdfSection.Structure, ChangeKind.AttributeChanged, true },
         { "media clip alt text", new Sample { MediaAlt = "Ridge tour" }, PdfSection.Annotations, ChangeKind.AttributeChanged, false },
         { "media clip alt text removed", new Sample { MediaAlt = null }, PdfSection.Annotations, ChangeKind.AttributeChanged, true },
         { "artifact moved inside tagged content", new Sample { ArtifactInTagged = true }, PdfSection.Pages, ChangeKind.AttributeChanged, false },

@@ -183,6 +183,12 @@ library does.
   `settings > additional-actions` and `settings > open-action` for `NoActions`, `settings > data.xml` for an embedded
   file, and `> scope` or `> headers` after a table cell's path for `TableHeaders`.
 
+### Accessibility flags
+
+- A change to a Form element's field role (`field-role: cb -> tv`), or its removal, is flagged as affecting
+  accessibility, since it changes what kind of field a screen reader announces
+  ([#160](https://github.com/zacharydf7/pdiffy/issues/160)).
+
 ### Read more accurately
 
 - A role map chain ends at the first standard type, as PDF 1.7 describes, so an element's `MappedType` and its
