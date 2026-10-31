@@ -109,10 +109,66 @@ public class DocxCheckTests
         var without = new TestDocx { Body = table.Replace(ImageParagraph("", ""), "<w:p/>") }.Load();
         var with = new TestDocx { Body = table }.Load();
 
-        var finding = Assert.Single(with.Check());
+        var finding = Assert.Single(with.Check(DocxCheck.ImageAltText));
 
         Assert.Equal("body > Table > Row[2] > Cell > P[2] > image", finding.Path);
         Assert.Contains(without.CompareTo(with).Changes, change => change.Path == finding.Path);
+    }
+
+    [Theory]
+    [InlineData("<w:trPr><w:tblHeader/></w:trPr>", 2, false)]
+    [InlineData("", 2, true)]
+    [InlineData("", 1, false)]
+    public void Check_ShouldFindTheTableOnly_WhenItHasMoreThanOneRowAndNoHeaderRow(string firstRow, int rows,
+        bool found)
+    {
+        var docx = new TestDocx { Body = Table(firstRow, rows) };
+
+        var findings = docx.Load().Check(DocxCheck.TableHeaders);
+
+        Assert.Equal(found, findings.Count == 1);
+    }
+
+    // Word repeats header rows only from the top of the table, so a later row marked as one doesn't label the columns.
+    [Fact]
+    public void Check_ShouldFindTheTable_WhenOnlyALaterRowIsMarkedAsAHeader()
+    {
+        var docx = new TestDocx
+        {
+            Body = Table("", 2).Replace("</w:tr><w:tr>", "</w:tr><w:tr><w:trPr><w:tblHeader/></w:trPr>"),
+        };
+
+        var findings = docx.Load().Check(DocxCheck.TableHeaders);
+
+        Assert.Single(findings);
+    }
+
+    [Fact]
+    public void Check_ShouldDescribeTheFinding_WhenATableHasNoHeaderRow()
+    {
+        var docx = new TestDocx { Body = "<w:p/>" + Table("", 2) };
+
+        var finding = Assert.Single(docx.Load().Check());
+
+        Assert.Equal(DocxCheck.TableHeaders, finding.Check);
+        Assert.Equal(DocxCheckCategory.Tables, finding.Category);
+        Assert.Equal(CheckSeverity.Warning, finding.Severity);
+        Assert.Equal("WCAG 2.2 1.3.1", finding.Reference);
+        Assert.Equal("TableHeaders: Table has no header row (body > Table)", finding.ToString());
+        Assert.Equal("https://zacharydf7.github.io/pdiffy/reference/checks.html#word-tableheaders", finding.HelpUrl);
+    }
+
+    [Fact]
+    public void Check_ShouldFindATableInsideAnother_WhenItHasNoHeaderRow()
+    {
+        var inner = Table("", 2);
+        var outer = Table("<w:trPr><w:tblHeader/></w:trPr>", 2);
+        var docx = new TestDocx { Body = outer.Replace("<w:p/>", inner + "<w:p/>") };
+
+        var findings = docx.Load().Check(DocxCheck.TableHeaders);
+
+        Assert.Equal(["body > Table > Row[1] > Cell > Table", "body > Table > Row[2] > Cell > Table"],
+            findings.Select(finding => finding.Path));
     }
 
     [Fact]
@@ -142,7 +198,7 @@ public class DocxCheckTests
 
         var snapshot = docx.ToSnapshot(options => options.Check(DocxCheckSet.Latest));
 
-        Assert.Contains("# checks: latest, 1 rule\n", snapshot);
+        Assert.Contains("# checks: latest, 2 rules\n", snapshot);
         Assert.EndsWith("checks\n  ImageAltText body > P > image\n", snapshot);
     }
 
@@ -184,7 +240,7 @@ public class DocxCheckTests
             docx.ToSnapshot(options => options.Check(DocxCheckSet.Latest)));
 
         Assert.Equal(["header", "checks"], diff.Changes.Select(change => change.SectionName));
-        Assert.Equal("+ # checks: latest, 1 rule", diff.Changes[0].Detail);
+        Assert.Equal("+ # checks: latest, 2 rules", diff.Changes[0].Detail);
         Assert.Equal(ChangeKind.Added, diff.Changes[1].Kind);
     }
 
@@ -207,7 +263,7 @@ public class DocxCheckTests
     [Fact]
     public void ToHtml_ShouldLinkAWordFindingToItsRulesEntry_WhenTheChecksChange()
     {
-        var header = "# docx-snapshot v1\n# checks: latest, 1 rule\nchecks\n";
+        var header = "# docx-snapshot v1\n# checks: latest, 2 rules\nchecks\n";
 
         var html = SnapshotDiff.CompareSnapshots(header + "  (none)\n", header + "  ImageAltText body > P > image\n")
             .ToHtml();
@@ -221,7 +277,7 @@ public class DocxCheckTests
     public void Latest_ShouldHaveEveryRule_WhenCalled()
     {
         Assert.Equal(Enum.GetValues<DocxCheck>(), DocxCheckSet.Latest.Checks);
-        Assert.Equal("latest, 1 rule", DocxCheckSet.Latest.ToString());
+        Assert.Equal("latest, 2 rules", DocxCheckSet.Latest.ToString());
     }
 
     [Fact]
@@ -232,6 +288,13 @@ public class DocxCheckTests
         Assert.Equal([DocxCheck.ImageAltText], set.Checks);
         Assert.Equal("latest", set.Name);
     }
+
+    // A table of one-cell rows, with the first row's properties.
+    private static string Table(string firstRow, int rows) =>
+        "<w:tbl><w:tblGrid><w:gridCol w:w=\"2000\"/></w:tblGrid>"
+        + string.Concat(Enumerable.Range(0, rows)
+            .Select(row => $"<w:tr>{(row == 0 ? firstRow : "")}<w:tc><w:p/></w:tc></w:tr>"))
+        + "</w:tbl>";
 
     private static string ImageParagraph(string attributes, string extensions) => $"""
         <w:p><w:r><w:drawing xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"

@@ -12,6 +12,13 @@ public enum DocxCheck
     /// label.
     /// </summary>
     ImageAltText,
+
+    /// <summary>
+    /// Every table of more than one row marks its first row as a header row (repeated at the top of each page), so a
+    /// screen reader can tell its column headings from its data. A warning, since a table used only for layout needs
+    /// no header row.
+    /// </summary>
+    TableHeaders,
 }
 
 /// <summary>The family a <see cref="DocxCheck"/> belongs to, so findings can be grouped by family.</summary>
@@ -19,6 +26,9 @@ public enum DocxCheckCategory
 {
     /// <summary>Alt text for images and other graphics.</summary>
     AltText,
+
+    /// <summary>Tables and their header rows.</summary>
+    Tables,
 }
 
 /// <summary>
@@ -38,7 +48,8 @@ public sealed record DocxCheckFinding
     public required DocxCheckCategory Category { get; init; }
 
     /// <summary>
-    /// How much it matters: an error for a rule that breaks a WCAG 2.2 success criterion, a warning otherwise.
+    /// How much it matters: an error for a rule that breaks a WCAG 2.2 success criterion, a warning for one that
+    /// usually does, such as a table with no header row, which might be for layout.
     /// </summary>
     public required CheckSeverity Severity { get; init; }
 

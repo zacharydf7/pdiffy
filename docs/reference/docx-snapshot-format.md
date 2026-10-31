@@ -94,7 +94,7 @@ their line. See [`DocxRevisionKind`](xref:PDiffy.DocxRevisionKind) for every kin
 ## Rules
 
 - When anything is ignored, the second line lists it: `# ignored sections: ...` and `# ignored fields: ...`. With
-  `Check`, `# checks: ...` follows, the rule set and how many rules it has, such as `# checks: latest, 1 rule`.
+  `Check`, `# checks: ...` follows, the rule set and how many rules it has, such as `# checks: latest, 2 rules`.
 - An empty section prints `(none)` and an ignored one prints `(ignored)`.
 - Lengths are in points. Colors are hex.
 - `other=` is a hash of the formatting PDiffy doesn't read, such as character spacing or a table's indent, on a style,

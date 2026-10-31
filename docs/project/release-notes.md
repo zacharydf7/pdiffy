@@ -82,6 +82,8 @@ library does.
   the path a diff shows. `DocxCheckSet.Latest` chooses the rules, and `DocxSnapshotOptions.Check(DocxCheckSet)` records
   the findings in a `checks` section, with the same new-problem and fixed counts and report panel as for PDFs
   ([#167](https://github.com/zacharydf7/pdiffy/issues/167)).
+- `TableHeaders`, a warning, finds a Word table of more than one row whose first row isn't marked as a header row
+  ([#169](https://github.com/zacharydf7/pdiffy/issues/169)).
 - Each `PdfCheckFinding` has a `Severity` (`Error` or `Warning`) and a `Reference` to the PDF/UA-1 clause its
   rule comes from, such as `ISO 14289-1 7.3`; `NoActions` and `NoEmbeddedFiles` are house rules, warnings with no
   reference ([#52](https://github.com/zacharydf7/pdiffy/issues/52)).

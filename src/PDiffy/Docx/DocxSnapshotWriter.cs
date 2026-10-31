@@ -21,28 +21,32 @@ internal sealed class DocxSnapshotWriter
     // An inserted document's styles are compared with the outer document line, since its own isn't printed.
     private readonly string? _language;
 
-    // Where each image's line starts, for a check finding's path; an inserted document's writer adds to the same list.
-    private readonly List<(DocxImage Image, int Start)> _images;
+    // Where each image's and table's line starts, for a check finding's path; an inserted document's writer adds to
+    // the same list.
+    private readonly List<(object Item, int Start)> _items;
 
     private DocxSnapshotWriter(DocxDocument document, StringBuilder snapshot, DocxSnapshotOptions options, Scrubbing scrubbing,
-        string? language, List<(DocxImage Image, int Start)> images)
+        string? language, List<(object Item, int Start)> items)
     {
-        (_snapshot, _options, _scrubbing, _language, _images) = (snapshot, options, scrubbing, language, images);
+        (_snapshot, _options, _scrubbing, _language, _items) = (snapshot, options, scrubbing, language, items);
         _styleLayouts = document.Styles.Where(style => style.Type == DocxStyleTypes.Paragraph)
             .ToDictionary(style => style.Id, style => style.Paragraph);
     }
 
     public static string Write(DocxDocument document, DocxSnapshotOptions options) =>
-        WriteWithImages(document, options).Snapshot;
+        WriteWithItems(document, options).Snapshot;
 
-    /// <summary>The snapshot, with where each image's line starts in it, in the order they're written.</summary>
-    public static (string Snapshot, List<(DocxImage Image, int Start)> Images) WriteWithImages(DocxDocument document,
+    /// <summary>
+    /// The snapshot, with where the line of each <see cref="DocxImage"/> and <see cref="DocxTable"/> starts in it, in
+    /// the order they're written.
+    /// </summary>
+    public static (string Snapshot, List<(object Item, int Start)> Items) WriteWithItems(DocxDocument document,
         DocxSnapshotOptions options)
     {
-        var images = new List<(DocxImage Image, int Start)>();
+        var items = new List<(object Item, int Start)>();
         var writer = new DocxSnapshotWriter(document, new StringBuilder(), options, new Scrubbing(options.Scrubbers),
-            document.Document.Language, images);
-        return (writer.Build(document), images);
+            document.Document.Language, items);
+        return (writer.Build(document), items);
     }
 
     private string Build(DocxDocument document)
@@ -243,7 +247,7 @@ internal sealed class DocxSnapshotWriter
         Line(depth, line.ToString());
         if (inserted.Document is not { } document) return;
 
-        var writer = new DocxSnapshotWriter(document, _snapshot, _options, _scrubbing, _language, _images);
+        var writer = new DocxSnapshotWriter(document, _snapshot, _options, _scrubbing, _language, _items);
         writer.Line(depth + 1, "styles");
         if (_options.Ignores(DocxSection.Styles)) writer.Line(depth + 2, SnapshotWriter.Ignored);
         else writer.WriteStyles(document.Styles, depth + 2);
@@ -292,7 +296,7 @@ internal sealed class DocxSnapshotWriter
         for (var i = 0; i < positions.Length; i++)
         {
             var image = paragraph.Inlines[i] as DocxImage;
-            if (image is not null) _images.Add((image, _snapshot.Length));
+            if (image is not null) _items.Add((image, _snapshot.Length));
             Line(depth + 1, InlineLine(paragraph.Inlines[i], positions[i], results));
             if (image is not null) WriteBlocks(image.TextBox, depth + 2);
         }
@@ -387,6 +391,7 @@ internal sealed class DocxSnapshotWriter
         Key(line, "caption", Quote(table.Caption));
         Key(line, "description", Quote(table.Description));
         if (Shows(DocxDetail.OtherFormatting)) Key(line, "other", table.Other);
+        _items.Add((table, _snapshot.Length));
         Line(depth, line.ToString());
         foreach (var revision in table.Revisions) Line(depth + 1, RevisionLine(revision));
         for (var i = 0; i < table.Rows.Count; i++)

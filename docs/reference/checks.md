@@ -545,3 +545,18 @@ whatever it shows is lost. One marked as decoration is skipped, which suits a bo
 
 **How to fix it:** in Word, choose View Alt Text on the image and describe it, or tick Mark as decorative. A generator
 sets the description on the drawing's `wp:docPr` (`DocProperties.Description` in the Open XML SDK).
+
+## Word: TableHeaders
+
+**Finds:** a Word table of more than one row whose first row isn't marked as a header row (Repeat as header row,
+`w:tblHeader`). A table of one row has nothing to label, so it's left out. **Category:** `Tables`. **Severity:**
+`Warning`, since a table used only for layout needs no header row and the rule can't tell the two apart. **From:**
+WCAG 2.2 1.3.1.
+
+**Why it matters:** a screen reader reads a header row's cells out as it moves through the columns below, so the user
+knows what each value is. Without one, a row of numbers is just numbers.
+
+**How to fix it:** in Word, select the first row and turn on Repeat as Header Row (Table Properties, Row). A generator
+sets `w:tblHeader` in the row's properties (`TableHeader` in the Open XML SDK). A table used only to lay out a page is
+better replaced by columns or text boxes; if it stays, `DocxCheckSet.Latest.Except(DocxCheck.TableHeaders)` leaves
+the warning out, for every table in the document.
