@@ -21,6 +21,7 @@ internal sealed class DocxChecker(DocxDocument document)
         {
             case DocxCheck.ImageAltText: ImageAltText(); break;
             case DocxCheck.TableHeaders: TableHeaders(); break;
+            case DocxCheck.DocumentLanguage: DocumentLanguage(); break;
             default: throw new ArgumentOutOfRangeException(nameof(check), check, "Not a DocxCheck value.");
         }
     }
@@ -55,6 +56,20 @@ internal sealed class DocxChecker(DocxDocument document)
         }
     }
 
+    // Text gets its language from its run, its styles or the document's defaults, so a document whose defaults set
+    // none is found only when some text gets none from anywhere. It's one finding for the whole document, since the
+    // fix is usually the defaults.
+    private void DocumentLanguage()
+    {
+        var paragraphCount = document.EveryParagraph().Count(paragraph => paragraph.Spans
+            .Any(span => span.Format.Language is null && !string.IsNullOrWhiteSpace(span.Text)));
+        if (paragraphCount == 0) return;
+
+        var paragraphText = paragraphCount == 1 ? "1 paragraph has" : $"{paragraphCount} paragraphs have";
+        Add(DocxCheck.DocumentLanguage, SnapshotWriter.Name(DocxSection.Document),
+            $"Document has no language, and {paragraphText} text without one");
+    }
+
     // Every image and table the snapshot prints, in its order, with the path a diff shows for its line. Written once,
     // since several rules walk them.
     private List<(object Item, string Path)> Items
@@ -84,6 +99,7 @@ internal sealed class DocxChecker(DocxDocument document)
     {
         DocxCheck.ImageAltText => new(DocxCheckCategory.AltText, CheckSeverity.Error, "WCAG 2.2 1.1.1"),
         DocxCheck.TableHeaders => new(DocxCheckCategory.Tables, CheckSeverity.Warning, "WCAG 2.2 1.3.1"),
+        DocxCheck.DocumentLanguage => new(DocxCheckCategory.Language, CheckSeverity.Error, "WCAG 2.2 3.1.1"),
         _ => throw new ArgumentOutOfRangeException(nameof(check), check, "Every check needs a rule."),
     };
 }

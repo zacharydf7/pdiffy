@@ -146,6 +146,10 @@ public sealed record DocxDocument
             _ => [],
         });
 
+    // Every paragraph in the body, headers, footers and notes, including those in tables, text boxes and inserted
+    // documents.
+    internal IEnumerable<DocxParagraph> EveryParagraph() => EveryBlock().OfType<DocxParagraph>();
+
     private IEnumerable<DocxBlock> EveryBlock() => AllBlocks(OuterBlocks());
 
     // Inserted documents' notes count as this document's, since Word brings them in with the inserted text.

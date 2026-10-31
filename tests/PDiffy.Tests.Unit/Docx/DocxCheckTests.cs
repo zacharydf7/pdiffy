@@ -6,6 +6,13 @@ public class DocxCheckTests
         <a:extLst xmlns:adec="http://schemas.microsoft.com/office/drawing/2017/decorative"><a:ext><adec:decorative val="1"/></a:ext></a:extLst>
         """;
 
+    private const string DefaultLanguage =
+        """<w:docDefaults><w:rPrDefault><w:rPr><w:lang w:val="en-US"/></w:rPr></w:rPrDefault></w:docDefaults>""";
+
+    private const string TrailStyle =
+        """<w:style w:type="paragraph" w:styleId="Trail"><w:name w:val="Trail"/>"""
+        + """<w:rPr><w:lang w:val="en-US"/></w:rPr></w:style>""";
+
     [Theory]
     [InlineData("", "", true)]
     [InlineData("descr=\"\"", "", true)]
@@ -58,7 +65,7 @@ public class DocxCheckTests
                 """,
         };
 
-        var findings = docx.Load().Check();
+        var findings = docx.Load().Check(DocxCheck.ImageAltText);
 
         Assert.Equal(message, findings.SingleOrDefault()?.Message);
     }
@@ -182,6 +189,46 @@ public class DocxCheckTests
         Assert.Equal("headers > s1 > P > image", finding.Path);
     }
 
+    // The text's language can come from the defaults, a paragraph style or the run; blank text needs none.
+    [Theory]
+    [InlineData(null, "<w:p><w:r><w:t>Ridge loop</w:t></w:r></w:p>", true)]
+    [InlineData(DefaultLanguage, "<w:p><w:r><w:t>Ridge loop</w:t></w:r></w:p>", false)]
+    [InlineData(TrailStyle, "<w:p><w:pPr><w:pStyle w:val=\"Trail\"/></w:pPr><w:r><w:t>Ridge loop</w:t></w:r></w:p>",
+        false)]
+    [InlineData(null, "<w:p><w:r><w:rPr><w:lang w:val=\"en-US\"/></w:rPr><w:t>Ridge loop</w:t></w:r></w:p>", false)]
+    [InlineData(null, "<w:p><w:r><w:t xml:space=\"preserve\">  </w:t></w:r></w:p>", false)]
+    public void Check_ShouldFindTheDocumentOnly_WhenSomeTextGetsNoLanguage(string? styles, string body, bool found)
+    {
+        var docx = new TestDocx { Styles = styles, Body = body };
+
+        var findings = docx.Load().Check(DocxCheck.DocumentLanguage);
+
+        Assert.Equal(found, findings.Count == 1);
+    }
+
+    [Fact]
+    public void Check_ShouldDescribeTheFinding_WhenTheBodyAndAHeaderHaveTextWithoutALanguage()
+    {
+        var docx = new TestDocx
+        {
+            Body = """
+                <w:p><w:r><w:t>Ridge loop</w:t></w:r></w:p>
+                <w:sectPr><w:headerReference w:type="default" r:id="running"/></w:sectPr>
+                """,
+        }.WithHeader("running", "<w:p><w:r><w:t>Trail guide</w:t></w:r></w:p>");
+
+        var finding = Assert.Single(docx.Load().Check());
+
+        Assert.Equal(DocxCheck.DocumentLanguage, finding.Check);
+        Assert.Equal(DocxCheckCategory.Language, finding.Category);
+        Assert.Equal(CheckSeverity.Error, finding.Severity);
+        Assert.Equal("WCAG 2.2 3.1.1", finding.Reference);
+        Assert.Equal("DocumentLanguage: Document has no language, and 2 paragraphs have text without one (document)",
+            finding.ToString());
+        Assert.Equal("https://zacharydf7.github.io/pdiffy/reference/checks.html#word-documentlanguage",
+            finding.HelpUrl);
+    }
+
     [Fact]
     public void Check_ShouldApplyOnlyTheSetsRules_WhenGivenASet()
     {
@@ -198,7 +245,7 @@ public class DocxCheckTests
 
         var snapshot = docx.ToSnapshot(options => options.Check(DocxCheckSet.Latest));
 
-        Assert.Contains("# checks: latest, 2 rules\n", snapshot);
+        Assert.Contains("# checks: latest, 3 rules\n", snapshot);
         Assert.EndsWith("checks\n  ImageAltText body > P > image\n", snapshot);
     }
 
@@ -240,7 +287,7 @@ public class DocxCheckTests
             docx.ToSnapshot(options => options.Check(DocxCheckSet.Latest)));
 
         Assert.Equal(["header", "checks"], diff.Changes.Select(change => change.SectionName));
-        Assert.Equal("+ # checks: latest, 2 rules", diff.Changes[0].Detail);
+        Assert.Equal("+ # checks: latest, 3 rules", diff.Changes[0].Detail);
         Assert.Equal(ChangeKind.Added, diff.Changes[1].Kind);
     }
 
@@ -263,7 +310,7 @@ public class DocxCheckTests
     [Fact]
     public void ToHtml_ShouldLinkAWordFindingToItsRulesEntry_WhenTheChecksChange()
     {
-        var header = "# docx-snapshot v1\n# checks: latest, 2 rules\nchecks\n";
+        var header = "# docx-snapshot v1\n# checks: latest, 3 rules\nchecks\n";
 
         var html = SnapshotDiff.CompareSnapshots(header + "  (none)\n", header + "  ImageAltText body > P > image\n")
             .ToHtml();
@@ -277,7 +324,7 @@ public class DocxCheckTests
     public void Latest_ShouldHaveEveryRule_WhenCalled()
     {
         Assert.Equal(Enum.GetValues<DocxCheck>(), DocxCheckSet.Latest.Checks);
-        Assert.Equal("latest, 2 rules", DocxCheckSet.Latest.ToString());
+        Assert.Equal("latest, 3 rules", DocxCheckSet.Latest.ToString());
     }
 
     [Fact]

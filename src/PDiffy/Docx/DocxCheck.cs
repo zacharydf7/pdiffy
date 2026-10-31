@@ -19,6 +19,12 @@ public enum DocxCheck
     /// no header row.
     /// </summary>
     TableHeaders,
+
+    /// <summary>
+    /// All text has a language, from the document's defaults or from its styles or runs, so a screen reader reads it
+    /// with the right voice. Found once for the whole document.
+    /// </summary>
+    DocumentLanguage,
 }
 
 /// <summary>The family a <see cref="DocxCheck"/> belongs to, so findings can be grouped by family.</summary>
@@ -29,11 +35,14 @@ public enum DocxCheckCategory
 
     /// <summary>Tables and their header rows.</summary>
     Tables,
+
+    /// <summary>The language text is read in.</summary>
+    Language,
 }
 
 /// <summary>
 /// Something a <see cref="DocxCheck"/> found: where it is and what's wrong. The path is the one a snapshot diff shows
-/// for the item's line, such as "body > Table > Row[2] > Cell > P > image".
+/// for the item's line, such as "body > Table > Row[2] > Cell > P > image", or "document" for the whole document.
 /// </summary>
 public sealed record DocxCheckFinding
 {
@@ -60,7 +69,8 @@ public sealed record DocxCheckFinding
     public required string Reference { get; init; }
 
     /// <summary>
-    /// Where it is, as a snapshot diff shows the item's line, such as "headers > s1 > P > image".
+    /// Where it is: the path a snapshot diff shows for the item's line, such as "headers > s1 > P > image", or a
+    /// section's name alone, such as "document", for the whole document.
     /// </summary>
     public required string Path { get; init; }
 

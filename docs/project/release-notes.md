@@ -84,6 +84,8 @@ library does.
   ([#167](https://github.com/zacharydf7/pdiffy/issues/167)).
 - `TableHeaders`, a warning, finds a Word table of more than one row whose first row isn't marked as a header row
   ([#169](https://github.com/zacharydf7/pdiffy/issues/169)).
+- `DocumentLanguage` finds a Word document with text that gets no language from its defaults, styles or runs, as one
+  finding for the whole document ([#170](https://github.com/zacharydf7/pdiffy/issues/170)).
 - Each `PdfCheckFinding` has a `Severity` (`Error` or `Warning`) and a `Reference` to the PDF/UA-1 clause its
   rule comes from, such as `ISO 14289-1 7.3`; `NoActions` and `NoEmbeddedFiles` are house rules, warnings with no
   reference ([#52](https://github.com/zacharydf7/pdiffy/issues/52)).

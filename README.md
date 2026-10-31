@@ -227,7 +227,7 @@ Assert.All(notes.Images(), image => Assert.NotNull(image.AltText));
 Assert.DoesNotContain(notes.Revisions(), revision => revision.Kind == DocxRevisionKind.Delete);
 ```
 
-`Check` applies Word rules too: `ImageAltText`, an image, chart or shape with no alt text that isn't marked as decoration (WCAG 2.2 1.1.1), and the warning `TableHeaders`, a table of more than one row with no header row (WCAG 2.2 1.3.1). A `DocxCheckFinding` has the same `Severity` (`CheckSeverity`), `Category`, `Reference`, `Path` and `HelpUrl` as a PDF finding, with no page. Its path is the one a diff shows, such as `body > Table > Row[2] > Cell > P > image`. `DocxCheckSet.Latest`, `Only` and `Except` choose the rules, and `o => o.Check(DocxCheckSet.Latest)` records the findings in a `checks` section, as for PDFs.
+`Check` applies Word rules too: `ImageAltText`, an image, chart or shape with no alt text that isn't marked as decoration (WCAG 2.2 1.1.1), the warning `TableHeaders`, a table of more than one row with no header row (WCAG 2.2 1.3.1), and `DocumentLanguage`, text with no language from the document's defaults, its styles or its runs (WCAG 2.2 3.1.1). A `DocxCheckFinding` has the same `Severity` (`CheckSeverity`), `Category`, `Reference`, `Path` and `HelpUrl` as a PDF finding, with no page. Its path is the one a diff shows, such as `body > Table > Row[2] > Cell > P > image`. `DocxCheckSet.Latest`, `Only` and `Except` choose the rules, and `o => o.Check(DocxCheckSet.Latest)` records the findings in a `checks` section, as for PDFs.
 
 ```csharp
 Assert.Empty(DocxDocument.Load("notes.docx").Check(DocxCheck.ImageAltText));

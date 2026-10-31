@@ -560,3 +560,17 @@ knows what each value is. Without one, a row of numbers is just numbers.
 sets `w:tblHeader` in the row's properties (`TableHeader` in the Open XML SDK). A table used only to lay out a page is
 better replaced by columns or text boxes; if it stays, `DocxCheckSet.Latest.Except(DocxCheck.TableHeaders)` leaves
 the warning out, for every table in the document.
+
+## Word: DocumentLanguage
+
+**Finds:** a Word document with text that has no language: the document's defaults (`w:lang` in `w:docDefaults`) set
+none, and neither do the text's styles or runs. Text in the body, headers, footers, notes, tables and text boxes counts;
+blank text doesn't. It's one finding for the whole document, with the path `document`, and its message says how many
+paragraphs have such text. **Category:** `Language`. **Severity:** `Error`. **From:** WCAG 2.2 3.1.1.
+
+**Why it matters:** a screen reader picks its voice and pronunciation from the text's language. Without one, it reads
+the text in the user's own language, so text in another one is mispronounced and hard to follow.
+
+**How to fix it:** set the document's language in its defaults: in Word, Review, Language, Set Proofing Language, then
+Set As Default. A generator sets `w:lang` in the default run properties of `styles.xml` (`Languages` in the Open XML
+SDK's `RunPropertiesDefault`). Text in another language sets its own on its runs or style.
