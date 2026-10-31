@@ -1340,56 +1340,56 @@ public class PdfCheckTests
 
         Assert.Equal(
         [
-            (PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2"),
-            (PdfCheckCategory.HouseRules, PdfCheckSeverity.Warning, null),
+            (PdfCheckCategory.Language, CheckSeverity.Error, "ISO 14289-1 7.2"),
+            (PdfCheckCategory.HouseRules, CheckSeverity.Warning, null),
         ], findings.Select(finding => (finding.Category, finding.Severity, finding.Reference)));
     }
 
     [Theory]
-    [InlineData(PdfCheck.DocumentLanguage, PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
-    [InlineData(PdfCheck.DocumentTitle, PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 7.1")]
-    [InlineData(PdfCheck.FigureAltText, PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.3")]
-    [InlineData(PdfCheck.UntaggedContent, PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.1")]
-    [InlineData(PdfCheck.LinkDescriptions, PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.5")]
-    [InlineData(PdfCheck.FormFieldNames, PdfCheckCategory.Forms, PdfCheckSeverity.Error, "ISO 14289-1 7.18.1")]
-    [InlineData(PdfCheck.TableHeaders, PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.5")]
-    [InlineData(PdfCheck.HeadingLevels, PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.2")]
-    [InlineData(PdfCheck.FontsEmbedded, PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.4.1")]
-    [InlineData(PdfCheck.FontsMapToUnicode, PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.7")]
-    [InlineData(PdfCheck.NoActions, PdfCheckCategory.HouseRules, PdfCheckSeverity.Warning, null)]
-    [InlineData(PdfCheck.NoEmbeddedFiles, PdfCheckCategory.HouseRules, PdfCheckSeverity.Warning, null)]
-    [InlineData(PdfCheck.RoleMap, PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1")]
-    [InlineData(PdfCheck.XmpMetadata, PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 5")]
-    [InlineData(PdfCheck.TaggedPdf, PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.1")]
-    [InlineData(PdfCheck.PdfVersion, PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 6.1")]
-    [InlineData(PdfCheck.ListStructure, PdfCheckCategory.Lists, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
-    [InlineData(PdfCheck.TocStructure, PdfCheckCategory.Lists, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
-    [InlineData(PdfCheck.HeadingTypes, PdfCheckCategory.Headings, PdfCheckSeverity.Error, "ISO 14289-1 7.4.4")]
-    [InlineData(PdfCheck.NoteIds, PdfCheckCategory.Structure, PdfCheckSeverity.Error, "ISO 14289-1 7.9")]
-    [InlineData(PdfCheck.TableStructure, PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
-    [InlineData(PdfCheck.TableGrid, PdfCheckCategory.Tables, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
-    [InlineData(PdfCheck.AnnotationTags, PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18")]
-    [InlineData(PdfCheck.AnnotationDescriptions, PdfCheckCategory.Annotations, PdfCheckSeverity.Error,
+    [InlineData(PdfCheck.DocumentLanguage, PdfCheckCategory.Language, CheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.DocumentTitle, PdfCheckCategory.Document, CheckSeverity.Error, "ISO 14289-1 7.1")]
+    [InlineData(PdfCheck.FigureAltText, PdfCheckCategory.AltText, CheckSeverity.Error, "ISO 14289-1 7.3")]
+    [InlineData(PdfCheck.UntaggedContent, PdfCheckCategory.Content, CheckSeverity.Error, "ISO 14289-1 7.1")]
+    [InlineData(PdfCheck.LinkDescriptions, PdfCheckCategory.Annotations, CheckSeverity.Error, "ISO 14289-1 7.18.5")]
+    [InlineData(PdfCheck.FormFieldNames, PdfCheckCategory.Forms, CheckSeverity.Error, "ISO 14289-1 7.18.1")]
+    [InlineData(PdfCheck.TableHeaders, PdfCheckCategory.Tables, CheckSeverity.Error, "ISO 14289-1 7.5")]
+    [InlineData(PdfCheck.HeadingLevels, PdfCheckCategory.Headings, CheckSeverity.Error, "ISO 14289-1 7.4.2")]
+    [InlineData(PdfCheck.FontsEmbedded, PdfCheckCategory.Fonts, CheckSeverity.Error, "ISO 14289-1 7.21.4.1")]
+    [InlineData(PdfCheck.FontsMapToUnicode, PdfCheckCategory.Fonts, CheckSeverity.Error, "ISO 14289-1 7.21.7")]
+    [InlineData(PdfCheck.NoActions, PdfCheckCategory.HouseRules, CheckSeverity.Warning, null)]
+    [InlineData(PdfCheck.NoEmbeddedFiles, PdfCheckCategory.HouseRules, CheckSeverity.Warning, null)]
+    [InlineData(PdfCheck.RoleMap, PdfCheckCategory.Structure, CheckSeverity.Error, "ISO 14289-1 7.1")]
+    [InlineData(PdfCheck.XmpMetadata, PdfCheckCategory.Document, CheckSeverity.Error, "ISO 14289-1 5")]
+    [InlineData(PdfCheck.TaggedPdf, PdfCheckCategory.Structure, CheckSeverity.Error, "ISO 14289-1 7.1")]
+    [InlineData(PdfCheck.PdfVersion, PdfCheckCategory.Document, CheckSeverity.Error, "ISO 14289-1 6.1")]
+    [InlineData(PdfCheck.ListStructure, PdfCheckCategory.Lists, CheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.TocStructure, PdfCheckCategory.Lists, CheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.HeadingTypes, PdfCheckCategory.Headings, CheckSeverity.Error, "ISO 14289-1 7.4.4")]
+    [InlineData(PdfCheck.NoteIds, PdfCheckCategory.Structure, CheckSeverity.Error, "ISO 14289-1 7.9")]
+    [InlineData(PdfCheck.TableStructure, PdfCheckCategory.Tables, CheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.TableGrid, PdfCheckCategory.Tables, CheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.AnnotationTags, PdfCheckCategory.Annotations, CheckSeverity.Error, "ISO 14289-1 7.18")]
+    [InlineData(PdfCheck.AnnotationDescriptions, PdfCheckCategory.Annotations, CheckSeverity.Error,
         "ISO 14289-1 7.18.1")]
-    [InlineData(PdfCheck.TabOrder, PdfCheckCategory.Annotations, PdfCheckSeverity.Error, "ISO 14289-1 7.18.3")]
-    [InlineData(PdfCheck.LanguageTags, PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
-    [InlineData(PdfCheck.TextLanguage, PdfCheckCategory.Language, PdfCheckSeverity.Error, "ISO 14289-1 7.2")]
-    [InlineData(PdfCheck.FormulaAltText, PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.7")]
-    [InlineData(PdfCheck.MediaClips, PdfCheckCategory.AltText, PdfCheckSeverity.Error, "ISO 14289-1 7.18.6.2")]
-    [InlineData(PdfCheck.ArtifactNesting, PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.1")]
-    [InlineData(PdfCheck.LayerConfigurations, PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 7.10")]
-    [InlineData(PdfCheck.EmbeddedFileNames, PdfCheckCategory.Document, PdfCheckSeverity.Error, "ISO 14289-1 7.11")]
-    [InlineData(PdfCheck.NoDynamicXfa, PdfCheckCategory.Forms, PdfCheckSeverity.Error, "ISO 14289-1 7.15")]
-    [InlineData(PdfCheck.AccessibilityPermission, PdfCheckCategory.Document, PdfCheckSeverity.Error,
+    [InlineData(PdfCheck.TabOrder, PdfCheckCategory.Annotations, CheckSeverity.Error, "ISO 14289-1 7.18.3")]
+    [InlineData(PdfCheck.LanguageTags, PdfCheckCategory.Language, CheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.TextLanguage, PdfCheckCategory.Language, CheckSeverity.Error, "ISO 14289-1 7.2")]
+    [InlineData(PdfCheck.FormulaAltText, PdfCheckCategory.AltText, CheckSeverity.Error, "ISO 14289-1 7.7")]
+    [InlineData(PdfCheck.MediaClips, PdfCheckCategory.AltText, CheckSeverity.Error, "ISO 14289-1 7.18.6.2")]
+    [InlineData(PdfCheck.ArtifactNesting, PdfCheckCategory.Content, CheckSeverity.Error, "ISO 14289-1 7.1")]
+    [InlineData(PdfCheck.LayerConfigurations, PdfCheckCategory.Document, CheckSeverity.Error, "ISO 14289-1 7.10")]
+    [InlineData(PdfCheck.EmbeddedFileNames, PdfCheckCategory.Document, CheckSeverity.Error, "ISO 14289-1 7.11")]
+    [InlineData(PdfCheck.NoDynamicXfa, PdfCheckCategory.Forms, CheckSeverity.Error, "ISO 14289-1 7.15")]
+    [InlineData(PdfCheck.AccessibilityPermission, PdfCheckCategory.Document, CheckSeverity.Error,
         "ISO 14289-1 7.16")]
-    [InlineData(PdfCheck.NoReferenceXObjects, PdfCheckCategory.Content, PdfCheckSeverity.Error, "ISO 14289-1 7.20")]
-    [InlineData(PdfCheck.MeaningfulAltText, PdfCheckCategory.AltText, PdfCheckSeverity.Warning, "WCAG 2.2 1.1.1")]
-    [InlineData(PdfCheck.LinkText, PdfCheckCategory.Annotations, PdfCheckSeverity.Warning, "WCAG 2.2 2.4.4")]
-    [InlineData(PdfCheck.NoMissingGlyphs, PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21.8")]
-    [InlineData(PdfCheck.FontDictionaries, PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21")]
-    [InlineData(PdfCheck.FontPrograms, PdfCheckCategory.Fonts, PdfCheckSeverity.Error, "ISO 14289-1 7.21")]
+    [InlineData(PdfCheck.NoReferenceXObjects, PdfCheckCategory.Content, CheckSeverity.Error, "ISO 14289-1 7.20")]
+    [InlineData(PdfCheck.MeaningfulAltText, PdfCheckCategory.AltText, CheckSeverity.Warning, "WCAG 2.2 1.1.1")]
+    [InlineData(PdfCheck.LinkText, PdfCheckCategory.Annotations, CheckSeverity.Warning, "WCAG 2.2 2.4.4")]
+    [InlineData(PdfCheck.NoMissingGlyphs, PdfCheckCategory.Fonts, CheckSeverity.Error, "ISO 14289-1 7.21.8")]
+    [InlineData(PdfCheck.FontDictionaries, PdfCheckCategory.Fonts, CheckSeverity.Error, "ISO 14289-1 7.21")]
+    [InlineData(PdfCheck.FontPrograms, PdfCheckCategory.Fonts, CheckSeverity.Error, "ISO 14289-1 7.21")]
     public void RuleOf_ShouldGiveTheRulesCategorySeverityAndClause_WhenGivenEachRule(PdfCheck check,
-        PdfCheckCategory category, PdfCheckSeverity severity, string? reference)
+        PdfCheckCategory category, CheckSeverity severity, string? reference)
     {
         var rule = PdfChecker.RuleOf(check);
 

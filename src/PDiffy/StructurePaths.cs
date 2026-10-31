@@ -7,11 +7,15 @@ internal static class StructurePaths
 {
     public static readonly string Root = SnapshotWriter.Name(PdfSection.Structure);
 
-    // A sibling that shares its key with others gets its place among them: P[2].
     public static IEnumerable<(PdfStructureElement Element, string Path)> WithPaths(
-        IReadOnlyList<PdfStructureElement> siblings, string parentPath)
+        IReadOnlyList<PdfStructureElement> siblings, string parentPath) => WithPaths(siblings, KeyOf, parentPath);
+
+    // A sibling that shares its key with others gets its place among them: P[2]. Snapshot lines are numbered the same
+    // way, by their key.
+    public static IEnumerable<(T Element, string Path)> WithPaths<T>(IReadOnlyList<T> siblings, Func<T, string> keyOf,
+        string parentPath)
     {
-        var keys = siblings.Select(KeyOf).ToList();
+        var keys = siblings.Select(keyOf).ToList();
         var counts = keys.CountBy(key => key).ToDictionary();
         var seen = new Dictionary<string, int>();
         for (var i = 0; i < siblings.Count; i++)

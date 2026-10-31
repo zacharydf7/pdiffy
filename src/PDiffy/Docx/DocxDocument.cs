@@ -103,6 +103,19 @@ public sealed record DocxDocument
         SnapshotDiff.Compare(this, after, configure);
 
     /// <summary>
+    /// Applies the checks and lists what they find, grouped by check in the order <see cref="DocxCheck"/> declares them
+    /// and then in snapshot order; an empty list means every check passed. With no checks given, applies every check.
+    /// </summary>
+    public IReadOnlyList<DocxCheckFinding> Check(params DocxCheck[] checks) =>
+        DocxChecker.Run(this, checks.Length == 0 ? DocxCheckSet.Latest.Checks : checks);
+
+    /// <summary>
+    /// Applies the rules in a set, such as <see cref="DocxCheckSet.Latest"/>, and lists what they find as
+    /// <see cref="Check(DocxCheck[])"/> does.
+    /// </summary>
+    public IReadOnlyList<DocxCheckFinding> Check(DocxCheckSet set) => DocxChecker.Run(this, set.Checks);
+
+    /// <summary>
     /// Every paragraph of the body in reading order, including those inside tables, content controls, text boxes and
     /// inserted documents.
     /// </summary>

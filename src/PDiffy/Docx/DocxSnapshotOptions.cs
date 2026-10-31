@@ -28,6 +28,11 @@ public enum DocxSection
 
     /// <summary>Footnotes, endnotes and comments.</summary>
     Notes,
+
+    /// <summary>
+    /// What the checks find, printed only with <see cref="DocxSnapshotOptions.Check(DocxCheckSet)"/>.
+    /// </summary>
+    Checks,
 }
 
 /// <summary>
@@ -162,6 +167,21 @@ public sealed class DocxSnapshotOptions
         _scrubbers.Add(Scrubber.Guids);
         return this;
     }
+
+    /// <summary>
+    /// Records what a set of checks finds in a <c>checks</c> section, so the findings are approved with the snapshot: a
+    /// new problem fails the test, and a fixed one fails it too until the snapshot is accepted. Each line is the rule
+    /// and the path, with no message text. The checks look at the whole document, so
+    /// <see cref="Ignore(DocxSection[])"/> doesn't change them.
+    /// </summary>
+    /// <param name="set">The rules to apply, such as <see cref="DocxCheckSet.Latest"/>.</param>
+    public DocxSnapshotOptions Check(DocxCheckSet set)
+    {
+        CheckSet = set;
+        return this;
+    }
+
+    internal DocxCheckSet? CheckSet { get; private set; }
 
     internal IReadOnlyList<Scrubber> Scrubbers => _scrubbers;
 

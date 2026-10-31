@@ -90,6 +90,9 @@ public sealed record SnapshotChange
     // Which kind of snapshot the change is in, which says what its section name means.
     internal SnapshotFormat Format { get; init; }
 
+    // A new or fixed problem in a PDF's or a Word document's checks section.
+    internal bool IsFinding => PdfSection == PDiffy.PdfSection.Checks || DocxSection == PDiffy.DocxSection.Checks;
+
     private static T? Named<T>(string? name) where T : struct, Enum =>
         Enum.GetValues<T>().Where(value => SnapshotWriter.Name(value) == name).Select(value => (T?)value)
             .FirstOrDefault();
@@ -241,10 +244,10 @@ public sealed class SnapshotDiff
         var tolerated = false;
         foreach (var name in beforeSections.Keys.Union(afterSections.Keys))
         {
-            if (pdf && name == SnapshotWriter.Name(PdfSection.Checks))
+            if (format != SnapshotFormat.Text && name == SnapshotWriter.Name(PdfSection.Checks))
             {
                 changes.AddRange(CheckChanges.Compare(beforeSections.GetValueOrDefault(name) ?? [],
-                    afterSections.GetValueOrDefault(name) ?? [], originals));
+                    afterSections.GetValueOrDefault(name) ?? [], originals, format));
                 continue;
             }
 
@@ -349,7 +352,7 @@ public sealed class SnapshotDiff
 
     // Findings count apart from content, as new problems and fixed ones.
     internal IEnumerable<string> CountsByKind() => Changes
-        .GroupBy(change => (change.Kind, Finding: change.PdfSection == PdfSection.Checks))
+        .GroupBy(change => (change.Kind, Finding: change.IsFinding))
         .OrderBy(group => group.Key.Kind).ThenBy(group => group.Key.Finding)
         .Select(group => $"{group.Count()} {Label(group.First())}");
 
@@ -369,10 +372,10 @@ public sealed class SnapshotDiff
         _ => "~",
     };
 
-    private static string Label(SnapshotChange change) => (change.Kind, change.PdfSection) switch
+    private static string Label(SnapshotChange change) => (change.Kind, change.IsFinding) switch
     {
-        (ChangeKind.Added, PdfSection.Checks) => "new problem",
-        (ChangeKind.Removed, PdfSection.Checks) => "fixed",
+        (ChangeKind.Added, true) => "new problem",
+        (ChangeKind.Removed, true) => "fixed",
         (ChangeKind.AttributeChanged, _) => "attribute",
         (ChangeKind.TextChanged, _) => "text",
         _ => change.Kind.ToString().ToLowerInvariant(),

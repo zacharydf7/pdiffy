@@ -6,6 +6,9 @@ here. Each rule names the clause it comes from, of PDF/UA-1 (ISO 14289-1) or, fo
 WCAG 2.2; that says where the rule comes from, not that a document passing it conforms to the standard. For
 conformance, use [veraPDF](https://verapdf.org/) or PAC.
 
+The rules [`DocxDocument.Check`](xref:PDiffy.DocxDocument.Check*) applies to Word documents come last, from
+[Word: ImageAltText](#word-imagealttext) on. They come from WCAG 2.2, since PDF/UA doesn't cover Word.
+
 Most fixes belong in whatever generates the document: a template, a report library's settings, or the export options
 of the application it comes from. The [recipes](../guide/recipes.md) cover common generators.
 
@@ -529,3 +532,16 @@ outside it, or other content mixed in, read as plain text, so the list and how m
 **How to fix it:** put each entry in a `TOCI` inside the `TOC`, a nested part in a `TOC` of its own inside the outer one,
 and the caption first. Most generators build this from their table of contents field; check that field's tagging
 setting.
+
+## Word: ImageAltText
+
+**Finds:** an image, chart, diagram, shape or embedded object in a Word document with no alt text (`wp:docPr` has no
+`descr`, or an empty one) that isn't marked as decoration. A shape with text in it is left out, since a screen reader
+reads its text, and so is an ActiveX control, which has its own label. **Category:** `AltText`. **Severity:** `Error`.
+**From:** WCAG 2.2 1.1.1.
+
+**Why it matters:** a screen reader announces an image without alt text as a picture, or reads its file name, so
+whatever it shows is lost. One marked as decoration is skipped, which suits a border or a background.
+
+**How to fix it:** in Word, choose View Alt Text on the image and describe it, or tick Mark as decorative. A generator
+sets the description on the drawing's `wp:docPr` (`DocProperties.Description` in the Open XML SDK).

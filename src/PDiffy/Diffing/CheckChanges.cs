@@ -10,18 +10,18 @@ internal static class CheckChanges
     // Originals maps the earlier snapshot's lines, renumbered when pages were inserted or removed, back to the lines as
     // written, so a fixed problem keeps the page it was on.
     public static IEnumerable<SnapshotChange> Compare(List<SnapshotLine> before, List<SnapshotLine> after,
-        Dictionary<SnapshotLine, SnapshotLine>? originals)
+        Dictionary<SnapshotLine, SnapshotLine>? originals, SnapshotFormat format)
     {
         var beforeFindings = Findings(before);
         var afterFindings = Findings(after);
         foreach (var line in Without(beforeFindings, afterFindings))
         {
-            yield return Change(ChangeKind.Removed, (originals?.GetValueOrDefault(line) ?? line).Text.Trim());
+            yield return Change(ChangeKind.Removed, (originals?.GetValueOrDefault(line) ?? line).Text.Trim(), format);
         }
 
         foreach (var line in Without(afterFindings, beforeFindings))
         {
-            yield return Change(ChangeKind.Added, line.Text.Trim());
+            yield return Change(ChangeKind.Added, line.Text.Trim(), format);
         }
     }
 
@@ -37,7 +37,8 @@ internal static class CheckChanges
         lines.Where(line => line.Text.Trim() is not (SnapshotWriter.None or SnapshotWriter.Ignored)).ToList();
 
     // A line is the rule, the page when there is one, and the path: "FigureAltText p2 structure > Document > Figure".
-    private static SnapshotChange Change(ChangeKind kind, string finding)
+    // A Word finding has no page: "ImageAltText body > P > image".
+    private static SnapshotChange Change(ChangeKind kind, string finding, SnapshotFormat format)
     {
         var words = finding.Split(' ', 3);
         var page = words.Length == 3 && words[1] is ['p', .. var digits] && int.TryParse(digits, out var number)
@@ -46,7 +47,7 @@ internal static class CheckChanges
         return new SnapshotChange
         {
             Kind = kind, SectionName = SnapshotWriter.Name(PdfSection.Checks), Path = words[0], Page = page,
-            Detail = path, Format = SnapshotFormat.Pdf,
+            Detail = path, Format = format,
         };
     }
 }

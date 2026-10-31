@@ -102,6 +102,7 @@ less.
 | `Body` | Paragraphs, tables and inserted documents, with everything inside them |
 | `Headers`, `Footers` | Each section's headers and footers |
 | `Notes` | Footnotes, endnotes and comments |
+| `Checks` | What the checks a test opts into with `Check` find; printed only then |
 
 ## Word details
 

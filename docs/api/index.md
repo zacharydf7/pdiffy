@@ -19,6 +19,7 @@ them all.
 | <xref:PDiffy.PdfProfile>, <xref:PDiffy.PdfTolerance> | Pick what a test guards, and the numbers it lets differ a little |
 | <xref:PDiffy.DocxSnapshotOptions> | Ignore or scrub a Word snapshot |
 | <xref:PDiffy.DocxSection>, <xref:PDiffy.DocxDetail> | Name the Word sections and details to leave out |
+| <xref:PDiffy.DocxCheck>, <xref:PDiffy.DocxCheckFinding>, <xref:PDiffy.DocxCheckCategory>, <xref:PDiffy.DocxCheckSet> | Name a rule <xref:PDiffy.DocxDocument.Check*> applies, describe what it found, and choose the rules |
 | <xref:PDiffy.TextSnapshotOptions> | Scrub a text or JSON snapshot |
 
 ## Comparing
@@ -35,7 +36,7 @@ them all.
 |---|---|
 | <xref:PDiffy.PdfCheck> | Name a rule <xref:PDiffy.PdfUaDocument.Check*> applies |
 | <xref:PDiffy.PdfCheckFinding> | Describe what a rule found: where, how much it matters and the clause it comes from |
-| <xref:PDiffy.PdfCheckSeverity>, <xref:PDiffy.PdfCheckCategory> | Tell errors from warnings, and group rules by family |
+| <xref:PDiffy.CheckSeverity>, <xref:PDiffy.PdfCheckCategory> | Tell errors from warnings, and group rules by family |
 | <xref:PDiffy.PdfCheckSet> | Apply every rule, or only the rules a release shipped, narrowed by family or rule |
 
 ## The PDF model

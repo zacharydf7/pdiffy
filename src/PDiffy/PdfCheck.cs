@@ -250,19 +250,6 @@ public enum PdfCheckCategory
     HouseRules,
 }
 
-/// <summary>How much a <see cref="PdfCheckFinding"/> matters.</summary>
-public enum PdfCheckSeverity
-{
-    /// <summary>The document breaks a rule PDF/UA requires (a "shall").</summary>
-    Error,
-
-    /// <summary>
-    /// The document breaks a practice another standard, such as WCAG, asks for that PDF/UA doesn't check, or a house
-    /// rule that isn't from a standard.
-    /// </summary>
-    Warning,
-}
-
 /// <summary>
 /// Something a <see cref="PdfCheck"/> found: where it is, its page when it has one, and what's wrong. The path names the
 /// snapshot section and the item: for a structure element, the path a snapshot diff shows, such as
@@ -281,7 +268,7 @@ public sealed record PdfCheckFinding
     public required PdfCheckCategory Category { get; init; }
 
     /// <summary>How much it matters: an error for a rule PDF/UA requires, a warning otherwise.</summary>
-    public required PdfCheckSeverity Severity { get; init; }
+    public required CheckSeverity Severity { get; init; }
 
     /// <summary>
     /// The clause the finding comes from, such as "ISO 14289-1 7.3" (PDF/UA-1), or null for a house rule: its rule's,

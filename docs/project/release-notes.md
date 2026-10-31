@@ -29,6 +29,9 @@ library does.
   | `FormField`, `FormFieldType`, `FormFieldFlags`, `FormFieldAlignment`, `FormScript`, `FormScriptTrigger`, `FormSettings`, `XfaFormKind` | The same with `Pdf` in front, and `PdfXfaForm` |
   | `SignatureInfo`, `SignatureCertification` | `PdfSignature`, `PdfSignatureCertification` |
 
+- `PdfCheckSeverity` is now `CheckSeverity`, since Word findings use it too
+  ([#167](https://github.com/zacharydf7/pdiffy/issues/167)).
+
 - `Lang` and `Alt` are `Language` and `AltText`, as in the Word model, and `HasCreationDate` and `HasModDate` are
   `HasCreatedDate` and `HasModifiedDate`.
 - `Tolerate` takes a `PdfTolerance` (`Positions`, `FontSizes` or `LineWidths`), so only a number it can tolerate
@@ -74,6 +77,11 @@ library does.
 
 ### Checks
 
+- Word documents have checks too: `DocxDocument.Check` applies `DocxCheck` rules, starting with `ImageAltText`
+  (an image, chart or shape with no alt text that isn't marked as decoration), and lists each `DocxCheckFinding` with
+  the path a diff shows. `DocxCheckSet.Latest` chooses the rules, and `DocxSnapshotOptions.Check(DocxCheckSet)` records
+  the findings in a `checks` section, with the same new-problem and fixed counts and report panel as for PDFs
+  ([#167](https://github.com/zacharydf7/pdiffy/issues/167)).
 - Each `PdfCheckFinding` has a `Severity` (`Error` or `Warning`) and a `Reference` to the PDF/UA-1 clause its
   rule comes from, such as `ISO 14289-1 7.3`; `NoActions` and `NoEmbeddedFiles` are house rules, warnings with no
   reference ([#52](https://github.com/zacharydf7/pdiffy/issues/52)).

@@ -274,7 +274,10 @@ Assert.All(document.Fonts, font => Assert.Empty(font.UnmappedCodes));
 ## Word documents
 
 [`DocxDocument`](xref:PDiffy.DocxDocument) works the same way for DOCX files. See
-[Word documents](word-documents.md#assert-on-the-model).
+[Word documents](word-documents.md#assert-on-the-model). Its [`Check`](xref:PDiffy.DocxDocument.Check*) applies the
+[Word rules](../reference/checks.md#word-imagealttext), and
+[`DocxSnapshotOptions.Check`](xref:PDiffy.DocxSnapshotOptions.Check*) records their findings in a `checks` section, as
+above.
 
 ## See also
 

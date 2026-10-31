@@ -103,6 +103,9 @@ Either way, review the received files and accept them: `pdiffy accept --all`, or
 
 ### Word (`docx-snapshot v1`, unchanged)
 
+- A test can opt into a `checks` section, with `Check(DocxCheckSet)`, that lists what the Word checks find, and a
+  `# checks: ...` header line ([#167](https://github.com/zacharydf7/pdiffy/issues/167)). Snapshots without the option
+  don't change, and a test that opts in sees only the new header line and the new section.
 - Formatting PDiffy doesn't read prints as a hash, `other=`, on the style, span, paragraph, table, row, cell or
   section line it belongs to, so changing it changes the snapshot
   ([#146](https://github.com/zacharydf7/pdiffy/issues/146)). Noise Word writes into nearly every document is left

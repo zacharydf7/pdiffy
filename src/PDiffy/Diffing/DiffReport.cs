@@ -83,7 +83,7 @@ internal static class DiffReport
         List<Row> rows)
     {
         var ids = new Dictionary<Row, string>(ReferenceEqualityComparer.Instance);
-        var findings = changes.Where(change => change.PdfSection == PdfSection.Checks)
+        var findings = changes.Where(change => change.IsFinding)
             .OrderBy(change => change.Kind != ChangeKind.Added).ToList();
         if (findings.Count == 0) return ids;
 
@@ -105,8 +105,7 @@ internal static class DiffReport
                 where = $"<a href=\"#{ids[row]}\">{where}</a>";
             }
 
-            var help = Enum.TryParse<PdfCheck>(change.Path, out var check)
-                ? $" <a href=\"{PdfCheckFinding.HelpUrlOf(check)}\">How to fix it</a>" : "";
+            var help = HelpUrlOf(change) is { } url ? $" <a href=\"{url}\">How to fix it</a>" : "";
             var (kind, label) = isNew ? ("new", "New problem") : ("fixed", "Fixed");
             html.Append($"<li class=\"{kind}\"><b>{label}</b> {where} <code>{Encode(change.Detail)}</code>{help}</li>");
         }
@@ -114,6 +113,11 @@ internal static class DiffReport
         html.Append("</ul></div>");
         return ids;
     }
+
+    // A finding's rule entry on the docs site, when this version of PDiffy has the rule.
+    private static string? HelpUrlOf(SnapshotChange finding) => finding.DocxSection is not null
+        ? Enum.TryParse<DocxCheck>(finding.Path, out var docx) ? DocxCheckFinding.HelpUrlOf(docx) : null
+        : Enum.TryParse<PdfCheck>(finding.Path, out var pdf) ? PdfCheckFinding.HelpUrlOf(pdf) : null;
 
     private static string Summary(SnapshotDiff diff, bool plain) =>
         diff.IsEmpty ? "No changes."

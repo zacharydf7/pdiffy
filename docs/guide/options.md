@@ -209,7 +209,7 @@ await Snapshot.VerifyDocxAsync(docx, configure: options => options
 - [`DocxProfile`](xref:PDiffy.DocxProfile): `Use(DocxProfile.Content)` compares the text and its structure without
   page setup, styles or formatting details. See [Word profiles](../reference/options.md#word-profiles).
 - [`DocxSection`](xref:PDiffy.DocxSection): `Document`, `Sections`, `Styles`, `Numbering`, `Body`, `Headers`,
-  `Footers`, `Notes`.
+  `Footers`, `Notes`, and `Checks`, printed only with [`Check`](xref:PDiffy.DocxSnapshotOptions.Check*).
 - [`DocxDetail`](xref:PDiffy.DocxDetail): image hashes, field results, fonts, font sizes, colors, spacing, indents,
   revision and comment authors, and other formatting. See [the reference](../reference/options.md#word-details) for
   exactly what each leaves out.

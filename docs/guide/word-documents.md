@@ -122,6 +122,7 @@ Assert.Equal("Title", notes.Paragraphs().First().Style);
 | [`Body`](xref:PDiffy.DocxDocument.Body), [`Headers`](xref:PDiffy.DocxDocument.Headers), [`Footers`](xref:PDiffy.DocxDocument.Footers), [`Notes`](xref:PDiffy.DocxDocument.Notes) | The content, as blocks |
 | [`Styles`](xref:PDiffy.DocxDocument.Styles), [`Lists`](xref:PDiffy.DocxDocument.Lists), [`PageSetups`](xref:PDiffy.DocxDocument.PageSetups) | Styles in use, lists and section setups |
 | [`CompareTo(after)`](xref:PDiffy.DocxDocument.CompareTo*) | A [comparison](comparing.md) with another document |
+| [`Check()`](xref:PDiffy.DocxDocument.Check*) | What the [Word checks](../reference/checks.md#word-imagealttext) find, such as an image with no alt text, each with the path a diff shows |
 
 Kinds PDiffy decides are enums: [`DocxRevisionKind`](xref:PDiffy.DocxRevisionKind),
 [`DocxFormKind`](xref:PDiffy.DocxFormKind) and [`DocxNoteKind`](xref:PDiffy.DocxNoteKind). Values PDiffy copies from the

@@ -21,23 +21,36 @@ internal sealed class DocxSnapshotWriter
     // An inserted document's styles are compared with the outer document line, since its own isn't printed.
     private readonly string? _language;
 
+    // Where each image's line starts, for a check finding's path; an inserted document's writer adds to the same list.
+    private readonly List<(DocxImage Image, int Start)> _images;
+
     private DocxSnapshotWriter(DocxDocument document, StringBuilder snapshot, DocxSnapshotOptions options, Scrubbing scrubbing,
-        string? language)
+        string? language, List<(DocxImage Image, int Start)> images)
     {
-        (_snapshot, _options, _scrubbing, _language) = (snapshot, options, scrubbing, language);
+        (_snapshot, _options, _scrubbing, _language, _images) = (snapshot, options, scrubbing, language, images);
         _styleLayouts = document.Styles.Where(style => style.Type == DocxStyleTypes.Paragraph)
             .ToDictionary(style => style.Id, style => style.Paragraph);
     }
 
     public static string Write(DocxDocument document, DocxSnapshotOptions options) =>
-        new DocxSnapshotWriter(document, new StringBuilder(), options, new Scrubbing(options.Scrubbers), document.Document.Language)
-            .Build(document);
+        WriteWithImages(document, options).Snapshot;
+
+    /// <summary>The snapshot, with where each image's line starts in it, in the order they're written.</summary>
+    public static (string Snapshot, List<(DocxImage Image, int Start)> Images) WriteWithImages(DocxDocument document,
+        DocxSnapshotOptions options)
+    {
+        var images = new List<(DocxImage Image, int Start)>();
+        var writer = new DocxSnapshotWriter(document, new StringBuilder(), options, new Scrubbing(options.Scrubbers),
+            document.Document.Language, images);
+        return (writer.Build(document), images);
+    }
 
     private string Build(DocxDocument document)
     {
         Line(0, FormatHeader);
         if (_options.IgnoredSections.Any()) Line(0, $"# ignored sections: {string.Join(", ", _options.IgnoredSections.Select(SnapshotWriter.Name))}");
         if (_options.IgnoredDetails.Any()) Line(0, $"# ignored fields: {string.Join(", ", _options.IgnoredDetails.Select(SnapshotWriter.Name))}");
+        if (_options.CheckSet is { } set) Line(0, $"{SnapshotWriter.ChecksHeader}{set}");
         WriteSection(DocxSection.Document, () => WriteDocument(document.Document));
         WriteSection(DocxSection.Sections, () => WriteSections(document.PageSetups));
         WriteSection(DocxSection.Styles, () => WriteStyles(document.Styles, 1));
@@ -50,7 +63,16 @@ internal sealed class DocxSnapshotWriter
         WriteSection(DocxSection.Headers, () => WriteHeadersAndFooters(document.Headers));
         WriteSection(DocxSection.Footers, () => WriteHeadersAndFooters(document.Footers));
         WriteSection(DocxSection.Notes, () => WriteNotes(document.Notes, 1));
+        if (_options.CheckSet is { } checks) WriteSection(DocxSection.Checks, () => WriteChecks(document, checks));
         return _snapshot.ToString();
+    }
+
+    // A finding prints as its rule and path, with no message text, so rewording a message never changes a snapshot.
+    private void WriteChecks(DocxDocument document, DocxCheckSet set)
+    {
+        var findings = document.Check(set);
+        if (findings.Count == 0) Line(1, None);
+        foreach (var finding in findings) Line(1, $"{finding.Check} {finding.Path}");
     }
 
     private void WriteSection(DocxSection section, Action write)
@@ -221,7 +243,7 @@ internal sealed class DocxSnapshotWriter
         Line(depth, line.ToString());
         if (inserted.Document is not { } document) return;
 
-        var writer = new DocxSnapshotWriter(document, _snapshot, _options, _scrubbing, _language);
+        var writer = new DocxSnapshotWriter(document, _snapshot, _options, _scrubbing, _language, _images);
         writer.Line(depth + 1, "styles");
         if (_options.Ignores(DocxSection.Styles)) writer.Line(depth + 2, SnapshotWriter.Ignored);
         else writer.WriteStyles(document.Styles, depth + 2);
@@ -269,8 +291,10 @@ internal sealed class DocxSnapshotWriter
 
         for (var i = 0; i < positions.Length; i++)
         {
+            var image = paragraph.Inlines[i] as DocxImage;
+            if (image is not null) _images.Add((image, _snapshot.Length));
             Line(depth + 1, InlineLine(paragraph.Inlines[i], positions[i], results));
-            if (paragraph.Inlines[i] is DocxImage image) WriteBlocks(image.TextBox, depth + 2);
+            if (image is not null) WriteBlocks(image.TextBox, depth + 2);
         }
 
         if (paragraph.EndsSection is int section) Line(depth + 1, $"ends-section s{section}");

@@ -51,6 +51,7 @@ Sections always appear in this order. Each can be left out with [`DocxSection`](
 | `body` | Paragraphs, tables, content controls and inserted documents, in reading order |
 | `headers`, `footers` | Each section's headers and footers, by kind (`default`, `first`, `even`) |
 | `notes` | Footnotes, endnotes and comments, with their content |
+| `checks` | Only with [`Check(DocxCheckSet)`](xref:PDiffy.DocxSnapshotOptions.Check*): what the checks find, one line per finding with its rule and path (`ImageAltText body > P[3] > image`), in the order the rules are declared and then the snapshot's, or `(none)` |
 
 ## Body lines
 
@@ -92,7 +93,8 @@ their line. See [`DocxRevisionKind`](xref:PDiffy.DocxRevisionKind) for every kin
 
 ## Rules
 
-- When anything is ignored, the second line lists it: `# ignored sections: ...` and `# ignored fields: ...`.
+- When anything is ignored, the second line lists it: `# ignored sections: ...` and `# ignored fields: ...`. With
+  `Check`, `# checks: ...` follows, the rule set and how many rules it has, such as `# checks: latest, 1 rule`.
 - An empty section prints `(none)` and an ignored one prints `(ignored)`.
 - Lengths are in points. Colors are hex.
 - `other=` is a hash of the formatting PDiffy doesn't read, such as character spacing or a table's indent, on a style,
